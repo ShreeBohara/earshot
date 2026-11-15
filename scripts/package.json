@@ -1,0 +1,21 @@
+{
+  "name": "@earshot/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repo automation: per-environment wrangler configs and the preview janitor.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "jsonc-parser": "catalog:"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

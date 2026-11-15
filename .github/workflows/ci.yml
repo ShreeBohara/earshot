@@ -42,3 +42,61 @@ jobs:
         run: |
           pnpm contracts:gen
           git diff --exit-code -- packages/core/schemas lab/src/earshot_lab/contracts
+
+  # Deploys main to the production Workers once Cloudflare and Neon are configured.
+  deploy-production:
+    needs: [checks]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate dev (the seed-only parent of previews) and production
+        env:
+          DEV_URL: ${{ secrets.DATABASE_URL_DEV_DIRECT }}
+          PROD_URL: ${{ secrets.DATABASE_URL_PRODUCTION_DIRECT }}
+        run: |
+          DATABASE_URL_DIRECT="$DEV_URL" pnpm --filter @earshot/db db:migrate
+          DATABASE_URL_DIRECT="$DEV_URL" pnpm --filter @earshot/db db:stamp dev
+          DATABASE_URL_DIRECT="$PROD_URL" pnpm --filter @earshot/db db:migrate
+          DATABASE_URL_DIRECT="$PROD_URL" pnpm --filter @earshot/db db:stamp production
+      - name: Render production wrangler configs
+        run: pnpm --filter @earshot/scripts exec tsx render-wrangler.ts --target production --sha "$GITHUB_SHA"
+      - name: Deploy the edge Worker
+        working-directory: apps/edge
+        run: pnpm exec wrangler deploy --config wrangler.production.jsonc
+      - name: Build the web Worker (next build, then the OpenNext bundle)
+        run: pnpm turbo run build:worker --filter=@earshot/web
+      - name: Deploy the web Worker with its database secret
+        working-directory: apps/web
+        env:
+          DB_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+        run: |
+          umask 077
+          jq -n --arg u "$DB_URL" '{DATABASE_URL: $u}' > "$RUNNER_TEMP/web.secrets.json"
+          pnpm exec opennextjs-cloudflare deploy --config wrangler.production.jsonc -- --secrets-file "$RUNNER_TEMP/web.secrets.json"
+          rm -f "$RUNNER_TEMP/web.secrets.json"
+      - name: Smoke test production
+        working-directory: apps/web
+        env:
+          BASE_URL: https://earshot-web.${{ vars.CF_WORKERS_SUBDOMAIN }}.workers.dev
+          EXPECT_BRANCH: production
+          EXPECT_SHA: ${{ github.sha }}
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test --project=smoke
