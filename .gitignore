@@ -62,3 +62,6 @@ __pycache__/
 .trae/
 .windsurf/
 .github/prompts/
+.open-next/
+worker-configuration.d.ts
+cloudflare-env.d.ts

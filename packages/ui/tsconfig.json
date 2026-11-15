@@ -1,0 +1,9 @@
+{
+  "extends": "@earshot/tsconfig/react-library.json",
+  "compilerOptions": {
+    "paths": {
+      "@earshot/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

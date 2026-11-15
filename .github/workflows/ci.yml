@@ -36,8 +36,8 @@ jobs:
       - run: uv sync --project lab
       - name: Format and lint (Biome)
         run: pnpm ci:check
-      - name: Lint, typecheck, test, build
-        run: pnpm turbo run lint typecheck test build ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+      - name: Lint, typecheck, test, build (including the OpenNext Worker bundle)
+        run: pnpm turbo run lint typecheck test build build:worker ${{ github.event_name == 'pull_request' && '--affected' || '' }}
       - name: Contracts are up to date
         run: |
           pnpm contracts:gen
