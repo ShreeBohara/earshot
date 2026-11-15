@@ -1,0 +1,362 @@
+[
+  {
+    "id": "deal_001",
+    "companyId": "co_001",
+    "name": "Harborview Health - Multi-year agreement",
+    "amount": 35000,
+    "stage": "closedwon",
+    "closeDate": "2026-05-22",
+    "ownerContactId": "ct_020"
+  },
+  {
+    "id": "deal_002",
+    "companyId": "co_029",
+    "name": "Sigma Tooling - Expansion",
+    "amount": 8000,
+    "stage": "closedwon",
+    "closeDate": "2026-05-06",
+    "ownerContactId": "ct_116"
+  },
+  {
+    "id": "deal_003",
+    "companyId": "co_039",
+    "name": "Sparrow Robotics - Expansion",
+    "amount": 6000,
+    "stage": "contractsent",
+    "closeDate": "2027-01-02",
+    "ownerContactId": "ct_022"
+  },
+  {
+    "id": "deal_004",
+    "companyId": "co_034",
+    "name": "Pacific Coast Electric - Support upgrade",
+    "amount": 87000,
+    "stage": "closedwon",
+    "closeDate": "2026-05-24",
+    "ownerContactId": "ct_128"
+  },
+  {
+    "id": "deal_005",
+    "companyId": "co_046",
+    "name": "Harborview Marine - Annual renewal",
+    "amount": 199000,
+    "stage": "contractsent",
+    "closeDate": "2027-01-06",
+    "ownerContactId": "ct_143"
+  },
+  {
+    "id": "deal_006",
+    "companyId": "co_056",
+    "name": "Kestrel Aero - Analytics add-on",
+    "amount": 139000,
+    "stage": "decisionmakerboughtin",
+    "closeDate": "2026-12-16",
+    "ownerContactId": "ct_010"
+  },
+  {
+    "id": "deal_007",
+    "companyId": "co_053",
+    "name": "Lantern Hospitality - Starter plan",
+    "amount": 57500,
+    "stage": "closedwon",
+    "closeDate": "2026-07-31",
+    "ownerContactId": "ct_078"
+  },
+  {
+    "id": "deal_008",
+    "companyId": "co_014",
+    "name": "Atmas Group - Expansion",
+    "amount": 237500,
+    "stage": "closedwon",
+    "closeDate": "2026-06-23",
+    "ownerContactId": "ct_051"
+  },
+  {
+    "id": "deal_009",
+    "companyId": "co_022",
+    "name": "Glovex Systems - Starter plan",
+    "amount": 20000,
+    "stage": "qualifiedtobuy",
+    "closeDate": "2026-12-23",
+    "ownerContactId": "ct_081"
+  },
+  {
+    "id": "deal_010",
+    "companyId": "co_037",
+    "name": "Blue Harbor Analytics - Site rollout",
+    "amount": 7500,
+    "stage": "qualifiedtobuy",
+    "closeDate": "2026-12-05",
+    "ownerContactId": "ct_090"
+  },
+  {
+    "id": "deal_011",
+    "companyId": "co_026",
+    "name": "Right Fabrication - Starter plan",
+    "amount": 84000,
+    "stage": "presentationscheduled",
+    "closeDate": "2026-12-08",
+    "ownerContactId": "ct_063"
+  },
+  {
+    "id": "deal_012",
+    "companyId": "co_020",
+    "name": "Quarry Lane Media - Analytics add-on",
+    "amount": 5000,
+    "stage": "appointmentscheduled",
+    "closeDate": "2027-01-04",
+    "ownerContactId": "ct_118"
+  },
+  {
+    "id": "deal_013",
+    "companyId": "co_005",
+    "name": "Atlas Freight - Pilot program",
+    "amount": 11500,
+    "stage": "presentationscheduled",
+    "closeDate": "2027-01-05",
+    "ownerContactId": "ct_147"
+  },
+  {
+    "id": "deal_014",
+    "companyId": "co_006",
+    "name": "Midland Steel Corp - Pilot program",
+    "amount": 17000,
+    "stage": "closedlost",
+    "closeDate": "2026-05-17",
+    "ownerContactId": "ct_104"
+  },
+  {
+    "id": "deal_015",
+    "companyId": "co_032",
+    "name": "Consolidated Parts & Supply - Onboarding package",
+    "amount": 76000,
+    "stage": "qualifiedtobuy",
+    "closeDate": "2027-02-13",
+    "ownerContactId": "ct_124"
+  },
+  {
+    "id": "deal_016",
+    "companyId": "co_045",
+    "name": "Summit Ridge Medical - Starter plan",
+    "amount": 18500,
+    "stage": "appointmentscheduled",
+    "closeDate": "2026-12-18",
+    "ownerContactId": "ct_091"
+  },
+  {
+    "id": "deal_017",
+    "companyId": "co_017",
+    "name": "Tidewater Biotech - Expansion",
+    "amount": 134000,
+    "stage": "decisionmakerboughtin",
+    "closeDate": "2027-03-27",
+    "ownerContactId": "ct_021"
+  },
+  {
+    "id": "deal_018",
+    "companyId": "co_018",
+    "name": "Wright Fabrication - Site rollout",
+    "amount": 30000,
+    "stage": "closedwon",
+    "closeDate": "2026-08-08",
+    "ownerContactId": "ct_069"
+  },
+  {
+    "id": "deal_019",
+    "companyId": "co_009",
+    "name": "Atmos Industrial - Onboarding package",
+    "amount": 17500,
+    "stage": "closedlost",
+    "closeDate": "2026-06-02",
+    "ownerContactId": "ct_068"
+  },
+  {
+    "id": "deal_020",
+    "companyId": "co_059",
+    "name": "Granite State Builders - Analytics add-on",
+    "amount": 17500,
+    "stage": "decisionmakerboughtin",
+    "closeDate": "2026-11-18",
+    "ownerContactId": "ct_136"
+  },
+  {
+    "id": "deal_021",
+    "companyId": "co_050",
+    "name": "Bay Harbor Associates - Platform license",
+    "amount": 53500,
+    "stage": "qualifiedtobuy",
+    "closeDate": "2027-01-28",
+    "ownerContactId": "ct_048"
+  },
+  {
+    "id": "deal_022",
+    "companyId": "co_008",
+    "name": "Kestral Aero - Pilot program",
+    "amount": 20500,
+    "stage": "contractsent",
+    "closeDate": "2026-12-07",
+    "ownerContactId": "ct_011"
+  },
+  {
+    "id": "deal_023",
+    "companyId": "co_004",
+    "name": "Juniper Bay Telecom - Pilot program",
+    "amount": 23000,
+    "stage": "presentationscheduled",
+    "closeDate": "2026-11-21",
+    "ownerContactId": "ct_092"
+  },
+  {
+    "id": "deal_024",
+    "companyId": "co_030",
+    "name": "Opal Street Studios - Annual renewal",
+    "amount": 39500,
+    "stage": "closedlost",
+    "closeDate": "2026-05-02",
+    "ownerContactId": "ct_031"
+  },
+  {
+    "id": "deal_025",
+    "companyId": "co_035",
+    "name": "Rite Fabrication - Starter plan",
+    "amount": 221000,
+    "stage": "appointmentscheduled",
+    "closeDate": "2027-01-10",
+    "ownerContactId": "ct_076"
+  },
+  {
+    "id": "deal_026",
+    "companyId": "co_027",
+    "name": "Globelex Systems - Annual renewal",
+    "amount": 40000,
+    "stage": "presentationscheduled",
+    "closeDate": "2026-12-26",
+    "ownerContactId": "ct_005"
+  },
+  {
+    "id": "deal_027",
+    "companyId": "co_054",
+    "name": "Coastal Power Systems - Site rollout",
+    "amount": 84000,
+    "stage": "contractsent",
+    "closeDate": "2026-12-19",
+    "ownerContactId": "ct_056"
+  },
+  {
+    "id": "deal_028",
+    "companyId": "co_011",
+    "name": "Acme Dynamics - Expansion",
+    "amount": 6000,
+    "stage": "appointmentscheduled",
+    "closeDate": "2027-01-04",
+    "ownerContactId": "ct_060"
+  },
+  {
+    "id": "deal_029",
+    "companyId": "co_057",
+    "name": "Cobalt Ridge Energy - Platform license",
+    "amount": 237000,
+    "stage": "closedwon",
+    "closeDate": "2026-04-27",
+    "ownerContactId": "ct_144"
+  },
+  {
+    "id": "deal_030",
+    "companyId": "co_040",
+    "name": "Acmi Dynamics - Analytics add-on",
+    "amount": 5500,
+    "stage": "contractsent",
+    "closeDate": "2027-02-17",
+    "ownerContactId": "ct_061"
+  },
+  {
+    "id": "deal_031",
+    "companyId": "co_007",
+    "name": "Willowbrook Pharma - Analytics add-on",
+    "amount": 34500,
+    "stage": "closedlost",
+    "closeDate": "2026-10-22",
+    "ownerContactId": "ct_083"
+  },
+  {
+    "id": "deal_032",
+    "companyId": "co_044",
+    "name": "Akme Dynamics - Site rollout",
+    "amount": 77500,
+    "stage": "closedwon",
+    "closeDate": "2026-10-06",
+    "ownerContactId": "ct_097"
+  },
+  {
+    "id": "deal_033",
+    "companyId": "co_015",
+    "name": "Globalex Systems - Annual renewal",
+    "amount": 60000,
+    "stage": "qualifiedtobuy",
+    "closeDate": "2027-01-25",
+    "ownerContactId": "ct_141"
+  },
+  {
+    "id": "deal_034",
+    "companyId": "co_047",
+    "name": "Ironbridge Textiles - Annual renewal",
+    "amount": 29500,
+    "stage": "qualifiedtobuy",
+    "closeDate": "2026-12-30",
+    "ownerContactId": "ct_110"
+  },
+  {
+    "id": "deal_035",
+    "companyId": "co_010",
+    "name": "Northwind Foods - Site rollout",
+    "amount": 21000,
+    "stage": "closedlost",
+    "closeDate": "2026-08-16",
+    "ownerContactId": "ct_047"
+  },
+  {
+    "id": "deal_036",
+    "companyId": "co_041",
+    "name": "Copperleaf Retail - Starter plan",
+    "amount": 10000,
+    "stage": "closedlost",
+    "closeDate": "2026-07-18",
+    "ownerContactId": "ct_088"
+  },
+  {
+    "id": "deal_037",
+    "companyId": "co_003",
+    "name": "Pier Logistics - Expansion",
+    "amount": 112000,
+    "stage": "decisionmakerboughtin",
+    "closeDate": "2027-03-22",
+    "ownerContactId": "ct_015"
+  },
+  {
+    "id": "deal_038",
+    "companyId": "co_048",
+    "name": "Pacific Crest Energy - Analytics add-on",
+    "amount": 5500,
+    "stage": "appointmentscheduled",
+    "closeDate": "2026-11-22",
+    "ownerContactId": "ct_138"
+  },
+  {
+    "id": "deal_039",
+    "companyId": "co_002",
+    "name": "Zenyth Packaging - Starter plan",
+    "amount": 41500,
+    "stage": "decisionmakerboughtin",
+    "closeDate": "2027-01-02",
+    "ownerContactId": "ct_013"
+  },
+  {
+    "id": "deal_040",
+    "companyId": "co_023",
+    "name": "Thistle Software - Multi-year agreement",
+    "amount": 82500,
+    "stage": "contractsent",
+    "closeDate": "2026-11-17",
+    "ownerContactId": "ct_094"
+  }
+]

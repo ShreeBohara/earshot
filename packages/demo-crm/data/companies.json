@@ -1,0 +1,670 @@
+[
+  {
+    "id": "co_001",
+    "name": "Harborview Health",
+    "domain": "harborview-health.example",
+    "industry": "Healthcare",
+    "size": "1001-5000",
+    "city": "Kansas City",
+    "aliases": [
+      "Harborview"
+    ]
+  },
+  {
+    "id": "co_002",
+    "name": "Zenyth Packaging",
+    "domain": "zenyth-packaging.example",
+    "industry": "Packaging",
+    "size": "201-1000",
+    "city": "Atlanta",
+    "aliases": [
+      "Zenyth"
+    ]
+  },
+  {
+    "id": "co_003",
+    "name": "Pier Logistics",
+    "domain": "pier-logistics.example",
+    "industry": "Logistics",
+    "size": "5000+",
+    "city": "Chicago",
+    "aliases": [
+      "Pier"
+    ]
+  },
+  {
+    "id": "co_004",
+    "name": "Juniper Bay Telecom",
+    "domain": "juniper-bay-telecom.example",
+    "industry": "Telecom",
+    "size": "1001-5000",
+    "city": "Portland",
+    "aliases": [
+      "Juniper"
+    ]
+  },
+  {
+    "id": "co_005",
+    "name": "Atlas Freight",
+    "domain": "atlas-freight.example",
+    "industry": "Logistics",
+    "size": "5000+",
+    "city": "Salt Lake City",
+    "aliases": [
+      "Atlas"
+    ]
+  },
+  {
+    "id": "co_006",
+    "name": "Midland Steel Corp",
+    "domain": "midland-steel-corp.example",
+    "industry": "Manufacturing",
+    "size": "1001-5000",
+    "city": "Columbus",
+    "aliases": [
+      "Midland",
+      "MSC"
+    ]
+  },
+  {
+    "id": "co_007",
+    "name": "Willowbrook Pharma",
+    "domain": "willowbrook-pharma.example",
+    "industry": "Pharmaceuticals",
+    "size": "51-200",
+    "city": "Portland",
+    "aliases": [
+      "Willowbrook"
+    ]
+  },
+  {
+    "id": "co_008",
+    "name": "Kestral Aero",
+    "domain": "kestral-aero.example",
+    "industry": "Aerospace",
+    "size": "1-50",
+    "city": "Nashville",
+    "aliases": [
+      "Kestral"
+    ]
+  },
+  {
+    "id": "co_009",
+    "name": "Atmos Industrial",
+    "domain": "atmos-industrial.example",
+    "industry": "Manufacturing",
+    "size": "5000+",
+    "city": "Denver",
+    "aliases": [
+      "Atmos"
+    ]
+  },
+  {
+    "id": "co_010",
+    "name": "Northwind Foods",
+    "domain": "northwind-foods.example",
+    "industry": "Food & Beverage",
+    "size": "5000+",
+    "city": "Tampa",
+    "aliases": [
+      "Northwind"
+    ]
+  },
+  {
+    "id": "co_011",
+    "name": "Acme Dynamics",
+    "domain": "acme-dynamics.example",
+    "industry": "Manufacturing",
+    "size": "51-200",
+    "city": "Columbus",
+    "aliases": [
+      "Acme"
+    ]
+  },
+  {
+    "id": "co_012",
+    "name": "Nite Security Group",
+    "domain": "nite-security-group.example",
+    "industry": "Security",
+    "size": "1001-5000",
+    "city": "Pittsburgh",
+    "aliases": [
+      "Nite"
+    ]
+  },
+  {
+    "id": "co_013",
+    "name": "Oakmont Insurance",
+    "domain": "oakmont-insurance.example",
+    "industry": "Financial Services",
+    "size": "1-50",
+    "city": "Chicago",
+    "aliases": [
+      "Oakmont"
+    ]
+  },
+  {
+    "id": "co_014",
+    "name": "Atmas Group",
+    "domain": "atmas-group.example",
+    "industry": "Energy",
+    "size": "1001-5000",
+    "city": "Nashville",
+    "aliases": [
+      "Atmas"
+    ]
+  },
+  {
+    "id": "co_015",
+    "name": "Globalex Systems",
+    "domain": "globalex-systems.example",
+    "industry": "Telecom",
+    "size": "1-50",
+    "city": "Boston",
+    "aliases": [
+      "Globalex"
+    ]
+  },
+  {
+    "id": "co_016",
+    "name": "Zenith Packaging",
+    "domain": "zenith-packaging.example",
+    "industry": "Packaging",
+    "size": "51-200",
+    "city": "Madison",
+    "aliases": [
+      "Zenith"
+    ]
+  },
+  {
+    "id": "co_017",
+    "name": "Tidewater Biotech",
+    "domain": "tidewater-biotech.example",
+    "industry": "Biotech",
+    "size": "1-50",
+    "city": "Pittsburgh",
+    "aliases": [
+      "Tidewater"
+    ]
+  },
+  {
+    "id": "co_018",
+    "name": "Wright Fabrication",
+    "domain": "wright-fabrication.example",
+    "industry": "Manufacturing",
+    "size": "201-1000",
+    "city": "Raleigh",
+    "aliases": [
+      "Wright"
+    ]
+  },
+  {
+    "id": "co_019",
+    "name": "Summit Ridge Capital",
+    "domain": "summit-ridge-capital.example",
+    "industry": "Financial Services",
+    "size": "1-50",
+    "city": "Austin",
+    "aliases": [
+      "Summit"
+    ]
+  },
+  {
+    "id": "co_020",
+    "name": "Quarry Lane Media",
+    "domain": "quarry-lane-media.example",
+    "industry": "Media",
+    "size": "5000+",
+    "city": "Minneapolis",
+    "aliases": [
+      "Quarry"
+    ]
+  },
+  {
+    "id": "co_021",
+    "name": "Northwind Labs",
+    "domain": "northwind-labs.example",
+    "industry": "Biotech",
+    "size": "1-50",
+    "city": "Atlanta",
+    "aliases": [
+      "Northwind"
+    ]
+  },
+  {
+    "id": "co_022",
+    "name": "Glovex Systems",
+    "domain": "glovex-systems.example",
+    "industry": "Software",
+    "size": "201-1000",
+    "city": "Portland",
+    "aliases": [
+      "Glovex"
+    ]
+  },
+  {
+    "id": "co_023",
+    "name": "Thistle Software",
+    "domain": "thistle-software.example",
+    "industry": "Software",
+    "size": "1001-5000",
+    "city": "Seattle",
+    "aliases": [
+      "Thistle"
+    ]
+  },
+  {
+    "id": "co_024",
+    "name": "Summit Peak Capital",
+    "domain": "summit-peak-capital.example",
+    "industry": "Financial Services",
+    "size": "201-1000",
+    "city": "Kansas City",
+    "aliases": [
+      "Summit"
+    ]
+  },
+  {
+    "id": "co_025",
+    "name": "Maple & Vine Grocers",
+    "domain": "maple-and-vine-grocers.example",
+    "industry": "Retail",
+    "size": "1-50",
+    "city": "Minneapolis",
+    "aliases": [
+      "Maple"
+    ]
+  },
+  {
+    "id": "co_026",
+    "name": "Right Fabrication",
+    "domain": "right-fabrication.example",
+    "industry": "Manufacturing",
+    "size": "5000+",
+    "city": "Seattle",
+    "aliases": [
+      "Right"
+    ]
+  },
+  {
+    "id": "co_027",
+    "name": "Globelex Systems",
+    "domain": "globelex-systems.example",
+    "industry": "Software",
+    "size": "5000+",
+    "city": "Chicago",
+    "aliases": [
+      "Globelex"
+    ]
+  },
+  {
+    "id": "co_028",
+    "name": "Knight Security",
+    "domain": "knight-security.example",
+    "industry": "Security",
+    "size": "51-200",
+    "city": "Madison",
+    "aliases": [
+      "Knight"
+    ]
+  },
+  {
+    "id": "co_029",
+    "name": "Sigma Tooling",
+    "domain": "sigma-tooling.example",
+    "industry": "Manufacturing",
+    "size": "1001-5000",
+    "city": "Boston",
+    "aliases": [
+      "Sigma"
+    ]
+  },
+  {
+    "id": "co_030",
+    "name": "Opal Street Studios",
+    "domain": "opal-street-studios.example",
+    "industry": "Media",
+    "size": "51-200",
+    "city": "Denver",
+    "aliases": [
+      "Opal"
+    ]
+  },
+  {
+    "id": "co_031",
+    "name": "Peer Logistics",
+    "domain": "peer-logistics.example",
+    "industry": "Logistics",
+    "size": "51-200",
+    "city": "Austin",
+    "aliases": [
+      "Peer"
+    ]
+  },
+  {
+    "id": "co_032",
+    "name": "Consolidated Parts & Supply",
+    "domain": "consolidated-parts-and-supply.example",
+    "industry": "Wholesale",
+    "size": "201-1000",
+    "city": "Kansas City",
+    "aliases": [
+      "Consolidated",
+      "CPS"
+    ]
+  },
+  {
+    "id": "co_033",
+    "name": "Marsh Medical",
+    "domain": "marsh-medical.example",
+    "industry": "Healthcare",
+    "size": "201-1000",
+    "city": "Phoenix",
+    "aliases": [
+      "Marsh"
+    ]
+  },
+  {
+    "id": "co_034",
+    "name": "Pacific Coast Electric",
+    "domain": "pacific-coast-electric.example",
+    "industry": "Utilities",
+    "size": "1001-5000",
+    "city": "Austin",
+    "aliases": [
+      "Pacific",
+      "PCE"
+    ]
+  },
+  {
+    "id": "co_035",
+    "name": "Rite Fabrication",
+    "domain": "rite-fabrication.example",
+    "industry": "Construction",
+    "size": "1001-5000",
+    "city": "Kansas City",
+    "aliases": [
+      "Rite"
+    ]
+  },
+  {
+    "id": "co_036",
+    "name": "Northwind Logistics",
+    "domain": "northwind-logistics.example",
+    "industry": "Logistics",
+    "size": "1-50",
+    "city": "Atlanta",
+    "aliases": [
+      "Northwind"
+    ]
+  },
+  {
+    "id": "co_037",
+    "name": "Blue Harbor Analytics",
+    "domain": "blue-harbor-analytics.example",
+    "industry": "Software",
+    "size": "5000+",
+    "city": "Salt Lake City",
+    "aliases": [
+      "Blue",
+      "BHA"
+    ]
+  },
+  {
+    "id": "co_038",
+    "name": "Delta Crossing Rail",
+    "domain": "delta-crossing-rail.example",
+    "industry": "Transportation",
+    "size": "51-200",
+    "city": "Phoenix",
+    "aliases": [
+      "Delta"
+    ]
+  },
+  {
+    "id": "co_039",
+    "name": "Sparrow Robotics",
+    "domain": "sparrow-robotics.example",
+    "industry": "Manufacturing",
+    "size": "1-50",
+    "city": "Columbus",
+    "aliases": [
+      "Sparrow"
+    ]
+  },
+  {
+    "id": "co_040",
+    "name": "Acmi Dynamics",
+    "domain": "acmi-dynamics.example",
+    "industry": "Logistics",
+    "size": "51-200",
+    "city": "Raleigh",
+    "aliases": [
+      "Acmi"
+    ]
+  },
+  {
+    "id": "co_041",
+    "name": "Copperleaf Retail",
+    "domain": "copperleaf-retail.example",
+    "industry": "Retail",
+    "size": "201-1000",
+    "city": "Pittsburgh",
+    "aliases": [
+      "Copperleaf"
+    ]
+  },
+  {
+    "id": "co_042",
+    "name": "Redwood Robotics",
+    "domain": "redwood-robotics.example",
+    "industry": "Manufacturing",
+    "size": "5000+",
+    "city": "Columbus",
+    "aliases": [
+      "Redwood"
+    ]
+  },
+  {
+    "id": "co_043",
+    "name": "Meridian Supply Co",
+    "domain": "meridian-supply-co.example",
+    "industry": "Wholesale",
+    "size": "5000+",
+    "city": "Nashville",
+    "aliases": [
+      "Meridian",
+      "MSC"
+    ]
+  },
+  {
+    "id": "co_044",
+    "name": "Akme Dynamics",
+    "domain": "akme-dynamics.example",
+    "industry": "Manufacturing",
+    "size": "1-50",
+    "city": "Tampa",
+    "aliases": [
+      "Akme"
+    ]
+  },
+  {
+    "id": "co_045",
+    "name": "Summit Ridge Medical",
+    "domain": "summit-ridge-medical.example",
+    "industry": "Healthcare",
+    "size": "1-50",
+    "city": "Columbus",
+    "aliases": [
+      "Summit"
+    ]
+  },
+  {
+    "id": "co_046",
+    "name": "Harborview Marine",
+    "domain": "harborview-marine.example",
+    "industry": "Maritime",
+    "size": "1001-5000",
+    "city": "Columbus",
+    "aliases": [
+      "Harborview"
+    ]
+  },
+  {
+    "id": "co_047",
+    "name": "Ironbridge Textiles",
+    "domain": "ironbridge-textiles.example",
+    "industry": "Apparel",
+    "size": "1001-5000",
+    "city": "Boston",
+    "aliases": [
+      "Ironbridge"
+    ]
+  },
+  {
+    "id": "co_048",
+    "name": "Pacific Crest Energy",
+    "domain": "pacific-crest-energy.example",
+    "industry": "Energy",
+    "size": "201-1000",
+    "city": "Columbus",
+    "aliases": [
+      "Pacific",
+      "PCE"
+    ]
+  },
+  {
+    "id": "co_049",
+    "name": "Basalt Mining",
+    "domain": "basalt-mining.example",
+    "industry": "Mining",
+    "size": "51-200",
+    "city": "Chicago",
+    "aliases": [
+      "Basalt"
+    ]
+  },
+  {
+    "id": "co_050",
+    "name": "Bay Harbor Associates",
+    "domain": "bay-harbor-associates.example",
+    "industry": "Consulting",
+    "size": "201-1000",
+    "city": "Chicago",
+    "aliases": [
+      "Bay",
+      "BHA"
+    ]
+  },
+  {
+    "id": "co_051",
+    "name": "Fernhill Education",
+    "domain": "fernhill-education.example",
+    "industry": "Education",
+    "size": "201-1000",
+    "city": "Raleigh",
+    "aliases": [
+      "Fernhill"
+    ]
+  },
+  {
+    "id": "co_052",
+    "name": "Sygma Tooling",
+    "domain": "sygma-tooling.example",
+    "industry": "Manufacturing",
+    "size": "1001-5000",
+    "city": "San Diego",
+    "aliases": [
+      "Sygma"
+    ]
+  },
+  {
+    "id": "co_053",
+    "name": "Lantern Hospitality",
+    "domain": "lantern-hospitality.example",
+    "industry": "Hospitality",
+    "size": "5000+",
+    "city": "Denver",
+    "aliases": [
+      "Lantern"
+    ]
+  },
+  {
+    "id": "co_054",
+    "name": "Coastal Power Systems",
+    "domain": "coastal-power-systems.example",
+    "industry": "Energy",
+    "size": "1-50",
+    "city": "Atlanta",
+    "aliases": [
+      "Coastal",
+      "CPS"
+    ]
+  },
+  {
+    "id": "co_055",
+    "name": "Verdant Agritech",
+    "domain": "verdant-agritech.example",
+    "industry": "Agriculture",
+    "size": "51-200",
+    "city": "Salt Lake City",
+    "aliases": [
+      "Verdant"
+    ]
+  },
+  {
+    "id": "co_056",
+    "name": "Kestrel Aero",
+    "domain": "kestrel-aero.example",
+    "industry": "Aerospace",
+    "size": "1001-5000",
+    "city": "Minneapolis",
+    "aliases": [
+      "Kestrel"
+    ]
+  },
+  {
+    "id": "co_057",
+    "name": "Cobalt Ridge Energy",
+    "domain": "cobalt-ridge-energy.example",
+    "industry": "Energy",
+    "size": "51-200",
+    "city": "Seattle",
+    "aliases": [
+      "Cobalt"
+    ]
+  },
+  {
+    "id": "co_058",
+    "name": "Marshal Medical",
+    "domain": "marshal-medical.example",
+    "industry": "Healthcare",
+    "size": "201-1000",
+    "city": "Tampa",
+    "aliases": [
+      "Marshal"
+    ]
+  },
+  {
+    "id": "co_059",
+    "name": "Granite State Builders",
+    "domain": "granite-state-builders.example",
+    "industry": "Construction",
+    "size": "51-200",
+    "city": "Tampa",
+    "aliases": [
+      "Granite"
+    ]
+  },
+  {
+    "id": "co_060",
+    "name": "Redwood Analytics",
+    "domain": "redwood-analytics.example",
+    "industry": "Software",
+    "size": "1-50",
+    "city": "Tampa",
+    "aliases": [
+      "Redwood"
+    ]
+  }
+]

@@ -1,0 +1,329 @@
+[
+  {
+    "id": "cg_01",
+    "kind": "company",
+    "confusion": "spelling",
+    "memberIds": [
+      "co_011",
+      "co_044",
+      "co_040"
+    ]
+  },
+  {
+    "id": "cg_02",
+    "kind": "company",
+    "confusion": "phonetic",
+    "memberIds": [
+      "co_009",
+      "co_005",
+      "co_014"
+    ]
+  },
+  {
+    "id": "cg_03",
+    "kind": "company",
+    "confusion": "phonetic",
+    "memberIds": [
+      "co_027",
+      "co_022",
+      "co_015"
+    ]
+  },
+  {
+    "id": "cg_04",
+    "kind": "company",
+    "confusion": "shared-stem",
+    "memberIds": [
+      "co_021",
+      "co_036",
+      "co_010"
+    ]
+  },
+  {
+    "id": "cg_05",
+    "kind": "company",
+    "confusion": "abbreviation",
+    "memberIds": [
+      "co_043",
+      "co_006"
+    ]
+  },
+  {
+    "id": "cg_06",
+    "kind": "company",
+    "confusion": "abbreviation",
+    "memberIds": [
+      "co_048",
+      "co_034"
+    ]
+  },
+  {
+    "id": "cg_07",
+    "kind": "company",
+    "confusion": "abbreviation",
+    "memberIds": [
+      "co_037",
+      "co_050"
+    ]
+  },
+  {
+    "id": "cg_08",
+    "kind": "company",
+    "confusion": "abbreviation",
+    "memberIds": [
+      "co_032",
+      "co_054"
+    ]
+  },
+  {
+    "id": "cg_09",
+    "kind": "company",
+    "confusion": "shared-stem",
+    "memberIds": [
+      "co_019",
+      "co_045",
+      "co_024"
+    ]
+  },
+  {
+    "id": "cg_10",
+    "kind": "company",
+    "confusion": "shared-stem",
+    "memberIds": [
+      "co_001",
+      "co_046"
+    ]
+  },
+  {
+    "id": "cg_11",
+    "kind": "company",
+    "confusion": "shared-stem",
+    "memberIds": [
+      "co_060",
+      "co_042"
+    ]
+  },
+  {
+    "id": "cg_12",
+    "kind": "company",
+    "confusion": "spelling",
+    "memberIds": [
+      "co_056",
+      "co_008"
+    ]
+  },
+  {
+    "id": "cg_13",
+    "kind": "company",
+    "confusion": "spelling",
+    "memberIds": [
+      "co_029",
+      "co_052"
+    ]
+  },
+  {
+    "id": "cg_14",
+    "kind": "company",
+    "confusion": "spelling",
+    "memberIds": [
+      "co_016",
+      "co_002"
+    ]
+  },
+  {
+    "id": "cg_15",
+    "kind": "company",
+    "confusion": "phonetic",
+    "memberIds": [
+      "co_028",
+      "co_012"
+    ]
+  },
+  {
+    "id": "cg_16",
+    "kind": "company",
+    "confusion": "phonetic",
+    "memberIds": [
+      "co_018",
+      "co_026",
+      "co_035"
+    ]
+  },
+  {
+    "id": "cg_17",
+    "kind": "company",
+    "confusion": "phonetic",
+    "memberIds": [
+      "co_003",
+      "co_031"
+    ]
+  },
+  {
+    "id": "cg_18",
+    "kind": "company",
+    "confusion": "phonetic",
+    "memberIds": [
+      "co_033",
+      "co_058"
+    ]
+  },
+  {
+    "id": "cg_19",
+    "kind": "contact",
+    "confusion": "phonetic",
+    "memberIds": [
+      "ct_045",
+      "ct_145",
+      "ct_112"
+    ]
+  },
+  {
+    "id": "cg_20",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_064",
+      "ct_078",
+      "ct_093"
+    ]
+  },
+  {
+    "id": "cg_21",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_068",
+      "ct_065"
+    ]
+  },
+  {
+    "id": "cg_22",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_134",
+      "ct_072",
+      "ct_074"
+    ]
+  },
+  {
+    "id": "cg_23",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_059",
+      "ct_124"
+    ]
+  },
+  {
+    "id": "cg_24",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_007",
+      "ct_042"
+    ]
+  },
+  {
+    "id": "cg_25",
+    "kind": "contact",
+    "confusion": "phonetic",
+    "memberIds": [
+      "ct_037",
+      "ct_092"
+    ]
+  },
+  {
+    "id": "cg_26",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_062",
+      "ct_033",
+      "ct_039"
+    ]
+  },
+  {
+    "id": "cg_27",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_141",
+      "ct_149"
+    ]
+  },
+  {
+    "id": "cg_28",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_085",
+      "ct_080"
+    ]
+  },
+  {
+    "id": "cg_29",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_060",
+      "ct_129",
+      "ct_038"
+    ]
+  },
+  {
+    "id": "cg_30",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_088",
+      "ct_143",
+      "ct_119"
+    ]
+  },
+  {
+    "id": "cg_31",
+    "kind": "contact",
+    "confusion": "phonetic",
+    "memberIds": [
+      "ct_118",
+      "ct_089"
+    ]
+  },
+  {
+    "id": "cg_32",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_005",
+      "ct_030"
+    ]
+  },
+  {
+    "id": "cg_33",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_111",
+      "ct_140"
+    ]
+  },
+  {
+    "id": "cg_34",
+    "kind": "contact",
+    "confusion": "spelling",
+    "memberIds": [
+      "ct_024",
+      "ct_148"
+    ]
+  },
+  {
+    "id": "cg_35",
+    "kind": "contact",
+    "confusion": "phonetic",
+    "memberIds": [
+      "ct_135",
+      "ct_004"
+    ]
+  }
+]

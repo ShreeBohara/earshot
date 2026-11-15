@@ -1,0 +1,3010 @@
+[
+  {
+    "id": "act_0001",
+    "companyId": "co_001",
+    "contactId": "ct_020",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-05-14T16:45:00.000Z",
+    "dueAt": "2026-05-29T16:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0002",
+    "companyId": "co_001",
+    "contactId": "ct_020",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-17T16:45:00.000Z"
+  },
+  {
+    "id": "act_0003",
+    "companyId": "co_001",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-06-24T16:15:00.000Z"
+  },
+  {
+    "id": "act_0004",
+    "companyId": "co_001",
+    "contactId": "ct_082",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-06-27T12:15:00.000Z"
+  },
+  {
+    "id": "act_0005",
+    "companyId": "co_001",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-09-20T11:45:00.000Z",
+    "dueAt": "2026-10-06T11:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0006",
+    "companyId": "co_001",
+    "contactId": "ct_099",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-09-30T10:00:00.000Z",
+    "dueAt": "2026-10-16T10:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0007",
+    "companyId": "co_001",
+    "contactId": "ct_082",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-10-31T09:15:00.000Z"
+  },
+  {
+    "id": "act_0008",
+    "companyId": "co_002",
+    "contactId": "ct_013",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-05-21T17:45:00.000Z"
+  },
+  {
+    "id": "act_0009",
+    "companyId": "co_002",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-07-12T16:15:00.000Z"
+  },
+  {
+    "id": "act_0010",
+    "companyId": "co_002",
+    "contactId": "ct_013",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-07-30T12:00:00.000Z"
+  },
+  {
+    "id": "act_0011",
+    "companyId": "co_002",
+    "contactId": "ct_028",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Check in after their board meeting.",
+    "at": "2026-08-23T15:00:00.000Z",
+    "dueAt": "2026-09-01T15:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0012",
+    "companyId": "co_002",
+    "contactId": "ct_028",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-09-29T11:45:00.000Z"
+  },
+  {
+    "id": "act_0013",
+    "companyId": "co_003",
+    "contactId": "ct_079",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-05-06T15:15:00.000Z"
+  },
+  {
+    "id": "act_0014",
+    "companyId": "co_003",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-15T13:15:00.000Z"
+  },
+  {
+    "id": "act_0015",
+    "companyId": "co_003",
+    "contactId": "ct_075",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-06-01T14:15:00.000Z"
+  },
+  {
+    "id": "act_0016",
+    "companyId": "co_003",
+    "contactId": "ct_075",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-06-27T12:30:00.000Z",
+    "dueAt": "2026-07-17T12:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0017",
+    "companyId": "co_003",
+    "contactId": "ct_075",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-08-20T17:45:00.000Z",
+    "dueAt": "2026-09-08T17:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0018",
+    "companyId": "co_003",
+    "contactId": "ct_079",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Check in after their board meeting.",
+    "at": "2026-09-23T14:00:00.000Z",
+    "dueAt": "2026-10-04T14:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0019",
+    "companyId": "co_003",
+    "contactId": "ct_075",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-09-23T16:30:00.000Z"
+  },
+  {
+    "id": "act_0020",
+    "companyId": "co_003",
+    "contactId": "ct_075",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-09-24T09:15:00.000Z"
+  },
+  {
+    "id": "act_0021",
+    "companyId": "co_004",
+    "contactId": "ct_092",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-06-10T17:15:00.000Z"
+  },
+  {
+    "id": "act_0022",
+    "companyId": "co_004",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Check in after their board meeting.",
+    "at": "2026-06-26T14:00:00.000Z",
+    "dueAt": "2026-07-02T14:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0023",
+    "companyId": "co_004",
+    "contactId": "ct_092",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Check in after their board meeting.",
+    "at": "2026-08-06T17:00:00.000Z",
+    "dueAt": "2026-08-25T17:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0024",
+    "companyId": "co_004",
+    "contactId": "ct_092",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-08-22T14:15:00.000Z"
+  },
+  {
+    "id": "act_0025",
+    "companyId": "co_004",
+    "contactId": "ct_092",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-08-23T15:00:00.000Z"
+  },
+  {
+    "id": "act_0026",
+    "companyId": "co_004",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-10-31T10:00:00.000Z"
+  },
+  {
+    "id": "act_0027",
+    "companyId": "co_005",
+    "contactId": "ct_041",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-05-09T17:45:00.000Z",
+    "dueAt": "2026-05-13T17:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0028",
+    "companyId": "co_005",
+    "contactId": "ct_147",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-05-16T09:30:00.000Z",
+    "dueAt": "2026-06-14T09:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0029",
+    "companyId": "co_005",
+    "contactId": "ct_041",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-30T13:00:00.000Z"
+  },
+  {
+    "id": "act_0030",
+    "companyId": "co_005",
+    "contactId": "ct_147",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-06-12T13:45:00.000Z"
+  },
+  {
+    "id": "act_0031",
+    "companyId": "co_005",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-07-31T14:15:00.000Z"
+  },
+  {
+    "id": "act_0032",
+    "companyId": "co_005",
+    "contactId": "ct_041",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-09-19T13:00:00.000Z",
+    "dueAt": "2026-10-05T13:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0033",
+    "companyId": "co_006",
+    "contactId": "ct_104",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-06-01T15:00:00.000Z"
+  },
+  {
+    "id": "act_0034",
+    "companyId": "co_006",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-06-20T10:30:00.000Z"
+  },
+  {
+    "id": "act_0035",
+    "companyId": "co_006",
+    "contactId": "ct_104",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-07-18T15:45:00.000Z"
+  },
+  {
+    "id": "act_0036",
+    "companyId": "co_006",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-07-27T17:00:00.000Z"
+  },
+  {
+    "id": "act_0037",
+    "companyId": "co_006",
+    "contactId": "ct_104",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-09-18T17:45:00.000Z"
+  },
+  {
+    "id": "act_0038",
+    "companyId": "co_007",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-04T17:00:00.000Z",
+    "dueAt": "2026-06-07T17:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0039",
+    "companyId": "co_007",
+    "contactId": "ct_083",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-06-22T12:00:00.000Z"
+  },
+  {
+    "id": "act_0040",
+    "companyId": "co_007",
+    "contactId": "ct_083",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-07-09T09:30:00.000Z"
+  },
+  {
+    "id": "act_0041",
+    "companyId": "co_007",
+    "contactId": "ct_083",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-07-23T10:30:00.000Z"
+  },
+  {
+    "id": "act_0042",
+    "companyId": "co_007",
+    "contactId": "ct_083",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-09-29T12:15:00.000Z",
+    "dueAt": "2026-10-24T12:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0043",
+    "companyId": "co_007",
+    "contactId": "ct_083",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-10-10T16:45:00.000Z"
+  },
+  {
+    "id": "act_0044",
+    "companyId": "co_008",
+    "contactId": "ct_011",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-07-05T11:30:00.000Z",
+    "dueAt": "2026-07-24T11:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0045",
+    "companyId": "co_008",
+    "contactId": "ct_011",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-09-27T11:45:00.000Z"
+  },
+  {
+    "id": "act_0046",
+    "companyId": "co_008",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-10-04T13:30:00.000Z"
+  },
+  {
+    "id": "act_0047",
+    "companyId": "co_008",
+    "contactId": "ct_011",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-10-24T14:15:00.000Z"
+  },
+  {
+    "id": "act_0048",
+    "companyId": "co_008",
+    "contactId": "ct_011",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-10-24T15:45:00.000Z",
+    "dueAt": "2026-11-22T15:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0049",
+    "companyId": "co_009",
+    "contactId": "ct_068",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-05-22T15:15:00.000Z"
+  },
+  {
+    "id": "act_0050",
+    "companyId": "co_009",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-06-04T16:15:00.000Z"
+  },
+  {
+    "id": "act_0051",
+    "companyId": "co_009",
+    "contactId": "ct_067",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-06-05T10:30:00.000Z"
+  },
+  {
+    "id": "act_0052",
+    "companyId": "co_009",
+    "contactId": "ct_003",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-07-23T10:00:00.000Z"
+  },
+  {
+    "id": "act_0053",
+    "companyId": "co_009",
+    "contactId": "ct_003",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-08-07T17:30:00.000Z"
+  },
+  {
+    "id": "act_0054",
+    "companyId": "co_009",
+    "contactId": "ct_068",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-09-06T16:00:00.000Z"
+  },
+  {
+    "id": "act_0055",
+    "companyId": "co_009",
+    "contactId": "ct_067",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-09-10T09:15:00.000Z"
+  },
+  {
+    "id": "act_0056",
+    "companyId": "co_009",
+    "contactId": "ct_003",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-10-30T09:30:00.000Z",
+    "dueAt": "2026-11-29T09:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0057",
+    "companyId": "co_010",
+    "contactId": "ct_047",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-05-26T10:45:00.000Z",
+    "dueAt": "2026-06-16T10:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0058",
+    "companyId": "co_010",
+    "contactId": "ct_119",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-07-09T14:30:00.000Z",
+    "dueAt": "2026-07-15T14:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0059",
+    "companyId": "co_010",
+    "contactId": "ct_119",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-07-31T12:15:00.000Z",
+    "dueAt": "2026-08-12T12:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0060",
+    "companyId": "co_010",
+    "contactId": "ct_046",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-10-01T16:00:00.000Z"
+  },
+  {
+    "id": "act_0061",
+    "companyId": "co_010",
+    "contactId": "ct_119",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-10-01T17:30:00.000Z"
+  },
+  {
+    "id": "act_0062",
+    "companyId": "co_011",
+    "contactId": "ct_045",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-24T11:00:00.000Z"
+  },
+  {
+    "id": "act_0063",
+    "companyId": "co_011",
+    "contactId": "ct_060",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-06-01T13:00:00.000Z"
+  },
+  {
+    "id": "act_0064",
+    "companyId": "co_011",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-07-30T09:45:00.000Z"
+  },
+  {
+    "id": "act_0065",
+    "companyId": "co_012",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-05-05T17:00:00.000Z"
+  },
+  {
+    "id": "act_0066",
+    "companyId": "co_012",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-06-17T10:30:00.000Z"
+  },
+  {
+    "id": "act_0067",
+    "companyId": "co_012",
+    "contactId": "ct_018",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-07-08T09:45:00.000Z",
+    "dueAt": "2026-08-05T09:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0068",
+    "companyId": "co_012",
+    "contactId": "ct_044",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-07-27T16:15:00.000Z"
+  },
+  {
+    "id": "act_0069",
+    "companyId": "co_012",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-09-21T14:30:00.000Z"
+  },
+  {
+    "id": "act_0070",
+    "companyId": "co_012",
+    "contactId": "ct_018",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-10-01T11:30:00.000Z"
+  },
+  {
+    "id": "act_0071",
+    "companyId": "co_012",
+    "contactId": "ct_018",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-10-01T14:15:00.000Z"
+  },
+  {
+    "id": "act_0072",
+    "companyId": "co_013",
+    "contactId": "ct_073",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-05-30T17:00:00.000Z"
+  },
+  {
+    "id": "act_0073",
+    "companyId": "co_013",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-07-19T12:45:00.000Z",
+    "dueAt": "2026-07-22T12:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0074",
+    "companyId": "co_013",
+    "contactId": "ct_073",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-08-19T10:45:00.000Z"
+  },
+  {
+    "id": "act_0075",
+    "companyId": "co_013",
+    "contactId": "ct_073",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-09-02T17:45:00.000Z"
+  },
+  {
+    "id": "act_0076",
+    "companyId": "co_013",
+    "contactId": "ct_071",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-10-24T14:00:00.000Z",
+    "dueAt": "2026-11-05T14:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0077",
+    "companyId": "co_014",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-05-07T13:30:00.000Z",
+    "dueAt": "2026-05-22T13:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0078",
+    "companyId": "co_014",
+    "contactId": "ct_051",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-06-02T11:30:00.000Z"
+  },
+  {
+    "id": "act_0079",
+    "companyId": "co_014",
+    "contactId": "ct_065",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-26T11:15:00.000Z",
+    "dueAt": "2026-07-03T11:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0080",
+    "companyId": "co_014",
+    "contactId": "ct_019",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-06-28T10:00:00.000Z",
+    "dueAt": "2026-07-20T10:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0081",
+    "companyId": "co_015",
+    "contactId": "ct_062",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-09-05T17:45:00.000Z"
+  },
+  {
+    "id": "act_0082",
+    "companyId": "co_015",
+    "contactId": "ct_141",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-10-29T14:45:00.000Z"
+  },
+  {
+    "id": "act_0083",
+    "companyId": "co_016",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-05-10T15:00:00.000Z"
+  },
+  {
+    "id": "act_0084",
+    "companyId": "co_016",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-16T15:15:00.000Z"
+  },
+  {
+    "id": "act_0085",
+    "companyId": "co_016",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-06-03T10:15:00.000Z"
+  },
+  {
+    "id": "act_0086",
+    "companyId": "co_016",
+    "contactId": "ct_039",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-06-28T10:45:00.000Z"
+  },
+  {
+    "id": "act_0087",
+    "companyId": "co_016",
+    "contactId": "ct_049",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-08-25T15:00:00.000Z"
+  },
+  {
+    "id": "act_0088",
+    "companyId": "co_016",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-09-05T14:00:00.000Z"
+  },
+  {
+    "id": "act_0089",
+    "companyId": "co_016",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-10-19T16:30:00.000Z"
+  },
+  {
+    "id": "act_0090",
+    "companyId": "co_017",
+    "contactId": "ct_108",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-05-31T16:30:00.000Z",
+    "dueAt": "2026-06-06T16:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0091",
+    "companyId": "co_017",
+    "contactId": "ct_085",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-06-14T16:45:00.000Z"
+  },
+  {
+    "id": "act_0092",
+    "companyId": "co_017",
+    "contactId": "ct_021",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-28T17:45:00.000Z",
+    "dueAt": "2026-07-16T17:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0093",
+    "companyId": "co_017",
+    "contactId": "ct_101",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-08-03T11:15:00.000Z"
+  },
+  {
+    "id": "act_0094",
+    "companyId": "co_017",
+    "contactId": "ct_021",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-10-23T10:00:00.000Z"
+  },
+  {
+    "id": "act_0095",
+    "companyId": "co_018",
+    "contactId": "ct_069",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-05-06T11:45:00.000Z"
+  },
+  {
+    "id": "act_0096",
+    "companyId": "co_018",
+    "contactId": "ct_025",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-05-18T17:45:00.000Z",
+    "dueAt": "2026-05-23T17:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0097",
+    "companyId": "co_018",
+    "contactId": "ct_069",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-07-14T12:30:00.000Z"
+  },
+  {
+    "id": "act_0098",
+    "companyId": "co_018",
+    "contactId": "ct_069",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-08-20T11:45:00.000Z"
+  },
+  {
+    "id": "act_0099",
+    "companyId": "co_018",
+    "contactId": "ct_025",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-09-16T10:15:00.000Z",
+    "dueAt": "2026-10-13T10:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0100",
+    "companyId": "co_018",
+    "contactId": "ct_069",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-10-28T15:00:00.000Z",
+    "dueAt": "2026-11-13T15:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0101",
+    "companyId": "co_019",
+    "contactId": "ct_095",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-05-17T12:15:00.000Z",
+    "dueAt": "2026-05-30T12:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0102",
+    "companyId": "co_019",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-07-06T13:15:00.000Z"
+  },
+  {
+    "id": "act_0103",
+    "companyId": "co_019",
+    "contactId": "ct_077",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-07-11T13:00:00.000Z",
+    "dueAt": "2026-07-18T13:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0104",
+    "companyId": "co_019",
+    "contactId": "ct_077",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-07-13T14:30:00.000Z"
+  },
+  {
+    "id": "act_0105",
+    "companyId": "co_019",
+    "contactId": "ct_095",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-08-11T09:15:00.000Z",
+    "dueAt": "2026-08-25T09:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0106",
+    "companyId": "co_019",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-09-12T15:45:00.000Z",
+    "dueAt": "2026-09-19T15:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0107",
+    "companyId": "co_019",
+    "contactId": "ct_109",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-09-20T17:15:00.000Z",
+    "dueAt": "2026-10-19T17:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0108",
+    "companyId": "co_020",
+    "contactId": "ct_053",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-06-15T16:45:00.000Z"
+  },
+  {
+    "id": "act_0109",
+    "companyId": "co_020",
+    "contactId": "ct_146",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-18T09:45:00.000Z",
+    "dueAt": "2026-07-14T09:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0110",
+    "companyId": "co_020",
+    "contactId": "ct_053",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-10-10T09:30:00.000Z"
+  },
+  {
+    "id": "act_0111",
+    "companyId": "co_020",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-10-10T10:30:00.000Z"
+  },
+  {
+    "id": "act_0112",
+    "companyId": "co_020",
+    "contactId": "ct_072",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-10-18T17:15:00.000Z"
+  },
+  {
+    "id": "act_0113",
+    "companyId": "co_021",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-24T10:45:00.000Z"
+  },
+  {
+    "id": "act_0114",
+    "companyId": "co_021",
+    "contactId": "ct_024",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-16T09:45:00.000Z",
+    "dueAt": "2026-06-24T09:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0115",
+    "companyId": "co_021",
+    "contactId": "ct_140",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-07-07T10:45:00.000Z"
+  },
+  {
+    "id": "act_0116",
+    "companyId": "co_021",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-07-25T11:15:00.000Z"
+  },
+  {
+    "id": "act_0117",
+    "companyId": "co_021",
+    "contactId": "ct_042",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-08-12T12:00:00.000Z"
+  },
+  {
+    "id": "act_0118",
+    "companyId": "co_021",
+    "contactId": "ct_140",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-09-19T14:45:00.000Z"
+  },
+  {
+    "id": "act_0119",
+    "companyId": "co_021",
+    "contactId": "ct_024",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-10-09T15:30:00.000Z"
+  },
+  {
+    "id": "act_0120",
+    "companyId": "co_022",
+    "contactId": "ct_081",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-10T16:30:00.000Z",
+    "dueAt": "2026-06-25T16:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0121",
+    "companyId": "co_022",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Check in after their board meeting.",
+    "at": "2026-07-07T16:15:00.000Z",
+    "dueAt": "2026-07-19T16:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0122",
+    "companyId": "co_022",
+    "contactId": "ct_081",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-08-21T17:30:00.000Z"
+  },
+  {
+    "id": "act_0123",
+    "companyId": "co_022",
+    "contactId": "ct_081",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-08-24T10:30:00.000Z"
+  },
+  {
+    "id": "act_0124",
+    "companyId": "co_022",
+    "contactId": "ct_081",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-09-09T11:30:00.000Z"
+  },
+  {
+    "id": "act_0125",
+    "companyId": "co_022",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-09-12T17:00:00.000Z",
+    "dueAt": "2026-10-01T17:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0126",
+    "companyId": "co_022",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-09-27T17:30:00.000Z",
+    "dueAt": "2026-10-26T17:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0127",
+    "companyId": "co_023",
+    "contactId": "ct_107",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-05-13T10:15:00.000Z"
+  },
+  {
+    "id": "act_0128",
+    "companyId": "co_023",
+    "contactId": "ct_107",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-05-20T13:45:00.000Z"
+  },
+  {
+    "id": "act_0129",
+    "companyId": "co_023",
+    "contactId": "ct_038",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-07T16:30:00.000Z",
+    "dueAt": "2026-06-28T16:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0130",
+    "companyId": "co_023",
+    "contactId": "ct_107",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-07-02T14:30:00.000Z"
+  },
+  {
+    "id": "act_0131",
+    "companyId": "co_023",
+    "contactId": "ct_107",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-07-08T13:45:00.000Z",
+    "dueAt": "2026-07-15T13:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0132",
+    "companyId": "co_023",
+    "contactId": "ct_038",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-09-16T10:15:00.000Z",
+    "dueAt": "2026-10-16T10:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0133",
+    "companyId": "co_023",
+    "contactId": "ct_094",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-09-25T17:45:00.000Z"
+  },
+  {
+    "id": "act_0134",
+    "companyId": "co_024",
+    "contactId": "ct_030",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-02T09:45:00.000Z",
+    "dueAt": "2026-06-06T09:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0135",
+    "companyId": "co_024",
+    "contactId": "ct_034",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-07-21T14:45:00.000Z"
+  },
+  {
+    "id": "act_0136",
+    "companyId": "co_024",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-07-23T13:45:00.000Z",
+    "dueAt": "2026-08-22T13:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0137",
+    "companyId": "co_024",
+    "contactId": "ct_030",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-08-21T11:30:00.000Z"
+  },
+  {
+    "id": "act_0138",
+    "companyId": "co_024",
+    "contactId": "ct_030",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-09-05T16:45:00.000Z"
+  },
+  {
+    "id": "act_0139",
+    "companyId": "co_024",
+    "contactId": "ct_030",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-10-05T17:45:00.000Z",
+    "dueAt": "2026-10-31T17:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0140",
+    "companyId": "co_024",
+    "contactId": "ct_034",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Check in after their board meeting.",
+    "at": "2026-10-28T15:15:00.000Z",
+    "dueAt": "2026-11-27T15:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0141",
+    "companyId": "co_025",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-06-19T15:15:00.000Z",
+    "dueAt": "2026-07-10T15:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0142",
+    "companyId": "co_025",
+    "contactId": "ct_009",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-26T17:00:00.000Z",
+    "dueAt": "2026-07-11T17:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0143",
+    "companyId": "co_025",
+    "contactId": "ct_009",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Check in after their board meeting.",
+    "at": "2026-08-03T11:45:00.000Z",
+    "dueAt": "2026-08-14T11:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0144",
+    "companyId": "co_025",
+    "contactId": "ct_009",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-08-29T16:45:00.000Z"
+  },
+  {
+    "id": "act_0145",
+    "companyId": "co_025",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-10-14T14:15:00.000Z"
+  },
+  {
+    "id": "act_0146",
+    "companyId": "co_026",
+    "contactId": "ct_063",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-05-14T10:45:00.000Z",
+    "dueAt": "2026-05-23T10:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0147",
+    "companyId": "co_026",
+    "contactId": "ct_012",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-06-25T17:15:00.000Z"
+  },
+  {
+    "id": "act_0148",
+    "companyId": "co_026",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-06-28T16:15:00.000Z"
+  },
+  {
+    "id": "act_0149",
+    "companyId": "co_026",
+    "contactId": "ct_012",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-07-27T11:15:00.000Z",
+    "dueAt": "2026-08-04T11:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0150",
+    "companyId": "co_026",
+    "contactId": "ct_012",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-09-04T17:30:00.000Z",
+    "dueAt": "2026-09-29T17:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0151",
+    "companyId": "co_026",
+    "contactId": "ct_063",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-09-05T13:30:00.000Z"
+  },
+  {
+    "id": "act_0152",
+    "companyId": "co_026",
+    "contactId": "ct_063",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-09-16T17:30:00.000Z"
+  },
+  {
+    "id": "act_0153",
+    "companyId": "co_026",
+    "contactId": "ct_063",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-09-19T17:00:00.000Z"
+  },
+  {
+    "id": "act_0154",
+    "companyId": "co_027",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-12T16:30:00.000Z"
+  },
+  {
+    "id": "act_0155",
+    "companyId": "co_027",
+    "contactId": "ct_005",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-20T17:30:00.000Z"
+  },
+  {
+    "id": "act_0156",
+    "companyId": "co_027",
+    "contactId": "ct_080",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-06-09T14:00:00.000Z"
+  },
+  {
+    "id": "act_0157",
+    "companyId": "co_027",
+    "contactId": "ct_080",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-08-07T14:00:00.000Z"
+  },
+  {
+    "id": "act_0158",
+    "companyId": "co_027",
+    "contactId": "ct_080",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-08-10T11:45:00.000Z"
+  },
+  {
+    "id": "act_0159",
+    "companyId": "co_027",
+    "contactId": "ct_005",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-09-17T14:30:00.000Z"
+  },
+  {
+    "id": "act_0160",
+    "companyId": "co_027",
+    "contactId": "ct_080",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-09-29T10:45:00.000Z"
+  },
+  {
+    "id": "act_0161",
+    "companyId": "co_027",
+    "contactId": "ct_080",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-09-30T09:45:00.000Z",
+    "dueAt": "2026-10-06T09:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0162",
+    "companyId": "co_028",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Check in after their board meeting.",
+    "at": "2026-07-09T11:15:00.000Z",
+    "dueAt": "2026-08-01T11:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0163",
+    "companyId": "co_028",
+    "contactId": "ct_105",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-07-26T09:15:00.000Z"
+  },
+  {
+    "id": "act_0164",
+    "companyId": "co_028",
+    "contactId": "ct_105",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-10-31T11:15:00.000Z"
+  },
+  {
+    "id": "act_0165",
+    "companyId": "co_029",
+    "contactId": "ct_133",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-05-11T17:30:00.000Z",
+    "dueAt": "2026-05-31T17:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0166",
+    "companyId": "co_029",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Check in after their board meeting.",
+    "at": "2026-06-29T17:00:00.000Z",
+    "dueAt": "2026-07-17T17:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0167",
+    "companyId": "co_029",
+    "contactId": "ct_116",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-07-12T16:00:00.000Z"
+  },
+  {
+    "id": "act_0168",
+    "companyId": "co_029",
+    "contactId": "ct_116",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-08-07T12:15:00.000Z",
+    "dueAt": "2026-08-31T12:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0169",
+    "companyId": "co_029",
+    "contactId": "ct_116",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-08-09T12:45:00.000Z"
+  },
+  {
+    "id": "act_0170",
+    "companyId": "co_029",
+    "contactId": "ct_133",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-08-25T10:30:00.000Z"
+  },
+  {
+    "id": "act_0171",
+    "companyId": "co_029",
+    "contactId": "ct_116",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-10-18T13:30:00.000Z",
+    "dueAt": "2026-11-02T13:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0172",
+    "companyId": "co_029",
+    "contactId": "ct_116",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-10-29T13:15:00.000Z"
+  },
+  {
+    "id": "act_0173",
+    "companyId": "co_030",
+    "contactId": "ct_137",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-05-24T14:30:00.000Z",
+    "dueAt": "2026-06-14T14:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0174",
+    "companyId": "co_030",
+    "contactId": "ct_031",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-06-01T14:00:00.000Z"
+  },
+  {
+    "id": "act_0175",
+    "companyId": "co_030",
+    "contactId": "ct_137",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-08-22T15:45:00.000Z"
+  },
+  {
+    "id": "act_0176",
+    "companyId": "co_030",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-10-30T10:15:00.000Z"
+  },
+  {
+    "id": "act_0177",
+    "companyId": "co_031",
+    "contactId": "ct_121",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-05-07T17:15:00.000Z",
+    "dueAt": "2026-06-05T17:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0178",
+    "companyId": "co_031",
+    "contactId": "ct_007",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-06-19T17:00:00.000Z"
+  },
+  {
+    "id": "act_0179",
+    "companyId": "co_031",
+    "contactId": "ct_007",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-07-30T13:00:00.000Z",
+    "dueAt": "2026-08-02T13:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0180",
+    "companyId": "co_031",
+    "contactId": "ct_121",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-10-01T11:15:00.000Z"
+  },
+  {
+    "id": "act_0181",
+    "companyId": "co_032",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-18T12:30:00.000Z"
+  },
+  {
+    "id": "act_0182",
+    "companyId": "co_032",
+    "contactId": "ct_124",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-30T16:30:00.000Z"
+  },
+  {
+    "id": "act_0183",
+    "companyId": "co_032",
+    "contactId": "ct_124",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-06-12T10:30:00.000Z",
+    "dueAt": "2026-07-04T10:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0184",
+    "companyId": "co_032",
+    "contactId": "ct_124",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-07-18T12:30:00.000Z",
+    "dueAt": "2026-08-16T12:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0185",
+    "companyId": "co_032",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-08-30T11:15:00.000Z"
+  },
+  {
+    "id": "act_0186",
+    "companyId": "co_032",
+    "contactId": "ct_124",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-09-28T11:45:00.000Z"
+  },
+  {
+    "id": "act_0187",
+    "companyId": "co_032",
+    "contactId": "ct_124",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-10-12T09:45:00.000Z"
+  },
+  {
+    "id": "act_0188",
+    "companyId": "co_033",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-05-07T17:30:00.000Z"
+  },
+  {
+    "id": "act_0189",
+    "companyId": "co_033",
+    "contactId": "ct_135",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-06-19T15:45:00.000Z",
+    "dueAt": "2026-06-30T15:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0190",
+    "companyId": "co_033",
+    "contactId": "ct_135",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-07-09T10:30:00.000Z"
+  },
+  {
+    "id": "act_0191",
+    "companyId": "co_033",
+    "contactId": "ct_135",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-09-07T15:15:00.000Z",
+    "dueAt": "2026-09-15T15:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0192",
+    "companyId": "co_033",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-09-24T12:30:00.000Z"
+  },
+  {
+    "id": "act_0193",
+    "companyId": "co_033",
+    "contactId": "ct_135",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-10-01T13:00:00.000Z"
+  },
+  {
+    "id": "act_0194",
+    "companyId": "co_034",
+    "contactId": "ct_150",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-08-11T12:30:00.000Z"
+  },
+  {
+    "id": "act_0195",
+    "companyId": "co_034",
+    "contactId": "ct_029",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-09-20T15:00:00.000Z",
+    "dueAt": "2026-09-24T15:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0196",
+    "companyId": "co_034",
+    "contactId": "ct_103",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-10-11T14:15:00.000Z"
+  },
+  {
+    "id": "act_0197",
+    "companyId": "co_035",
+    "contactId": "ct_076",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-07T10:00:00.000Z"
+  },
+  {
+    "id": "act_0198",
+    "companyId": "co_035",
+    "contactId": "ct_004",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-07-25T14:15:00.000Z"
+  },
+  {
+    "id": "act_0199",
+    "companyId": "co_035",
+    "contactId": "ct_004",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-08-01T12:15:00.000Z"
+  },
+  {
+    "id": "act_0200",
+    "companyId": "co_035",
+    "contactId": "ct_076",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-08-09T15:00:00.000Z"
+  },
+  {
+    "id": "act_0201",
+    "companyId": "co_036",
+    "contactId": "ct_148",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-06-02T09:15:00.000Z"
+  },
+  {
+    "id": "act_0202",
+    "companyId": "co_036",
+    "contactId": "ct_148",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-06-13T13:15:00.000Z"
+  },
+  {
+    "id": "act_0203",
+    "companyId": "co_036",
+    "contactId": "ct_148",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-08-28T11:00:00.000Z",
+    "dueAt": "2026-08-31T11:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0204",
+    "companyId": "co_036",
+    "contactId": "ct_148",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-09-23T09:15:00.000Z"
+  },
+  {
+    "id": "act_0205",
+    "companyId": "co_036",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-09-26T15:45:00.000Z"
+  },
+  {
+    "id": "act_0206",
+    "companyId": "co_037",
+    "contactId": "ct_090",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-05-16T16:30:00.000Z",
+    "dueAt": "2026-05-22T16:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0207",
+    "companyId": "co_037",
+    "contactId": "ct_064",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-05-23T09:15:00.000Z"
+  },
+  {
+    "id": "act_0208",
+    "companyId": "co_037",
+    "contactId": "ct_090",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-07-06T11:15:00.000Z"
+  },
+  {
+    "id": "act_0209",
+    "companyId": "co_037",
+    "contactId": "ct_111",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-07-08T10:15:00.000Z",
+    "dueAt": "2026-07-18T10:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0210",
+    "companyId": "co_037",
+    "contactId": "ct_111",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-07-18T10:15:00.000Z"
+  },
+  {
+    "id": "act_0211",
+    "companyId": "co_037",
+    "contactId": "ct_064",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-08-03T16:15:00.000Z"
+  },
+  {
+    "id": "act_0212",
+    "companyId": "co_037",
+    "contactId": "ct_064",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-10-16T10:45:00.000Z"
+  },
+  {
+    "id": "act_0213",
+    "companyId": "co_038",
+    "contactId": "ct_027",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-06-05T17:45:00.000Z",
+    "dueAt": "2026-06-30T17:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0214",
+    "companyId": "co_038",
+    "contactId": "ct_027",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Check in after their board meeting.",
+    "at": "2026-06-18T15:45:00.000Z",
+    "dueAt": "2026-06-30T15:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0215",
+    "companyId": "co_038",
+    "contactId": "ct_027",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-08-22T10:00:00.000Z"
+  },
+  {
+    "id": "act_0216",
+    "companyId": "co_038",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-09-09T17:30:00.000Z"
+  },
+  {
+    "id": "act_0217",
+    "companyId": "co_038",
+    "contactId": "ct_027",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-09-11T17:00:00.000Z",
+    "dueAt": "2026-10-08T17:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0218",
+    "companyId": "co_038",
+    "contactId": "ct_027",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-09-18T11:00:00.000Z"
+  },
+  {
+    "id": "act_0219",
+    "companyId": "co_038",
+    "contactId": "ct_027",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-09-28T09:00:00.000Z"
+  },
+  {
+    "id": "act_0220",
+    "companyId": "co_039",
+    "contactId": "ct_055",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-05-14T16:00:00.000Z"
+  },
+  {
+    "id": "act_0221",
+    "companyId": "co_039",
+    "contactId": "ct_022",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-07-11T16:45:00.000Z"
+  },
+  {
+    "id": "act_0222",
+    "companyId": "co_039",
+    "contactId": "ct_055",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-09-08T13:45:00.000Z"
+  },
+  {
+    "id": "act_0223",
+    "companyId": "co_040",
+    "contactId": "ct_112",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-11T12:45:00.000Z"
+  },
+  {
+    "id": "act_0224",
+    "companyId": "co_040",
+    "contactId": "ct_112",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-07-01T12:30:00.000Z"
+  },
+  {
+    "id": "act_0225",
+    "companyId": "co_040",
+    "contactId": "ct_112",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-08-30T14:30:00.000Z"
+  },
+  {
+    "id": "act_0226",
+    "companyId": "co_040",
+    "contactId": "ct_112",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-09-20T10:45:00.000Z",
+    "dueAt": "2026-10-12T10:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0227",
+    "companyId": "co_040",
+    "contactId": "ct_061",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Check in after their board meeting.",
+    "at": "2026-10-23T09:45:00.000Z",
+    "dueAt": "2026-10-30T09:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0228",
+    "companyId": "co_040",
+    "contactId": "ct_061",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-10-30T11:30:00.000Z"
+  },
+  {
+    "id": "act_0229",
+    "companyId": "co_041",
+    "contactId": "ct_088",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-05-07T10:30:00.000Z"
+  },
+  {
+    "id": "act_0230",
+    "companyId": "co_041",
+    "contactId": "ct_052",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-07-24T10:45:00.000Z"
+  },
+  {
+    "id": "act_0231",
+    "companyId": "co_041",
+    "contactId": "ct_052",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-08-03T11:45:00.000Z"
+  },
+  {
+    "id": "act_0232",
+    "companyId": "co_041",
+    "contactId": "ct_052",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-08-14T14:45:00.000Z"
+  },
+  {
+    "id": "act_0233",
+    "companyId": "co_041",
+    "contactId": "ct_052",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-09-19T10:45:00.000Z"
+  },
+  {
+    "id": "act_0234",
+    "companyId": "co_041",
+    "contactId": "ct_052",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-10-16T11:15:00.000Z"
+  },
+  {
+    "id": "act_0235",
+    "companyId": "co_042",
+    "contactId": "ct_127",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-08T11:30:00.000Z"
+  },
+  {
+    "id": "act_0236",
+    "companyId": "co_042",
+    "contactId": "ct_127",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-07-28T10:30:00.000Z"
+  },
+  {
+    "id": "act_0237",
+    "companyId": "co_042",
+    "contactId": "ct_127",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-09-18T13:15:00.000Z",
+    "dueAt": "2026-09-24T13:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0238",
+    "companyId": "co_042",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-09-22T14:30:00.000Z"
+  },
+  {
+    "id": "act_0239",
+    "companyId": "co_043",
+    "contactId": "ct_037",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-14T15:15:00.000Z"
+  },
+  {
+    "id": "act_0240",
+    "companyId": "co_043",
+    "contactId": "ct_037",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-05-18T17:15:00.000Z"
+  },
+  {
+    "id": "act_0241",
+    "companyId": "co_043",
+    "contactId": "ct_123",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-05-26T12:30:00.000Z"
+  },
+  {
+    "id": "act_0242",
+    "companyId": "co_043",
+    "contactId": "ct_037",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-07-23T12:45:00.000Z"
+  },
+  {
+    "id": "act_0243",
+    "companyId": "co_043",
+    "contactId": "ct_123",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-08-11T11:15:00.000Z"
+  },
+  {
+    "id": "act_0244",
+    "companyId": "co_044",
+    "contactId": "ct_145",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-05-26T16:00:00.000Z"
+  },
+  {
+    "id": "act_0245",
+    "companyId": "co_044",
+    "contactId": "ct_097",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-08-30T16:15:00.000Z",
+    "dueAt": "2026-09-08T16:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0246",
+    "companyId": "co_044",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-09-13T09:30:00.000Z"
+  },
+  {
+    "id": "act_0247",
+    "companyId": "co_044",
+    "contactId": "ct_097",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-10-07T14:15:00.000Z"
+  },
+  {
+    "id": "act_0248",
+    "companyId": "co_044",
+    "contactId": "ct_097",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-10-08T11:15:00.000Z"
+  },
+  {
+    "id": "act_0249",
+    "companyId": "co_045",
+    "contactId": "ct_142",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-05-15T12:45:00.000Z"
+  },
+  {
+    "id": "act_0250",
+    "companyId": "co_045",
+    "contactId": "ct_096",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-06-29T13:30:00.000Z"
+  },
+  {
+    "id": "act_0251",
+    "companyId": "co_045",
+    "contactId": "ct_106",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-10-01T16:15:00.000Z",
+    "dueAt": "2026-10-04T16:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0252",
+    "companyId": "co_046",
+    "contactId": "ct_143",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-07-30T15:45:00.000Z",
+    "dueAt": "2026-08-26T15:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0253",
+    "companyId": "co_046",
+    "contactId": "ct_143",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-09-30T16:30:00.000Z"
+  },
+  {
+    "id": "act_0254",
+    "companyId": "co_047",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-05-14T17:00:00.000Z"
+  },
+  {
+    "id": "act_0255",
+    "companyId": "co_047",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-09-05T16:30:00.000Z"
+  },
+  {
+    "id": "act_0256",
+    "companyId": "co_048",
+    "contactId": "ct_017",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-06-03T14:45:00.000Z",
+    "dueAt": "2026-06-25T14:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0257",
+    "companyId": "co_048",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-06-13T17:45:00.000Z"
+  },
+  {
+    "id": "act_0258",
+    "companyId": "co_048",
+    "contactId": "ct_138",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-07-31T12:45:00.000Z",
+    "dueAt": "2026-08-29T12:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0259",
+    "companyId": "co_048",
+    "contactId": "ct_138",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-08-06T15:45:00.000Z",
+    "dueAt": "2026-09-03T15:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0260",
+    "companyId": "co_048",
+    "contactId": "ct_138",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-08-30T11:30:00.000Z"
+  },
+  {
+    "id": "act_0261",
+    "companyId": "co_048",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-09-04T16:45:00.000Z",
+    "dueAt": "2026-10-01T16:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0262",
+    "companyId": "co_048",
+    "contactId": "ct_138",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-09-18T13:15:00.000Z",
+    "dueAt": "2026-09-21T13:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0263",
+    "companyId": "co_049",
+    "contactId": "ct_058",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-07-19T10:00:00.000Z"
+  },
+  {
+    "id": "act_0264",
+    "companyId": "co_049",
+    "type": "note",
+    "subject": "Intro notes",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-07-23T10:15:00.000Z"
+  },
+  {
+    "id": "act_0265",
+    "companyId": "co_049",
+    "contactId": "ct_086",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-10-14T12:15:00.000Z"
+  },
+  {
+    "id": "act_0266",
+    "companyId": "co_050",
+    "contactId": "ct_001",
+    "type": "task",
+    "subject": "Schedule technical review",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-06-28T10:00:00.000Z",
+    "dueAt": "2026-07-06T10:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0267",
+    "companyId": "co_050",
+    "contactId": "ct_001",
+    "type": "note",
+    "subject": "Renewal discussion",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-10-14T10:00:00.000Z"
+  },
+  {
+    "id": "act_0268",
+    "companyId": "co_050",
+    "contactId": "ct_001",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-10-18T15:30:00.000Z",
+    "dueAt": "2026-10-24T15:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0269",
+    "companyId": "co_051",
+    "contactId": "ct_059",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-05-15T12:45:00.000Z"
+  },
+  {
+    "id": "act_0270",
+    "companyId": "co_051",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-08-17T17:15:00.000Z",
+    "dueAt": "2026-09-10T17:15:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0271",
+    "companyId": "co_052",
+    "contactId": "ct_043",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-15T09:00:00.000Z"
+  },
+  {
+    "id": "act_0272",
+    "companyId": "co_052",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-06-12T11:00:00.000Z",
+    "dueAt": "2026-07-12T11:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0273",
+    "companyId": "co_052",
+    "contactId": "ct_043",
+    "type": "task",
+    "subject": "Share case study",
+    "body": "Check in after their board meeting.",
+    "at": "2026-07-26T16:30:00.000Z",
+    "dueAt": "2026-08-13T16:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0274",
+    "companyId": "co_052",
+    "contactId": "ct_035",
+    "type": "note",
+    "subject": "Champion update",
+    "body": "Procurement asked for a security questionnaire.",
+    "at": "2026-08-22T16:45:00.000Z"
+  },
+  {
+    "id": "act_0275",
+    "companyId": "co_052",
+    "contactId": "ct_035",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Loop in a solutions engineer.",
+    "at": "2026-08-23T17:00:00.000Z",
+    "dueAt": "2026-09-19T17:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0276",
+    "companyId": "co_052",
+    "contactId": "ct_035",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-09-23T10:15:00.000Z"
+  },
+  {
+    "id": "act_0277",
+    "companyId": "co_053",
+    "contactId": "ct_040",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-07-17T14:45:00.000Z"
+  },
+  {
+    "id": "act_0278",
+    "companyId": "co_053",
+    "contactId": "ct_122",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-08-02T12:00:00.000Z"
+  },
+  {
+    "id": "act_0279",
+    "companyId": "co_053",
+    "contactId": "ct_078",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Budget is approved for next quarter. Waiting on legal.",
+    "at": "2026-08-25T09:00:00.000Z"
+  },
+  {
+    "id": "act_0280",
+    "companyId": "co_054",
+    "contactId": "ct_056",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-05-14T13:00:00.000Z"
+  },
+  {
+    "id": "act_0281",
+    "companyId": "co_054",
+    "contactId": "ct_129",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-05-14T16:45:00.000Z",
+    "dueAt": "2026-05-17T16:45:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0282",
+    "companyId": "co_054",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Spoke for 20 minutes. Interested, wants a revised quote.",
+    "at": "2026-05-23T17:00:00.000Z"
+  },
+  {
+    "id": "act_0283",
+    "companyId": "co_054",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-08-02T15:00:00.000Z"
+  },
+  {
+    "id": "act_0284",
+    "companyId": "co_054",
+    "contactId": "ct_129",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Confirm who signs on their side.",
+    "at": "2026-08-11T11:15:00.000Z",
+    "dueAt": "2026-09-03T11:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0285",
+    "companyId": "co_054",
+    "contactId": "ct_129",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-09-06T16:30:00.000Z",
+    "dueAt": "2026-09-14T16:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0286",
+    "companyId": "co_054",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-09-22T09:00:00.000Z"
+  },
+  {
+    "id": "act_0287",
+    "companyId": "co_055",
+    "contactId": "ct_113",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Walked through the core workflow. Two follow-ups agreed.",
+    "at": "2026-06-08T12:15:00.000Z"
+  },
+  {
+    "id": "act_0288",
+    "companyId": "co_055",
+    "contactId": "ct_113",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-07-12T12:00:00.000Z"
+  },
+  {
+    "id": "act_0289",
+    "companyId": "co_055",
+    "contactId": "ct_113",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-08-05T09:15:00.000Z"
+  },
+  {
+    "id": "act_0290",
+    "companyId": "co_055",
+    "contactId": "ct_113",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-08-12T15:30:00.000Z",
+    "dueAt": "2026-08-16T15:30:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0291",
+    "companyId": "co_055",
+    "contactId": "ct_113",
+    "type": "meeting",
+    "subject": "Product demo",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-08-28T14:00:00.000Z"
+  },
+  {
+    "id": "act_0292",
+    "companyId": "co_055",
+    "contactId": "ct_113",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-10-05T15:30:00.000Z",
+    "dueAt": "2026-10-30T15:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0293",
+    "companyId": "co_055",
+    "contactId": "ct_113",
+    "type": "meeting",
+    "subject": "Contract walkthrough",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-10-09T12:15:00.000Z"
+  },
+  {
+    "id": "act_0294",
+    "companyId": "co_056",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Check in after their board meeting.",
+    "at": "2026-06-08T15:00:00.000Z",
+    "dueAt": "2026-06-16T15:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0295",
+    "companyId": "co_056",
+    "contactId": "ct_010",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Send the two-page summary they asked for.",
+    "at": "2026-07-22T12:45:00.000Z",
+    "dueAt": "2026-07-26T12:45:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0296",
+    "companyId": "co_056",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-07-24T11:30:00.000Z",
+    "dueAt": "2026-08-08T11:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0297",
+    "companyId": "co_056",
+    "contactId": "ct_087",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-07-26T17:45:00.000Z"
+  },
+  {
+    "id": "act_0298",
+    "companyId": "co_056",
+    "contactId": "ct_010",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-07-30T13:00:00.000Z"
+  },
+  {
+    "id": "act_0299",
+    "companyId": "co_056",
+    "contactId": "ct_010",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Check in after their board meeting.",
+    "at": "2026-09-01T17:00:00.000Z",
+    "dueAt": "2026-09-09T17:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0300",
+    "companyId": "co_056",
+    "contactId": "ct_010",
+    "type": "note",
+    "subject": "Budget check-in",
+    "body": "New decision maker joined; need to re-intro the product.",
+    "at": "2026-10-16T17:30:00.000Z"
+  },
+  {
+    "id": "act_0301",
+    "companyId": "co_057",
+    "contactId": "ct_144",
+    "type": "note",
+    "subject": "Security review notes",
+    "body": "Concerned about price. Mentioned a competing offer.",
+    "at": "2026-05-08T14:00:00.000Z"
+  },
+  {
+    "id": "act_0302",
+    "companyId": "co_057",
+    "type": "task",
+    "subject": "Confirm renewal date",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-08-20T17:00:00.000Z",
+    "dueAt": "2026-08-30T17:00:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0303",
+    "companyId": "co_057",
+    "contactId": "ct_016",
+    "type": "task",
+    "subject": "Send updated pricing",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-09-30T16:15:00.000Z",
+    "dueAt": "2026-10-20T16:15:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0304",
+    "companyId": "co_058",
+    "contactId": "ct_070",
+    "type": "task",
+    "subject": "Follow up on quote",
+    "body": "Check in after their board meeting.",
+    "at": "2026-05-16T15:00:00.000Z",
+    "dueAt": "2026-05-26T15:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "act_0305",
+    "companyId": "co_058",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-06-16T14:45:00.000Z"
+  },
+  {
+    "id": "act_0306",
+    "companyId": "co_058",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-06-17T11:30:00.000Z"
+  },
+  {
+    "id": "act_0307",
+    "companyId": "co_058",
+    "contactId": "ct_070",
+    "type": "note",
+    "subject": "Pricing feedback",
+    "body": "Asked about onboarding timeline and data migration.",
+    "at": "2026-07-22T13:15:00.000Z"
+  },
+  {
+    "id": "act_0308",
+    "companyId": "co_058",
+    "contactId": "ct_032",
+    "type": "note",
+    "subject": "Call recap",
+    "body": "Happy with the pilot. Wants to expand to a second site.",
+    "at": "2026-09-17T17:30:00.000Z"
+  },
+  {
+    "id": "act_0309",
+    "companyId": "co_058",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-10-27T15:30:00.000Z"
+  },
+  {
+    "id": "act_0310",
+    "companyId": "co_059",
+    "contactId": "ct_120",
+    "type": "meeting",
+    "subject": "Onsite visit",
+    "body": "Agreed next step is a pilot scoped to one team.",
+    "at": "2026-07-25T10:45:00.000Z"
+  },
+  {
+    "id": "act_0311",
+    "companyId": "co_059",
+    "contactId": "ct_120",
+    "type": "meeting",
+    "subject": "Technical deep dive",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-08-09T11:15:00.000Z"
+  },
+  {
+    "id": "act_0312",
+    "companyId": "co_059",
+    "contactId": "ct_120",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-09-03T11:00:00.000Z"
+  },
+  {
+    "id": "act_0313",
+    "companyId": "co_059",
+    "contactId": "ct_120",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-09-16T11:30:00.000Z"
+  },
+  {
+    "id": "act_0314",
+    "companyId": "co_060",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Covered integration questions; sending docs afterward.",
+    "at": "2026-05-30T15:00:00.000Z"
+  },
+  {
+    "id": "act_0315",
+    "companyId": "co_060",
+    "contactId": "ct_008",
+    "type": "task",
+    "subject": "Send proposal",
+    "body": "Attach the revised pricing sheet.",
+    "at": "2026-09-01T09:30:00.000Z",
+    "dueAt": "2026-09-23T09:30:00.000Z",
+    "status": "open"
+  },
+  {
+    "id": "act_0316",
+    "companyId": "co_060",
+    "contactId": "ct_008",
+    "type": "meeting",
+    "subject": "Discovery call",
+    "body": "Attendees: operations and finance. Positive reception.",
+    "at": "2026-09-03T14:30:00.000Z"
+  },
+  {
+    "id": "act_0317",
+    "companyId": "co_060",
+    "contactId": "ct_008",
+    "type": "meeting",
+    "subject": "Quarterly business review",
+    "body": "Reviewed usage numbers and open support tickets.",
+    "at": "2026-09-23T14:45:00.000Z"
+  },
+  {
+    "id": "act_0318",
+    "companyId": "co_060",
+    "contactId": "ct_008",
+    "type": "note",
+    "subject": "Competitor mention",
+    "body": "No response to last two emails. Try a call.",
+    "at": "2026-10-11T13:45:00.000Z"
+  }
+]
