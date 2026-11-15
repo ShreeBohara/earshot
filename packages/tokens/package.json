@@ -6,12 +6,12 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./tokens.css": "./dist/tokens.css",
-    "./tokens.json": "./dist/tokens.json"
+    "./tokens.css": "./generated/tokens.css",
+    "./tokens.json": "./generated/tokens.json"
   },
   "scripts": {
-    "build": "tsx scripts/build.ts",
-    "theme": "tsx scripts/theme.ts",
+    "generate": "tsx scripts/generate.ts",
+    "theme": "tsx scripts/theme.ts && tsx scripts/generate.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

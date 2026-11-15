@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { readTokenFiles, tokenFilePath } from "../scripts/files";
+import { GENERATED_DIR, readTokenFiles, tokenFilePath } from "../scripts/files";
 import {
   buildCss,
   buildJson,
@@ -43,5 +44,17 @@ describe("committed tokens/*.tokens.json", () => {
 
   it("build the same CSS as the in-memory theme", () => {
     expect(buildCss(committed)).toBe(buildCss(fresh));
+  });
+});
+
+describe("committed outputs", () => {
+  it("generated/tokens.css and tokens.json match the token files (run `pnpm --filter @earshot/tokens generate`)", () => {
+    const files = readTokenFiles();
+    expect(readFileSync(join(GENERATED_DIR, "tokens.css"), "utf8"), "tokens.css is stale").toBe(
+      buildCss(files),
+    );
+    expect(readFileSync(join(GENERATED_DIR, "tokens.json"), "utf8"), "tokens.json is stale").toBe(
+      buildJson(files),
+    );
   });
 });

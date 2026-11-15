@@ -1,4 +1,4 @@
-// Node-only file access for the CLI, the build, and the tests. The package entry stays
+// Node-only file access for the CLI, the generator script, and the tests. The package entry stays
 // browser-safe, so the Storybook theme playground can run the generator live.
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -12,7 +12,8 @@ import {
 } from "../src";
 
 export const TOKENS_DIR = fileURLToPath(new URL("../tokens/", import.meta.url));
-export const DIST_DIR = fileURLToPath(new URL("../dist/", import.meta.url));
+/** Committed outputs, so consumers need no build step (like packages/core/schemas). */
+export const GENERATED_DIR = fileURLToPath(new URL("../generated/", import.meta.url));
 
 export function tokenFilePath(name: TokenFileName): string {
   return join(TOKENS_DIR, `${name}.tokens.json`);

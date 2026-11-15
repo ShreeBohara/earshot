@@ -1,4 +1,4 @@
-// Builds dist/tokens.css and dist/tokens.json from the DTCG token files.
+// Builds tokens.css and tokens.json from the DTCG token files.
 import { hexBytes, isWideGamut, p3Css } from "./color";
 import {
   type DtcgColor,

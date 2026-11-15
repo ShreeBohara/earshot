@@ -18,12 +18,12 @@ The default theme is warm paper with blue-black ink. Buttons are ink on paper in
 
 ```sh
 pnpm --filter @earshot/tokens theme --base 85,0.01 --accent 0.30,0.03,265 --contrast 50
-pnpm --filter @earshot/tokens build
+pnpm --filter @earshot/tokens generate
 ```
 
 `theme` rewrites `tokens/*.tokens.json` and prints the key colors and the lowest contrast ratio per group. It exits with an error if any pair misses its minimum. Any flag you leave out takes its default. Commit the token files: they're the source the build reads, and a test fails if they no longer match a fresh run of the generator with the inputs they record.
 
-`build` writes `dist/` (gitignored), which the package exports:
+`theme` also runs `generate`, which writes `generated/tokens.css` and `generated/tokens.json`. Both are committed, so consumers need no build step, and a test fails if they no longer match the token files. The package exports:
 
 - `@earshot/tokens/tokens.css`: the custom properties below.
 - `@earshot/tokens/tokens.json`: one DTCG document with `light` and `dark` groups plus the shared tokens, with references intact.
