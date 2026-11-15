@@ -1,0 +1,22 @@
+name: CRM adapter request
+description: Ask for, or offer to build, an adapter for another CRM.
+labels: [adapter]
+body:
+  - type: input
+    id: crm
+    attributes:
+      label: CRM
+      placeholder: e.g. Pipedrive, Salesforce, Zoho
+    validations:
+      required: true
+  - type: textarea
+    id: objects
+    attributes:
+      label: Objects and fields you need
+      description: Companies, contacts, deals, notes, tasks, custom fields…
+  - type: checkboxes
+    id: build
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to build this adapter (it must pass the adapter conformance suite).
