@@ -1,0 +1,29 @@
+{
+  "proposalId": "01a1c6e2-e5dc-79b1-a045-4bf227d9db20",
+  "type": "deal_update",
+  "targetEntityId": "crm-deal-4412",
+  "fields": {
+    "amount": {
+      "value": 80000,
+      "evidence": {
+        "utteranceId": "01a1c6e2-e118-77dc-97e5-3339cf89cd64",
+        "span": [17, 31],
+        "audioMs": [14600, 15500],
+        "confidence": 0.87
+      }
+    },
+    "closeDateConfirmed": {
+      "value": false,
+      "evidence": {
+        "utteranceId": "01a1c6e2-e118-77dc-97e5-3339cf89cd64",
+        "span": [36, 60],
+        "audioMs": [15800, 17300],
+        "confidence": 0.91
+      }
+    }
+  },
+  "riskFlags": [
+    { "kind": "number", "field": "amount" },
+    { "kind": "negation", "field": "closeDateConfirmed" }
+  ]
+}

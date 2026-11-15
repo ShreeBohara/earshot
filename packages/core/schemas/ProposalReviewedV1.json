@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "proposalId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "edited",
+        "rejected"
+      ]
+    },
+    "editDiff": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][A-Za-z0-9]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "before": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "after": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ],
+        "additionalProperties": false,
+        "title": "FieldEdit"
+      }
+    },
+    "reviewerMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "proposalId",
+    "decision",
+    "reviewerMs"
+  ],
+  "additionalProperties": false,
+  "title": "ProposalReviewedV1",
+  "description": "Payload of `proposal.reviewed`, schema version 1: the reviewer's decision on one proposal.",
+  "x-event-type": "proposal.reviewed",
+  "x-schema-version": 1
+}

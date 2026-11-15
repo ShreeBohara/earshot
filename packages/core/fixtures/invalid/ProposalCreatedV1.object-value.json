@@ -1,0 +1,17 @@
+{
+  "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
+  "type": "task",
+  "targetEntityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+  "fields": {
+    "dueDate": {
+      "value": { "weekday": "Thursday" },
+      "evidence": {
+        "utteranceId": "01a1c6e2-f5b8-7d83-a268-13560deb2986",
+        "span": [42, 53],
+        "audioMs": [23880, 24810],
+        "confidence": 0.95
+      }
+    }
+  },
+  "riskFlags": []
+}

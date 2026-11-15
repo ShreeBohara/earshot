@@ -1,0 +1,25 @@
+{
+  "name": "@earshot/events",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Earshot's event store: payload registry and upcasters, an in-memory store, projections, deterministic replay, and JSONL import and export.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fixtures/*": "./fixtures/*"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@earshot/core": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

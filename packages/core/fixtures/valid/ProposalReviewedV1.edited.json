@@ -1,0 +1,12 @@
+{
+  "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
+  "decision": "edited",
+  "editDiff": {
+    "title": {
+      "before": "Send Dana the pricing breakdown",
+      "after": "Send Dana the pricing breakdown for the security add-on"
+    },
+    "priority": { "before": null, "after": "high" }
+  },
+  "reviewerMs": 11200
+}

@@ -1,0 +1,5 @@
+{
+  "mode": "debrief",
+  "engine": "cascaded",
+  "providers": { "speechToText": { "provider": "deepgram", "model": "nova-3" } }
+}

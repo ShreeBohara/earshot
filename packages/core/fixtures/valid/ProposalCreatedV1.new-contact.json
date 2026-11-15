@@ -1,0 +1,17 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c114",
+  "type": "contact",
+  "targetEntityId": null,
+  "fields": {
+    "name": {
+      "value": "Dana Lee",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [48, 56],
+        "audioMs": [4420, 4960],
+        "confidence": 0.85
+      }
+    }
+  },
+  "riskFlags": [{ "kind": "new_entity" }]
+}
