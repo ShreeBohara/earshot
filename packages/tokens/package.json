@@ -1,0 +1,28 @@
+{
+  "name": "@earshot/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Earshot's design tokens: a three-input OKLCH theme generator, DTCG 2025.10 token files, and the CSS build.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./dist/tokens.css",
+    "./tokens.json": "./dist/tokens.json"
+  },
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "theme": "tsx scripts/theme.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "colorjs.io": "^0.7.1"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
