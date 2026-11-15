@@ -31,7 +31,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3 # publishes full versions only; there is no v10 tag
       - run: pnpm install --frozen-lockfile
       - run: uv sync --project lab
       - name: Format and lint (Biome)
