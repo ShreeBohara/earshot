@@ -1,0 +1,17 @@
+// Template for the web Worker. CI renders per-environment copies (wrangler.<target>.jsonc)
+// with scripts/render-wrangler.ts; WORKER_SELF_REFERENCE must always equal "name".
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "earshot-web",
+  "main": ".open-next/worker.js",
+  // 2026-08-15: the newest date the test runtime (vitest-pool-workers 0.22) supports; keep tests and production on the same date.
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "earshot-web" },
+    { "binding": "EDGE", "service": "earshot-edge" }
+  ],
+  "vars": { "DEPLOY_ENV": "development", "GIT_SHA": "dev" },
+  "observability": { "enabled": true }
+}

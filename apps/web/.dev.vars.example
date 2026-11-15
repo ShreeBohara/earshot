@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+# Use the pooled connection string of your personal Neon branch (dev/<you>).
+DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=require
+# Where `next dev` reaches the edge Worker if the service binding isn't available.
+EDGE_DEV_URL=http://localhost:8787

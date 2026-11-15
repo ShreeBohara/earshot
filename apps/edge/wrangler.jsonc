@@ -1,0 +1,16 @@
+// Template for the edge Worker. CI renders per-environment copies (wrangler.<target>.jsonc)
+// with scripts/render-wrangler.ts. Deploy this Worker before the web Worker that binds to it.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "earshot-edge",
+  "main": "src/index.ts",
+  // 2026-08-15: the newest date the test runtime (vitest-pool-workers 0.22) supports; keep tests and production on the same date.
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "SESSION", "class_name": "SessionDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SessionDO"] }],
+  "vars": { "DEPLOY_ENV": "development", "GIT_SHA": "dev" },
+  "observability": { "enabled": true }
+}
