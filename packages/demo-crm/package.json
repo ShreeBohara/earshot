@@ -1,0 +1,26 @@
+{
+  "name": "@earshot/demo-crm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Earshot's demo CRM: a deterministic dataset of companies, contacts, deals, and activities with deliberately confusable names.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./data/*.json": "./data/*.json"
+  },
+  "scripts": {
+    "generate": "tsx scripts/generate.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
