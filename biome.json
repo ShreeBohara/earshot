@@ -9,6 +9,7 @@
     "includes": [
       "**",
       "!**/schemas",
+      "!packages/tokens/generated",
       "!**/worker-configuration.d.ts",
       "!**/cloudflare-env.d.ts",
       "!lab/.venv",
@@ -28,7 +29,7 @@
   },
   "linter": {
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "assist": {
