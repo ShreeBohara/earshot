@@ -188,6 +188,9 @@ catalogs:
     '@electric-sql/pglite':
       specifier: ^0.5.14
       version: 0.5.16
+    '@electric-sql/pglite-pgtap':
+      specifier: ^0.0.17
+      version: 0.0.17
     '@electric-sql/pglite-pgvector':
       specifier: ^0.0.16
       version: 0.0.16
@@ -417,6 +420,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 'catalog:'
         version: 0.5.16
+      '@electric-sql/pglite-pgtap':
+        specifier: 'catalog:'
+        version: 0.0.17(@electric-sql/pglite@0.5.16)
       '@electric-sql/pglite-pgvector':
         specifier: 'catalog:'
         version: 0.0.16(@electric-sql/pglite@0.5.16)
@@ -1242,6 +1248,11 @@ packages:
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
+
+  '@electric-sql/pglite-pgtap@0.0.17':
+    resolution: {integrity: sha512-36rMqHS3EfY/jlpcbw5IXp1qD3WXXD1fCYQBBbIFdYUKb70RrJT2Jv8S/kZNeDByBmCm9cZmCgsFzhfbQyvmKg==}
+    peerDependencies:
+      '@electric-sql/pglite': 0.5.16
 
   '@electric-sql/pglite-pgvector@0.0.16':
     resolution: {integrity: sha512-3usbMM/Zkn0h7wpSft1rsa8lcXz77Q+rGdTpm7UORwtISg4CSGprinmu5qnF23GE0FHLH0LxEyKoPPteHuZPIg==}
@@ -6181,6 +6192,10 @@ snapshots:
   '@dotenvx/tooling@1.0.6': {}
 
   '@drizzle-team/brocli@0.10.2': {}
+
+  '@electric-sql/pglite-pgtap@0.0.17(@electric-sql/pglite@0.5.16)':
+    dependencies:
+      '@electric-sql/pglite': 0.5.16
 
   '@electric-sql/pglite-pgvector@0.0.16(@electric-sql/pglite@0.5.16)':
     dependencies:

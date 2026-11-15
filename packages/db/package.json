@@ -22,6 +22,7 @@
   "devDependencies": {
     "@earshot/tsconfig": "workspace:*",
     "@electric-sql/pglite": "catalog:",
+    "@electric-sql/pglite-pgtap": "catalog:",
     "@electric-sql/pglite-pgvector": "catalog:",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",

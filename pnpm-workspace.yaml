@@ -16,6 +16,7 @@ catalog:
   # than earlier versions). Move up once a release with intact provenance ships.
   "@cloudflare/vitest-pool-workers": ~0.22.0
   "@electric-sql/pglite": ^0.5.14
+  "@electric-sql/pglite-pgtap": ^0.0.17
   "@electric-sql/pglite-pgvector": ^0.0.16
   "@neondatabase/serverless": ^1.2.0
   # Needs next >= 16.4.5 and wrangler ^4.148.
