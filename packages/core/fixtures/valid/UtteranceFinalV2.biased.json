@@ -1,0 +1,16 @@
+{
+  "utteranceId": "01a1c6e2-f5b8-7d83-a268-13560deb2986",
+  "text": "Send Dana the deck by Thursday.",
+  "confidence": 0.93,
+  "words": [
+    { "w": "Send", "startMs": 20300, "endMs": 20560, "confidence": 0.95 },
+    { "w": "Dana", "startMs": 20610, "endMs": 20900, "confidence": 0.88 },
+    { "w": "the", "startMs": 20950, "endMs": 21050, "confidence": 0.97 },
+    { "w": "deck", "startMs": 21100, "endMs": 21420, "confidence": 0.94 },
+    { "w": "by", "startMs": 21480, "endMs": 21590, "confidence": 0.93 },
+    { "w": "Thursday", "startMs": 21640, "endMs": 22200, "confidence": 0.96 }
+  ],
+  "startMs": 20300,
+  "endMs": 22200,
+  "witness": "biased"
+}

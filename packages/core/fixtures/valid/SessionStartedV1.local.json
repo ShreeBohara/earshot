@@ -1,0 +1,9 @@
+{
+  "mode": "local",
+  "engine": "on_device",
+  "providers": {
+    "speechToText": { "provider": "local", "model": "moonshine-base" },
+    "llm": { "provider": "local", "model": "earshot-extractor-small" }
+  },
+  "startedAt": "2026-11-10T19:15:00.000Z"
+}

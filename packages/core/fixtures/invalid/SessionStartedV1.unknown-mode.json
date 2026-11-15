@@ -1,0 +1,6 @@
+{
+  "mode": "meeting",
+  "engine": "cascaded",
+  "providers": { "speechToText": { "provider": "deepgram", "model": "nova-3" } },
+  "startedAt": "2026-11-10T19:15:00.000Z"
+}

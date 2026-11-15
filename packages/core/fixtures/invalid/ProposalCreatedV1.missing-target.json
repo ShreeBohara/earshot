@@ -1,0 +1,16 @@
+{
+  "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
+  "type": "task",
+  "fields": {
+    "title": {
+      "value": "Send Dana the pricing breakdown",
+      "evidence": {
+        "utteranceId": "01a1c6e2-f5b8-7d83-a268-13560deb2986",
+        "span": [10, 41],
+        "audioMs": [21150, 23790],
+        "confidence": 0.9
+      }
+    }
+  },
+  "riskFlags": []
+}
