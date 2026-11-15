@@ -1,0 +1,9 @@
+{
+  "name": "@earshot/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript presets for the Earshot monorepo.",
+  "files": [
+    "*.json"
+  ]
+}

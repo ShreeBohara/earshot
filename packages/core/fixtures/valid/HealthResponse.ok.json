@@ -1,0 +1,7 @@
+{
+  "status": "ok",
+  "version": "5b731bd",
+  "env": "pr-12",
+  "edge": { "status": "ok", "durableObject": "ok", "env": "pr-12", "version": "5b731bd" },
+  "db": { "status": "ok", "branch": "preview/pr-12", "migrations": 2 }
+}

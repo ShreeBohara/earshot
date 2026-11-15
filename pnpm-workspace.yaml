@@ -1,0 +1,24 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "lab"
+
+# One version of each shared dependency, repo-wide. The lockfile pins exact versions.
+catalog:
+  "@biomejs/biome": ^2.6.0
+  "@types/node": ^26.0.0
+  tsx: ^4.20.0
+  turbo: ^2.11.0
+  # Not 7.0 yet: TypeScript 7.0 ships no compiler API until 7.1, and some tools need it.
+  typescript: ~6.0.0
+  # @cloudflare/vitest-pool-workers supports Vitest 4.1 only.
+  vitest: ^4.1.0
+  zod: ^4.6.0
+
+# Supply chain: wait 3 days before installing any newly published version.
+minimumReleaseAge: 4320
+# Refuse a version that was published with weaker trust evidence than earlier versions.
+trustPolicy: no-downgrade
+# pnpm 11+ fails the install when a dependency's install script hasn't been reviewed.
+allowBuilds:
+  esbuild: true

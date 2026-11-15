@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "degraded"
+      ]
+    },
+    "version": {
+      "type": "string"
+    },
+    "env": {
+      "type": "string"
+    },
+    "edge": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "error"
+          ]
+        },
+        "durableObject": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "error"
+          ]
+        },
+        "env": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false,
+      "title": "EdgeHealth"
+    },
+    "db": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "error"
+          ]
+        },
+        "branch": {
+          "type": "string"
+        },
+        "migrations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false,
+      "title": "DbHealth"
+    }
+  },
+  "required": [
+    "status",
+    "version",
+    "env",
+    "edge",
+    "db"
+  ],
+  "additionalProperties": false,
+  "title": "HealthResponse",
+  "description": "Response of GET /api/health."
+}

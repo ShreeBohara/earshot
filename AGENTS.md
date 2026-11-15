@@ -1,5 +1,33 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Working in this repo
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+Earshot v2 is a pnpm + Turborepo monorepo with a Python lab. Read `ROADMAP.md` and `docs/adr/` before changing architecture.
+
+## Map
+
+- `apps/web`: Next.js 16 on Cloudflare Workers via OpenNext
+- `apps/edge`: Hono Worker that owns the Durable Objects
+- `packages/core`: Zod contracts, their JSON Schema exports (`schemas/`), and shared fixtures
+- `packages/db`: Drizzle schema, migrations, and client
+- `packages/tokens`, `packages/ui`: design tokens and components
+- `packages/tsconfig`: shared TypeScript presets
+- `lab/`: Python 3.13 (uv): generated Pydantic contracts, tests, and experiments
+
+## Commands
+
+- `pnpm install`, then `pnpm dev`
+- `pnpm check` (Biome), `pnpm typecheck`, `pnpm test`, `pnpm build`
+- `pnpm contracts:gen`: regenerate `packages/core/schemas` and the lab's Pydantic models
+
+## Gates (run before every commit)
+
+- `pnpm check && pnpm typecheck && pnpm test`
+- Changed a contract in `packages/core`? Run `pnpm contracts:gen` and commit the generated files.
+- Architectural change? Add an ADR in `docs/adr/`.
+- Never commit secrets. `.env*` and `.dev.vars*` stay local.
+
+## Conventions
+
+- PR titles are Conventional Commits; PRs are squash-merged.
+- TypeScript is strict ESM. No enums, namespaces, or parameter properties (`erasableSyntaxOnly`).
+- Internal packages export TypeScript source (`"exports": { ".": "./src/index.ts" }`) and have no build step.
+- Node 26 (`.nvmrc`), pnpm 12 (`packageManager`), uv for Python.

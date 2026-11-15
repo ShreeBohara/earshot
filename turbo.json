@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/turbo/schema.json",
+  "ui": "stream",
+  "globalDependencies": [".nvmrc"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        ".open-next/**",
+        "dist/**",
+        "out/**",
+        "storybook-static/**"
+      ]
+    },
+    "cf-typegen": {
+      "outputs": ["worker-configuration.d.ts", "cloudflare-env.d.ts"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "cf-typegen"]
+    },
+    "lint": {},
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "contracts:gen": {
+      "dependsOn": ["^contracts:gen"],
+      "outputs": ["schemas/**", "src/earshot_lab/contracts/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

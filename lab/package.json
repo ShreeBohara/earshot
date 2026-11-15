@@ -1,0 +1,18 @@
+{
+  "name": "@earshot/lab",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Turborepo wrapper for the Python lab. Turborepo's Python support is experimental, so these scripts call uv directly.",
+  "scripts": {
+    "lint": "uv run ruff check . && uv run ruff format --check .",
+    "typecheck": "uv sync --quiet && pyright",
+    "test": "uv run pytest",
+    "contracts:gen": "uv run python scripts/gen_contracts.py"
+  },
+  "dependencies": {
+    "@earshot/core": "workspace:*"
+  },
+  "devDependencies": {
+    "pyright": "^1.1.400"
+  }
+}
