@@ -43,9 +43,51 @@ jobs:
           pnpm contracts:gen
           git diff --exit-code -- packages/core/schemas lab/src/earshot_lab/contracts
 
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # A boolean only; the token itself goes to the Chromatic step alone. Secrets are empty on
+      # fork PRs, so Chromatic is skipped there.
+      HAS_CHROMATIC: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # Chromatic's TurboSnap (onlyChanged) diffs against earlier builds' commits
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Read the Playwright version
+        id: playwright
+        working-directory: packages/ui
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Install Playwright Chromium (the browser is cached; its system libraries aren't)
+        working-directory: packages/ui
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Stories, play functions, and axe checks (Vitest browser mode)
+        run: pnpm --filter @earshot/ui test:storybook
+      - name: Publish to Chromatic
+        if: env.HAS_CHROMATIC == 'true'
+        uses: chromaui/action@5d18868345f53a8f61258ad393396c7e169100fd # v18.14.4
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          workingDir: packages/ui
+          buildScriptName: build-storybook
+          onlyChanged: true # TurboSnap; needs fetch-depth: 0
+          exitZeroOnChanges: true # review visual changes in Chromatic instead of failing CI
+          autoAcceptChanges: main
+
   # Deploys main to the production Workers once Cloudflare and Neon are configured.
   deploy-production:
-    needs: [checks]
+    needs: [checks, ui]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 25
