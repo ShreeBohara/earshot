@@ -1,0 +1,23 @@
+{
+  "name": "@earshot/keys",
+  "version": "0.0.0",
+  "private": true,
+  "description": "BYOK key handling: on-device encrypted storage, the optional server vault (envelope encryption), validation, and redaction.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./device": "./src/device-store.ts",
+    "./vault": "./src/vault.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "fake-indexeddb": "^6.2.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
