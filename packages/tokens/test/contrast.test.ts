@@ -11,6 +11,7 @@ const PAIRS: readonly (readonly [fg: SemanticName, bg: SemanticName, min: number
   ),
   ["on-accent", "accent", 4.5],
   ...STATE_NAMES.map((state) => [`state-${state}-text`, `state-${state}-bg`, 4.5] as const),
+  ...STATE_NAMES.map((state) => [`state-${state}-text`, "bg", 4.5] as const),
   ["border-strong", "bg", 3],
   ["focus-ring", "bg", 3],
   ...STATE_NAMES.map((state) => [`state-${state}-solid`, "bg", 3] as const),
@@ -40,6 +41,20 @@ describe("WCAG 2.1 contrast, computed with colorjs.io", () => {
       // APCA is reported for information only.
       const lc = onSrgb(background).contrast(onSrgb(text), "APCA");
       await annotate(`APCA Lc ${lc.toFixed(1)}`);
+    },
+  );
+});
+
+describe("how shadcn uses the aliases", () => {
+  // shadcn's destructive variants put `text-destructive` on `bg-destructive/10`: the text color
+  // at 10% opacity over the page, which Tailwind composites in sRGB.
+  it.for(INPUT_SET_NAMES.flatMap((set) => MODES.map((mode) => ({ set, mode }))))(
+    "$set · $mode · destructive text on its own 10% tint ≥ 4.5:1",
+    ({ set, mode }) => {
+      const theme = themeFor(set)[mode];
+      const text = onSrgb(theme.semantic["state-failed-text"]);
+      const tint = onSrgb(theme.semantic.bg).mix(text, 0.1, { space: "srgb", outputSpace: "srgb" });
+      expect(text.contrast(tint, "WCAG21")).toBeGreaterThanOrEqual(4.5);
     },
   );
 });

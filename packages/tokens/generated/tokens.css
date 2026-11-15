@@ -183,7 +183,7 @@
   --muted-foreground: var(--es-text-muted);
   --accent: var(--es-neutral-4);
   --accent-foreground: var(--es-text);
-  --destructive: var(--es-state-failed-solid);
+  --destructive: var(--es-state-failed-text);
   --border: var(--es-border);
   --input: var(--es-border-strong);
   --ring: var(--es-focus-ring);
@@ -341,7 +341,7 @@
   --muted-foreground: var(--es-text-muted);
   --accent: var(--es-neutral-4);
   --accent-foreground: var(--es-text);
-  --destructive: var(--es-state-failed-solid);
+  --destructive: var(--es-state-failed-text);
   --border: var(--es-border);
   --input: var(--es-border-strong);
   --ring: var(--es-focus-ring);
@@ -489,7 +489,7 @@
     --muted-foreground: var(--es-text-muted);
     --accent: var(--es-neutral-4);
     --accent-foreground: var(--es-text);
-    --destructive: var(--es-state-failed-solid);
+    --destructive: var(--es-state-failed-text);
     --border: var(--es-border);
     --input: var(--es-border-strong);
     --ring: var(--es-focus-ring);

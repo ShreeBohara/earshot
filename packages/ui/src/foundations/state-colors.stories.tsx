@@ -5,22 +5,22 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 const STATES: { state: Exclude<StatePillState, "neutral">; swatch: string; meaning: string }[] = [
   {
     state: "proposed",
-    swatch: "bg-state-proposed text-state-proposed-foreground",
+    swatch: "border border-state-proposed-border bg-state-proposed-bg text-state-proposed-text",
     meaning: "Heard on the call, waiting for review",
   },
   {
     state: "conflict",
-    swatch: "bg-state-conflict text-state-conflict-foreground",
+    swatch: "border border-state-conflict-border bg-state-conflict-bg text-state-conflict-text",
     meaning: "The CRM changed since the call",
   },
   {
     state: "synced",
-    swatch: "bg-state-synced text-state-synced-foreground",
+    swatch: "border border-state-synced-border bg-state-synced-bg text-state-synced-text",
     meaning: "Written to the CRM, with evidence",
   },
   {
     state: "failed",
-    swatch: "bg-state-failed text-state-failed-foreground",
+    swatch: "border border-state-failed-border bg-state-failed-bg text-state-failed-text",
     meaning: "The write failed and can be retried",
   },
 ];
@@ -42,7 +42,7 @@ function ThemePanel({ theme }: { theme: "light" | "dark" }) {
               Aa
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <code className="font-mono text-xs">--state-{state}</code>
+              <code className="font-mono text-xs">--es-state-{state}-*</code>
               <span className="text-muted-foreground text-xs">{meaning}</span>
             </span>
             <StatePill state={state} />

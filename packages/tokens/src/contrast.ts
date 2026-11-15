@@ -17,6 +17,7 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   ...STATE_NAMES.map(
     (state) => ({ fg: `state-${state}-text`, bg: `state-${state}-bg`, min: 4.5 }) as const,
   ),
+  ...STATE_NAMES.map((state) => ({ fg: `state-${state}-text`, bg: "bg", min: 4.5 }) as const),
   { fg: "border-strong", bg: "bg", min: 3 },
   { fg: "focus-ring", bg: "bg", min: 3 },
   ...STATE_NAMES.map((state) => ({ fg: `state-${state}-solid`, bg: "bg", min: 3 }) as const),
