@@ -8,6 +8,13 @@ on:
   pull_request:
     types: [closed]
 
+# Same per-PR group as preview.yml, so a deploy and a teardown never overlap. Closing a PR
+# cancels a deploy that is still running; reopening during teardown cancels the teardown,
+# and the new deploy recreates everything (create-branch-action is idempotent).
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
