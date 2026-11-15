@@ -131,7 +131,9 @@ function main(): void {
     return;
   }
   const checks = results.light.length + results.dark.length;
-  console.log(`All ${checks} contrast checks pass. Next: pnpm --filter @earshot/tokens build`);
+  console.log(
+    `All ${checks} contrast checks pass. Writing generated/tokens.css and tokens.json next`,
+  );
 }
 
 try {

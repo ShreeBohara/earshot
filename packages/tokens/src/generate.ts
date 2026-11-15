@@ -169,7 +169,9 @@ const SHADCN: Readonly<Record<ShadcnName, AliasTarget>> = {
   // In shadcn, --accent is the subtle hover fill of menus and ghost buttons, not a brand color.
   accent: { ramp: "neutral", step: 4 },
   "accent-foreground": { semantic: "text" },
-  destructive: { semantic: "state-failed-solid" },
+  // shadcn uses --destructive as text (on the page and on its own 10% tint), so it maps to the
+  // failed state's text color, which must clear 4.5:1, not to the 3:1 solid.
+  destructive: { semantic: "state-failed-text" },
   border: { semantic: "border" },
   input: { semantic: "border-strong" },
   ring: { semantic: "focus-ring" },

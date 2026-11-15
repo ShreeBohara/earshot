@@ -810,7 +810,7 @@
     },
     "destructive": {
       "$type": "color",
-      "$value": "{semantic.state-failed-solid}"
+      "$value": "{semantic.state-failed-text}"
     },
     "border": {
       "$type": "color",
