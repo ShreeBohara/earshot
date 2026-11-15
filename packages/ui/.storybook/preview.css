@@ -1,0 +1,15 @@
+/*
+ * Storybook's stand-ins for what the web app gets from next/font and its root layout:
+ * the font variables (Fontsource files instead of next/font/google) and the body font.
+ */
+:root {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
