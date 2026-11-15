@@ -1,0 +1,59 @@
+name: preview-cleanup
+
+# Tears down a PR's preview when it closes: the web Worker first (it binds to the edge
+# Worker), then the edge Worker and its Durable Objects, then the Neon branch.
+# Each step continues on error; janitor.yml catches anything left behind.
+
+on:
+  pull_request:
+    types: [closed]
+
+# Same per-PR group as preview.yml, so a deploy and a teardown never overlap. Closing a PR
+# cancels a deploy that is still running; reopening during teardown cancels the teardown,
+# and the new deploy recreates everything (create-branch-action is idempotent).
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  teardown:
+    if: github.event.pull_request.head.repo.full_name == github.repository && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: preview
+    env:
+      PR: ${{ github.event.pull_request.number }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # --force skips wrangler's confirmation prompts. It's in wrangler's source but not its docs.
+      - name: Delete the web Worker
+        continue-on-error: true
+        working-directory: apps/web
+        run: pnpm exec wrangler delete --name "earshot-web-pr-$PR" --force
+
+      - name: Delete the edge Worker and its Durable Objects
+        continue-on-error: true
+        working-directory: apps/edge
+        run: pnpm exec wrangler delete --name "earshot-edge-pr-$PR" --force
+
+      - name: Delete the Neon branch
+        continue-on-error: true
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: preview/pr-${{ github.event.pull_request.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}

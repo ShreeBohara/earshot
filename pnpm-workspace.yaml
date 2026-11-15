@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
   - "lab"
+  - "scripts"
 
 # One version of each shared dependency, repo-wide. Ranges are loose on purpose: with the
 # 3-day minimum release age below, pnpm picks the newest version that is at least 3 days
