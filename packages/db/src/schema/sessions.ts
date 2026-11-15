@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
@@ -54,8 +55,11 @@ export const sessions = pgTable(
 export const sessionEvents = pgTable(
   "session_events",
   {
-    /** The envelope's own id (a UUIDv7), kept so JSONL export and import round-trip it. */
-    id: uuid().notNull().defaultRandom(),
+    /**
+     * The envelope's own id (a UUIDv7), which the event store returns. No default: every
+     * envelope has one, and a missing id should fail rather than be invented.
+     */
+    id: uuid().notNull(),
     workspaceId: workspaceId(),
     sessionId: uuid("session_id").notNull(),
     seq: integer().notNull(),
@@ -66,7 +70,9 @@ export const sessionEvents = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.sessionId, t.seq] }),
-    unique("session_events_id_unique").on(t.id),
+    // Scoped to the session rather than global, so a conflict reveals nothing about other
+    // workspaces' events.
+    uniqueIndex("session_events_session_id_id_unique").on(t.sessionId, t.id),
     foreignKey({
       name: "session_events_session_fk",
       columns: [t.workspaceId, t.sessionId],

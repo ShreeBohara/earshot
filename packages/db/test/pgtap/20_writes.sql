@@ -24,8 +24,8 @@ select lives_ok($$insert into crm_entities (workspace_id, kind, external_id, nam
 select lives_ok($$insert into sessions (workspace_id, user_id, mode, engine)
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'user-a', 'conversation', 'speech-to-speech')$$,
   'sessions: A can insert its own row');
-select lives_ok($$insert into session_events (workspace_id, session_id, seq, type, schema_version, payload, ts)
-  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a0000000-0000-4000-8000-000000000004',
+select lives_ok($$insert into session_events (id, workspace_id, session_id, seq, type, schema_version, payload, ts)
+  values (gen_random_uuid(), 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a0000000-0000-4000-8000-000000000004',
           1, 'session.ended', 1, '{}', now())$$,
   'session_events: A can append to its own session');
 select lives_ok($$insert into utterances (workspace_id, session_id, seq, witness, text, started_ms, ended_ms)
@@ -74,8 +74,8 @@ select throws_ok($$insert into sessions (workspace_id, user_id, mode, engine)
   values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'user-a', 'conversation', 'speech-to-speech')$$,
   '42501', 'new row violates row-level security policy for table "sessions"',
   'sessions: A can''t insert into B');
-select throws_ok($$insert into session_events (workspace_id, session_id, seq, type, schema_version, payload, ts)
-  values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b0000000-0000-4000-8000-000000000004',
+select throws_ok($$insert into session_events (id, workspace_id, session_id, seq, type, schema_version, payload, ts)
+  values (gen_random_uuid(), 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b0000000-0000-4000-8000-000000000004',
           1, 'session.ended', 1, '{}', now())$$,
   '42501', 'new row violates row-level security policy for table "session_events"',
   'session_events: A can''t append to B''s session');
@@ -185,8 +185,8 @@ select throws_ok($$insert into crm_entities (workspace_id, connection_id, kind, 
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'b0000000-0000-4000-8000-000000000002', 'contact', 'demo-2', 'Eve')$$,
   '23503', 'insert or update on table "crm_entities" violates foreign key constraint "crm_entities_connection_fk"',
   'crm_entities: A can''t attach an entity to B''s connection');
-select throws_ok($$insert into session_events (workspace_id, session_id, seq, type, schema_version, payload, ts)
-  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'b0000000-0000-4000-8000-000000000004',
+select throws_ok($$insert into session_events (id, workspace_id, session_id, seq, type, schema_version, payload, ts)
+  values (gen_random_uuid(), 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'b0000000-0000-4000-8000-000000000004',
           7, 'session.ended', 1, '{}', now())$$,
   '23503', 'insert or update on table "session_events" violates foreign key constraint "session_events_session_fk"',
   'session_events: A can''t append an event to B''s session');

@@ -46,7 +46,7 @@ The catalog checks also fail when someone adds a table with a `workspace_id` col
 **`session_events` isn't partitioned yet.** ADR-0004 and the plan call for monthly partitions. They wait for now, for four reasons:
 
 - At Phase 2 volumes (tens of events per debrief) partitions buy nothing.
-- Every unique key on a partitioned table must include the partition key, which would turn the `(session_id, seq)` primary key into `(session_id, seq, ts)` and weaken it.
+- Every unique key on a partitioned table must include the partition key. Adding `ts` to the `(session_id, seq)` primary key and the `(session_id, id)` unique index would weaken both.
 - drizzle-kit doesn't manage partitions.
 - Archiving old events to R2 (ADR-0004) may make partitions unnecessary.
 
@@ -64,7 +64,7 @@ Revisit at about 10 million rows or a few GB, or when retention needs to drop wh
 
 - Tenant code has to go through `withTenant`, which costs a transaction and two extra statements per unit of work.
 - RLS guards against mistakes, not hostile code. Anything holding the owner connection can `RESET ROLE` or skip `withTenant`, so the connection string remains the real secret.
-- Unique keys that span workspaces (`sync_jobs.idempotency_key`, `session_events.id`) can reveal through a conflict that another workspace used a value, so they must stay unguessable, for example derived from random ids.
+- A unique key that spans workspaces (`sync_jobs.idempotency_key`) can reveal through a conflict that another workspace used a value, so it must stay unguessable, for example derived from random ids. Event ids avoid this: they're unique per session, not globally.
 - HNSW indexes span all workspaces. A vector search ranks every workspace's rows and RLS filters afterwards, so a small workspace can get fewer than k results. Phase 4 should enable pgvector's iterative index scans (`hnsw.iterative_scan`) if recall suffers.
 - On a sequential scan, the policy's `current_setting()` call runs once per row. Indexes that lead with `workspace_id` avoid most of that. Wrapping the expression in a scalar subquery is an option if profiling shows a cost.
 - The app role can't read `user`, so showing names next to tenant data needs a separate read as the owner, or column grants later.

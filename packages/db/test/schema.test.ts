@@ -1,6 +1,13 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { crmConnections, crmEntities, facts, proposals, workspaces } from "../src/schema";
+import {
+  crmConnections,
+  crmEntities,
+  facts,
+  proposals,
+  sessionEvents,
+  workspaces,
+} from "../src/schema";
 import { tenantTables } from "../src/tenant";
 import { A, B, rowId, seededDb, tenantKey } from "./db";
 
@@ -43,5 +50,33 @@ describe("schema", () => {
       .values({ ...demo, name: "Akme" })
       .catch((e: unknown) => e);
     expect(String((duplicate as Error).cause)).toMatch(/crm_entities_external_key_unique/);
+  });
+
+  it("requires each event's envelope id, unique within its session", async () => {
+    const { db } = await seededDb();
+
+    // Drizzle's insert type already demands an id; the database refuses a missing one too.
+    const missing = await db
+      .execute(
+        sql`insert into session_events (workspace_id, session_id, seq, type, schema_version, payload, ts)
+            values (${A.workspaceId}, ${rowId("a", 4)}, 1, 'session.ended', 1, '{}', now())`,
+      )
+      .catch((e: unknown) => e);
+    expect(String((missing as Error).cause)).toMatch(/null value in column "id"/);
+
+    const duplicate = await db
+      .insert(sessionEvents)
+      .values({
+        id: rowId("a", 5), // the id of the session's seeded event
+        workspaceId: A.workspaceId,
+        sessionId: rowId("a", 4),
+        seq: 1,
+        type: "session.ended",
+        schemaVersion: 1,
+        payload: {},
+        ts: new Date(),
+      })
+      .catch((e: unknown) => e);
+    expect(String((duplicate as Error).cause)).toMatch(/session_events_session_id_id_unique/);
   });
 });
