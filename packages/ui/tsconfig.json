@@ -1,9 +1,11 @@
 {
   "extends": "@earshot/tsconfig/react-library.json",
   "compilerOptions": {
+    // node: the Storybook and Vitest configs. vite/client: CSS imports in .storybook/preview.ts.
+    "types": ["node", "vite/client"],
     "paths": {
       "@earshot/ui/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", ".storybook/*.ts", "vitest.config.ts"]
 }

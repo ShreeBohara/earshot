@@ -39,6 +39,14 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-state-proposed: var(--state-proposed);
+  --color-state-proposed-foreground: var(--state-proposed-foreground);
+  --color-state-conflict: var(--state-conflict);
+  --color-state-conflict-foreground: var(--state-conflict-foreground);
+  --color-state-synced: var(--state-synced);
+  --color-state-synced-foreground: var(--state-synced-foreground);
+  --color-state-failed: var(--state-failed);
+  --color-state-failed-foreground: var(--state-failed-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -51,7 +59,8 @@
   --font-serif: var(--font-serif);
 }
 
-:root {
+:root,
+[data-theme="light"] {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -63,13 +72,16 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* Darker than shadcn's 0.556 so muted text clears 4.5:1 on --muted too (Kbd, tab lists). */
+  --muted-foreground: oklch(0.5 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  /* Darker than shadcn's so destructive text clears 4.5:1 on its own 10-20% tint. */
+  --destructive: oklch(0.5 0.19 27);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* The focus ring: at least 3:1 against the page and --muted (shadcn's 0.708 is 2.6:1). */
+  --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -84,6 +96,19 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /*
+   * Earshot's state colors: a solid fill and the text that sits on it. Interim values until
+   * @earshot/tokens repoints them at its state ramps. Each solid is at least 3:1 on the
+   * background, and each foreground at least 4.5:1 on its solid.
+   */
+  --state-proposed: oklch(0.54 0.15 250);
+  --state-proposed-foreground: oklch(1 0 0);
+  --state-conflict: oklch(0.54 0.11 75);
+  --state-conflict-foreground: oklch(1 0 0);
+  --state-synced: oklch(0.54 0.145 150);
+  --state-synced-foreground: oklch(1 0 0);
+  --state-failed: oklch(0.54 0.17 25);
+  --state-failed-foreground: oklch(1 0 0);
 }
 
 [data-theme="dark"] {
@@ -118,6 +143,24 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --state-proposed: oklch(0.62 0.16 250);
+  --state-proposed-foreground: oklch(0.145 0 0);
+  --state-conflict: oklch(0.62 0.125 75);
+  --state-conflict-foreground: oklch(0.145 0 0);
+  --state-synced: oklch(0.62 0.15 150);
+  --state-synced-foreground: oklch(0.145 0 0);
+  --state-failed: oklch(0.62 0.17 25);
+  --state-failed-foreground: oklch(0.145 0 0);
+}
+
+/*
+ * The focus indicator every interactive component uses (`focus-visible:focus-ring`): a 2px ring
+ * in --ring, offset 2px so it sits on the page background, where --ring is at least 3:1 in both
+ * themes. An outline rather than a box-shadow, so it survives forced-colors mode.
+ */
+@utility focus-ring {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 @layer base {
