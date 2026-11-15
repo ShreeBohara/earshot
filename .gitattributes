@@ -1,0 +1,5 @@
+* text=auto eol=lf
+packages/core/schemas/** linguist-generated=true
+lab/src/earshot_lab/contracts/** linguist-generated=true
+pnpm-lock.yaml linguist-generated=true -diff
+lab/uv.lock linguist-generated=true -diff

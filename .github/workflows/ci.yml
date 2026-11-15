@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  # Install exactly what lab/uv.lock pins; never re-lock in CI.
+  UV_FROZEN: 1
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # turbo --affected compares against the base branch
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v10
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project lab
+      - name: Format and lint (Biome)
+        run: pnpm ci:check
+      - name: Lint, typecheck, test, build
+        run: pnpm turbo run lint typecheck test build ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+      - name: Contracts are up to date
+        run: |
+          pnpm contracts:gen
+          git diff --exit-code -- packages/core/schemas lab/src/earshot_lab/contracts

@@ -1,0 +1,26 @@
+{
+  "name": "@earshot/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Earshot's shared contracts: Zod schemas, their JSON Schema exports, and parity fixtures.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas/*": "./schemas/*"
+  },
+  "scripts": {
+    "contracts:gen": "tsx scripts/export-schemas.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

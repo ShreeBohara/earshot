@@ -1,0 +1,7 @@
+{
+  "status": "fine",
+  "version": "5b731bd",
+  "env": "production",
+  "edge": { "status": "ok" },
+  "db": { "status": "ok" }
+}

@@ -1,0 +1,7 @@
+{
+  "status": "degraded",
+  "version": "5b731bd",
+  "env": "production",
+  "edge": { "status": "error" },
+  "db": { "status": "ok", "branch": "production", "migrations": 2 }
+}

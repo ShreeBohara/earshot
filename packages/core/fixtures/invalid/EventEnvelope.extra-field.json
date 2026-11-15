@@ -1,0 +1,10 @@
+{
+  "id": "0195f6a2-7c1e-7d3a-9b2c-4f5e6a7b8c9d",
+  "sessionId": "0195f6a2-7c1e-7d3a-9b2c-000000000001",
+  "seq": 2,
+  "type": "utterance.final",
+  "schemaVersion": 1,
+  "ts": "2026-11-15T17:30:00.000Z",
+  "payload": {},
+  "speaker": "rep"
+}
