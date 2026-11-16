@@ -1,14 +1,6 @@
 import type { EventEnvelope, UtteranceFinalV1 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
-import {
-  defaultProjections,
-  fromJsonl,
-  InMemoryEventStore,
-  NO_EVENTS,
-  type ProposalView,
-  replay,
-  toJsonl,
-} from "../src";
+import { defaultProjections, fromJsonl, type ProposalView, replay, toJsonl } from "../src";
 import { readFixture } from "./helpers";
 
 // The Phase 2 gate (plan §10): replaying a session file rebuilds identical projections.
@@ -34,18 +26,8 @@ describe("demo-session.jsonl: the replay gate", () => {
     expect(toJsonl(fromJsonl(text))).toBe(text);
   });
 
-  it("round-trips through the event store byte for byte", async () => {
-    const events = fromJsonl(text);
-    const sessionId = events[0]?.sessionId ?? "";
-    const store = new InMemoryEventStore();
-    // Pre-numbered drafts, as SessionDO will flush them: the store checks every seq.
-    await store.append(
-      sessionId,
-      NO_EVENTS,
-      events.map(({ sessionId: _, ...draft }) => draft),
-    );
-    expect(toJsonl(await store.read(sessionId))).toBe(text);
-  });
+  // The round trip through an event store is in the store contract (src/testing.ts), so every
+  // EventStore runs it: InMemoryEventStore here, and the Postgres store in @earshot/db.
 });
 
 describe("demo-session.jsonl: what the replay demo relies on", () => {
