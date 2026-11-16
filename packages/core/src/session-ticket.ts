@@ -31,6 +31,24 @@ export const MIN_TICKET_SECRET_BYTES = 32;
 /** The prefix of the subprotocol entry that carries the ticket. */
 export const TICKET_SUBPROTOCOL_PREFIX = "earshot.ticket.";
 
+/**
+ * The ticket secret for zero-setup development only. With no `EARSHOT_SESSION_TICKET_SECRET` set,
+ * the web app and the edge Worker both fall back to it in development, so tickets one signs the
+ * other accepts, and a fresh clone runs without a `.dev.vars`. It's in the source, so anyone can
+ * sign tickets with it: outside development, configuration must refuse it (`isDevTicketSecret`),
+ * as the web app refuses its development-only Better Auth secret.
+ */
+export const DEV_SESSION_TICKET_SECRET =
+  "earshot-development-only-session-ticket-secret-never-deploy-this";
+
+/**
+ * True if `secret` is the development-only ticket secret, ignoring surrounding whitespace, as an
+ * environment file can leave it. Configuration outside development refuses it.
+ */
+export function isDevTicketSecret(secret: string | null | undefined): boolean {
+  return secret?.trim() === DEV_SESSION_TICKET_SECRET;
+}
+
 const SIGNATURE_BYTES = 32; // HMAC-SHA256
 
 const Seconds = z.int().nonnegative();

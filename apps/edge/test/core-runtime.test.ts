@@ -1,5 +1,6 @@
 import {
   parseClientMessage,
+  SESSION_CLOSE_CODES,
   SESSION_SUBPROTOCOL,
   signTicket,
   ticketClaims,
@@ -49,5 +50,30 @@ describe("@earshot/core in workerd", () => {
       socketMs: 1200,
     };
     expect(parseClientMessage(JSON.stringify(usage))).toEqual({ ok: false, reason: "stray_key" });
+  });
+
+  it("closes a socket with every session close code and its reason", async () => {
+    for (const { code, reason } of Object.values(SESSION_CLOSE_CODES)) {
+      const { 0: client, 1: server } = new WebSocketPair();
+      client.accept();
+      server.accept();
+      const closed = new Promise<CloseEvent>((resolve) => {
+        client.addEventListener("close", resolve);
+      });
+      server.close(code, reason);
+      const event = await closed;
+      expect({ code: event.code, reason: event.reason }).toEqual({ code, reason });
+    }
+  });
+
+  it("refuses a close reason over 123 bytes, the limit the close codes are held to", () => {
+    const openServerEnd = () => {
+      const { 0: client, 1: server } = new WebSocketPair();
+      client.accept();
+      server.accept();
+      return server;
+    };
+    expect(() => openServerEnd().close(4000, "x".repeat(123))).not.toThrow();
+    expect(() => openServerEnd().close(4000, "x".repeat(124))).toThrow();
   });
 });

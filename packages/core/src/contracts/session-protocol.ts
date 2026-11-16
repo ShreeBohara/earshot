@@ -202,6 +202,76 @@ export const SessionErrorCode = z.enum([
 ]);
 export type SessionErrorCode = z.infer<typeof SessionErrorCode>;
 
+function closeCode<C extends number, R extends string, X extends boolean>(
+  code: C,
+  reason: R,
+  reconnect: X,
+) {
+  return Object.freeze({ code, reason, reconnect });
+}
+
+/**
+ * How the server ends a session socket: close codes in the private range 4000–4099, each with a
+ * fixed reason (at most 123 bytes of UTF-8; Workers' `close()` throws on longer ones). The edge
+ * Worker and `SessionDO` close with these, and the client acts on the code, never the reason.
+ * `reconnect` says which kind each one is.
+ *
+ * Reconnect, with backoff and a fresh ticket, after:
+ * - `going_away` (4000): the server is shutting the socket, for a redeploy or eviction. The
+ *   end-to-end test's forced network drop uses it too.
+ * - `internal_error` (4001): something failed on the server.
+ * - `rate_limited` (4002): too many messages on this socket. Back off before reconnecting.
+ * - `ticket_refused` (4003): the ticket didn't verify: expired, malformed, signed with another
+ *   secret, or for another session. A fresh ticket usually fixes it; stop if that one is refused too.
+ * - `ticket_reused` (4004): the ticket's `jti` was already used. Every connection needs its own.
+ *
+ * Final, so don't reconnect:
+ * - `replaced` (4005): a newer connection to the session took over. Reconnecting would fight it.
+ * - `session_ended` (4006): the session has ended, or was deleted.
+ * - `forbidden` (4007): the session belongs to another user or workspace.
+ * - `unsupported_protocol` (4008): the server doesn't speak this client's protocol version. Reload.
+ *
+ * Any other code, such as 1001 or 1006, means the network or the runtime dropped the socket:
+ * reconnect, as after `going_away`.
+ */
+export const SESSION_CLOSE_CODES = Object.freeze({
+  going_away: closeCode(4000, "server going away", true),
+  internal_error: closeCode(4001, "internal error", true),
+  rate_limited: closeCode(4002, "too many messages", true),
+  ticket_refused: closeCode(4003, "ticket refused", true),
+  ticket_reused: closeCode(4004, "ticket already used", true),
+  replaced: closeCode(4005, "replaced by a newer connection", false),
+  session_ended: closeCode(4006, "session ended", false),
+  forbidden: closeCode(4007, "session belongs to another user", false),
+  unsupported_protocol: closeCode(4008, "protocol version unsupported", false),
+});
+export type SessionCloseName = keyof typeof SESSION_CLOSE_CODES;
+export type SessionClose = (typeof SESSION_CLOSE_CODES)[SessionCloseName];
+export type SessionCloseCode = SessionClose["code"];
+
+const CLOSES_BY_CODE: ReadonlyMap<number, SessionClose & { readonly name: SessionCloseName }> =
+  new Map(
+    (Object.keys(SESSION_CLOSE_CODES) as SessionCloseName[]).map((name) => {
+      const close = SESSION_CLOSE_CODES[name];
+      return [close.code, Object.freeze({ name, ...close })];
+    }),
+  );
+
+/** True if `code` is one of `SESSION_CLOSE_CODES`. */
+export function isSessionCloseCode(code: number): code is SessionCloseCode {
+  return CLOSES_BY_CODE.has(code);
+}
+
+/**
+ * The session close a code stands for, with its name, or undefined for any other code. A client
+ * reconnects unless this returns one with `reconnect: false`.
+ */
+export function sessionCloseFor(
+  code: number,
+): (SessionClose & { readonly name: SessionCloseName }) | undefined {
+  return CLOSES_BY_CODE.get(code);
+}
+
 const Welcome = z.strictObject({
   t: z.literal("welcome"),
   sessionId: z.uuid(),

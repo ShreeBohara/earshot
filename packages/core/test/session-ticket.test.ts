@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  DEV_SESSION_TICKET_SECRET,
   importTicketKey,
+  isDevTicketSecret,
   MAX_TICKET_LENGTH,
   MAX_TICKET_LIFETIME_SECONDS,
+  MIN_TICKET_SECRET_BYTES,
   SESSION_SUBPROTOCOL,
   signTicket,
   TICKET_CLOCK_SKEW_SECONDS,
@@ -263,6 +266,24 @@ describe("secrets and claims", () => {
     const longest = claims({ uid: "~".repeat(128), iat: 2 ** 52, exp: 2 ** 52 + 60 });
     expect((await signTicket(SECRET, longest)).length).toBeLessThan(MAX_TICKET_LENGTH / 2);
     await expect(signTicket(SECRET, claims({ uid: "~".repeat(129) }))).rejects.toThrow(/uid/);
+  });
+});
+
+describe("the development secret", () => {
+  it("is long enough to sign with, and says what it is", async () => {
+    const bytes = new TextEncoder().encode(DEV_SESSION_TICKET_SECRET).byteLength;
+    expect(bytes).toBeGreaterThanOrEqual(MIN_TICKET_SECRET_BYTES);
+    expect(DEV_SESSION_TICKET_SECRET).toMatch(/development-only/);
+    const ticket = await signTicket(DEV_SESSION_TICKET_SECRET, claims());
+    expect((await verifyTicket(DEV_SESSION_TICKET_SECRET, ticket, NOW)).ok).toBe(true);
+  });
+
+  it("is detected, even inside whitespace from an env file, and nothing else is", () => {
+    expect(isDevTicketSecret(DEV_SESSION_TICKET_SECRET)).toBe(true);
+    expect(isDevTicketSecret(`  ${DEV_SESSION_TICKET_SECRET}\n`)).toBe(true);
+    for (const other of [SECRET, `${DEV_SESSION_TICKET_SECRET}-2`, "", null, undefined]) {
+      expect(isDevTicketSecret(other)).toBe(false);
+    }
   });
 });
 

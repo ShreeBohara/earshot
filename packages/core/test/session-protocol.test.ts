@@ -5,6 +5,7 @@ import {
   EntityRef,
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
+  isSessionCloseCode,
   KEY_SHAPES,
   MAX_ENTITY_ALIASES,
   MAX_ENTITY_NAME_CHARS,
@@ -13,9 +14,11 @@ import {
   MAX_UTTERANCE_TEXT_CHARS,
   parseClientMessage,
   parseServerMessage,
+  SESSION_CLOSE_CODES,
   SESSION_PROTOCOL_VERSION,
   ServerMessage,
   SessionErrorCode,
+  sessionCloseFor,
   TURN_KEY_MAX_LENGTH,
   TURN_KEY_MIN_LENGTH,
   uuidv7,
@@ -461,6 +464,70 @@ describe("server messages", () => {
     const [issue] = ServerMessage.safeParse(deep).error?.issues ?? [];
     expect(issue).toMatchObject({ code: "custom" });
     expect(issue?.path).toHaveLength(50_000 + 3); // event, payload, 50,000 × child, leaf
+  });
+});
+
+describe("close codes", () => {
+  const closes = Object.entries(SESSION_CLOSE_CODES);
+
+  it("are unique, in 4000–4099, with reasons WebSocket close() takes (at most 123 bytes)", () => {
+    for (const [name, { code, reason }] of closes) {
+      expect(Number.isInteger(code), name).toBe(true);
+      expect(code, name).toBeGreaterThanOrEqual(4000);
+      expect(code, name).toBeLessThanOrEqual(4099);
+      expect(reason.length, name).toBeGreaterThan(0);
+      expect(new TextEncoder().encode(reason).byteLength, name).toBeLessThanOrEqual(123);
+    }
+    const codes = closes.map(([, close]) => close.code);
+    expect(new Set(codes).size).toBe(codes.length);
+  });
+
+  it("cover tickets, the session's end, takeovers, versions, limits, errors, and redeploys", () => {
+    expect(Object.keys(SESSION_CLOSE_CODES).sort()).toEqual([
+      "forbidden",
+      "going_away",
+      "internal_error",
+      "rate_limited",
+      "replaced",
+      "session_ended",
+      "ticket_refused",
+      "ticket_reused",
+      "unsupported_protocol",
+    ]);
+  });
+
+  it("mark the final ones; the client reconnects after the rest", () => {
+    const final = closes.filter(([, close]) => !close.reconnect).map(([name]) => name);
+    expect(final.sort()).toEqual([
+      "forbidden",
+      "replaced",
+      "session_ended",
+      "unsupported_protocol",
+    ]);
+  });
+
+  it("give 4000 to going away, which the end-to-end test's forced drop uses to make a reconnect", () => {
+    expect(SESSION_CLOSE_CODES.going_away).toEqual({
+      code: 4000,
+      reason: "server going away",
+      reconnect: true,
+    });
+  });
+
+  it("are frozen, entry by entry", () => {
+    expect(Object.isFrozen(SESSION_CLOSE_CODES)).toBe(true);
+    for (const [, close] of closes) expect(Object.isFrozen(close)).toBe(true);
+  });
+
+  it("are recognized and looked up by code, and nothing else is", () => {
+    for (const [name, close] of closes) {
+      expect(isSessionCloseCode(close.code)).toBe(true);
+      expect(sessionCloseFor(close.code)).toEqual({ name, ...close });
+    }
+    for (const other of [1000, 1001, 1006, 3999, 4099, 4100]) {
+      expect(isSessionCloseCode(other)).toBe(false);
+      expect(sessionCloseFor(other)).toBeUndefined();
+    }
   });
 });
 
