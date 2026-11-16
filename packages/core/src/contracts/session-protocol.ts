@@ -23,6 +23,23 @@ export const SESSION_SUBPROTOCOL = "earshot.v1";
 export const MAX_MESSAGE_BYTES = 65_536;
 /** The longest utterance text a client may send, in UTF-16 code units (target). */
 export const MAX_UTTERANCE_TEXT_CHARS = 4_000;
+
+/** The longest IANA time zone name `start` accepts; real names are under 40 characters. */
+export const MAX_TIME_ZONE_CHARS = 64;
+
+/**
+ * Whether `value` names a time zone this runtime knows. Uses `Intl`, which Workers, browsers, and
+ * Node all ship with full time zone data.
+ */
+export function isIanaTimeZone(value: string): boolean {
+  if (!/^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/.test(value)) return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
 /** The most CRM entities a `start` message may carry (target). */
 export const MAX_SESSION_ENTITIES = 250;
 /** The longest entity name or alias a `start` message may carry, in UTF-16 code units. */
@@ -123,6 +140,12 @@ const Start = z.strictObject({
   startedAt: Timestamp,
   /** The CRM records the session may mention, from `POST /api/sessions`. */
   entities: z.array(SocketEntityRef).max(MAX_SESSION_ENTITIES),
+  /**
+   * The rep's IANA time zone (for example `America/Chicago`), so the extractor resolves "by
+   * Thursday" against the rep's calendar rather than UTC. Optional: without it, dates resolve in
+   * UTC.
+   */
+  timeZone: z.string().max(MAX_TIME_ZONE_CHARS).refine(isIanaTimeZone).optional(),
 });
 
 const Utterance = z.strictObject({

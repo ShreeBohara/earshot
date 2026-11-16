@@ -5,6 +5,7 @@ import {
   EntityRef,
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
+  isIanaTimeZone,
   isSessionCloseCode,
   KEY_SHAPES,
   MAX_ENTITY_ALIASES,
@@ -259,6 +260,20 @@ describe("size caps", () => {
     expect(accepts({ id: "i".repeat(129) })).toBe(false);
     const long = { ...entity(1), name: "n".repeat(MAX_ENTITY_NAME_CHARS + 1) };
     expect(EntityRef.safeParse(long).success).toBe(true);
+  });
+
+  it("takes an optional IANA time zone in start, and nothing else there", () => {
+    const { start } = clientMessages();
+    for (const timeZone of ["America/Chicago", "Europe/London", "Asia/Kolkata", "UTC"]) {
+      expect(parseClientMessage(frame({ ...start, timeZone })).ok).toBe(true);
+    }
+    for (const timeZone of ["Mars/Olympus_Mons", "", "America/Chicago; drop", "x".repeat(65)]) {
+      expect(parseClientMessage(frame({ ...start, timeZone }))).toMatchObject({
+        reason: "invalid",
+      });
+    }
+    expect(isIanaTimeZone("America/Chicago")).toBe(true);
+    expect(isIanaTimeZone("../etc/passwd")).toBe(false);
   });
 
   it("caps start at 250 entities", () => {
