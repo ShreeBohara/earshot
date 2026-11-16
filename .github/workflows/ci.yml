@@ -90,9 +90,9 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Stories, play functions, and axe checks (Vitest browser mode)
         run: pnpm --filter @earshot/ui test:storybook
-      - name: Sign-in and demo pages render and pass axe (next dev, in-process PGlite, no secrets)
+      - name: Sign-in, demo, Settings → Keys, and the demo CRM pass axe (next dev, in-process PGlite, no secrets)
         working-directory: apps/web
-        run: pnpm exec playwright test e2e/sign-in.spec.ts
+        run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts
       - name: Publish to Chromatic
         if: env.HAS_CHROMATIC == 'true'
         uses: chromaui/action@5d18868345f53a8f61258ad393396c7e169100fd # v18.14.4
@@ -147,7 +147,8 @@ jobs:
       - name: Build the web Worker (next build, then the OpenNext bundle)
         run: pnpm turbo run build:worker --filter=@earshot/web
       # Auth fails closed without BETTER_AUTH_SECRET; email and OAuth sign-in stay off without
-      # their pairs. Empty values are dropped rather than uploaded.
+      # their pairs, and the key vault without EARSHOT_VAULT_MASTER_KEY. Empty values are dropped
+      # rather than uploaded.
       - name: Deploy the web Worker with its secrets
         working-directory: apps/web
         env:
@@ -160,13 +161,15 @@ jobs:
           GH_CLIENT_SECRET: ${{ secrets.AUTH_GITHUB_CLIENT_SECRET }}
           GOOGLE_CLIENT_ID: ${{ vars.AUTH_GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.AUTH_GOOGLE_CLIENT_SECRET }}
+          VAULT_MASTER_KEY: ${{ secrets.EARSHOT_VAULT_MASTER_KEY }}
         run: |
           umask 077
           jq -n --arg u "$DB_URL" --arg s "$AUTH_SECRET" --arg r "$RESEND_API_KEY" --arg f "$EMAIL_FROM" \
             --arg gi "$GH_CLIENT_ID" --arg gs "$GH_CLIENT_SECRET" \
-            --arg oi "$GOOGLE_CLIENT_ID" --arg os "$GOOGLE_CLIENT_SECRET" \
+            --arg oi "$GOOGLE_CLIENT_ID" --arg os "$GOOGLE_CLIENT_SECRET" --arg v "$VAULT_MASTER_KEY" \
             '{DATABASE_URL: $u, BETTER_AUTH_SECRET: $s, RESEND_API_KEY: $r, EMAIL_FROM: $f,
-              GITHUB_CLIENT_ID: $gi, GITHUB_CLIENT_SECRET: $gs, GOOGLE_CLIENT_ID: $oi, GOOGLE_CLIENT_SECRET: $os}
+              GITHUB_CLIENT_ID: $gi, GITHUB_CLIENT_SECRET: $gs, GOOGLE_CLIENT_ID: $oi, GOOGLE_CLIENT_SECRET: $os,
+              EARSHOT_VAULT_MASTER_KEY: $v}
              | with_entries(select(.value != ""))' \
             > "$RUNNER_TEMP/web.secrets.json"
           pnpm exec opennextjs-cloudflare deploy --config wrangler.production.jsonc -- --secrets-file "$RUNNER_TEMP/web.secrets.json"
