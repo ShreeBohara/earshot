@@ -17,13 +17,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@earshot/demo-crm": "workspace:*",
     "@earshot/events": "workspace:*",
     "@earshot/keys": "workspace:*",
     "@neondatabase/serverless": "catalog:",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@earshot/demo-crm": "workspace:*",
     "@earshot/tsconfig": "workspace:*",
     "@electric-sql/pglite": "catalog:",
     "@electric-sql/pglite-pgtap": "catalog:",

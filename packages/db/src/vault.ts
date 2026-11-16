@@ -21,7 +21,7 @@ import {
 import { and, asc, eq, sql, type TablesRelationalConfig } from "drizzle-orm";
 import type { PgQueryResultHKT, PgTransaction } from "drizzle-orm/pg-core";
 import { auditLog, credentials } from "./schema";
-import { TENANT_ROLE } from "./tenant";
+import { currentTenant } from "./tenant";
 
 /** A key's slot within its workspace. Each slot holds at most one key. */
 export interface CredentialSlot {
@@ -238,32 +238,12 @@ type Tenant = { readonly userId: string; readonly workspaceId: string };
  * role with both set: on the owner connection RLS doesn't apply, and these functions would reach
  * every workspace's keys.
  */
-async function tenantOf<
+function tenantOf<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown>,
   TSchema extends TablesRelationalConfig,
 >(tx: PgTransaction<TQueryResult, TFullSchema, TSchema>): Promise<Tenant> {
-  const result: unknown = await tx.execute(
-    sql`select current_user as role, current_setting('app.user_id', true) as user_id,
-               current_setting('app.workspace_id', true) as workspace_id`,
-  );
-  // PGlite and node-postgres-style drivers return { rows }; postgres.js returns the rows.
-  const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows;
-  const row = rows?.[0] as
-    | Partial<Record<"role" | "user_id" | "workspace_id", unknown>>
-    | undefined;
-  const userId = row?.user_id;
-  const workspaceId = row?.workspace_id;
-  if (
-    row?.role !== TENANT_ROLE ||
-    typeof userId !== "string" ||
-    typeof workspaceId !== "string" ||
-    !userId ||
-    !workspaceId
-  ) {
-    throw new TypeError("Vault functions must run in a transaction from withTenant.");
-  }
-  return { userId, workspaceId };
+  return currentTenant(tx, "Vault functions");
 }
 
 function slotIs(workspaceId: string, provider: string, label: string) {

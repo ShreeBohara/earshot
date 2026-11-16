@@ -118,3 +118,37 @@ export async function withTenant<
     return fn(tx);
   });
 }
+
+/**
+ * The user and workspace `withTenant` set on this transaction. Throws a TypeError, naming
+ * `caller`, unless the transaction runs as the tenant role with both settings present: on the
+ * owner connection RLS doesn't apply, so a function that trusts it would reach every workspace.
+ * Data-layer functions that take a transaction call this first.
+ */
+export async function currentTenant<
+  TQueryResult extends PgQueryResultHKT,
+  TFullSchema extends Record<string, unknown>,
+  TSchema extends TablesRelationalConfig,
+>(tx: PgTransaction<TQueryResult, TFullSchema, TSchema>, caller: string): Promise<TenantContext> {
+  const result: unknown = await tx.execute(
+    sql`select current_user as role, current_setting('app.user_id', true) as user_id,
+               current_setting('app.workspace_id', true) as workspace_id`,
+  );
+  // PGlite and node-postgres-style drivers return { rows }; postgres.js returns the rows.
+  const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows;
+  const row = rows?.[0] as
+    | Partial<Record<"role" | "user_id" | "workspace_id", unknown>>
+    | undefined;
+  const userId = row?.user_id;
+  const workspaceId = row?.workspace_id;
+  if (
+    row?.role !== TENANT_ROLE ||
+    typeof userId !== "string" ||
+    typeof workspaceId !== "string" ||
+    !userId ||
+    !workspaceId
+  ) {
+    throw new TypeError(`${caller} must run in a transaction from withTenant.`);
+  }
+  return { userId, workspaceId };
+}
