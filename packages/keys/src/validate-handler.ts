@@ -41,7 +41,8 @@ export interface ValidateKeyOptions {
   readonly timeoutMs?: number;
 }
 
-const MAX_BODY_LENGTH = 1024;
+/** `{ "provider": … }` needs a few dozen bytes; anything past this cap is refused unread. */
+const MAX_BODY_BYTES = 1024;
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 /**
@@ -100,10 +101,10 @@ export async function handleValidateKey(
 async function readProvider(
   request: Request,
 ): Promise<{ provider: ProviderId } | { reason: "invalid_request" | "unknown_provider" }> {
+  const text = await readBody(request, MAX_BODY_BYTES);
+  if (text === null) return { reason: "invalid_request" };
   let body: unknown;
   try {
-    const text = await request.text();
-    if (text.length > MAX_BODY_LENGTH) return { reason: "invalid_request" };
     body = JSON.parse(text);
   } catch {
     return { reason: "invalid_request" };
@@ -112,6 +113,59 @@ async function readProvider(
     typeof body === "object" && body !== null ? (body as { provider?: unknown }).provider : null;
   if (typeof provider !== "string") return { reason: "invalid_request" };
   return isProviderId(provider) ? { provider } : { reason: "unknown_provider" };
+}
+
+/**
+ * The body as UTF-8 text, or null if it's missing, isn't UTF-8, or runs past `maxBytes`.
+ *
+ * Nothing oversized is ever buffered: Workers accept bodies up to 100 MB, and an isolate has
+ * 128 MB of memory. A Content-Length that is over the cap, or malformed, is refused before
+ * anything is read. Otherwise the stream is read a chunk at a time, counting bytes rather than
+ * characters, and cancelled as soon as the count passes the cap.
+ */
+async function readBody(request: Request, maxBytes: number): Promise<string | null> {
+  const declared = request.headers.get("content-length");
+  if (declared !== null && !(/^\d+$/.test(declared) && Number(declared) <= maxBytes)) {
+    await request.body?.cancel().catch(() => {});
+    return null;
+  }
+  if (!request.body) return null;
+
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  try {
+    const reader = request.body.getReader();
+    let next = await reader.read();
+    while (!next.done) {
+      const chunk: unknown = next.value;
+      if (!(chunk instanceof Uint8Array)) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      length += chunk.byteLength;
+      if (length > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(chunk);
+      next = await reader.read();
+    }
+  } catch {
+    // The client went away mid-body, or something already read it.
+    return null;
+  }
+
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
 }
 
 /** Gives up on the provider after `ms`; `validateKey` reports that as `unreachable`. */

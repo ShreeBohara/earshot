@@ -242,6 +242,119 @@ describe("handleValidateKey: requests it refuses", () => {
   });
 });
 
+describe("handleValidateKey: the 1 KB body cap", () => {
+  const CAP = 1024;
+  const refused = { status: 400, body: { ok: false, reason: "invalid_request" } };
+  const accepted = { status: 200, body: { ok: true, provider: "openai", last4: KEY.slice(-4) } };
+
+  /** A body that hands out one chunk per pull, and records what it handed out. */
+  function recordingBody(chunks: Iterable<Uint8Array>) {
+    const source = chunks[Symbol.iterator]();
+    const record = { pulls: 0, pulledBytes: 0, cancelled: false };
+    const stream = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          const next = source.next();
+          if (next.done) {
+            controller.close();
+            return;
+          }
+          record.pulls++;
+          record.pulledBytes += next.value.byteLength;
+          controller.enqueue(next.value);
+        },
+        cancel() {
+          record.cancelled = true;
+        },
+      },
+      // Nothing is pulled until someone reads.
+      { highWaterMark: 0 },
+    );
+    return { stream, record };
+  }
+
+  function* repeated(chunk: Uint8Array, times: number) {
+    for (let i = 0; i < times; i++) yield chunk.slice();
+  }
+
+  function streamedRequest(body: ReadableStream<Uint8Array>, headers: Record<string, string> = {}) {
+    return new Request("https://earshot.test/api/keys/validate", {
+      method: "POST",
+      headers: { "content-type": "application/json", [PROVIDER_KEY_HEADER]: KEY, ...headers },
+      body,
+      duplex: "half", // Node requires it for a streamed body
+    } as RequestInit);
+  }
+
+  it("refuses an oversized or malformed Content-Length without reading the body", async () => {
+    for (const declared of [String(50 * 1024 * 1024), String(CAP + 1), "12abc", "-1"]) {
+      const { stream, record } = recordingBody(repeated(new Uint8Array(256), 4));
+      const fetchImpl = echoingFetch(200);
+      const request = streamedRequest(stream, { "content-length": declared });
+
+      expect(await handle(request, fetchImpl), declared).toEqual(refused);
+      expect(record.pulls, declared).toBe(0);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    }
+  });
+
+  it("stops reading a streamed body as soon as it passes the cap", async () => {
+    // With no Content-Length, and with one that understates the body.
+    const variants: Array<Record<string, string>> = [{}, { "content-length": "10" }];
+    for (const headers of variants) {
+      // Up to 100 MB on offer, a quarter of a kilobyte per pull.
+      const { stream, record } = recordingBody(repeated(new Uint8Array(256).fill(0x20), 400_000));
+      const fetchImpl = echoingFetch(200);
+
+      expect(await handle(streamedRequest(stream, headers), fetchImpl)).toEqual(refused);
+      expect(record.cancelled).toBe(true);
+      expect(record.pulledBytes).toBeGreaterThan(CAP);
+      expect(record.pulledBytes).toBeLessThanOrEqual(CAP + 256);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    }
+  });
+
+  it("counts bytes, not characters", async () => {
+    // "€" is one UTF-16 code unit but three UTF-8 bytes.
+    const body = (euros: number) => JSON.stringify({ provider: "openai", note: "€".repeat(euros) });
+    expect(new TextEncoder().encode(body(331)).byteLength).toBe(CAP);
+    expect(body(400).length).toBeLessThan(CAP);
+
+    expect(await handle(validationRequest({ body: body(331) }), echoingFetch(200))).toEqual(
+      accepted,
+    );
+    expect(await handle(validationRequest({ body: body(400) }), echoingFetch(200))).toEqual(
+      refused,
+    );
+  });
+
+  it("still reads a small body, streamed in pieces or with its length declared", async () => {
+    const json = new TextEncoder().encode(JSON.stringify({ provider: "openai", note: "café €" }));
+    // The last cut lands inside "€", whose three bytes end the note.
+    const cut = json.byteLength - 4;
+    const pieces = recordingBody([json.slice(0, 5), json.slice(5, cut), json.slice(cut)]);
+    expect(await handle(streamedRequest(pieces.stream), echoingFetch(200))).toEqual(accepted);
+
+    const whole = recordingBody([json]);
+    const declared = { "content-length": String(json.byteLength) };
+    expect(await handle(streamedRequest(whole.stream, declared), echoingFetch(200))).toEqual(
+      accepted,
+    );
+  });
+
+  it("refuses a missing body, and one that isn't UTF-8", async () => {
+    const empty = new Request("https://earshot.test/api/keys/validate", {
+      method: "POST",
+      headers: { [PROVIDER_KEY_HEADER]: KEY },
+    });
+    expect(empty.body).toBeNull();
+    expect(await handle(empty, echoingFetch(200))).toEqual(refused);
+
+    const notUtf8 = recordingBody([new Uint8Array([0x7b, 0xff, 0x7d])]);
+    expect(await handle(streamedRequest(notUtf8.stream), echoingFetch(200))).toEqual(refused);
+  });
+});
+
 describe("handleValidateKey: no storage", () => {
   it("has nothing to store with: the package depends on no database, and the handler imports only validation and redaction", () => {
     const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
