@@ -196,6 +196,7 @@ describe("mintCredential", () => {
     expect(aaiUrl).toBe(MINT_REQUESTS.assemblyai.url);
     expect(aaiInit).toMatchObject({ method: "POST", headers: { authorization: KEY } });
     expect(JSON.parse(aaiInit.body as string)).toEqual({
+      product: "streaming",
       expires_in_seconds: 60,
       max_session_duration_seconds: 1800,
     });

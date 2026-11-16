@@ -35,8 +35,9 @@ type MintRequest = {
 };
 
 /**
- * Each provider's mint request, in one place. WP1 confirms them against the live APIs, including
- * whether AssemblyAI's body also needs `product: "streaming"` (its two doc pages disagree).
+ * Each provider's mint request, in one place. WP1 confirms them against the live APIs.
+ * AssemblyAI's API reference marks `product: "streaming"` as required for `POST /v1/token`
+ * (another of its pages omits it), so the request always sends it.
  */
 export const MINT_REQUESTS: Readonly<Record<MintProvider, MintRequest>> = {
   assemblyai: {
@@ -45,7 +46,7 @@ export const MINT_REQUESTS: Readonly<Record<MintProvider, MintRequest>> = {
     // The token opens sessions for 60 s (AssemblyAI allows 1–600), and each session it opens
     // lasts at most 30 minutes (60–10,800). One token can open several sessions inside its
     // window, so the window stays short.
-    body: { expires_in_seconds: 60, max_session_duration_seconds: 1800 },
+    body: { product: "streaming", expires_in_seconds: 60, max_session_duration_seconds: 1800 },
     lifetimeSeconds: 60,
     read: (answer) => ({ credential: answer.token, lifetime: answer.expires_in_seconds }),
     socketBase: "wss://streaming.assemblyai.com",

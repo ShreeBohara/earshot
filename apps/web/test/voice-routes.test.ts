@@ -833,7 +833,11 @@ describe("POST /api/voice/token", () => {
         "content-type": "application/json",
         accept: "application/json",
       },
-      body: JSON.stringify({ expires_in_seconds: 60, max_session_duration_seconds: 1800 }),
+      body: JSON.stringify({
+        product: "streaming",
+        expires_in_seconds: 60,
+        max_session_duration_seconds: 1800,
+      }),
       signal: expect.any(AbortSignal),
     });
     expect(log.lines.join("\n")).toContain(

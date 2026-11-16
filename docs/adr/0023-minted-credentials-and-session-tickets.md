@@ -35,7 +35,7 @@ A ticket is `payload.signature`: base64url JSON claims `{ v: 1, sid, uid, wid, j
 
 | Provider | Request | Credential |
 |---|---|---|
-| AssemblyAI | `POST https://token.assemblyai.com/v1/token`, `Authorization: <key>`, `{ expires_in_seconds: 60, max_session_duration_seconds: 1800 }` | `token`, good for opening sessions for 60 s; each session lasts at most 30 minutes |
+| AssemblyAI | `POST https://token.assemblyai.com/v1/token`, `Authorization: <key>`, `{ product: "streaming", expires_in_seconds: 60, max_session_duration_seconds: 1800 }` | `token`, good for opening sessions for 60 s; each session lasts at most 30 minutes |
 | Deepgram | `POST https://api.deepgram.com/v1/auth/grant`, `Authorization: Token <key>`, `{ ttl_seconds: 30 }` | `access_token`, a JWT that only has to be valid at the handshake |
 
 The answer is `{ provider, credential, expiresAt, url }`. `url` is the base the browser's adapter appends its own path and query to: the provider's WebSocket origin (`wss://streaming.assemblyai.com`, `wss://api.deepgram.com`), or a relay's base URL if WP1 finds Deepgram needs one. A provider that states a shorter life than requested sets `expiresAt`; a longer one changes nothing.
