@@ -6,6 +6,7 @@ import {
   renderEdge,
   renderWeb,
   type WranglerConfig,
+  webOrigin,
   workerNames,
 } from "./render-wrangler";
 
@@ -67,6 +68,27 @@ describe("production configs", () => {
     expect(web.name).toBe("earshot-web");
     expect(service(web, "EDGE")).toBe("earshot-edge");
     expect(web.vars?.DEPLOY_ENV).toBe("production");
+  });
+});
+
+describe("BETTER_AUTH_URL", () => {
+  it("is each web Worker's own workers.dev origin", () => {
+    const pr = renderWeb(webTemplate, parseTarget("pr-12"), "abc1234", {
+      workersSubdomain: "acme",
+    });
+    const production = renderWeb(webTemplate, parseTarget("production"), "abc1234", {
+      workersSubdomain: "acme",
+    });
+    expect(pr.vars?.BETTER_AUTH_URL).toBe("https://earshot-web-pr-12.acme.workers.dev");
+    expect(production.vars?.BETTER_AUTH_URL).toBe("https://earshot-web.acme.workers.dev");
+    expect(pr.vars).toMatchObject({ DEPLOY_ENV: "pr-12", GIT_SHA: "abc1234" });
+  });
+
+  it("is left unset without a subdomain, and refuses a malformed one", () => {
+    expect(renderWeb(webTemplate, parseTarget("pr-12"), "abc1234").vars).not.toHaveProperty(
+      "BETTER_AUTH_URL",
+    );
+    expect(() => webOrigin(parseTarget("pr-12"), "acme.evil.example/")).toThrow();
   });
 });
 
