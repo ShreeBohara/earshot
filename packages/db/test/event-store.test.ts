@@ -29,6 +29,8 @@ import { withTenant } from "../src/tenant";
 import { A, B, cloneDb, migratedDb } from "./db";
 import { createTenant } from "./tenants";
 
+type Db = Awaited<ReturnType<typeof migratedDb>>["db"];
+
 const B_SESSION_ID = uuid(0xbbbb);
 
 let template: PGlite;
@@ -310,12 +312,12 @@ describe("tenant isolation for session events", () => {
     expect(seqs(await asB.append(B_SESSION_ID, NO_EVENTS, [draft(4, started())]))).toEqual([0]);
   });
 
-  it("won't let B write a row into A's workspace: row-level security refuses it", async () => {
-    const db = await aWithEvents();
-    const error = await withTenant(db, B, (tx) =>
+  // Below the store, the database refuses B's rows either way.
+  const rawInsert = (db: Db, workspaceId: string) =>
+    withTenant(db, B, (tx) =>
       tx.insert(sessionEvents).values({
         id: uuid(3),
-        workspaceId: A.workspaceId,
+        workspaceId,
         sessionId: SESSION_ID,
         seq: 2,
         type: "session.ended",
@@ -324,7 +326,18 @@ describe("tenant isolation for session events", () => {
         ts: new Date("2026-11-10T19:15:40.000Z"),
       }),
     ).catch((e: unknown) => e);
-    expect(String((error as Error).cause)).toMatch(
+
+  it("won't let B attach a row to A's session: the composite foreign key refuses it", async () => {
+    const db = await aWithEvents();
+    expect(String(((await rawInsert(db, B.workspaceId)) as Error).cause)).toMatch(
+      /violates foreign key constraint "session_events_session_fk"/,
+    );
+    expect(seqs(await new PgEventStore(db, A).read(SESSION_ID))).toEqual([0, 1]);
+  });
+
+  it("won't let B write a row into A's workspace: row-level security refuses it", async () => {
+    const db = await aWithEvents();
+    expect(String(((await rawInsert(db, A.workspaceId)) as Error).cause)).toMatch(
       /new row violates row-level security policy for table "session_events"/,
     );
     expect(seqs(await new PgEventStore(db, A).read(SESSION_ID))).toEqual([0, 1]);
