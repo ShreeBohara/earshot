@@ -6,26 +6,36 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:worker": "opennextjs-cloudflare build --skipNextBuild",
+    "build:worker": "opennextjs-cloudflare build --skipNextBuild && node scripts/check-worker-bundle.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --strict-vars=false --env-interface CloudflareEnv cloudflare-env.d.ts",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@better-auth/passkey": "catalog:",
     "@earshot/core": "workspace:*",
     "@earshot/db": "workspace:*",
+    "@earshot/events": "workspace:*",
+    "@earshot/keys": "workspace:*",
     "@earshot/ui": "workspace:*",
     "@opennextjs/cloudflare": "catalog:",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:",
+    "lucide-react": "catalog:",
     "next": "catalog:",
     "next-themes": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "server-only": "catalog:"
   },
   "devDependencies": {
     "@axe-core/playwright": "catalog:",
     "@earshot/tsconfig": "workspace:*",
+    "@electric-sql/pglite": "catalog:",
+    "@electric-sql/pglite-pgvector": "catalog:",
     "@playwright/test": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
@@ -33,6 +43,7 @@
     "@types/react-dom": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "catalog:"
   }
 }
