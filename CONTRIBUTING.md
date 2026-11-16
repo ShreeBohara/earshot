@@ -23,6 +23,30 @@ Since pnpm 11, an install fails if a dependency's install script hasn't been rev
 
 Don't install wrangler globally. It is a dev dependency, so the lockfile pins its version.
 
+## Local development
+
+`pnpm dev` works on a fresh clone with no accounts and no secrets. In this zero-setup mode the web app:
+
+- **Uses an in-process database.** Without `DATABASE_URL`, `next dev` runs PGlite (Postgres in WebAssembly, with pgvector and pg_trgm). It's stored in `apps/web/.data/pglite/`, which is gitignored, and every migration is applied at startup. To start over, stop the server and delete `apps/web/.data/`. Only one `next dev` process may use that directory at a time.
+- **Prints magic links instead of emailing them.** Sign in at `http://localhost:3000/sign-in`, and the link appears in the terminal running `pnpm dev`, marked development-only. Anyone holding a link can sign in with it, so don't paste it anywhere.
+- **Uses a fixed development-only auth secret.** Built bundles refuse it.
+
+To use real services, copy `apps/web/.dev.vars.example` to `apps/web/.dev.vars` and uncomment what you need. Each variable is documented in `apps/web/env.d.ts`; restart `pnpm dev` after editing.
+
+| Variable | Without it |
+|---|---|
+| `DATABASE_URL` | PGlite in `apps/web/.data/`. Set it to your Neon branch's pooled URL to use Neon instead. |
+| `BETTER_AUTH_SECRET` | A development-only secret. Required outside `next dev`, at least 32 characters (`openssl rand -base64 32`). |
+| `BETTER_AUTH_URL` | `http://localhost:3000`. Required outside `next dev`, where it must use https or be localhost. |
+| `BETTER_AUTH_TRUSTED_ORIGINS` | Only `BETTER_AUTH_URL`'s origin may call the auth API. |
+| `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` | No GitHub button. The callback URL is `<BETTER_AUTH_URL>/api/auth/callback/github`. |
+| `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` | No Google button. The callback URL is `<BETTER_AUTH_URL>/api/auth/callback/google`. |
+| `RESEND_API_KEY` and `EMAIL_FROM` | Links print to the terminal in development. Built bundles refuse to send. |
+
+`pnpm --filter @earshot/web preview` runs the production Worker build in workerd. It has no zero-setup mode, so it needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL=http://localhost:8787` in `.dev.vars`.
+
+End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts`. The health check in `e2e/smoke.spec.ts` needs a deployed stack, so it runs only against previews (set `BASE_URL`).
+
 ## Commands
 
 | Task | Command |
@@ -31,6 +55,7 @@ Don't install wrangler globally. It is a dev dependency, so the lockfile pins it
 | Lint and format | `pnpm check` or `pnpm check:fix` |
 | Typecheck | `pnpm typecheck` |
 | Test | `pnpm test` |
+| Sign-in end-to-end tests (Playwright and axe) | `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts` |
 | Build | `pnpm build` |
 | Regenerate contracts | `pnpm contracts:gen` |
 | Storybook | `pnpm --filter @earshot/ui storybook` |
