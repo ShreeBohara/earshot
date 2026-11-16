@@ -1,0 +1,37 @@
+{
+  "name": "@earshot/voice",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The browser voice runtime: microphone capture, speech-to-text adapters, the Debrief engine, the price table, and pure state machines.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./machines": "./src/machines/index.ts",
+    "./prices": "./src/prices.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "bin": {
+    "earshot-voice-assets": "./scripts/voice-assets.ts"
+  },
+  "scripts": {
+    "test": "vitest run --project unit",
+    "test:browser": "vitest run --project browser",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@earshot/core": "workspace:*",
+    "@ricky0123/vad-web": "0.0.31",
+    "esbuild": "^0.28.2",
+    "onnxruntime-web": "1.31.1"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/ws": "^8.18.1",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "ws": "^8.23.0"
+  }
+}
