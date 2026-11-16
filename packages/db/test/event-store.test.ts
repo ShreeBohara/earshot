@@ -25,7 +25,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { appendEvents, PgEventStore, readEvents, UnknownSessionError } from "../src/event-store";
 import { sessionEvents } from "../src/schema";
-import { withTenant } from "../src/tenant";
+import { type TenantContext, withTenant } from "../src/tenant";
 import { A, B, cloneDb, migratedDb } from "./db";
 import { createTenant } from "./tenants";
 
@@ -279,6 +279,29 @@ describe("PgEventStore on Postgres", () => {
 });
 
 describe("tenant isolation for session events", () => {
+  it("keys the session lock on the workspace, so B never takes A's lock", async () => {
+    const { db } = await fresh();
+    type Lock = { classid: number; objid: number; objsubid: number };
+    /** The advisory locks a tenant's transaction holds after an empty append to A's session. */
+    const locksOf = (tenant: TenantContext) =>
+      withTenant(db, tenant, async (tx) => {
+        expect(await appendEvents(tx, SESSION_ID, NO_EVENTS, [])).toEqual([]);
+        const locks = await tx.execute<Lock>(sql`select classid, objid, objsubid from pg_locks
+          where locktype = 'advisory' and pid = pg_backend_pid()`);
+        return locks.rows;
+      });
+    const asA = await locksOf(A);
+    expect(asA).toHaveLength(1);
+    // Every writer of A's session takes the same lock, however the workspace id is spelled...
+    expect(await locksOf(A)).toEqual(asA);
+    expect(await locksOf({ ...A, workspaceId: A.workspaceId.toUpperCase() })).toEqual(asA);
+    // ...while B, naming the same session, takes a lock of its own: it can't stall A's writers
+    // or time their waits.
+    const asB = await locksOf(B);
+    expect(asB).toHaveLength(1);
+    expect(asB).not.toEqual(asA);
+  });
+
   async function aWithEvents() {
     const { db } = await fresh();
     await new PgEventStore(db, A).append(SESSION_ID, NO_EVENTS, [

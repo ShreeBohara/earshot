@@ -193,20 +193,26 @@ export async function readEvents<
   return rows.map(deepFreeze);
 }
 
-/**
- * Takes a transaction-scoped advisory lock on the session. Appends and projection rebuilds of
- * one session then run one at a time, and each reads the log only after the previous one has
- * committed, so checking `expectedLastSeq` and inserting act as one step, as they do in memory.
- * Locks of different sessions don't conflict. Any role may take advisory locks.
- */
-export async function lockSession(tx: TenantTransaction, sessionId: string): Promise<void> {
-  await tx.execute(
-    sql`select pg_advisory_xact_lock(hashtextextended(${`earshot.session:${sessionId}`}, 0))`,
-  );
-}
-
 /** The workspace `withTenant` pinned the transaction to; null outside one, which fails closed. */
 export const currentWorkspace: SQL = sql`nullif(current_setting('app.workspace_id', true), '')::uuid`;
+
+/**
+ * Takes a transaction-scoped advisory lock on the session, keyed on the transaction's workspace
+ * as well as the session id. Appends and projection rebuilds of one session then run one at a
+ * time, and each reads the log only after the previous one has committed, so checking
+ * `expectedLastSeq` and inserting act as one step, as they do in memory.
+ *
+ * A session's writers all act in its workspace, so they share one lock. Another workspace that
+ * knows the session id gets a lock of its own, so it can't stall the session's writers or time
+ * their waits, and it takes that lock before it can learn whether the session exists. The
+ * workspace is `currentWorkspace` cast to text, which spells it the same way however
+ * `withTenant` was given it. Outside `withTenant` it's null, so no lock is taken, and the
+ * insert that follows fails anyway. Any role may take advisory locks.
+ */
+export async function lockSession(tx: TenantTransaction, sessionId: string): Promise<void> {
+  const key = sql`(${currentWorkspace})::text || ${`:earshot.session:${sessionId}`}`;
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
+}
 
 /** A timestamp string parsed by Postgres, which keeps microseconds that a JS Date drops. */
 export function timestamptz(text: string): SQL {
