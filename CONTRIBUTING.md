@@ -78,6 +78,8 @@ pnpm contracts:gen
 
 Commit the regenerated files. CI runs `pnpm contracts:gen && git diff --exit-code`, so a contract change without regenerated output fails. The shared fixtures in `packages/core/fixtures/{valid,invalid}` run in both Vitest and pytest; if one language accepts what the other rejects, CI fails.
 
+The session socket protocol and session tickets in `packages/core` are TypeScript-only: they aren't exported, and their tests are in `packages/core/test` ([ADR-0011](docs/adr/0011-typescript-product-python-lab.md)). A new provider key shape goes in two places, `SECRET_PATTERNS` in `packages/keys/src/redact.ts` and `KEY_SHAPES` in `packages/core/src/key-shapes.ts`; a test fails if they differ.
+
 ## Branches, commits, and pull requests
 
 - **Branch names** follow `<type>/<short-description>`, for example `chore/v2-skeleton` or `docs/phase-1-docs`.

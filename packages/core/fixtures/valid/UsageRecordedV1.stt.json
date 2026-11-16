@@ -1,0 +1,10 @@
+{
+  "usageId": "01a1c6e3-0f12-7a4b-9c3d-2e1f0a9b8c7d",
+  "kind": "stt",
+  "provider": "assemblyai",
+  "model": "universal-streaming-english",
+  "audioMs": 38400,
+  "socketMs": 41250,
+  "costUsd": 0.0022,
+  "priceTable": "2026-11-15"
+}

@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
+    "@earshot/core": "workspace:*",
     "@earshot/tsconfig": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",

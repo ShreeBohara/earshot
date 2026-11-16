@@ -11,7 +11,15 @@ import {
   type Upcaster,
   utteranceFinalV1ToV2,
 } from "../src";
-import { deepFreeze, envelope, utterance, utteranceV1 } from "./helpers";
+import {
+  deepFreeze,
+  envelope,
+  turnCompleted,
+  turnMeasured,
+  usageRecorded,
+  utterance,
+  utteranceV1,
+} from "./helpers";
 
 describe("utteranceFinalV1ToV2", () => {
   const v1 = envelope(utteranceV1(1, "Met Dana Lee at Acme."));
@@ -68,6 +76,30 @@ describe("defaultRegistry", () => {
     expect(() => defaultRegistry.toLatest(v3)).toThrow(
       /newer than this reader knows \(latest is v2\)/,
     );
+  });
+});
+
+describe("the Phase 3 event types", () => {
+  const bodies = [usageRecorded(1), turnCompleted(1), turnMeasured(1)];
+
+  it.each(bodies)("$type loads at v1, its latest version", (body) => {
+    expect(defaultRegistry.latestVersion(body.type)).toBe(1);
+    expect(defaultRegistry.payloadSchema(body.type, 1)).toBeDefined();
+    const event = envelope(body);
+    expect(defaultRegistry.toLatest(event)).toBe(event);
+  });
+
+  it("validates their payloads", () => {
+    for (const bad of [
+      usageRecorded(1, { costUsd: -0.01 }),
+      usageRecorded(1, { priceTable: "2026-11-15T00:00:00Z" }),
+      turnCompleted(1, { outcome: "timeout" }),
+      turnCompleted(1, { attempts: 0.5 }),
+      turnMeasured(1, { mode: "ptt" }),
+      turnMeasured(1, { totalMs: -1 }),
+    ]) {
+      expect(() => defaultRegistry.toLatest(envelope(bad))).toThrow(EventValidationError);
+    }
   });
 });
 

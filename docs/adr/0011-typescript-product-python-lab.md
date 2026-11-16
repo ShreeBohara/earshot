@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15)
+Accepted (2026-11-15). Amended for Phase 3 (2026-11-15): some contracts are TypeScript-only; see "More information".
 
 ## Context and problem
 
@@ -38,3 +38,8 @@ Rust or WASM would be considered only if profiling finds a hotspot.
 ## More information
 
 After changing a contract, run `pnpm contracts:gen` and commit the result.
+
+**TypeScript-only contracts (Phase 3).** Not every Zod schema in `packages/core` is exported; the `contracts` map in `src/contracts/index.ts` lists the ones that are.
+
+- The session socket protocol (`ClientMessage`, `ServerMessage`) and session ticket claims aren't exported. Only TypeScript speaks them: the browser, the edge Worker, and `SessionDO`. Their key checks also have no JSON Schema form: the protocol refuses a key-shaped string anywhere except `turn_end.key`, and a ticket is only as good as its HMAC. Exported, they would accept data that Zod refuses, so parity fixtures for those checks could only fail. They're tested in Vitest alone.
+- Exported contracts set no maximum string lengths. Zod counts a string's length in UTF-16 code units and JSON Schema counts code points, so a cap would make the two languages disagree about text with emoji or other characters outside the Basic Multilingual Plane. Caps live in the TypeScript-only socket schemas instead, for example the 4,000-character limit on an utterance's text.

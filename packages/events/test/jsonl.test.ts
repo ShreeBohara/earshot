@@ -7,6 +7,9 @@ import {
   sessionLog,
   started,
   thrown,
+  turnCompleted,
+  turnMeasured,
+  usageRecorded,
   utterance,
   uuid,
 } from "./helpers";
@@ -51,6 +54,13 @@ describe("toJsonl", () => {
 describe("fromJsonl", () => {
   it("reads back what toJsonl wrote", () => {
     expect(fromJsonl(toJsonl(log))).toEqual(log);
+  });
+
+  it("round-trips the Phase 3 event types byte for byte", () => {
+    const phase3 = sessionLog([started(), usageRecorded(1), turnCompleted(1), turnMeasured(1)]);
+    const text = toJsonl(phase3);
+    expect(fromJsonl(text)).toEqual(phase3);
+    expect(toJsonl(fromJsonl(text))).toBe(text);
   });
 
   it("reads an empty file as no events", () => {

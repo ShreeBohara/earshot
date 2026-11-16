@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15)
+Accepted (2026-11-15). Amended for Phase 3 (2026-11-15) with three new event types; see "Phase 3 event types" below.
 
 ## Context and problem
 
@@ -98,6 +98,22 @@ await withTenant(db, { userId, workspaceId }, async (tx) => {
 - Run as the session's own user. If RLS lets the transaction read the session row but not update it, `rebuildProjections` throws rather than leave the summary columns stale.
 - A full rebuild per flush is cheap for a debrief's tens of events. Long conversations should rebuild at the end and after reviews, or get incremental projections.
 - Because the rebuild shares the flush's transaction, the projections never lag the log, and a batch that `replay` refuses (a review of an unknown proposal, say) is rolled back. That's a bug in the batch, so don't retry it.
+
+## Phase 3 event types
+
+Phase 3 needs durable records for the cost meter and the latency gate, so `SessionDO` writes three more event types. They're ordinary payload contracts: registered in `eventPayloadContracts`, exported to JSON Schema and Pydantic, and covered by parity fixtures. Each is at version 1.
+
+| Type | Payload | What it's for |
+| --- | --- | --- |
+| `usage.recorded` | `usageId`; `kind` (`stt`, `llm`, or `speech_to_speech`); `provider`; `model`; optional `audioMs`, `socketMs`, `inputTokens`, `outputTokens`, and `cachedInputTokens`; `costUsd`; `priceTable` | One priced use of a provider. The cost is fixed when the usage is recorded, from the price table dated `priceTable`, so a later price change can't rewrite an old session's cost. `cachedInputTokens` is the cached part of `inputTokens`, and `outputTokens` includes reasoning tokens, which bill as output. |
+| `turn.completed` | `turnId`; `utteranceIds`; `outcome` (`proposals`, `nothing_to_propose`, `invalid_output`, `rate_limited`, `provider_error`, or `cancelled`); `proposalIds`; `attempts`; `llmMs` | How each turn's extraction ended, including the turns that proposed nothing or failed, which `proposal.created` alone can't show. |
+| `turn.measured` | `turnId`; `mode` (`push_to_talk` or `hands_free`); `speechEndToFinalMs`; `finalToProposalMs`; `proposalToPaintMs`; `totalMs` | The latency gate's record of one turn. `SessionDO` derives it from the client's `metric` message, so all four numbers come from one clock, the client's. |
+
+- **The projections ignore them.** `utterancesProjection` and `proposalsProjection` skip them, and `sessionProjection` only moves `lastSeq` and `lastEventAt`, as it does for any event. Like reviews, they may follow `session.ended`. The cost meter and the latency report fold them on their own.
+- **Nothing stored changes.** No existing type gets a new version, so no upcaster is needed. `demo-session.jsonl` and its committed projections are unchanged, and the replay tests prove it.
+- **`@earshot/events`** adds the three types to `SessionEvent` and `latestVersions`, and `@earshot/events/testing` gains builders for them (`usageRecorded`, `turnCompleted`, `turnMeasured`).
+- **Ids and times.** Envelope ids are UUIDv7s from `uuidv7()` in `@earshot/core`, minted by `SessionDO`. Envelope `ts` always comes from the Durable Object's clock; client times stay in payloads, such as `startedAt` and `endedAt`.
+- **Later.** Folding `turn.measured` into `sessions.metrics` is optional work for the Phase 3 flush. It changes `SessionView`, so it would regenerate the demo snapshot on purpose.
 
 ## Consequences
 

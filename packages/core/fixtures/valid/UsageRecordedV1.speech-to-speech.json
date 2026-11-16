@@ -1,0 +1,11 @@
+{
+  "usageId": "01a1c6e3-2c8f-7031-b6d5-4e3f2a1b0c9d",
+  "kind": "speech_to_speech",
+  "provider": "openai",
+  "model": "gpt-realtime-2.1-mini",
+  "audioMs": 52000,
+  "inputTokens": 4100,
+  "outputTokens": 900,
+  "costUsd": 0.059,
+  "priceTable": "2026-11-15"
+}
