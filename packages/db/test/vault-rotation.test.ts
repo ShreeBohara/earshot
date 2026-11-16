@@ -249,12 +249,16 @@ describe("rotateVaultKey", () => {
 });
 
 describe("db:rotate-vault-key", () => {
-  const PASSWORD = "Sup3rSecretPassw0rdForOwner";
+  // A password the URL has to percent-encode, so both of its forms are in play.
+  const PASSWORD = "Sup3r/Secret:Passw0rd@Owner#1";
+  const ENCODED_PASSWORD = encodeURIComponent(PASSWORD);
+  const URL_WITHOUT_QUERY = `postgresql://owner:${ENCODED_PASSWORD}@db.example.test/earshot`;
   const env = {
-    DATABASE_URL_DIRECT: `postgresql://owner:${PASSWORD}@db.example.test/earshot?sslmode=require`,
+    DATABASE_URL_DIRECT: `${URL_WITHOUT_QUERY}?sslmode=require&application_name=rotate`,
     EARSHOT_VAULT_MASTER_KEY_OLD: OLD,
     EARSHOT_VAULT_MASTER_KEY_NEW: NEW,
   };
+  const PASSWORDS = [PASSWORD, ENCODED_PASSWORD];
 
   /** Runs the script's main() against this test's database and collects what it prints. */
   async function run(argv: string[], overrides: Record<string, string | undefined> = {}) {
@@ -268,6 +272,26 @@ describe("db:rotate-vault-key", () => {
     });
     return { code, output: lines.join("\n") };
   }
+
+  /** Runs main() with a rotation that throws `error`, and collects what it prints. */
+  async function failWith(error: Error) {
+    const lines: string[] = [];
+    const code = await main({
+      argv: [],
+      env,
+      rotate: async () => {
+        throw error;
+      },
+      out: (line) => lines.push(line),
+      err: (line) => lines.push(line),
+    });
+    return { code, output: lines.join("\n") };
+  }
+
+  it("uses a password whose encoded and decoded forms differ", () => {
+    expect(new URL(env.DATABASE_URL_DIRECT).password).toBe(ENCODED_PASSWORD);
+    expect(ENCODED_PASSWORD).not.toBe(PASSWORD);
+  });
 
   it("prints counts, and no key material, for a dry run and then a real run", async () => {
     const dry = await run(["--dry-run"]);
@@ -289,14 +313,14 @@ describe("db:rotate-vault-key", () => {
     });
     await expectAllOpenWith(newMaster);
 
-    expectNoKeyMaterial(`${dry.output}\n${real.output}`, [PASSWORD]);
+    expectNoKeyMaterial(`${dry.output}\n${real.output}`, PASSWORDS);
   });
 
   it("refuses the same key twice, without changing anything", async () => {
     const before = await snapshot();
     const result = await run([], { EARSHOT_VAULT_MASTER_KEY_NEW: ` ${OLD}\n` });
     expect(result).toEqual({ code: 1, output: expect.stringMatching(/are the same key/) });
-    expectNoKeyMaterial(result.output, [PASSWORD]);
+    expectNoKeyMaterial(result.output, PASSWORDS);
     expect(await snapshot()).toEqual(before);
   });
 
@@ -307,7 +331,7 @@ describe("db:rotate-vault-key", () => {
       code: 1,
       output: expect.stringMatching(/^3 credentials and 2 CRM connections don't open with/),
     });
-    expectNoKeyMaterial(result.output, [PASSWORD]);
+    expectNoKeyMaterial(result.output, PASSWORDS);
     expect(await snapshot()).toEqual(before);
   });
 
@@ -330,29 +354,18 @@ describe("db:rotate-vault-key", () => {
     expect(pasted.output).toMatch(/^Unknown argument\./);
 
     for (const { output } of [missing, malformed, pasted]) {
-      expectNoKeyMaterial(output, [PASSWORD, "not-a-real-master-key"]);
+      expectNoKeyMaterial(output, [...PASSWORDS, "not-a-real-master-key"]);
     }
   });
 
   it("keeps the connection string and query parameters out of error output", async () => {
-    const failWith = async (error: Error) => {
-      const lines: string[] = [];
-      const code = await main({
-        argv: [],
-        env,
-        rotate: async () => {
-          throw error;
-        },
-        out: (line) => lines.push(line),
-        err: (line) => lines.push(line),
-      });
-      return { code, output: lines.join("\n") };
-    };
-
-    const refused = await failWith(new Error(`connect ECONNREFUSED ${env.DATABASE_URL_DIRECT}`));
-    expect(refused.code).toBe(1);
-    expect(refused.output).toMatch(/ECONNREFUSED/);
-    expectNoKeyMaterial(refused.output, [PASSWORD]);
+    for (const quoted of [env.DATABASE_URL_DIRECT, URL_WITHOUT_QUERY, PASSWORD, ENCODED_PASSWORD]) {
+      const refused = await failWith(new Error(`connect ECONNREFUSED ${quoted}`));
+      expect(refused.code).toBe(1);
+      expect(refused.output).toMatch(/ECONNREFUSED/);
+      expect(refused.output).not.toContain("db.example.test");
+      expectNoKeyMaterial(refused.output, PASSWORDS);
+    }
 
     // Drizzle's query errors quote parameters, which here would be wrapped data keys.
     const query = Object.assign(new Error(`Failed query: update … params: ${NEW}`), {
@@ -361,6 +374,30 @@ describe("db:rotate-vault-key", () => {
     const failed = await failWith(query);
     expect(failed.output).toMatch(/DrizzleQueryError: query failed/);
     expectNoKeyMaterial(failed.output);
+  });
+
+  it("redacts an error before shortening it, so no secret survives the cut", async () => {
+    // "Error: " plus this padding puts the 300-character cut ten characters into the secret.
+    const padding = "x".repeat(300 - "Error: ".length - 10);
+    const secrets = [
+      NEW,
+      OLD,
+      PASSWORD,
+      ENCODED_PASSWORD,
+      env.DATABASE_URL_DIRECT,
+      URL_WITHOUT_QUERY,
+    ];
+    for (const secret of secrets) {
+      const result = await failWith(new Error(`${padding}${secret} and then more text`));
+      expect(result.code).toBe(1);
+      expect(result.output).toMatch(/^The rotation failed: Error: x+/);
+      expect(result.output).not.toContain("db.example.test");
+      expectNoKeyMaterial(result.output, PASSWORDS);
+    }
+
+    // Both master keys and the password in one message, the key straddling the cut.
+    const both = await failWith(new Error(`${padding}${NEW} ${PASSWORD} ${OLD}`));
+    expectNoKeyMaterial(both.output, PASSWORDS);
   });
 
   it("runs as a package script, and says what's missing before it connects", async () => {

@@ -36,7 +36,7 @@ export async function main({ argv, env, rotate, out, err }: RotateVaultKeyCli): 
   const url = env[URL_ENV]?.trim() ?? "";
   const oldValue = env[OLD_ENV]?.trim() ?? "";
   const newValue = env[NEW_ENV]?.trim() ?? "";
-  const secrets = [oldValue, newValue, url, passwordOf(url)];
+  const secrets = [...connectionSecrets(url), oldValue, newValue];
   const fail = (line: string) => {
     err(redact(line, secrets));
     return 1;
@@ -72,7 +72,7 @@ export async function main({ argv, env, rotate, out, err }: RotateVaultKeyCli): 
       );
     }
     return fail(
-      `The rotation failed: ${describe(error)}. Run it with --dry-run to check the vault before trying again.`,
+      `The rotation failed: ${describe(error, secrets)}. Run it with --dry-run to check the vault before trying again.`,
     );
   }
 
@@ -92,27 +92,44 @@ function count(n: number, noun: string): string {
   return `${n} ${noun}${n === 1 ? "" : "s"}`;
 }
 
-function passwordOf(url: string): string {
+/**
+ * The connection string in each form an error might quote it: whole, without its query string,
+ * and its password both as the URL writes it (percent-encoded) and decoded.
+ */
+function connectionSecrets(url: string): string[] {
+  let password = "";
   try {
-    return decodeURIComponent(new URL(url).password);
+    password = new URL(url).password;
   } catch {
-    return "";
+    // Not a URL; it's still redacted whole.
+  }
+  return [url, url.replace(/[?#].*$/, ""), password, decodedOr(password)];
+}
+
+function decodedOr(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
 }
 
+const MAX_ERROR_LENGTH = 300;
+
 /**
- * The innermost error's message, shortened. Drizzle's own query errors quote the query's
- * parameters, which here are wrapped data keys, so their message is never printed; the driver
- * error underneath carries Postgres's message.
+ * The innermost error's name and message, redacted and only then shortened: shortening first
+ * could cut a secret in two and leave a piece that no longer matches. Drizzle's own query errors
+ * quote the query's parameters, which here are wrapped data keys, so their message is never
+ * printed; the driver error underneath carries Postgres's message.
  */
-function describe(error: unknown): string {
+function describe(error: unknown, secrets: readonly string[]): string {
   let current: unknown = error;
   for (let depth = 0; depth < 5 && current instanceof Error && current.cause; depth++) {
     current = current.cause;
   }
   if (!(current instanceof Error)) return "unknown error";
   const message = current.name === "DrizzleQueryError" ? "query failed" : current.message;
-  return `${current.name}: ${message}`.slice(0, 300);
+  return redact(`${current.name}: ${message}`, secrets).slice(0, MAX_ERROR_LENGTH);
 }
 
 /** True when this file is the process's entry point, not a module a test imported. */
