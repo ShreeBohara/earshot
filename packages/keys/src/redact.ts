@@ -40,10 +40,40 @@ export function containsSecret(haystack: string, secret: string): boolean {
   return haystack.includes(value) || haystack.includes(JSON.stringify(value).slice(1, -1));
 }
 
+/**
+ * The first run of `minLength` consecutive characters of `secret` that appears in `haystack`, or
+ * undefined. Stricter than `containsSecret`: tests use it to show that not even part of a key
+ * leaked. A secret shorter than `minLength` is looked for whole.
+ */
+export function findSecretFragment(
+  haystack: string,
+  secret: string,
+  minLength = 8,
+): string | undefined {
+  const value = secret.trim();
+  const width = Math.min(minLength, value.length);
+  if (width === 0) return undefined;
+  for (let start = 0; start + width <= value.length; start++) {
+    const fragment = value.slice(start, start + width);
+    if (haystack.includes(fragment)) return fragment;
+  }
+  return undefined;
+}
+
 export type LogSink = (line: string) => void;
 
+/** Where server code logs. `createRedactingLogger` makes one that scrubs secrets first. */
+export interface Logger {
+  info(message: string, detail?: unknown): void;
+  warn(message: string, detail?: unknown): void;
+  error(message: string, detail?: unknown): void;
+}
+
 /** A logger that redacts before writing. Every server log line goes through one of these. */
-export function createRedactingLogger(sink: LogSink, secrets: () => Iterable<string> = () => []) {
+export function createRedactingLogger(
+  sink: LogSink,
+  secrets: () => Iterable<string> = () => [],
+): Logger {
   const write = (level: string, message: string, detail?: unknown) => {
     const body = detail === undefined ? message : `${message} ${JSON.stringify(detail)}`;
     sink(`${level} ${redact(body, secrets())}`);

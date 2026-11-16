@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./device": "./src/device-store.ts",
+    "./server": "./src/server.ts",
     "./vault": "./src/vault.ts"
   },
   "scripts": {

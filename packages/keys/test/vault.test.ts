@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   generateMasterKey,
   importMasterKey,
+  loadVaultMasterKey,
   openSecret,
   rewrapSecret,
+  sameMasterKey,
   sealSecret,
   vaultContext,
 } from "../src/vault";
@@ -68,5 +70,49 @@ describe("vault", () => {
     const master = await importMasterKey(generateMasterKey());
     expect(master.extractable).toBe(false);
     expect(master.usages.sort()).toEqual(["unwrapKey", "wrapKey"]);
+  });
+});
+
+describe("loadVaultMasterKey (the vault's on/off switch)", () => {
+  it("turns the vault off when EARSHOT_VAULT_MASTER_KEY is unset or blank", async () => {
+    expect(await loadVaultMasterKey({})).toBeNull();
+    expect(await loadVaultMasterKey({ EARSHOT_VAULT_MASTER_KEY: undefined })).toBeNull();
+    expect(await loadVaultMasterKey({ EARSHOT_VAULT_MASTER_KEY: "" })).toBeNull();
+    expect(await loadVaultMasterKey({ EARSHOT_VAULT_MASTER_KEY: " \n" })).toBeNull();
+  });
+
+  it("loads a key that wraps and unwraps but can't be exported", async () => {
+    const encoded = generateMasterKey();
+    const master = await loadVaultMasterKey({ EARSHOT_VAULT_MASTER_KEY: `${encoded}\n` });
+    if (!master) throw new Error("expected the vault to be on");
+    expect(master.extractable).toBe(false);
+    expect(master.usages.sort()).toEqual(["unwrapKey", "wrapKey"]);
+
+    const sealed = await sealSecret(master, SECRET, context);
+    expect(await openSecret(await importMasterKey(encoded), sealed, context)).toBe(SECRET);
+  });
+
+  it("throws on a malformed key, naming the variable but never quoting it", async () => {
+    for (const value of ["definitely not base64!", btoa("sixteen byte key")]) {
+      const error = await loadVaultMasterKey({ EARSHOT_VAULT_MASTER_KEY: value }).catch(
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+      expect(String(error)).toMatch(/EARSHOT_VAULT_MASTER_KEY is set, but it isn't a usable/);
+      expect(String(error)).not.toContain(value);
+      expect(String((error as Error).cause)).not.toContain(value);
+    }
+  });
+});
+
+describe("sameMasterKey", () => {
+  it("recognizes one key imported twice, and tells two keys apart", async () => {
+    const encoded = generateMasterKey();
+    const [a, b, other] = await Promise.all(
+      [encoded, encoded, generateMasterKey()].map((key) => importMasterKey(key)),
+    );
+    if (!a || !b || !other) throw new Error("expected three keys");
+    expect(await sameMasterKey(a, b)).toBe(true);
+    expect(await sameMasterKey(a, other)).toBe(false);
   });
 });

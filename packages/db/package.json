@@ -10,12 +10,14 @@
   "scripts": {
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:rotate-vault-key": "tsx scripts/rotate-vault-key.ts",
     "db:stamp": "tsx scripts/stamp-branch.ts",
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@earshot/keys": "workspace:*",
     "@neondatabase/serverless": "catalog:",
     "drizzle-orm": "catalog:"
   },

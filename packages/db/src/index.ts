@@ -8,3 +8,17 @@ export {
   tenantTables,
   withTenant,
 } from "./tenant";
+export {
+  type CredentialMeta,
+  type CredentialSlot,
+  credentialContext,
+  crmConnectionContext,
+  deleteCredential,
+  listCredentials,
+  type PutCredentialInput,
+  putCredential,
+  revealCredential,
+  VaultOffError,
+  VaultOpenError,
+} from "./vault";
+export { type RotationReport, rotateVaultKey, VaultRotationError } from "./vault-rotation";
