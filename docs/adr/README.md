@@ -27,3 +27,4 @@ Earshot records architectural decisions as short MADR files, one per decision. S
 | [0020](0020-event-store.md) | Event store: an append-only log per session, upcasting on read, pure projections, and JSONL files | Accepted (2026-11-15) |
 | [0021](0021-key-handling.md) | Key handling: on-device storage, per-request use, an optional envelope-encrypted vault | Accepted (2026-11-15) |
 | [0023](0023-minted-credentials-and-session-tickets.md) | Provider credentials minted from per-request keys, and signed single-use session tickets for the edge socket | Accepted (2026-11-15) |
+| [0025](0025-llm-adapters-on-ai-sdk-7.md) | LLM adapters on AI SDK 7: providers built per call, per-turn keys, one batch tool, evidence by quotation, AI Gateway optional | Accepted (2026-11-15) |
