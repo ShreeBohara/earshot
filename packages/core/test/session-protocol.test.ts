@@ -30,6 +30,8 @@ const FAKE_KEYS = {
   openai: `sk-proj-${"y".repeat(40)}`,
   groq: `gsk_${"Z".repeat(40)}`,
   google: `AIza${"0".repeat(35)}`,
+  openaiEphemeral: `ek_${"68af296e".repeat(4)}`,
+  jwt: `eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.${"Sg9".repeat(14)}x`,
 } as const;
 
 const SESSION_ID = "01a1c6e2-9320-7deb-a57a-ba62dc02df02";
