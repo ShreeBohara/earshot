@@ -1,77 +1,69 @@
-import { buttonVariants } from "@earshot/ui/components/button";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { linkButton } from "@/components/link-button";
+import { HOME_PATH } from "@/lib/auth/redirects";
+import { getViewer } from "@/lib/auth/viewer";
 
 const REPO = "https://github.com/ShreeBohara/earshot";
 
-const phases = [
-  "Reset and foundations",
-  "Event-sourced core, auth, and data",
-  "Voice engine and the capture experience",
-  "Understanding: proposals, entity linking, two witnesses",
-  "The trust layer: review inbox and approval policies",
-  "Real CRM sync",
-  "Memory, commitments, and briefs",
-  "Research: the benchmark and the two-witnesses study",
-  "Everywhere: MCP, mobile, local mode, imports",
-  "Production hardening and launch",
+const STEPS = [
+  { title: "Talk it through", body: "Debrief out loud after a call, in your own words." },
+  { title: "Check the evidence", body: "Every proposed field points to the words behind it." },
+  { title: "Sync what you approve", body: "Nothing reaches your CRM until you say so." },
 ] as const;
 
-const CURRENT_PHASE = 1;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-function statusOf(phase: number): string {
-  if (phase < CURRENT_PHASE) return "done";
-  if (phase === CURRENT_PHASE) return "in progress";
-  return "planned";
-}
+/** Signed-out visitors get the landing page; signed-in ones go to their workspace. */
+export default async function LandingPage({ searchParams }: { searchParams: SearchParams }) {
+  if (await getViewer()) redirect(HOME_PATH);
+  const { deleted } = await searchParams;
 
-export default function Page() {
   return (
-    <main className="mx-auto flex min-h-svh max-w-2xl flex-col gap-12 px-6 py-16">
+    <main
+      id="main"
+      className="mx-auto flex min-h-svh max-w-2xl flex-col justify-center gap-12 px-6 py-16"
+    >
+      {deleted === "1" && (
+        <p role="status" className="rounded-lg border px-4 py-3 text-sm">
+          Your account and everything in your workspace were deleted.
+        </p>
+      )}
+
       <header className="flex flex-col gap-4">
         <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-          v2 · rebuilding in the open
+          Open source · bring your own key
         </p>
         <h1 className="font-serif text-6xl tracking-tight">Earshot</h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">
+        <p className="text-pretty text-lg text-muted-foreground leading-relaxed">
           The open-source, verifiable voice layer for your CRM. Say it once, check it in seconds,
           sync it with proof.
         </p>
       </header>
 
-      <section aria-labelledby="roadmap" className="flex flex-col gap-3">
-        <h2 id="roadmap" className="font-medium text-sm">
-          Roadmap
-        </h2>
-        <ol className="flex flex-col divide-y divide-border rounded-lg border">
-          {phases.map((name, index) => {
-            const phase = index + 1;
-            return (
-              <li key={name} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
-                <span>
-                  <span className="font-mono text-muted-foreground">
-                    {String(phase).padStart(2, "0")}
-                  </span>{" "}
-                  {name}
-                </span>
-                <span className="shrink-0 font-mono text-muted-foreground text-xs">
-                  {statusOf(phase)}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
+      <ol className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3">
+        {STEPS.map((step, index) => (
+          <li key={step.title} className="flex flex-col gap-1 bg-background p-4">
+            <span className="font-mono text-muted-foreground text-xs">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span className="font-medium text-sm">{step.title}</span>
+            <span className="text-pretty text-muted-foreground text-sm">{step.body}</span>
+          </li>
+        ))}
+      </ol>
 
-      <footer className="flex flex-wrap gap-2">
-        <a className={buttonVariants({ size: "lg" })} href={REPO}>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/sign-in" className={linkButton({ size: "lg" })}>
+          Sign in
+        </Link>
+        <Link href="/demo" className={linkButton({ variant: "outline", size: "lg" })}>
+          Try the replay demo
+        </Link>
+        <a href={REPO} className={linkButton({ variant: "ghost", size: "lg" })}>
           Source on GitHub
         </a>
-        <a
-          className={buttonVariants({ variant: "outline", size: "lg" })}
-          href={`${REPO}/blob/main/ROADMAP.md`}
-        >
-          Read the roadmap
-        </a>
-      </footer>
+      </div>
     </main>
   );
 }

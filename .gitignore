@@ -16,6 +16,9 @@ storybook-static/
 *.tsbuildinfo
 next-env.d.ts
 
+# local databases (apps/web's zero-setup PGlite lives in apps/web/.data/)
+.data/
+
 # tests
 playwright-report/
 test-results/

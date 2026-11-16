@@ -1,3 +1,10 @@
+export {
+  type AccountExport,
+  buildAccountExport,
+  deleteSoleMemberWorkspaces,
+  ensureWorkspace,
+  personalWorkspaceName,
+} from "./account";
 export { createHttpDb, createPoolDb, type HttpDb, type PoolDb } from "./client";
 export {
   appendEvents,

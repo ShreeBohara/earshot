@@ -1,5 +1,28 @@
-# Copy to .dev.vars for local development. Never commit .dev.vars.
-# Use the pooled connection string of your personal Neon branch (dev/<you>).
-DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=require
+# Copy to .dev.vars for local development. Never commit .dev.vars. Placeholders only below.
+#
+# Zero-setup mode: with every optional line commented out, `pnpm dev` runs against an in-process
+# PGlite database in apps/web/.data/, prints magic links to the server console, and uses a
+# development-only auth secret. Uncomment lines to use real services instead.
+
+# Database. The pooled connection string of your personal Neon branch (dev/<you>).
+# DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=require
+
 # Where `next dev` reaches the edge Worker if the service binding isn't available.
 EDGE_DEV_URL=http://localhost:8787
+
+# Auth. Required outside `next dev`, for example by `pnpm preview`, which runs the production
+# build in workerd. Generate the secret with `openssl rand -base64 32`.
+# BETTER_AUTH_SECRET=replace-with-at-least-32-random-characters
+# BETTER_AUTH_URL=http://localhost:3000
+# BETTER_AUTH_TRUSTED_ORIGINS=https://another-origin.example
+
+# OAuth sign-in. Each provider shows up only when both of its values are set.
+# Callback URLs: <BETTER_AUTH_URL>/api/auth/callback/github and .../callback/google
+# GITHUB_CLIENT_ID=your-github-oauth-client-id
+# GITHUB_CLIENT_SECRET=your-github-oauth-client-secret
+# GOOGLE_CLIENT_ID=your-google-oauth-client-id
+# GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+
+# Magic-link email through Resend. Without both, dev prints links to the console instead.
+# RESEND_API_KEY=re_your_resend_api_key
+# EMAIL_FROM=Earshot <sign-in@mail.example.com>

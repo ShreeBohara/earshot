@@ -1,12 +1,13 @@
 // Renders per-environment wrangler configs from the templates in apps/edge and apps/web.
 //
-//   pnpm tsx scripts/render-wrangler.ts --target pr-12 --sha <commit>
-//   pnpm tsx scripts/render-wrangler.ts --target production --sha <commit>
+//   pnpm tsx scripts/render-wrangler.ts --target pr-12 --sha <commit> [--workers-subdomain <name>]
+//   pnpm tsx scripts/render-wrangler.ts --target production --sha <commit> [--workers-subdomain <name>]
 //
 // Writes apps/edge/wrangler.<target>.jsonc and apps/web/wrangler.<target>.jsonc (gitignored).
 // Each environment gets its own Workers, so the web Worker's WORKER_SELF_REFERENCE must point
 // at its own name (OpenNext doesn't rewrite it) and EDGE must point at the same environment's
-// edge Worker. Version preview URLs aren't an option: Cloudflare doesn't generate them for
+// edge Worker. With --workers-subdomain, the web Worker also gets BETTER_AUTH_URL, its own
+// workers.dev origin. Version preview URLs aren't an option: Cloudflare doesn't generate them for
 // Workers that define Durable Objects (docs/adr/0017).
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -56,7 +57,23 @@ export function renderEdge(template: WranglerConfig, target: Target, sha: string
   return withVars({ ...template, name: workerNames(target).edge }, target, sha);
 }
 
-export function renderWeb(template: WranglerConfig, target: Target, sha: string): WranglerConfig {
+/**
+ * The web Worker's public origin on workers.dev. Better Auth binds magic links, OAuth callbacks,
+ * and passkeys to it (BETTER_AUTH_URL).
+ */
+export function webOrigin(target: Target, workersSubdomain: string): string {
+  if (!/^[a-z0-9-]+$/.test(workersSubdomain)) {
+    throw new Error(`invalid workers.dev subdomain "${workersSubdomain}"`);
+  }
+  return `https://${workerNames(target).web}.${workersSubdomain}.workers.dev`;
+}
+
+export function renderWeb(
+  template: WranglerConfig,
+  target: Target,
+  sha: string,
+  options: { workersSubdomain?: string | undefined } = {},
+): WranglerConfig {
   const names = workerNames(target);
   const services = (template.services ?? []).map((binding) => {
     if (binding.binding === "WORKER_SELF_REFERENCE") return { ...binding, service: names.web };
@@ -68,7 +85,14 @@ export function renderWeb(template: WranglerConfig, target: Target, sha: string)
       throw new Error(`web template is missing the ${required} service binding`);
     }
   }
-  return withVars({ ...template, name: names.web, services }, target, sha);
+  const rendered = withVars({ ...template, name: names.web, services }, target, sha);
+  if (options.workersSubdomain) {
+    rendered.vars = {
+      ...rendered.vars,
+      BETTER_AUTH_URL: webOrigin(target, options.workersSubdomain),
+    };
+  }
+  return rendered;
 }
 
 export function readTemplate(path: string): WranglerConfig {
@@ -80,18 +104,29 @@ export function readTemplate(path: string): WranglerConfig {
 
 function main(): void {
   const { values } = parseArgs({
-    options: { target: { type: "string" }, sha: { type: "string" } },
+    options: {
+      target: { type: "string" },
+      sha: { type: "string" },
+      "workers-subdomain": { type: "string" },
+    },
   });
   if (!values.target || !values.sha) {
-    throw new Error("usage: render-wrangler.ts --target <production|pr-N> --sha <commit>");
+    throw new Error(
+      "usage: render-wrangler.ts --target <production|pr-N> --sha <commit> [--workers-subdomain <name>]",
+    );
   }
+  const workersSubdomain = values["workers-subdomain"];
   const target = parseTarget(values.target);
   const label = targetLabel(target);
   const root = fileURLToPath(new URL("..", import.meta.url));
 
   const outputs = [
     { app: "edge", render: renderEdge },
-    { app: "web", render: renderWeb },
+    {
+      app: "web",
+      render: (template: WranglerConfig, t: Target, sha: string) =>
+        renderWeb(template, t, sha, { workersSubdomain }),
+    },
   ] as const;
   for (const { app, render } of outputs) {
     const config = render(readTemplate(`${root}apps/${app}/wrangler.jsonc`), target, values.sha);
