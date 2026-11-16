@@ -59,3 +59,51 @@ export async function allowMagicLinkFor(
     .returning({ count: rateLimit.count });
   return (row?.count ?? 1) <= max;
 }
+
+/** At most `max` requests per `windowMs`. */
+export type RateLimitRule = { readonly max: number; readonly windowMs: number };
+
+export type RateLimitDecision = {
+  readonly allowed: boolean;
+  /** When `allowed` is false: seconds until the window resets and a request will pass again. */
+  readonly retryAfterSeconds: number;
+};
+
+/**
+ * Counts one request against `key` and decides whether it may proceed. Like the per-address cap
+ * above, the counter lives in Better Auth's `rate_limit` table, so every Worker isolate shares it,
+ * and one upsert both counts and decides, so concurrent requests can't slip past the limit.
+ *
+ * The count resets `windowMs` after the last request that was let through, the way Better Auth's
+ * own limiter works. Refused requests are counted but don't move that point, so a client that
+ * keeps retrying still gets through once the window ends, and `retryAfterSeconds` is accurate.
+ * Namespace `key` (for example `key-check|user:<id>`) so it can't collide with Better Auth's
+ * `<ip>|<path>` keys, and keep `windowMs` within Better Auth's longest rule window, which is how
+ * long it keeps rows.
+ */
+export async function consumeRateLimit(
+  db: AppDb,
+  key: string,
+  { max, windowMs }: RateLimitRule,
+  now: number = Date.now(),
+): Promise<RateLimitDecision> {
+  const { rateLimit } = schema;
+  const expired = sql`${rateLimit.lastRequest} <= ${now - windowMs}`;
+  const [row] = await db
+    .insert(rateLimit)
+    .values({ id: crypto.randomUUID(), key, count: 1, lastRequest: now })
+    .onConflictDoUpdate({
+      target: rateLimit.key,
+      set: {
+        // Both expressions read the row as it was before this request.
+        count: sql`case when ${expired} then 1 else ${rateLimit.count} + 1 end`,
+        // Moves only when this request is let through.
+        lastRequest: sql`case when ${expired} or ${rateLimit.count} < ${max} then ${now} else ${rateLimit.lastRequest} end`,
+      },
+    })
+    .returning({ count: rateLimit.count, lastRequest: rateLimit.lastRequest });
+  const count = row?.count ?? 1;
+  if (count <= max) return { allowed: true, retryAfterSeconds: 0 };
+  const resetsAt = Number(row?.lastRequest ?? now) + windowMs;
+  return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((resetsAt - now) / 1000)) };
+}

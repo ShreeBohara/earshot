@@ -102,8 +102,9 @@ describe("readAuthConfig", () => {
         GITHUB_CLIENT_ID: "public-id",
         RESEND_API_KEY: "s3",
         DATABASE_URL: "postgres://u:p@h/db",
+        EARSHOT_VAULT_MASTER_KEY: "bWFzdGVyLWtleQ==",
       }),
-    ).toEqual(["s1", "s2", "s3", "postgres://u:p@h/db"]);
+    ).toEqual(["s1", "s2", "s3", "postgres://u:p@h/db", "bWFzdGVyLWtleQ=="]);
   });
 });
 

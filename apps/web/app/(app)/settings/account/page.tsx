@@ -8,7 +8,7 @@ import { linkButton } from "@/components/link-button";
 import { SettingsSection } from "@/components/settings-section";
 import { listPasskeys, listSignInSessions } from "@/lib/account/queries";
 import { describeUserAgent } from "@/lib/account/user-agent";
-import { FRESH_SESSION_SECONDS } from "@/lib/auth/server";
+import { isFreshSession } from "@/lib/auth/fresh";
 import { requireViewer } from "@/lib/auth/viewer";
 import { getDb } from "@/lib/db";
 import { formatDate, formatRelative } from "@/lib/format";
@@ -22,7 +22,7 @@ export default async function AccountSettingsPage() {
   const sessions = await listSignInSessions(db, viewer.user.id);
   const passkeys = await listPasskeys(db, viewer.user.id);
   const now = new Date();
-  const fresh = now.getTime() - viewer.session.createdAt.getTime() < FRESH_SESSION_SECONDS * 1000;
+  const fresh = isFreshSession(viewer.session, now);
 
   return (
     <div className="flex flex-col gap-10">

@@ -19,16 +19,14 @@ import {
   EmailUnavailableError,
   type SendMagicLink,
 } from "./email";
+import { FRESH_SESSION_SECONDS } from "./fresh";
 import { allowMagicLinkFor } from "./throttle";
 
 /** Magic links work once and expire after five minutes (Better Auth's default). */
 export const MAGIC_LINK_TTL_SECONDS = 5 * 60;
 
-/**
- * How recent a sign-in must be for sensitive actions: deleting the account and adding a passkey.
- * Older sessions must sign in again first.
- */
-export const FRESH_SESSION_SECONDS = 60 * 60;
+// How recent a sign-in must be for sensitive actions (lib/auth/fresh.ts).
+export { FRESH_SESSION_SECONDS };
 
 /**
  * Per address, whatever the client IP: at most this many magic links per sliding window. The window
