@@ -3,7 +3,7 @@
 -- with a workspace_id column but no RLS, grants the app a table that RLS doesn't protect, or
 -- lets the app write a user column that isn't bound to app.user_id.
 begin;
-select plan(86);
+select plan(90);
 
 create temp table tenant_tables (
   name text primary key,
@@ -13,13 +13,13 @@ create temp table tenant_tables (
   ord int not null
 );
 insert into tenant_tables (name, key, privs, policies, ord) values
-  ('workspaces', 'id', '{SELECT,UPDATE}', '{tenant_isolation}', 1),
+  ('workspaces', 'id', '{SELECT}', '{tenant_isolation}', 1),
   ('workspace_members', 'workspace_id', '{SELECT}', '{tenant_isolation}', 2),
   ('credentials', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 3),
   ('crm_connections', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 4),
   ('crm_entities', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 5),
   ('sessions', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}',
-   '{tenant_isolation,actor_insert,actor_update}', 6),
+   '{tenant_isolation,actor_insert,actor_update,actor_delete}', 6),
   ('session_events', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 7),
   ('utterances', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 8),
   ('proposals', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 9),
@@ -81,7 +81,7 @@ cross join lateral (
 ) e
 order by t.ord;
 
--- The actor policies: restrictive, for earshot_app, and fail-closed on app.user_id (3). A
+-- The actor policies: restrictive, for earshot_app, and fail-closed on app.user_id (4). A
 -- missing policy emits no row, which the plan count catches.
 select is(
   row(p.cmd, p.permissive, p.roles::text, p.qual, p.with_check)::text,
@@ -96,7 +96,10 @@ from (values
    '(user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))',
    '(user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))',
    'sessions: actor_update limits updates to the user''s own sessions, and keeps them theirs'),
-  (3, 'audit_log', 'actor_insert', 'INSERT', null,
+  (3, 'sessions', 'actor_delete', 'DELETE',
+   '(user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))', null,
+   'sessions: actor_delete limits deletes to the user''s own sessions'),
+  (4, 'audit_log', 'actor_insert', 'INSERT', null,
    '(actor_user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))',
    'audit_log: actor_insert binds actor_user_id to app.user_id on insert')
 ) as e(ord, tablename, policyname, cmd, qual, with_check, description)
@@ -178,6 +181,10 @@ select is_empty(
           select from pg_policy p
           where p.polrelid = c.conrelid and not p.polpermissive and p.polcmd in ('w', '*')
         ))
+        or (has_table_privilege('earshot_app', c.conrelid, 'DELETE') and not exists (
+          select from pg_policy p
+          where p.polrelid = c.conrelid and not p.polpermissive and p.polcmd in ('d', '*')
+        ))
       )$$,
   'every table the app writes that names a member binds that member to app.user_id'
 );
@@ -188,6 +195,18 @@ select table_privs_are(
   format('earshot_app has exactly %s on %s', array_to_string(t.privs, ', '), t.name)
 )
 from tenant_tables t order by t.ord;
+
+-- ...with UPDATE on workspaces granted for the name column alone (3)...
+select column_privs_are(
+  'public', 'workspaces', c.col::name, 'earshot_app', c.privs,
+  format('earshot_app has exactly %s on workspaces.%s', array_to_string(c.privs, ', '), c.col)
+)
+from (values
+  (1, 'id', '{SELECT}'::name[]),
+  (2, 'name', '{SELECT,UPDATE}'::name[]),
+  (3, 'created_at', '{SELECT}'::name[])
+) as c(ord, col, privs)
+order by c.ord;
 
 -- ...and has no privileges at all on Better Auth's tables or app_meta (6)...
 select table_privs_are(

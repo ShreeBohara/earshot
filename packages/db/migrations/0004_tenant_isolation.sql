@@ -106,13 +106,17 @@ CREATE POLICY tenant_isolation ON audit_log TO earshot_app
 -- Actor binding. A row that names a user must name the transaction's own user, app.user_id, so
 -- a member can't record a session or an audit entry in someone else's name. RESTRICTIVE: these
 -- apply on top of tenant_isolation, and a missing or empty app.user_id fails them. A member may
--- only update their own sessions; reading is unaffected.
+-- only update or delete their own sessions; reading is unaffected. Rows under a session (events,
+-- utterances, proposals, sync jobs) aren't bound to its user: see docs/adr/0019's trust model.
 CREATE POLICY actor_insert ON sessions AS RESTRICTIVE FOR INSERT TO earshot_app
   WITH CHECK (user_id = nullif(current_setting('app.user_id', true), ''));
 --> statement-breakpoint
 CREATE POLICY actor_update ON sessions AS RESTRICTIVE FOR UPDATE TO earshot_app
   USING (user_id = nullif(current_setting('app.user_id', true), ''))
   WITH CHECK (user_id = nullif(current_setting('app.user_id', true), ''));
+--> statement-breakpoint
+CREATE POLICY actor_delete ON sessions AS RESTRICTIVE FOR DELETE TO earshot_app
+  USING (user_id = nullif(current_setting('app.user_id', true), ''));
 --> statement-breakpoint
 CREATE POLICY actor_insert ON audit_log AS RESTRICTIVE FOR INSERT TO earshot_app
   WITH CHECK (actor_user_id = nullif(current_setting('app.user_id', true), ''));
@@ -153,8 +157,9 @@ TO earshot_app;
 --> statement-breakpoint
 -- Membership decides which workspace a user may act in, so the app can only read it, and can
 -- only read and rename its workspace. Otherwise a member could add anyone to their workspace,
--- or promote themselves.
-GRANT SELECT, UPDATE ON TABLE workspaces TO earshot_app;
+-- or promote themselves. UPDATE is granted on the name column alone, so the app can't change
+-- the id or created_at, or any column added later.
+GRANT SELECT, UPDATE (name) ON TABLE workspaces TO earshot_app;
 --> statement-breakpoint
 GRANT SELECT ON TABLE workspace_members TO earshot_app;
 --> statement-breakpoint

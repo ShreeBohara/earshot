@@ -3,13 +3,13 @@
 -- delete, or join workspaces at all: those writes are denied outright (see also
 -- 50_workspace_members.sql).
 begin;
-select plan(69);
+select plan(70);
 
 set local role earshot_app;
 select set_config('app.user_id', 'user-a', true),
        set_config('app.workspace_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', true);
 
--- Controls: the same writes succeed for A's own workspace (12; membership is read-only)
+-- Controls: the same writes succeed for A's own workspace (12; membership is read-only)...
 select lives_ok($$update workspaces set name = 'Workspace A, renamed'
   where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'$$, 'workspaces: A can rename itself');
 select lives_ok($$insert into credentials (workspace_id, provider, label, ciphertext, iv, wrapped_dek, dek_iv, last4)
@@ -49,6 +49,12 @@ select lives_ok($$insert into facts (workspace_id, entity_id, key, value)
 select lives_ok($$insert into audit_log (workspace_id, actor_user_id, action)
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'user-a', 'credential.added')$$,
   'audit_log: A can append its own entry');
+
+-- ...but renaming is all the app may do to its workspace (1)
+select throws_ok($$update workspaces set created_at = now()
+  where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'$$,
+  '42501', 'permission denied for table workspaces',
+  'workspaces: A can''t change created_at, or any column but name');
 
 -- Inserting a row with B's workspace_id fails: the policy's WITH CHECK, or for workspaces and
 -- membership, the missing privilege (13)
@@ -107,12 +113,12 @@ select throws_ok($$insert into audit_log (workspace_id, actor_user_id, action)
   '42501', 'new row violates row-level security policy for table "audit_log"',
   'audit_log: A can''t append to B''s log');
 
--- Updating one of A's rows to B's workspace_id fails the policy's WITH CHECK (12; audit_log
--- can't be updated at all, see 40_audit_log.sql)
+-- Updating one of A's rows to B's workspace_id fails: the policy's WITH CHECK, or the missing
+-- privilege (12; audit_log can't be updated at all, see 40_audit_log.sql)
 select throws_ok($$update workspaces set id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
   where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'$$,
-  '42501', 'new row violates row-level security policy for table "workspaces"',
-  'workspaces: A can''t take B''s id');
+  '42501', 'permission denied for table workspaces',
+  'workspaces: A can''t take B''s id (only name is updatable)');
 select throws_ok($$update workspace_members set workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
   where workspace_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'$$,
   '42501', 'permission denied for table workspace_members',

@@ -2,7 +2,7 @@
 -- the transaction's own user, app.user_id, and that user must be a member of the row's
 -- workspace. So a member can't record a session or an audit entry in someone else's name.
 begin;
-select plan(12);
+select plan(14);
 
 -- As the owner: a second member of A, user-c, with a session of their own
 insert into "user" (id, name, email) values ('user-c', 'Cy Cole', 'cy@a.test');
@@ -16,9 +16,10 @@ set local role earshot_app;
 select set_config('app.user_id', 'user-a', true),
        set_config('app.workspace_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', true);
 
--- Sessions (5)
-select lives_ok($$insert into sessions (workspace_id, user_id, mode, engine)
-  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'user-a', 'debrief', 'cascaded')$$,
+-- Sessions (7)
+select lives_ok($$insert into sessions (id, workspace_id, user_id, mode, engine)
+  values ('a0000000-0000-4000-8000-000000000204', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          'user-a', 'debrief', 'cascaded')$$,
   'user-a can start a session as itself');
 select throws_ok($$insert into sessions (workspace_id, user_id, mode, engine)
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'user-c', 'debrief', 'cascaded')$$,
@@ -31,8 +32,14 @@ select throws_ok($$update sessions set user_id = 'user-c'
 select is_empty($$update sessions set engine = 'pwned'
   where id = 'a0000000-0000-4000-8000-000000000104' returning id$$,
   'user-a can''t change another member''s session');
-select results_eq('select count(*)::int from sessions', array[3],
-  'user-a still reads every session in its workspace: the binding limits writes only');
+select is_empty($$delete from sessions where id = 'a0000000-0000-4000-8000-000000000104' returning id$$,
+  'user-a can''t delete another member''s session');
+select lives_ok($$delete from sessions where id = 'a0000000-0000-4000-8000-000000000204'$$,
+  'user-a can delete its own session');
+select results_eq('select id from sessions order by id',
+  $$values ('a0000000-0000-4000-8000-000000000004'::uuid),
+           ('a0000000-0000-4000-8000-000000000104'::uuid)$$,
+  'user-a reads every session in its workspace, minus the one it deleted: the binding limits writes only');
 
 -- Audit entries (3)
 select lives_ok($$insert into audit_log (workspace_id, actor_user_id, action)
