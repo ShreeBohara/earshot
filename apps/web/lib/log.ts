@@ -1,16 +1,60 @@
-import { createRedactingLogger, type Logger, type LogSink } from "@earshot/keys/server";
+import { createRedactingLogger, type Logger, type LogSink, redact } from "@earshot/keys/server";
 
 /**
  * The server's logger. Every line goes through @earshot/keys' redaction: the secrets passed in
  * (the auth secret, provider client secrets, the email API key, the database URL) and anything
  * shaped like a provider key come out as [REDACTED]. Never pass magic links, session tokens, or
  * email addresses: redaction can't recognize those, so callers keep them out (docs/adr/0006).
+ * Errors are logged as their name and code only (`errorSummary`).
  */
 export type { Logger };
 
-/** Errors serialize to `{}`; keep their name and message instead (both still get redacted). */
+const ERROR_NAME = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
+const ERROR_CODE = /^[A-Za-z0-9_]{1,64}$/;
+
+/**
+ * What an error may contribute to a log line: its class name and its code (an SQLSTATE, a Node
+ * error code, or Better Auth's `body.code`), each only if it's a plain identifier. Never the
+ * message, the stack, or the cause: a database error's message can quote the query and its
+ * parameters, and other libraries' messages can quote requests, emails, or tokens.
+ */
+export function errorSummary(error: unknown): { name?: string; code?: string } | undefined {
+  if (!(error instanceof Error)) return undefined;
+  const summary: { name?: string; code?: string } = {};
+  if (ERROR_NAME.test(error.name)) summary.name = error.name;
+  const code =
+    (error as { code?: unknown }).code ?? (error as { body?: { code?: unknown } }).body?.code;
+  if (typeof code === "string" && ERROR_CODE.test(code)) summary.code = code;
+  return summary;
+}
+
+const EMAIL = /[^\s@<>()[\]"'`,;:]+@[^\s@<>()[\]"'`,;:]+\.[^\s@<>()[\]"'`,;:]+/g;
+// Session tokens, magic-link tokens, and other opaque credentials are long runs of URL-safe
+// characters that mix cases or mix letters and digits. Shorter runs, and long lowercase words such
+// as a route's path segments, are left alone.
+const LONG_RUN = /[A-Za-z0-9_-]{24,}/g;
+
+function looksRandom(run: string): boolean {
+  const lower = /[a-z]/.test(run);
+  const upper = /[A-Z]/.test(run);
+  return (lower && upper) || (/[0-9]/.test(run) && (lower || upper));
+}
+
+/**
+ * A message from code we don't control, made safe to log: known secret shapes redacted, and email
+ * addresses and long opaque tokens masked.
+ */
+export function scrubMessage(message: unknown): string {
+  const text =
+    message instanceof Error ? (errorSummary(message)?.name ?? "Error") : String(message);
+  return redact(text)
+    .replace(EMAIL, "[EMAIL]")
+    .replace(LONG_RUN, (run) => (looksRandom(run) ? "[TOKEN]" : run));
+}
+
+/** Errors serialize to `{}`; log their summary instead. */
 function plain(detail: unknown): unknown {
-  if (detail instanceof Error) return { name: detail.name, message: detail.message };
+  if (detail instanceof Error) return errorSummary(detail);
   if (Array.isArray(detail)) return detail.map(plain);
   if (detail !== null && typeof detail === "object") {
     return Object.fromEntries(Object.entries(detail).map(([key, value]) => [key, plain(value)]));

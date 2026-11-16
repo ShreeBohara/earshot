@@ -10,6 +10,7 @@ import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins/magic-link";
 import type { AppDb } from "../db/types";
 import type { Logger } from "../log";
+import { betterAuthLog } from "./better-auth-log";
 import type { AuthConfig } from "./config";
 import { COOKIE_PREFIX } from "./cookies";
 import {
@@ -133,15 +134,8 @@ export function createAuth({ config, db, log, sendMagicLink, fetch, rateLimit }:
       ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     },
     telemetry: { enabled: false },
-    logger: {
-      level: "warn",
-      log: (level, message, ...args) => {
-        const detail = args.length > 0 ? args : undefined;
-        if (level === "error") log.error(`better-auth: ${message}`, detail);
-        else if (level === "warn") log.warn(`better-auth: ${message}`, detail);
-        else log.info(`better-auth: ${message}`, detail);
-      },
-    },
+    // Level and scrubbed message only; of any arguments, just an Error's name and code.
+    logger: { level: "warn", log: betterAuthLog(log) },
     plugins: [
       magicLink({
         expiresIn: MAGIC_LINK_TTL_SECONDS,
@@ -169,7 +163,8 @@ export function createAuth({ config, db, log, sendMagicLink, fetch, rateLimit }:
               });
             }
             if (error instanceof EmailDeliveryError) {
-              log.error("magic link not sent", { error });
+              // The message is ours: it carries the provider's HTTP status and nothing else.
+              log.error(`magic link not sent: ${error.message}`);
               throw new APIError("BAD_GATEWAY", {
                 code: "EMAIL_NOT_SENT",
                 message: "We couldn't send the email. Try again in a minute.",

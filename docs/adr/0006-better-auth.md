@@ -36,7 +36,7 @@ Phase 2 ships it in `apps/web/lib/auth/`. `server.ts` builds the instance from e
 
 Provider errors report only the HTTP status, and response bodies are discarded, since they can echo the recipient.
 
-**Configuration** (`config.ts`, documented in `apps/web/env.d.ts` and `.dev.vars.example`). Outside development, `BETTER_AUTH_SECRET` (at least 32 characters) and `BETTER_AUTH_URL` (https, or localhost for `pnpm preview`) are required. If either is missing, every auth path throws instead of falling back. Trusted origins are the base URL's origin plus `BETTER_AUTH_TRUSTED_ORIGINS`. Cookies are named `earshot.*` and are `Secure` over https. Better Auth's logs go through the redacting logger, which strips the auth secret, OAuth client secrets, the Resend key, and the database URL; telemetry is off.
+**Configuration** (`config.ts`, documented in `apps/web/env.d.ts` and `.dev.vars.example`). Outside development, `BETTER_AUTH_SECRET` (at least 32 characters) and `BETTER_AUTH_URL` (https, or localhost for `pnpm preview`) are required. If either is missing, every auth path throws instead of falling back. Trusted origins are the base URL's origin plus `BETTER_AUTH_TRUSTED_ORIGINS`. Cookies are named `earshot.*` and are `Secure` over https. Logs never carry request data. Every line goes through the redacting logger, which strips the auth secret, OAuth client secrets, the Resend key, the database URL, and anything shaped like a provider key, and errors are logged by name and code only, never by message (a database error's message can quote its query parameters). Better Auth's own lines keep just their level and a scrubbed message, with email addresses and long random tokens masked; of the arguments Better Auth passes along, only an `Error`'s name and code survive. Telemetry is off.
 
 **Rate limiting.** In-memory counters don't work on Workers: each isolate would keep its own. Better Auth's database storage keeps them in `rate_limit` (migration 0011). Like Better Auth's other tables, that table has no row-level security and no grant to `earshot_app`, and pgTAP checks both (`80_rate_limit.sql`). Limits are per client IP, read from `cf-connecting-ip`, which Cloudflare sets and clients can't forge (unlike `X-Forwarded-For`):
 
@@ -65,7 +65,7 @@ Provider errors report only the HTTP status, and response bodies are discarded, 
 - `withViewer(handler)` makes route handlers answer 401 with JSON instead.
 - `withViewerTenant(fn)` runs `withTenant` as the viewer.
 
-`?next=` only accepts same-site paths, so it can't become an open redirect. `proxy.ts` only redirects requests without a session cookie away from `/home`, `/onboarding`, and `/settings`; it never vouches for a cookie. Next 16 runs `proxy.ts` on the Node.js runtime, which OpenNext supports only experimentally (ADR-0010). `build:worker` bundles it, and a local workerd preview redirected correctly. The checks don't depend on it.
+`?next=` only accepts same-site paths, so it can't become an open redirect. The path is checked again after normalizing, because dot segments can turn a single-slash path into a protocol-relative one (`/.//evil.example` normalizes to `//evil.example`). `proxy.ts` only redirects requests without a session cookie away from `/home`, `/onboarding`, and `/settings`; it never vouches for a cookie. Next 16 runs `proxy.ts` on the Node.js runtime, which OpenNext supports only experimentally (ADR-0010). `build:worker` bundles it, and a local workerd preview redirected correctly. The checks don't depend on it.
 
 **Export and deletion.**
 
@@ -87,6 +87,8 @@ Provider errors report only the HTTP status, and response bodies are discarded, 
 - email that fails closed without logging, Resend delivery, and the development console;
 - rate limits shared across instances, plus the per-address cap;
 - the export route's 401, its refusal of cross-site requests, and the download;
+- `?next=` sanitizing, including paths that only become another host once normalized;
+- log scrubbing: tokens, emails, and provider keys passed to Better Auth's logger never reach a log line;
 - export isolation, with seeded secret canaries scanned for in the JSON;
 - deletion, including a stale session and no session;
 - proxy redirects.

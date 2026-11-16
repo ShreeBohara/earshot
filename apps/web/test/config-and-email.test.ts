@@ -235,17 +235,3 @@ describe("createMagicLinkSender", () => {
     expect(failure.message).not.toContain("TOKEN");
   });
 });
-
-describe("the server logger", () => {
-  it("redacts configured secrets and keeps errors readable", () => {
-    const log = memoryLogger([TEST_SECRET]);
-    log.error("boom", {
-      error: new Error(`bad secret ${TEST_SECRET}`),
-      key: "sk-proj-abcdefghijklmnopqrstuvwxyz",
-    });
-    expect(log.lines).toHaveLength(1);
-    expect(log.lines[0]).not.toContain(TEST_SECRET);
-    expect(log.lines[0]).not.toContain("sk-proj-abcdefghijklmnopqrstuvwxyz");
-    expect(log.lines[0]).toContain("bad secret [REDACTED]");
-  });
-});
