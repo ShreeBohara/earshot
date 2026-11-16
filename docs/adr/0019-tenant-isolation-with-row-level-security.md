@@ -23,7 +23,7 @@ Within a workspace there are two more risks. A member who could write `workspace
 
 - `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on most tenant tables.
 - Only `SELECT` on `workspace_members`.
-- Only `SELECT` and `UPDATE` on `workspaces`, so the app can read and rename its workspace but not create or delete one.
+- Only `SELECT`, and `UPDATE` on the `name` column, on `workspaces`. The app can read and rename its workspace, but can't create or delete one, or change `id`, `created_at`, or any column added later.
 - Only `SELECT` and `INSERT` on `audit_log`, so the app can't change its history.
 
 Grants are explicit per table, with no default privileges, so a new table stays closed to the app until a migration opens it. They come last in the migration, after every policy. The owner owns every table and isn't subject to RLS. It runs migrations, seeds, Better Auth, membership changes, and the few reads that span workspaces. `earshot_app` has no privileges on Better Auth's tables.
@@ -42,23 +42,30 @@ with check (workspace_id = nullif(current_setting('app.workspace_id', true), '')
 **Actor binding.** `withTenant` (ADR-0018) requires a user id and sets it as `app.user_id` alongside the workspace. Two tables name a user, and both are bound to that setting:
 
 - **Restrictive policies.** They apply on top of `tenant_isolation`:
-  - On `sessions`, for `INSERT` and for `UPDATE` (in both `USING` and `WITH CHECK`): `user_id = nullif(current_setting('app.user_id', true), '')`.
+  - On `sessions`, for `INSERT`, for `UPDATE` (in both `USING` and `WITH CHECK`), and for `DELETE` (in `USING`): `user_id = nullif(current_setting('app.user_id', true), '')`.
   - On `audit_log`, for `INSERT`: the same check on `actor_user_id`.
 
-  A member can only record sessions and audit entries in their own name, can only update their own sessions, and can't write either with no user set. Reading is unaffected.
+  A member can only record sessions and audit entries in their own name, and can only update or delete their own sessions. With no user set, neither table can be written. Reading is unaffected.
 - **Composite foreign keys to `workspace_members`.** They make every named user a member of the row's workspace:
   - `sessions (workspace_id, user_id)`, `ON DELETE CASCADE`: removing a member removes their sessions there.
   - `audit_log (workspace_id, actor_user_id)`, `ON DELETE SET NULL (actor_user_id)` (Postgres 15+): an entry outlives the membership. drizzle-kit can't express that, so this key is hand-written in migration 0004.
 
 Tenant tables reference `user` only through `workspace_members`.
 
+**Trust model within a workspace.** Between workspaces, the database enforces isolation on every table. Within a workspace, it binds the actor only on `sessions` and `audit_log`. The rows under a session (`session_events`, `utterances`, `proposals`, `sync_jobs`) aren't bound to that session's user: any member of the workspace can write them through `withTenant`. That is deliberate, for now:
+
+- Phase 2 has exactly one member per workspace. Only the `owner` role exists, and only trusted code writes membership, so there is no second member to guard against.
+- Team workspaces arrive in a later phase, and there managers need to act on their reps' proposals. Per-member write rules get designed then, against those review flows. Adding policies now that look up each row's session owner with an `EXISTS` subquery would be wrong for those flows, and would cost a lookup per row.
+
+**Migrations are immutable once merged.** After a migration reaches `main`, a schema change is a new migration, never an edit, because databases that already ran it would silently diverge from the file. Migration 0004 was edited before merge only because it has never run against any database: the branch was never pushed, and no Neon database exists yet. CI enforces the rule. On pull requests, the `checks` job fails if any existing `packages/db/migrations/*.sql` file is modified, renamed, or deleted relative to the base branch; new migrations and `meta/` changes pass.
+
 **Failing closed.** If `app.workspace_id` was never set in the session, `current_setting(…, true)` returns NULL. After a transaction that set it, the session's value reverts to an empty string, which `nullif` turns into NULL. Either way the comparison is NULL: the app sees no rows, and every insert or update fails the `with check`. A malformed value makes the `uuid` cast raise an error. The same holds for `app.user_id` and the actor policies. `withTenant` sets the role and both settings for one transaction only, so nothing carries over to the next transaction on a pooled connection.
 
 **Foreign keys match on `workspace_id`.** Foreign-key checks bypass RLS. With a plain `session_id` key, workspace A could attach a row to B's session if it knew the id. Every reference between tenant tables is composite, `(workspace_id, session_id) → sessions (workspace_id, id)` and so on, so a row can only point inside its own workspace. `proposals.target_entity_id` needs `ON DELETE SET NULL (target_entity_id)`, so that key is hand-written in migration 0004 too.
 
-**Proof: pgTAP in PGlite.** pgTAP (`@electric-sql/pglite-pgtap`) runs inside PGlite, the WebAssembly build of Postgres, with pgvector and pg_trgm, on every CI run and with no database server. A Vitest harness applies the migrations and seeds workspaces A and B with a row in every tenant table. It then runs each `packages/db/test/pgtap/*.sql` file in a fresh copy of that database. A file fails on any `not ok` line, a missing plan, or a plan mismatch, and the failure shows the TAP output. The seven files hold 264 assertions:
+**Proof: pgTAP in PGlite.** pgTAP (`@electric-sql/pglite-pgtap`) runs inside PGlite, the WebAssembly build of Postgres, with pgvector and pg_trgm, on every CI run and with no database server. A Vitest harness applies the migrations and seeds workspaces A and B with a row in every tenant table. It then runs each `packages/db/test/pgtap/*.sql` file in a fresh copy of that database. A file fails on any `not ok` line, a missing plan, or a plan mismatch, and the failure shows the TAP output. The seven files hold 271 assertions:
 
-- **Structure:** the role's attributes, RLS and the exact policies on exactly the tenant tables, the policy text, exact grants, and composite keys.
+- **Structure:** the role's attributes, RLS and the exact policies on exactly the tenant tables, the policy text, exact table and column grants, and composite keys.
 - **Reads:** each workspace sees only its own rows, and the other workspace's ids return nothing.
 - **Writes:** inserting or moving a row into B fails, A's updates and deletes of B's rows match nothing or are denied, and A can't point a row at one of B's.
 - **Failing closed:** with no workspace set, or an empty one, the tables are empty and writes fail.
@@ -66,7 +73,7 @@ Tenant tables reference `user` only through `workspace_members`.
 - **Membership:** `workspace_members` is isolated and read-only to the app, and Better Auth's tables are closed to it.
 - **Actors:**
   - Sessions and audit entries can't name another member, or nobody.
-  - A member can't update another member's session.
+  - A member can update and delete their own sessions, but not another member's.
   - A user who isn't a member of the workspace fails the foreign keys.
 
 The catalog checks also fail in three cases: a table has a `workspace_id` column but no RLS; the app is granted a table that RLS doesn't protect; or the app can write a table that names a member without an actor policy. TypeScript tests drive `withTenant` and `resolveWorkspace` through Drizzle on PGlite. They also check the cascades: removing a member or deleting a user removes their memberships and sessions, and clears their audit entries' actor.
@@ -92,12 +99,14 @@ Revisit at about 10 million rows or a few GB, or when retention needs to drop wh
   - using a plain foreign key;
   - widening a grant;
   - adding an unprotected or unbound table.
+- Databases that already ran a migration can't drift from its file: merged migrations never change, and CI rejects pull requests that edit them.
 
 **Bad**
 
 - Tenant code has to go through `resolveWorkspace` and `withTenant`, which costs a lookup and a transaction with two extra statements per unit of work.
 - Creating workspaces, deleting them, and changing membership need their own owner-connection code paths: the sign-up hook, account deletion, and a future invite flow.
-- A member can't update a teammate's session. Background jobs that update sessions must act as the session's user, or run as the owner.
+- A member can't update or delete a teammate's session. Background jobs that do must act as the session's user, or run as the owner.
+- Within a workspace, rows under a session aren't bound to its user. That's moot while each workspace has one member, but team workspaces must close it, with rules designed for their review flows.
 - Removing a member deletes their sessions in that workspace. Audit entries survive with the actor cleared, and the app role can't write entries without an actor, so system entries are written as the owner.
 - RLS guards against mistakes, not hostile code. Anything holding the owner connection can `RESET ROLE` or skip `withTenant`, so the connection string remains the real secret.
 - A unique key that spans workspaces (`sync_jobs.idempotency_key`) can reveal through a conflict that another workspace used a value, so it must stay unguessable, for example derived from random ids. Event ids avoid this: they're unique per session, not globally.
@@ -110,3 +119,4 @@ Revisit at about 10 million rows or a few GB, or when retention needs to drop wh
 - The policies, grants, and hand-written keys are in `packages/db/migrations/0004_tenant_isolation.sql`; `withTenant` and `resolveWorkspace` are in `packages/db/src/tenant.ts`.
 - Roles exist per Neon branch. Branches forked from `dev` inherit `earshot_app` along with the data, and the migration skips creating it when it already exists.
 - Running the same pgTAP files against each PR's Neon branch in the preview job is still to do.
+- The migration guard is the "Merged migrations are unchanged" step of the `checks` job in `.github/workflows/ci.yml`.
