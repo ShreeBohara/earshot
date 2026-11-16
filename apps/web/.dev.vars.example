@@ -10,6 +10,14 @@
 # Where `next dev` reaches the edge Worker if the service binding isn't available.
 EDGE_DEV_URL=http://localhost:8787
 
+# Session tickets and the session socket (docs/adr/0023). Without them, `next dev` signs tickets
+# with a development-only secret, which the edge Worker's `wrangler dev` falls back to as well,
+# and sends the browser to EDGE_DEV_URL. Both are required outside `next dev`, for example by
+# `pnpm preview`, which serves this Worker on port 8787: run the edge Worker on another port
+# (`wrangler dev --port 8788`) and give it the same secret (`openssl rand -base64 32`).
+# EARSHOT_SESSION_TICKET_SECRET=replace-with-at-least-32-random-bytes
+# EDGE_PUBLIC_URL=http://localhost:8788
+
 # Auth. Required outside `next dev`, for example by `pnpm preview`, which runs the production
 # build in workerd. Generate the secret with `openssl rand -base64 32`.
 # BETTER_AUTH_SECRET=replace-with-at-least-32-random-characters

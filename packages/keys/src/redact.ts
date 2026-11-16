@@ -5,12 +5,18 @@ export const PROVIDER_KEY_HEADER = "x-earshot-provider-key";
 /** The header naming which provider that key is for. */
 export const PROVIDER_ID_HEADER = "x-earshot-provider";
 
-/** Shapes of well-known provider keys, caught even when the exact secret isn't known. */
+/**
+ * Shapes of well-known provider keys and short-lived credentials, caught even when the exact
+ * secret isn't known. Deepgram and AssemblyAI keys have no fixed prefix, so they rely on
+ * exact-secret redaction instead: each request hands its logger the key it carries.
+ */
 export const SECRET_PATTERNS: readonly RegExp[] = [
   /sk-ant-[A-Za-z0-9_-]{20,}/g, // Anthropic
   /sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}/g, // OpenAI
   /gsk_[A-Za-z0-9]{20,}/g, // Groq
   /AIza[0-9A-Za-z_-]{35}/g, // Google
+  /ek_[A-Za-z0-9]{20,}/g, // OpenAI ephemeral keys (Realtime client secrets)
+  /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, // JWT-shaped, such as a Deepgram grant
 ];
 
 const MASK = "[REDACTED]";

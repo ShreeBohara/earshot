@@ -6,14 +6,17 @@
 // on it without a cycle. `packages/keys/test/key-shapes.test.ts` fails if the two lists drift.
 
 /**
- * Well-known provider key shapes: the same sources as `SECRET_PATTERNS` in `@earshot/keys`, in
- * the same order, so add a shape in both places. Not global, so `test()` keeps no state.
+ * Well-known provider key and short-lived credential shapes: the same sources as
+ * `SECRET_PATTERNS` in `@earshot/keys`, in the same order, so add a shape in both places. Not
+ * global, so `test()` keeps no state.
  */
 export const KEY_SHAPES: readonly RegExp[] = [
   /sk-ant-[A-Za-z0-9_-]{20,}/, // Anthropic
   /sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}/, // OpenAI
   /gsk_[A-Za-z0-9]{20,}/, // Groq
   /AIza[0-9A-Za-z_-]{35}/, // Google
+  /ek_[A-Za-z0-9]{20,}/, // OpenAI ephemeral keys (Realtime client secrets)
+  /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/, // JWT-shaped, such as a Deepgram grant
 ];
 
 // Here a shape must also start a word: no letter or digit right before it. Redaction can afford

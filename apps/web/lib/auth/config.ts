@@ -51,7 +51,8 @@ function value(raw: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function isLoopback(hostname: string): boolean {
+/** Whether a URL's hostname is this machine, which may use plain http even outside development. */
+export function isLoopback(hostname: string): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
@@ -147,6 +148,7 @@ export function secretValues(
   env: AuthEnv & {
     DATABASE_URL?: string | undefined;
     EARSHOT_VAULT_MASTER_KEY?: string | undefined;
+    EARSHOT_SESSION_TICKET_SECRET?: string | undefined;
   },
 ): string[] {
   return [
@@ -156,5 +158,6 @@ export function secretValues(
     env.RESEND_API_KEY,
     env.DATABASE_URL,
     env.EARSHOT_VAULT_MASTER_KEY,
+    env.EARSHOT_SESSION_TICKET_SECRET,
   ].filter((secret): secret is string => Boolean(secret?.trim()));
 }

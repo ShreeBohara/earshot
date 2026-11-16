@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  edgeOrigin,
   parseTarget,
   readTemplate,
   renderEdge,
@@ -89,6 +90,28 @@ describe("BETTER_AUTH_URL", () => {
       "BETTER_AUTH_URL",
     );
     expect(() => webOrigin(parseTarget("pr-12"), "acme.evil.example/")).toThrow();
+  });
+});
+
+describe("EDGE_PUBLIC_URL", () => {
+  it("points each web Worker at its own environment's edge Worker", () => {
+    const pr = renderWeb(webTemplate, parseTarget("pr-12"), "abc1234", {
+      workersSubdomain: "acme",
+    });
+    const production = renderWeb(webTemplate, parseTarget("production"), "abc1234", {
+      workersSubdomain: "acme",
+    });
+    expect(pr.vars?.EDGE_PUBLIC_URL).toBe("https://earshot-edge-pr-12.acme.workers.dev");
+    expect(production.vars?.EDGE_PUBLIC_URL).toBe("https://earshot-edge.acme.workers.dev");
+    // The same Worker the EDGE service binding names.
+    expect(pr.vars?.EDGE_PUBLIC_URL).toContain(`//${service(pr, "EDGE")}.`);
+  });
+
+  it("is left unset without a subdomain, and refuses a malformed one", () => {
+    expect(renderWeb(webTemplate, parseTarget("pr-12"), "abc1234").vars).not.toHaveProperty(
+      "EDGE_PUBLIC_URL",
+    );
+    expect(() => edgeOrigin(parseTarget("pr-12"), "acme.evil.example/")).toThrow();
   });
 });
 

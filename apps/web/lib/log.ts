@@ -1,11 +1,18 @@
-import { createRedactingLogger, type Logger, type LogSink, redact } from "@earshot/keys/server";
+import {
+  createRedactingLogger,
+  type Logger,
+  type LogSink,
+  redact,
+  redactValue,
+} from "@earshot/keys/server";
 
 /**
  * The server's logger. Every line goes through @earshot/keys' redaction: the secrets passed in
- * (the auth secret, provider client secrets, the email API key, the database URL) and anything
- * shaped like a provider key come out as [REDACTED]. Never pass magic links, session tokens, or
- * email addresses: redaction can't recognize those, so callers keep them out (docs/adr/0006).
- * Errors are logged as their name and code only (`errorSummary`).
+ * (the auth secret, provider client secrets, the email API key, the database URL, the vault and
+ * ticket secrets) and anything shaped like a provider key or a JWT come out as [REDACTED]. Never
+ * pass magic links, session tokens, or email addresses: redaction can't recognize those, so
+ * callers keep them out (docs/adr/0006). Errors are logged as their name and code only
+ * (`errorSummary`).
  */
 export type { Logger };
 
@@ -80,5 +87,35 @@ export function createLogger(
       logger.warn(message, detail === undefined ? undefined : plain(detail)),
     error: (message, detail) =>
       logger.error(message, detail === undefined ? undefined : plain(detail)),
+  };
+}
+
+/** A logger for one request, which also redacts that request's own secrets. */
+export type RequestLogger = Logger & {
+  /** Redacts `secret` from every later line. Add each one as soon as the request holds it. */
+  addSecret(secret: string | null | undefined): void;
+};
+
+/**
+ * Wraps `base` for one request. On top of what `base` redacts (the environment's secrets and the
+ * shapes of known keys), it redacts what only this request knows: a Deepgram or AssemblyAI key
+ * from a header, which no pattern recognizes, the credential minted with it, or a ticket just
+ * signed. Log lines carry codes, never these values, so this is the second line of defense.
+ */
+export function requestLogger(base: Logger): RequestLogger {
+  const secrets = new Set<string>();
+  const scrub = (detail: unknown): unknown => {
+    if (detail === undefined) return undefined;
+    const value = plain(detail);
+    return JSON.stringify(value) === undefined ? undefined : redactValue(value, secrets);
+  };
+  return {
+    addSecret(secret) {
+      const value = secret?.trim();
+      if (value) secrets.add(value);
+    },
+    info: (message, detail) => base.info(redact(message, secrets), scrub(detail)),
+    warn: (message, detail) => base.warn(redact(message, secrets), scrub(detail)),
+    error: (message, detail) => base.error(redact(message, secrets), scrub(detail)),
   };
 }
