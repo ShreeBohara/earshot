@@ -42,10 +42,11 @@ To use real services, copy `apps/web/.dev.vars.example` to `apps/web/.dev.vars` 
 | `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` | No GitHub button. The callback URL is `<BETTER_AUTH_URL>/api/auth/callback/github`. |
 | `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` | No Google button. The callback URL is `<BETTER_AUTH_URL>/api/auth/callback/google`. |
 | `RESEND_API_KEY` and `EMAIL_FROM` | Links print to the terminal in development. Built bundles refuse to send. |
+| `EARSHOT_VAULT_MASTER_KEY` | The server vault is off: Settings → Keys offers only on-device storage. Set it (32 random bytes, base64; `.dev.vars.example` shows how to generate one) to try storing keys on the server. |
 
 `pnpm --filter @earshot/web preview` runs the production Worker build in workerd. It has no zero-setup mode, so it needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL=http://localhost:8787` in `.dev.vars`.
 
-End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts`. The health check in `e2e/smoke.spec.ts` needs a deployed stack, so it runs only against previews (set `BASE_URL`).
+End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts`. `e2e/keys.spec.ts` signs up a new user with the magic link the server prints, which it reads from `apps/web/.data/e2e/dev-server.log`, so it needs zero-setup mode: with a `.dev.vars` file present, wrangler ignores the port the tests set for `BETTER_AUTH_URL`. Move the file aside while it runs. The health check in `e2e/smoke.spec.ts` needs a deployed stack, so it runs only against previews (set `BASE_URL`).
 
 ## Commands
 
@@ -55,10 +56,10 @@ End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm -
 | Lint and format | `pnpm check` or `pnpm check:fix` |
 | Typecheck | `pnpm typecheck` |
 | Test | `pnpm test` |
-| Sign-in end-to-end tests (Playwright and axe) | `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts` |
+| End-to-end tests (Playwright and axe) | `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts` |
 | Build | `pnpm build` |
 | Regenerate contracts | `pnpm contracts:gen` |
-| Storybook | `pnpm --filter @earshot/ui storybook` |
+| Storybook (`@earshot/ui`, plus the web app's stories) | `pnpm --filter @earshot/ui storybook` |
 | Migrate your branch | `pnpm --filter @earshot/db db:migrate` |
 | Run the Worker build locally | `pnpm --filter @earshot/web preview` |
 | Deploy by hand | `pnpm --filter @earshot/edge exec wrangler deploy`, then `pnpm --filter @earshot/web deploy` |
@@ -87,6 +88,15 @@ Commit the regenerated files. CI runs `pnpm contracts:gen && git diff --exit-cod
 ## Per-PR previews
 
 Every pull request from a branch in this repository gets its own preview stack: two Workers, `earshot-web-pr-N` and `earshot-edge-pr-N`, and a Neon database branch `preview/pr-N` forked from the seed-only `dev` branch. A Playwright smoke test runs against it, and a comment on the PR lists the URLs. When the PR closes, the Workers and the database branch are deleted. A daily janitor and branch expiry catch anything left over. See [ADR-0017](docs/adr/0017-per-pr-environments.md).
+
+**Deploy secrets.** Previews and production read their secrets from the GitHub environments `preview` and `production`. The web Worker receives these, through a secrets file at deploy time, whenever they're set:
+
+| Secret | What it does |
+|---|---|
+| `BETTER_AUTH_SECRET` | Required: auth fails closed without it. |
+| `RESEND_API_KEY` | With the `EMAIL_FROM` variable, sends magic links. |
+| `AUTH_GITHUB_CLIENT_SECRET`, `AUTH_GOOGLE_CLIENT_SECRET` | Production only, with the `AUTH_GITHUB_CLIENT_ID` and `AUTH_GOOGLE_CLIENT_ID` variables: OAuth sign-in. |
+| `EARSHOT_VAULT_MASTER_KEY` | Optional: turns on the server vault for AI keys. In `production`, production's key; in `preview`, the `dev` branch's key, because preview databases fork from `dev` with its sealed rows. Never change it outside [the rotation runbook](docs/vault-key-rotation.md). |
 
 **Pull requests from forks don't get a preview.** The preview and deploy steps need secrets, such as Cloudflare and Neon credentials, and GitHub withholds secrets from fork PRs so that untrusted code can never read them. Workflows deliberately use `pull_request`, never `pull_request_target`. Fork PRs still run CI, which doesn't need secrets, and the Chromatic step is skipped when its token is absent.
 
