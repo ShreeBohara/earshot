@@ -7,6 +7,14 @@ export {
 } from "./account";
 export { createHttpDb, createPoolDb, type HttpDb, type PoolDb } from "./client";
 export {
+  DEMO_CRM_EXTERNAL_ID_PREFIX,
+  type DemoCrmLoadResult,
+  type DemoCrmStatus,
+  demoCrmStatus,
+  loadDemoCrm,
+  removeDemoCrm,
+} from "./demo-crm";
+export {
   appendEvents,
   PgEventStore,
   type PgEventStoreOptions,
@@ -18,6 +26,7 @@ export { type DbHealth, readDbHealth, stampBranch } from "./health";
 export { rebuildProjections, type SessionProjections } from "./projections";
 export * as schema from "./schema";
 export {
+  currentTenant,
   resolveWorkspace,
   TENANT_ROLE,
   type TenantContext,

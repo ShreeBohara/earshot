@@ -76,8 +76,10 @@ jobs:
       - name: Build the web Worker (next build, then the OpenNext bundle)
         run: pnpm turbo run build:worker --filter=@earshot/web
 
-      # Auth fails closed without BETTER_AUTH_SECRET, and email sign-in without the Resend pair;
-      # empty values are dropped rather than uploaded.
+      # Auth fails closed without BETTER_AUTH_SECRET, email sign-in without the Resend pair, and
+      # the key vault without EARSHOT_VAULT_MASTER_KEY: the preview environment's copy is dev's
+      # key, since preview branches fork from dev with its sealed rows (docs/vault-key-rotation.md).
+      # Empty values are dropped rather than uploaded.
       - name: Deploy the web Worker with its secrets
         working-directory: apps/web
         env:
@@ -86,10 +88,13 @@ jobs:
           AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          VAULT_MASTER_KEY: ${{ secrets.EARSHOT_VAULT_MASTER_KEY }}
         run: |
           umask 077
           jq -n --arg u "$DB_URL" --arg s "$AUTH_SECRET" --arg r "$RESEND_API_KEY" --arg f "$EMAIL_FROM" \
-            '{DATABASE_URL: $u, BETTER_AUTH_SECRET: $s, RESEND_API_KEY: $r, EMAIL_FROM: $f} | with_entries(select(.value != ""))' \
+            --arg v "$VAULT_MASTER_KEY" \
+            '{DATABASE_URL: $u, BETTER_AUTH_SECRET: $s, RESEND_API_KEY: $r, EMAIL_FROM: $f,
+              EARSHOT_VAULT_MASTER_KEY: $v} | with_entries(select(.value != ""))' \
             > "$RUNNER_TEMP/web.secrets.json"
           pnpm exec opennextjs-cloudflare deploy --config "wrangler.pr-$PR.jsonc" -- --secrets-file "$RUNNER_TEMP/web.secrets.json"
           rm -f "$RUNNER_TEMP/web.secrets.json"

@@ -40,4 +40,15 @@ interface CloudflareEnv {
   RESEND_API_KEY?: string;
   /** The sender, for example `Earshot <sign-in@mail.example.com>`, on a domain verified in Resend. */
   EMAIL_FROM?: string;
+
+  /**
+   * Turns on the optional server vault (docs/adr/0021): 32 random bytes, base64-encoded, which
+   * wrap the data key of every AI key stored in `credentials` and every CRM token. Generate one
+   * with `generateMasterKey()` from `@earshot/keys/server` or `openssl rand -base64 32`. Unset,
+   * the vault is off: the server refuses to store AI keys, and Settings → Keys offers only
+   * on-device storage. A value that is set but isn't a usable key fails closed: vault requests
+   * answer 500 and the log says why, without quoting it. Changing it needs the rotation runbook
+   * (docs/vault-key-rotation.md), or stored keys stop opening.
+   */
+  EARSHOT_VAULT_MASTER_KEY?: string;
 }

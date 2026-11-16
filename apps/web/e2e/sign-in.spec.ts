@@ -1,16 +1,7 @@
-import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { seriousViolations } from "./support/axe";
 
 // Runs against `next dev` (zero-setup PGlite, no secrets) or a deployed preview (BASE_URL).
-
-async function seriousViolations(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
-    .analyze();
-  return violations
-    .filter((v) => v.impact === "serious" || v.impact === "critical")
-    .map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ")).join(", ")})`);
-}
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`sign-in page renders every option and passes axe (${colorScheme})`, async ({ page }) => {

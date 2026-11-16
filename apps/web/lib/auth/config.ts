@@ -143,12 +143,18 @@ export function readAuthConfig(env: AuthEnv, mode: Mode = MODE): AuthConfig {
 }
 
 /** Values the logger must redact if they ever reach a log line. */
-export function secretValues(env: AuthEnv & { DATABASE_URL?: string | undefined }): string[] {
+export function secretValues(
+  env: AuthEnv & {
+    DATABASE_URL?: string | undefined;
+    EARSHOT_VAULT_MASTER_KEY?: string | undefined;
+  },
+): string[] {
   return [
     env.BETTER_AUTH_SECRET,
     env.GITHUB_CLIENT_SECRET,
     env.GOOGLE_CLIENT_SECRET,
     env.RESEND_API_KEY,
     env.DATABASE_URL,
+    env.EARSHOT_VAULT_MASTER_KEY,
   ].filter((secret): secret is string => Boolean(secret?.trim()));
 }

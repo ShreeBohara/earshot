@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     "@earshot/ui",
     "@earshot/core",
     "@earshot/db",
+    "@earshot/demo-crm",
     "@earshot/events",
     "@earshot/keys",
   ],
