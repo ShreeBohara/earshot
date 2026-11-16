@@ -18,6 +18,7 @@
     "@better-auth/passkey": "catalog:",
     "@earshot/core": "workspace:*",
     "@earshot/db": "workspace:*",
+    "@earshot/demo-crm": "workspace:*",
     "@earshot/events": "workspace:*",
     "@earshot/keys": "workspace:*",
     "@earshot/ui": "workspace:*",

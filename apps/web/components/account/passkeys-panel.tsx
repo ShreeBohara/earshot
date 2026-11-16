@@ -75,7 +75,7 @@ export function PasskeysPanel({ passkeys, fresh }: { passkeys: PasskeyRow[]; fre
                     variant="destructive"
                     disabled={pending !== null}
                     onClick={() => remove(passkey.id)}
-                    aria-label={`Confirm removing ${passkey.name}`}
+                    aria-label={`Yes, remove ${passkey.name}`}
                   >
                     {pending === passkey.id ? "Removing…" : "Remove"}
                   </Button>

@@ -1,36 +1,71 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { DeviceKeysPanel, DeviceKeysProvider } from "@/components/keys/device-keys";
+import { VaultKeysPanel } from "@/components/keys/vault-keys";
+import { SettingsSection } from "@/components/settings-section";
+import { isFreshSession } from "@/lib/auth/fresh";
 import { requireViewer } from "@/lib/auth/viewer";
+import { keyRouteDeps } from "@/lib/keys/deps";
+import { vaultSnapshot } from "@/lib/keys/routes";
 
 export const metadata: Metadata = { title: "Keys · Settings · Earshot" };
 
-/** Placeholder: adding, validating, and vaulting provider keys lands in the next pull request. */
+/**
+ * Where AI provider keys live: on this device by default, or, only if the deployment has a vault
+ * and the user stores a key there, on the server (docs/adr/0021).
+ */
 export default async function KeysSettingsPage() {
-  await requireViewer("/settings/keys");
+  const viewer = await requireViewer("/settings/keys");
+  const vault = await vaultSnapshot(viewer, await keyRouteDeps());
+  // Keys stored before the vault went off stay listed, so they can be removed.
+  const showVault = vault.status === "on" || vault.credentials.length > 0;
 
   return (
-    <div className="flex max-w-prose flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-2">
         <h1 className="font-serif text-4xl tracking-tight">Keys</h1>
-        <p className="text-pretty text-muted-foreground">
-          Earshot runs on your own speech-to-text and model keys. They&apos;re encrypted on this
-          device and sent only with the requests that need them; the server never stores them unless
-          you turn on the optional vault.
+        <p className="max-w-prose text-pretty text-muted-foreground">
+          Earshot runs on your own speech-to-text and model keys. Each one is checked with its
+          provider before it&apos;s saved, and only its last four characters are ever shown.
         </p>
       </header>
-      <div className="rounded-xl border border-dashed p-5">
-        <h2 className="font-medium">Coming next</h2>
-        <p className="mt-1 text-muted-foreground text-sm">
-          Adding and checking keys arrives in the next update. Meanwhile, the{" "}
-          <Link
-            href="/demo"
-            className="rounded-sm underline underline-offset-4 outline-none hover:text-foreground focus-visible:focus-ring"
+
+      <DeviceKeysProvider>
+        <SettingsSection
+          id="on-this-device"
+          title="On this device"
+          description={
+            <>
+              The default. A key you add here is encrypted in this browser and never stored on
+              Earshot&apos;s servers. When a request needs it, this browser sends it along over TLS,
+              and the server uses it for that request only. Clearing this site&apos;s data deletes
+              these keys, and another device needs its own.
+            </>
+          }
+        >
+          <DeviceKeysPanel />
+        </SettingsSection>
+
+        {showVault && (
+          <SettingsSection
+            id="vault"
+            title="Stored on the server (vault)"
+            description={
+              <>
+                Optional, one key at a time. A key stored here works on every device you sign in on,
+                and for work that runs without you. The trade-off: the server holds it, encrypted
+                under a master key that only the server has, so you&apos;re trusting this server
+                with it. Keys on this device need no such trust.
+              </>
+            }
           >
-            replay demo
-          </Link>{" "}
-          works without one.
-        </p>
-      </div>
+            <VaultKeysPanel
+              status={vault.status}
+              initialCredentials={vault.credentials}
+              fresh={isFreshSession(viewer.session)}
+            />
+          </SettingsSection>
+        )}
+      </DeviceKeysProvider>
     </div>
   );
 }

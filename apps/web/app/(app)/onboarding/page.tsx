@@ -1,14 +1,17 @@
+import { demoCrmStatus } from "@earshot/db";
 import { KeyRoundIcon, PlayIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DemoCrmStartCard } from "@/components/demo-crm-controls";
 import { StartCard } from "@/components/start-card";
-import { displayName, requireViewer } from "@/lib/auth/viewer";
+import { displayName, requireViewer, withViewerTenant } from "@/lib/auth/viewer";
 
 export const metadata: Metadata = { title: "Welcome · Earshot" };
 
 /** Where new users land after their first sign-in (Better Auth's newUserCallbackURL). */
 export default async function OnboardingPage() {
   const viewer = await requireViewer("/onboarding");
+  const demoCrm = await withViewerTenant((tx) => demoCrmStatus(tx), viewer);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-10 py-6">
@@ -43,8 +46,10 @@ export default async function OnboardingPage() {
         </StartCard>
       </div>
 
+      <DemoCrmStartCard counts={demoCrm.counts} loaded={demoCrm.loaded > 0} />
+
       <p className="text-muted-foreground text-sm">
-        You can do either later.{" "}
+        You can do any of these later.{" "}
         <Link
           href="/home"
           className="rounded-sm underline underline-offset-4 outline-none hover:text-foreground focus-visible:focus-ring"

@@ -335,6 +335,9 @@ importers:
       '@earshot/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@earshot/demo-crm':
+        specifier: workspace:*
+        version: link:../../packages/demo-crm
       '@earshot/events':
         specifier: workspace:*
         version: link:../../packages/events

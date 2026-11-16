@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const LINKS = [
   { href: "/settings/account", label: "Account" },
   { href: "/settings/keys", label: "Keys" },
+  { href: "/settings/data", label: "Data" },
 ] as const;
 
 /** Settings sections: a column on wide screens, a row on narrow ones. */
