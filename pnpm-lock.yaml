@@ -311,6 +311,9 @@ importers:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
         version: 1.8.1(@types/node@26.6.6)(vitest@4.1.12)
+      '@earshot/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@earshot/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -545,6 +548,9 @@ importers:
 
   packages/keys:
     devDependencies:
+      '@earshot/core':
+        specifier: workspace:*
+        version: link:../core
       '@earshot/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig

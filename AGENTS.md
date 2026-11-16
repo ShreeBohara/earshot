@@ -6,7 +6,7 @@ Earshot v2 is a pnpm + Turborepo monorepo with a Python lab. Read `ROADMAP.md` a
 
 - `apps/web`: Next.js 16 on Cloudflare Workers via OpenNext
 - `apps/edge`: Hono Worker that owns the Durable Objects
-- `packages/core`: Zod contracts, their JSON Schema exports (`schemas/`), and shared fixtures
+- `packages/core`: Zod contracts, their JSON Schema exports (`schemas/`), and shared fixtures; also the session socket protocol, session tickets, and `uuidv7()`
 - `packages/db`: Drizzle schema, migrations, the client, and `withTenant` (row-level security; pgTAP tests in `test/pgtap`)
 - `packages/events`: the session event store: payload registry and upcasters, projections, deterministic replay, JSONL
 - `packages/keys`: AI key handling: on-device storage, the envelope-encrypted vault, validation, and log redaction
