@@ -359,6 +359,9 @@ importers:
       '@earshot/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@earshot/voice':
+        specifier: workspace:*
+        version: link:../../packages/voice
       '@opennextjs/cloudflare':
         specifier: 'catalog:'
         version: 1.20.17(next@16.4.6(@babel/core@7.29.13(supports-color@10.2.2))(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(supports-color@10.2.2)(wrangler@4.161.0(@types/node@26.6.6))

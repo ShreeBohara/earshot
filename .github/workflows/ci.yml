@@ -90,6 +90,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Stories, play functions, and axe checks (Vitest browser mode)
         run: pnpm --filter @earshot/ui test:storybook
+      - name: Capture worklet, fake microphone, VAD, and the Debrief engine end to end (Vitest browser mode)
+        run: pnpm --filter @earshot/voice test:browser
       - name: Sign-in, demo, Settings → Keys, and the demo CRM pass axe (next dev, in-process PGlite, no secrets)
         working-directory: apps/web
         run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts
