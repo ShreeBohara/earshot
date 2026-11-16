@@ -16,6 +16,9 @@ import {
   VoiceEngine,
 } from "./session-started";
 import { FieldName, FieldValue } from "./shared";
+import { TurnCompletedV1, TurnOutcome } from "./turn-completed";
+import { CaptureMode, TurnMeasuredV1 } from "./turn-measured";
+import { UsageKind, UsageRecordedV1 } from "./usage-recorded";
 import { UtteranceFinalV1, UtteranceFinalV2, Witness, Word } from "./utterance-final";
 
 /**
@@ -31,11 +34,16 @@ export const eventPayloadContracts = [
   { type: "proposal.created", schemaVersion: 1, schema: ProposalCreatedV1 },
   { type: "proposal.reviewed", schemaVersion: 1, schema: ProposalReviewedV1 },
   { type: "session.ended", schemaVersion: 1, schema: SessionEndedV1 },
+  // Phase 3: the cost meter and the latency gate's records. The projections ignore them.
+  { type: "usage.recorded", schemaVersion: 1, schema: UsageRecordedV1 },
+  { type: "turn.completed", schemaVersion: 1, schema: TurnCompletedV1 },
+  { type: "turn.measured", schemaVersion: 1, schema: TurnMeasuredV1 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
 
 export {
+  CaptureMode,
   Evidence,
   FieldEdit,
   FieldName,
@@ -52,6 +60,11 @@ export {
   SessionMode,
   SessionProviders,
   SessionStartedV1,
+  TurnCompletedV1,
+  TurnMeasuredV1,
+  TurnOutcome,
+  UsageKind,
+  UsageRecordedV1,
   UtteranceFinalV1,
   UtteranceFinalV2,
   VoiceEngine,

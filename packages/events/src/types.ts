@@ -4,6 +4,9 @@ import type {
   ProposalReviewedV1,
   SessionEndedV1,
   SessionStartedV1,
+  TurnCompletedV1,
+  TurnMeasuredV1,
+  UsageRecordedV1,
   UtteranceFinalV2,
 } from "@earshot/core";
 import type { z } from "zod";
@@ -23,6 +26,9 @@ export type UtteranceFinalEvent = TypedEvent<"utterance.final", 2, UtteranceFina
 export type ProposalCreatedEvent = TypedEvent<"proposal.created", 1, ProposalCreatedV1>;
 export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 1, ProposalReviewedV1>;
 export type SessionEndedEvent = TypedEvent<"session.ended", 1, SessionEndedV1>;
+export type UsageRecordedEvent = TypedEvent<"usage.recorded", 1, UsageRecordedV1>;
+export type TurnCompletedEvent = TypedEvent<"turn.completed", 1, TurnCompletedV1>;
+export type TurnMeasuredEvent = TypedEvent<"turn.measured", 1, TurnMeasuredV1>;
 
 /**
  * A validated event at the latest schema version of its type. Replay upcasts every stored event
@@ -33,7 +39,10 @@ export type SessionEvent =
   | UtteranceFinalEvent
   | ProposalCreatedEvent
   | ProposalReviewedEvent
-  | SessionEndedEvent;
+  | SessionEndedEvent
+  | UsageRecordedEvent
+  | TurnCompletedEvent
+  | TurnMeasuredEvent;
 
 /** The latest schema version of each event type. A test checks it against the default registry. */
 export const latestVersions = {
@@ -42,6 +51,9 @@ export const latestVersions = {
   "proposal.created": 1,
   "proposal.reviewed": 1,
   "session.ended": 1,
+  "usage.recorded": 1,
+  "turn.completed": 1,
+  "turn.measured": 1,
 } as const satisfies { [E in SessionEvent as E["type"]]: E["schemaVersion"] };
 
 /** A payload schema and the event type and schema version it belongs to. */

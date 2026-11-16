@@ -1,0 +1,8 @@
+{
+  "turnId": "01a1c6e2-c1a0-7d2e-8f31-6b4a9c0d2e1f",
+  "utteranceIds": ["01a1c6e2-af90-75b5-a79c-eb5ca2f0a104"],
+  "outcome": "nothing_to_propose",
+  "proposalIds": [],
+  "attempts": 1,
+  "llmMs": 640
+}

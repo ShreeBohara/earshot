@@ -17,6 +17,9 @@ import {
   sessionLog,
   started,
   tsFor,
+  turnCompleted,
+  turnMeasured,
+  usageRecorded,
   utterance,
   uuid,
 } from "./helpers";
@@ -186,8 +189,39 @@ describe("proposalsProjection", () => {
   });
 });
 
+describe("the Phase 3 event types", () => {
+  const phase3 = [usageRecorded(1), turnCompleted(1), turnMeasured(1)];
+
+  it("leave every projection alone, except the session's last seq and time", () => {
+    const before = [started(), utterance(1), proposal(1)];
+    const without = replay(sessionLog(before), defaultProjections);
+    const withThem = replay(sessionLog([...before, ...phase3]), defaultProjections);
+    expect(withThem.utterances).toEqual(without.utterances);
+    expect(withThem.proposals).toEqual(without.proposals);
+    expect(withThem.session).toEqual({ ...without.session, lastSeq: 5, lastEventAt: tsFor(5) });
+  });
+
+  it("may follow session.ended, as the final usage record does", () => {
+    const log = sessionLog([started(), utterance(1), ended(), usageRecorded(2)]);
+    expect(replay(log, defaultProjections).session).toMatchObject({
+      status: "ended",
+      costUsd: 0.004,
+      lastSeq: 3,
+    });
+  });
+});
+
 describe("purity", () => {
-  const raw = sessionLog([started(), utterance(1), proposal(1), review(1, "approved"), ended()]);
+  const raw = sessionLog([
+    started(),
+    utterance(1),
+    proposal(1),
+    usageRecorded(1),
+    turnCompleted(1),
+    turnMeasured(1),
+    review(1, "approved"),
+    ended(),
+  ]);
   const events = raw.map((event) => defaultRegistry.toLatest(event));
 
   it.each(Object.entries(defaultProjections))(

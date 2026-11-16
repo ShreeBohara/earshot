@@ -1,0 +1,12 @@
+{
+  "usageId": "01a1c6e3-1b7e-7f20-a5c4-3d2e1f0a9b8c",
+  "kind": "llm",
+  "provider": "anthropic",
+  "model": "claude-haiku-5-5",
+  "inputTokens": 1520,
+  "outputTokens": 284,
+  "cachedInputTokens": 1024,
+  "costUsd": 0.000202,
+  "priceTable": "2026-11-15",
+  "key": "not-a-real-key"
+}

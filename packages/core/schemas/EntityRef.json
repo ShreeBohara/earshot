@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "company",
+        "contact",
+        "deal"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "name",
+    "aliases"
+  ],
+  "additionalProperties": false,
+  "title": "EntityRef",
+  "description": "A CRM record a session may mention: its id, kind, name, and aliases."
+}

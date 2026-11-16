@@ -111,6 +111,59 @@ export function ended(payload: Record<string, unknown> = {}): EventBody {
   };
 }
 
+/** Speech-to-text usage, with id `uuid(4000 + n)`. */
+export function usageRecorded(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "usage.recorded",
+    schemaVersion: 1,
+    payload: {
+      usageId: uuid(4000 + n),
+      kind: "stt",
+      provider: "assemblyai",
+      model: "universal-streaming-english",
+      audioMs: 4200,
+      socketMs: 6100,
+      costUsd: 0.0003,
+      priceTable: "2026-11-15",
+      ...payload,
+    },
+  };
+}
+
+/** Turn `uuid(5000 + n)`, which read utterance 1 and proposed proposal 1. */
+export function turnCompleted(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "turn.completed",
+    schemaVersion: 1,
+    payload: {
+      turnId: uuid(5000 + n),
+      utteranceIds: [uuid(2001)],
+      outcome: "proposals",
+      proposalIds: [uuid(3001)],
+      attempts: 1,
+      llmMs: 900,
+      ...payload,
+    },
+  };
+}
+
+/** Turn `uuid(5000 + n)`'s latency, in push-to-talk. */
+export function turnMeasured(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "turn.measured",
+    schemaVersion: 1,
+    payload: {
+      turnId: uuid(5000 + n),
+      mode: "push_to_talk",
+      speechEndToFinalMs: 640,
+      finalToProposalMs: 1180,
+      proposalToPaintMs: 42,
+      totalMs: 1862,
+      ...payload,
+    },
+  };
+}
+
 /** `demo-session.jsonl`: the 40-second debrief behind the replay gate and the replay demo. */
 export const demoSessionJsonl: string = readFixture("demo-session.jsonl");
 

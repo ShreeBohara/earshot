@@ -47,8 +47,11 @@ export {
   type SessionEndedEvent,
   type SessionEvent,
   type SessionStartedEvent,
+  type TurnCompletedEvent,
+  type TurnMeasuredEvent,
   type TypedEvent,
   type Upcaster,
+  type UsageRecordedEvent,
   type UtteranceFinalEvent,
 } from "./types";
 export { upcasters, utteranceFinalV1ToV2 } from "./upcasters";

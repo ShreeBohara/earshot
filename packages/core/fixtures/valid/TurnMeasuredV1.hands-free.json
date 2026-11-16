@@ -1,0 +1,8 @@
+{
+  "turnId": "01a1c6e2-c1a0-7d2e-8f31-6b4a9c0d2e1f",
+  "mode": "hands_free",
+  "speechEndToFinalMs": 1410,
+  "finalToProposalMs": 1090,
+  "proposalToPaintMs": 38,
+  "totalMs": 2538
+}
