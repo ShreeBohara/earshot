@@ -32,14 +32,19 @@ export function serverError(): Response {
 }
 
 /**
- * Refuses requests that another site's page made. Earshot's own pages call these routes from the
+ * Whether another site's page made the request. Earshot's own pages call its API routes from the
  * same origin; a cross-site page could only make the browser send a request whose answer it can't
  * read, so there's no legitimate cross-site caller. Requests without the header (other clients,
  * older browsers) still need the session cookie, which is SameSite=Lax.
  */
-export function refuseCrossSite(request: Request): Response | null {
+export function isCrossSite(request: Request): boolean {
   const site = request.headers.get("sec-fetch-site");
-  if (site === "cross-site" || site === "same-site") {
+  return site === "cross-site" || site === "same-site";
+}
+
+/** Refuses requests that another site's page made (`isCrossSite`). */
+export function refuseCrossSite(request: Request): Response | null {
+  if (isCrossSite(request)) {
     return refusal(403, "forbidden", "Manage your keys from Earshot's settings page.");
   }
   return null;
@@ -59,8 +64,12 @@ export function clientIp(request: Request): string | null {
  * The body as parsed JSON, or undefined if it's missing, runs past `maxBytes`, isn't UTF-8, or
  * isn't JSON. Nothing oversized is buffered: a Content-Length over the cap is refused unread, and
  * otherwise the stream is read a chunk at a time and abandoned as soon as it passes the cap.
+ * Works on a request, or on a provider's response.
  */
-export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown> {
+export async function readJsonBody(
+  request: Pick<Request, "headers" | "body">,
+  maxBytes: number,
+): Promise<unknown> {
   const declared = request.headers.get("content-length");
   if (declared !== null && !(/^\d+$/.test(declared) && Number(declared) <= maxBytes)) {
     await request.body?.cancel().catch(() => {});

@@ -1,15 +1,34 @@
 // Secrets and dev-only settings that `wrangler types` can't see in wrangler.jsonc. Set secrets per
 // Worker at deploy time; locally, put them in .dev.vars (see .dev.vars.example). Every one is
-// optional here because `next dev` runs with none of them: lib/auth/config.ts decides which are
-// required outside development and fails closed when they're missing.
+// optional here because `next dev` runs with none of them: lib/auth/config.ts and
+// lib/voice/config.ts decide which are required outside development and fail closed when they're
+// missing.
 interface CloudflareEnv {
   /**
    * Neon pooled connection string. Set per Worker at deploy time; locally in .dev.vars. When it's
    * unset under `next dev`, the app uses an in-process PGlite database in apps/web/.data/.
    */
   DATABASE_URL?: string;
-  /** Dev only: where `next dev` reaches the edge Worker when the service binding is missing. */
+  /**
+   * Dev only: where `next dev` reaches the edge Worker when the service binding is missing, and
+   * where the browser opens session sockets when EDGE_PUBLIC_URL is unset.
+   */
   EDGE_DEV_URL?: string;
+  /**
+   * The edge Worker's public origin, where the browser opens session sockets (docs/adr/0023),
+   * for example https://earshot-edge.<subdomain>.workers.dev. CI renders it per target. Required
+   * outside development, where it must use https (or be localhost) and carry no path; `next dev`
+   * falls back to EDGE_DEV_URL, then to http://localhost:8787.
+   */
+  EDGE_PUBLIC_URL?: string;
+  /**
+   * Signs session tickets (docs/adr/0023), which the edge Worker verifies with the same value
+   * before a browser may open a session socket: at least 32 random bytes
+   * (`openssl rand -base64 32`), set as a secret on both Workers. Required outside development,
+   * where @earshot/core's development-only ticket secret is refused; `next dev` falls back to
+   * that value, as the edge Worker does under `wrangler dev`.
+   */
+  EARSHOT_SESSION_TICKET_SECRET?: string;
 
   /**
    * Signs and encrypts Better Auth's cookies and tokens: at least 32 random characters

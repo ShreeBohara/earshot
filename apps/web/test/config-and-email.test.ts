@@ -103,8 +103,9 @@ describe("readAuthConfig", () => {
         RESEND_API_KEY: "s3",
         DATABASE_URL: "postgres://u:p@h/db",
         EARSHOT_VAULT_MASTER_KEY: "bWFzdGVyLWtleQ==",
+        EARSHOT_SESSION_TICKET_SECRET: "ticket-secret",
       }),
-    ).toEqual(["s1", "s2", "s3", "postgres://u:p@h/db", "bWFzdGVyLWtleQ=="]);
+    ).toEqual(["s1", "s2", "s3", "postgres://u:p@h/db", "bWFzdGVyLWtleQ==", "ticket-secret"]);
   });
 });
 
