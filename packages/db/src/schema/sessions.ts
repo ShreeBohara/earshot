@@ -70,7 +70,15 @@ export const sessionEvents = pgTable(
     type: text().notNull(),
     schemaVersion: integer("schema_version").notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),
+    /** When the event happened, by the writer's clock: the envelope's `ts` as an instant. */
     ts: timestamp({ withTimezone: true }).notNull(),
+    /**
+     * The envelope's `ts` exactly as written, when it isn't in the canonical form that `ts` reads
+     * back as (UTC with milliseconds, `2026-11-10T19:15:00.040Z`): an offset, or a different
+     * precision. Null otherwise. `timestamptz` keeps the instant but not the spelling, and the
+     * event store returns events exactly as written (docs/adr/0020).
+     */
+    tsText: text("ts_text"),
   },
   (t) => [
     primaryKey({ columns: [t.sessionId, t.seq] }),
@@ -85,6 +93,11 @@ export const sessionEvents = pgTable(
     index("session_events_workspace_id_session_id_idx").on(t.workspaceId, t.sessionId),
     check("session_events_seq_check", sql`${t.seq} >= 0`),
     check("session_events_schema_version_check", sql`${t.schemaVersion} > 0`),
+    // Envelope timestamps always carry Z or an offset, so this cast doesn't depend on TimeZone.
+    check(
+      "session_events_ts_text_check",
+      sql`${t.tsText} is null or ${t.tsText}::timestamptz = ${t.ts}`,
+    ),
   ],
 );
 

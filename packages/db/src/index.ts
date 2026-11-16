@@ -1,4 +1,12 @@
 export { createHttpDb, createPoolDb, type HttpDb, type PoolDb } from "./client";
+export {
+  appendEvents,
+  PgEventStore,
+  type PgEventStoreOptions,
+  readEvents,
+  type TenantTransaction,
+  UnknownSessionError,
+} from "./event-store";
 export { type DbHealth, readDbHealth, stampBranch } from "./health";
 export * as schema from "./schema";
 export {

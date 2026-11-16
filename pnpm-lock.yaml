@@ -407,6 +407,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@earshot/events':
+        specifier: workspace:*
+        version: link:../events
       '@earshot/keys':
         specifier: workspace:*
         version: link:../keys
