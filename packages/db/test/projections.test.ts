@@ -270,6 +270,24 @@ describe("rebuildProjections", () => {
     ]);
   });
 
+  it("holds every offset and reviewer time the contracts accept, up to the largest safe integer", async () => {
+    const db = await fresh();
+    const big = Number.MAX_SAFE_INTEGER;
+    const late = utterance(1);
+    late.payload.startMs = big - 800;
+    late.payload.endMs = big;
+    await new PgEventStore(db, A).append(SESSION_ID, NO_EVENTS, [
+      draft(1, started()),
+      draft(2, late),
+      draft(3, proposal(1)),
+      draft(4, review(1, "approved", { reviewerMs: big })),
+    ]);
+    await rebuild(db, SESSION_ID);
+    const rows = await rowsOf(db, SESSION_ID);
+    expect(rows.utterances.map((row) => [row.startedMs, row.endedMs])).toEqual([[big - 800, big]]);
+    expect(rows.proposals.map((row) => row.reviewerMs)).toEqual([big]);
+  });
+
   it("won't take over another session's proposal that has the same id", async () => {
     const db = await fresh();
     const { proposals: views } = await rebuild(db, demoSessionId);

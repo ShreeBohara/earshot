@@ -71,6 +71,13 @@
       "when": 1794790638178,
       "tag": "0009_session_events_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794792247886,
+      "tag": "0010_projection_offsets_bigint",
+      "breakpoints": true
     }
   ]
 }

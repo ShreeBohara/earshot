@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   check,
   doublePrecision,
   foreignKey,
@@ -124,9 +125,13 @@ export const utterances = pgTable(
     words: jsonb().$type<unknown[]>().default([]),
     /** Double precision, so a confidence reads back exactly as the event has it. */
     confidence: doublePrecision(),
-    /** Offsets from the start of the session. */
-    startedMs: integer("started_ms").notNull(),
-    endedMs: integer("ended_ms").notNull(),
+    /**
+     * Offsets from the start of the session. bigint, because the contract's `AudioMs` accepts any
+     * non-negative safe integer: an integer column would let the log hold an event that the
+     * rebuild can't write.
+     */
+    startedMs: bigint("started_ms", { mode: "number" }).notNull(),
+    endedMs: bigint("ended_ms", { mode: "number" }).notNull(),
   },
   (t) => [
     unique("utterances_session_id_witness_seq_unique").on(t.sessionId, t.witness, t.seq),
