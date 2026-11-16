@@ -43,6 +43,13 @@
       "when": 1794786916770,
       "tag": "0005_session_event_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794787348311,
+      "tag": "0006_member_actors",
+      "breakpoints": true
     }
   ]
 }

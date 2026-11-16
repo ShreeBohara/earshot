@@ -1,24 +1,32 @@
 -- Structure: the role, policies, and grants that tenant isolation rests on (docs/adr/0019).
 -- Runs as the owner and changes no data. The catalog checks fail when someone adds a table
--- with a workspace_id column but no RLS, or grants the app a table that RLS doesn't protect.
+-- with a workspace_id column but no RLS, grants the app a table that RLS doesn't protect, or
+-- lets the app write a user column that isn't bound to app.user_id.
 begin;
-select plan(81);
+select plan(86);
 
-create temp table tenant_tables (name text primary key, key text not null, ord int not null);
-insert into tenant_tables (name, key, ord) values
-  ('workspaces', 'id', 1),
-  ('workspace_members', 'workspace_id', 2),
-  ('credentials', 'workspace_id', 3),
-  ('crm_connections', 'workspace_id', 4),
-  ('crm_entities', 'workspace_id', 5),
-  ('sessions', 'workspace_id', 6),
-  ('session_events', 'workspace_id', 7),
-  ('utterances', 'workspace_id', 8),
-  ('proposals', 'workspace_id', 9),
-  ('sync_jobs', 'workspace_id', 10),
-  ('commitments', 'workspace_id', 11),
-  ('facts', 'workspace_id', 12),
-  ('audit_log', 'workspace_id', 13);
+create temp table tenant_tables (
+  name text primary key,
+  key text not null,
+  privs name[] not null,
+  policies name[] not null,
+  ord int not null
+);
+insert into tenant_tables (name, key, privs, policies, ord) values
+  ('workspaces', 'id', '{SELECT,UPDATE}', '{tenant_isolation}', 1),
+  ('workspace_members', 'workspace_id', '{SELECT}', '{tenant_isolation}', 2),
+  ('credentials', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 3),
+  ('crm_connections', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 4),
+  ('crm_entities', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 5),
+  ('sessions', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}',
+   '{tenant_isolation,actor_insert,actor_update}', 6),
+  ('session_events', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 7),
+  ('utterances', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 8),
+  ('proposals', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 9),
+  ('sync_jobs', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 10),
+  ('commitments', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 11),
+  ('facts', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 12),
+  ('audit_log', 'workspace_id', '{INSERT,SELECT}', '{tenant_isolation,actor_insert}', 13);
 
 -- The role (4)
 select has_role('earshot_app', 'role earshot_app exists');
@@ -42,21 +50,21 @@ from tenant_tables t
 join pg_class c on c.oid = format('public.%I', t.name)::regclass
 order by t.ord;
 
--- ...with exactly one policy (13)...
+-- ...with exactly the expected policies (13)...
 select policies_are(
-  'public', t.name::name, array['tenant_isolation']::name[],
-  format('%s has exactly one policy, tenant_isolation', t.name)
+  'public', t.name::name, t.policies,
+  format('%s has exactly the policies %s', t.name, array_to_string(t.policies, ', '))
 )
 from tenant_tables t order by t.ord;
 
--- ...that applies to earshot_app (13)...
+-- ...including tenant_isolation for earshot_app (13)...
 select policy_roles_are(
   'public', t.name::name, 'tenant_isolation', array['earshot_app']::name[],
   format('%s: tenant_isolation applies to earshot_app', t.name)
 )
 from tenant_tables t order by t.ord;
 
--- ...covers every command, and checks the workspace in both USING and WITH CHECK (13)
+-- ...which covers every command and checks the workspace in USING and WITH CHECK (13)
 select is(
   row(p.cmd, p.permissive, p.qual, p.with_check)::text,
   row('ALL', 'PERMISSIVE', e.expr, e.expr)::text,
@@ -73,7 +81,30 @@ cross join lateral (
 ) e
 order by t.ord;
 
--- Catalog-wide invariants (5)
+-- The actor policies: restrictive, for earshot_app, and fail-closed on app.user_id (3). A
+-- missing policy emits no row, which the plan count catches.
+select is(
+  row(p.cmd, p.permissive, p.roles::text, p.qual, p.with_check)::text,
+  row(e.cmd, 'RESTRICTIVE', '{earshot_app}', e.qual, e.with_check)::text,
+  e.description
+)
+from (values
+  (1, 'sessions', 'actor_insert', 'INSERT', null,
+   '(user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))',
+   'sessions: actor_insert binds user_id to app.user_id on insert'),
+  (2, 'sessions', 'actor_update', 'UPDATE',
+   '(user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))',
+   '(user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))',
+   'sessions: actor_update limits updates to the user''s own sessions, and keeps them theirs'),
+  (3, 'audit_log', 'actor_insert', 'INSERT', null,
+   '(actor_user_id = NULLIF(current_setting(''app.user_id''::text, true), ''''::text))',
+   'audit_log: actor_insert binds actor_user_id to app.user_id on insert')
+) as e(ord, tablename, policyname, cmd, qual, with_check, description)
+join pg_policies p
+  on p.schemaname = 'public' and p.tablename = e.tablename and p.policyname = e.policyname
+order by e.ord;
+
+-- Catalog-wide invariants (7)
 select set_eq(
   $$select relname::text from pg_class
     where relnamespace = 'public'::regnamespace and relkind in ('r', 'p') and relrowsecurity$$,
@@ -124,18 +155,37 @@ select is_empty(
       )$$,
   'every foreign key into a tenant table matches on workspace_id, so no row can point across workspaces'
 );
+select is_empty(
+  $$select c.conrelid::regclass::text
+    from pg_constraint c
+    join tenant_tables t on c.conrelid = format('public.%I', t.name)::regclass
+    where c.contype = 'f'
+      and c.confrelid = 'public."user"'::regclass
+      and t.name <> 'workspace_members'$$,
+  'tenant tables name users only through workspace_members, so every user they name is a member'
+);
+select is_empty(
+  $$select c.conrelid::regclass::text
+    from pg_constraint c
+    where c.contype = 'f'
+      and c.confrelid = 'public.workspace_members'::regclass
+      and (
+        (has_table_privilege('earshot_app', c.conrelid, 'INSERT') and not exists (
+          select from pg_policy p
+          where p.polrelid = c.conrelid and not p.polpermissive and p.polcmd in ('a', '*')
+        ))
+        or (has_table_privilege('earshot_app', c.conrelid, 'UPDATE') and not exists (
+          select from pg_policy p
+          where p.polrelid = c.conrelid and not p.polpermissive and p.polcmd in ('w', '*')
+        ))
+      )$$,
+  'every table the app writes that names a member binds that member to app.user_id'
+);
 
--- Grants: the app may read and write tenant tables, only append to audit_log (13)...
+-- Grants: exactly what each tenant table needs; read-only membership, append-only audit (13)...
 select table_privs_are(
-  'public', t.name::name, 'earshot_app',
-  case when t.name = 'audit_log'
-    then array['INSERT', 'SELECT']::name[]
-    else array['DELETE', 'INSERT', 'SELECT', 'UPDATE']::name[]
-  end,
-  case when t.name = 'audit_log'
-    then 'earshot_app may only read and append to audit_log'
-    else format('earshot_app may select, insert, update, and delete in %s, and nothing more', t.name)
-  end
+  'public', t.name::name, 'earshot_app', t.privs,
+  format('earshot_app has exactly %s on %s', array_to_string(t.privs, ', '), t.name)
 )
 from tenant_tables t order by t.ord;
 

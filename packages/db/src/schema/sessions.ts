@@ -15,8 +15,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
-import { workspaceId } from "./workspaces";
+import { workspaceId, workspaceMembers } from "./workspaces";
 
 /**
  * One capture session: a debrief, a conversation, or a local-mode run. Not to be confused
@@ -27,9 +26,8 @@ export const sessions = pgTable(
   {
     id: uuid().primaryKey().defaultRandom(),
     workspaceId: workspaceId(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    /** Who recorded it: a member of the workspace, and the transaction's own user (0004). */
+    userId: text("user_id").notNull(),
     mode: text().notNull(),
     engine: text().notNull(),
     /** Which speech-to-text, LLM, and speech-to-speech providers and models ran. */
@@ -42,8 +40,14 @@ export const sessions = pgTable(
   },
   (t) => [
     unique("sessions_workspace_id_id_unique").on(t.workspaceId, t.id),
+    // Removing a member removes their sessions in that workspace, and everything under them.
+    foreignKey({
+      name: "sessions_member_fk",
+      columns: [t.workspaceId, t.userId],
+      foreignColumns: [workspaceMembers.workspaceId, workspaceMembers.userId],
+    }).onDelete("cascade"),
     index("sessions_workspace_id_started_at_idx").on(t.workspaceId, t.startedAt),
-    index("sessions_user_id_idx").on(t.userId),
+    index("sessions_workspace_id_user_id_idx").on(t.workspaceId, t.userId),
     check("sessions_mode_check", sql`${t.mode} in ('debrief', 'conversation', 'local')`),
   ],
 );

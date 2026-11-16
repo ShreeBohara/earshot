@@ -1,17 +1,17 @@
 -- Writes: as workspace A, earshot_app can write its own rows, but can't insert or update a row
--- into B, can't change or delete B's rows, and can't point a row at one of B's.
+-- into B, can't change or delete B's rows, and can't point a row at one of B's. It can't create,
+-- delete, or join workspaces at all: those writes are denied outright (see also
+-- 50_workspace_members.sql).
 begin;
-select plan(70);
+select plan(69);
 
 set local role earshot_app;
 select set_config('app.user_id', 'user-a', true),
        set_config('app.workspace_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', true);
 
--- Controls: the same writes succeed for A's own workspace (13)
+-- Controls: the same writes succeed for A's own workspace (12; membership is read-only)
 select lives_ok($$update workspaces set name = 'Workspace A, renamed'
   where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'$$, 'workspaces: A can rename itself');
-select lives_ok($$insert into workspace_members (workspace_id, user_id)
-  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'user-b')$$, 'workspace_members: A can add a member');
 select lives_ok($$insert into credentials (workspace_id, provider, label, ciphertext, iv, wrapped_dek, dek_iv, last4)
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'anthropic', 'work', '\x01', '\x02', '\x03', '\x04', 'wxyz')$$,
   'credentials: A can insert its own row');
@@ -50,13 +50,14 @@ select lives_ok($$insert into audit_log (workspace_id, actor_user_id, action)
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'user-a', 'credential.added')$$,
   'audit_log: A can append its own entry');
 
--- Inserting a row with B's workspace_id fails the policy's WITH CHECK (13)
+-- Inserting a row with B's workspace_id fails: the policy's WITH CHECK, or for workspaces and
+-- membership, the missing privilege (13)
 select throws_ok($$insert into workspaces (id, name) values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Hijacked')$$,
-  '42501', 'new row violates row-level security policy for table "workspaces"',
-  'workspaces: A can''t insert a workspace with B''s id');
+  '42501', 'permission denied for table workspaces',
+  'workspaces: A can''t insert a workspace with B''s id (or any workspace)');
 select throws_ok($$insert into workspace_members (workspace_id, user_id)
   values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'user-a')$$,
-  '42501', 'new row violates row-level security policy for table "workspace_members"',
+  '42501', 'permission denied for table workspace_members',
   'workspace_members: A can''t insert into B');
 select throws_ok($$insert into credentials (workspace_id, provider, label, ciphertext, iv, wrapped_dek, dek_iv, last4)
   values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'anthropic', 'work', '\x01', '\x02', '\x03', '\x04', 'wxyz')$$,
@@ -114,7 +115,7 @@ select throws_ok($$update workspaces set id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbb
   'workspaces: A can''t take B''s id');
 select throws_ok($$update workspace_members set workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
   where workspace_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'$$,
-  '42501', 'new row violates row-level security policy for table "workspace_members"',
+  '42501', 'permission denied for table workspace_members',
   'workspace_members: A can''t move a member into B');
 select throws_ok(format(
   $$update %I set workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' where id = %L$$, t, a_id),
@@ -134,13 +135,14 @@ from (values
 ) as v(ord, t, a_id)
 order by v.ord;
 
--- Updates aimed at B's rows match nothing (12)
+-- Updates aimed at B's rows match nothing, or are denied outright (12)
 select is_empty($$update workspaces set name = 'Pwned'
   where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' returning id$$,
   'workspaces: A''s update of B changes nothing');
-select is_empty($$update workspace_members set role = 'owner'
-  where workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' returning user_id$$,
-  'workspace_members: A''s update of B''s member changes nothing');
+select throws_ok($$update workspace_members set role = 'owner'
+  where workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'$$,
+  '42501', 'permission denied for table workspace_members',
+  'workspace_members: A can''t update B''s member');
 select is_empty(format($$update %I set %s where id = %L returning id$$, t, change, b_id),
   format('%s: A''s update of B''s row changes nothing', t))
 from (values
@@ -157,11 +159,13 @@ from (values
 ) as v(ord, t, change, b_id)
 order by v.ord;
 
--- Deletes aimed at B's rows match nothing (12)
-select is_empty($$delete from workspaces where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' returning id$$,
-  'workspaces: A can''t delete B (which would cascade to all of B''s data)');
-select is_empty($$delete from workspace_members
-  where workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' returning user_id$$,
+-- Deletes aimed at B's rows match nothing, or are denied outright (12)
+select throws_ok($$delete from workspaces where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'$$,
+  '42501', 'permission denied for table workspaces',
+  'workspaces: A can''t delete B (which would cascade to all of B''s data), or any workspace');
+select throws_ok($$delete from workspace_members
+  where workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'$$,
+  '42501', 'permission denied for table workspace_members',
   'workspace_members: A can''t remove B''s member');
 select is_empty(format($$delete from %I where id = %L returning id$$, t, b_id),
   format('%s: A can''t delete B''s row', t))

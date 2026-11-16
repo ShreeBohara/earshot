@@ -1,11 +1,16 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import {
+  auditLog,
+  credentials,
   crmConnections,
   crmEntities,
   facts,
   proposals,
   sessionEvents,
+  sessions,
+  user,
+  workspaceMembers,
   workspaces,
 } from "../src/schema";
 import { tenantTables } from "../src/tenant";
@@ -78,5 +83,45 @@ describe("schema", () => {
       })
       .catch((e: unknown) => e);
     expect(String((duplicate as Error).cause)).toMatch(/session_events_session_id_id_unique/);
+  });
+
+  it("deletes a member's sessions with their membership, but keeps their audit entries", async () => {
+    const { db } = await seededDb();
+    await db
+      .delete(workspaceMembers)
+      .where(
+        and(eq(workspaceMembers.workspaceId, A.workspaceId), eq(workspaceMembers.userId, A.userId)),
+      );
+
+    expect(await db.select().from(sessions).where(eq(sessions.workspaceId, A.workspaceId))).toEqual(
+      [],
+    );
+    expect(
+      await db.select().from(sessionEvents).where(eq(sessionEvents.workspaceId, A.workspaceId)),
+    ).toEqual([]);
+    const [entry] = await db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.id, rowId("a", 11)));
+    expect(entry).toMatchObject({ workspaceId: A.workspaceId, actorUserId: null });
+  });
+
+  it("removes a deleted user's memberships and sessions, and clears them from the audit log", async () => {
+    const { db } = await seededDb();
+    await db.delete(user).where(eq(user.id, A.userId));
+
+    expect(
+      await db.select().from(workspaceMembers).where(eq(workspaceMembers.userId, A.userId)),
+    ).toEqual([]);
+    expect(await db.select().from(sessions).where(eq(sessions.userId, A.userId))).toEqual([]);
+    const [entry] = await db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.id, rowId("a", 11)));
+    expect(entry?.actorUserId).toBeNull();
+    // The workspace and the rest of its data stay: deleting it is a separate, deliberate step.
+    expect(
+      await db.select().from(credentials).where(eq(credentials.workspaceId, A.workspaceId)),
+    ).toHaveLength(1);
   });
 });

@@ -1,9 +1,9 @@
 import type { PGlite } from "@electric-sql/pglite";
-import { eq, getTableName, sql } from "drizzle-orm";
+import { and, eq, getTableName, sql } from "drizzle-orm";
 import { afterEach, beforeAll, beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 import { createPoolDb } from "../src/client";
-import { commitments, credentials } from "../src/schema";
-import { TENANT_ROLE, tenantTables, withTenant } from "../src/tenant";
+import { commitments, credentials, user, workspaceMembers, workspaces } from "../src/schema";
+import { resolveWorkspace, TENANT_ROLE, tenantTables, withTenant } from "../src/tenant";
 import { A, B, cloneDb, rowId, seededDb, tenantKey } from "./db";
 
 type Db = Awaited<ReturnType<typeof seededDb>>["db"];
@@ -15,23 +15,23 @@ async function whoAmI(db: Db) {
   return rows[0];
 }
 
+let template: PGlite;
+let db: Db;
+
+beforeAll(async () => {
+  ({ client: template } = await seededDb());
+});
+
+// Each test gets its own copy of the seeded database, so writes don't leak between tests.
+beforeEach(async () => {
+  ({ db } = await cloneDb(template));
+});
+
+afterEach(async () => {
+  await db.$client.close();
+});
+
 describe("withTenant", () => {
-  let template: PGlite;
-  let db: Db;
-
-  beforeAll(async () => {
-    ({ client: template } = await seededDb());
-  });
-
-  // Each test gets its own copy of the seeded database, so writes don't leak between tests.
-  beforeEach(async () => {
-    ({ db } = await cloneDb(template));
-  });
-
-  afterEach(async () => {
-    await db.$client.close();
-  });
-
   it("shows A only its own rows in every tenant table", async () => {
     for (const table of tenantTables) {
       const key = tenantKey(table);
@@ -133,5 +133,56 @@ describe("withTenant", () => {
       TypeError,
     );
     expect(called).toBe(false);
+  });
+});
+
+describe("resolveWorkspace", () => {
+  it("returns null for a user who belongs to no workspace", async () => {
+    await db.insert(user).values({ id: "user-c", name: "Cy Cole", email: "cy@c.test" });
+
+    expect(await resolveWorkspace(db, "user-c")).toBeNull();
+    expect(await resolveWorkspace(db, "user-c", A.workspaceId)).toBeNull();
+    expect(await resolveWorkspace(db, "no-such-user")).toBeNull();
+  });
+
+  it("only ever returns a workspace the user belongs to", async () => {
+    expect(await resolveWorkspace(db, A.userId, A.workspaceId)).toBe(A.workspaceId);
+    // Asking for someone else's workspace gets the user's own back, never the one asked for.
+    expect(await resolveWorkspace(db, B.userId, A.workspaceId)).toBe(B.workspaceId);
+    expect(await resolveWorkspace(db, B.userId, "not-a-uuid")).toBe(B.workspaceId);
+  });
+
+  it("is deterministic for a user with two memberships", async () => {
+    const [one, two] = [
+      "11111111-1111-4111-8111-111111111111",
+      "22222222-2222-4222-8222-222222222222",
+    ];
+    await db.insert(user).values({ id: "user-c", name: "Cy Cole", email: "cy@c.test" });
+    await db.insert(workspaces).values([
+      { id: two, name: "Two" },
+      { id: one, name: "One" },
+    ]);
+    const joined = new Date("2026-11-01T00:00:00Z");
+    await db
+      .insert(workspaceMembers)
+      .values({ workspaceId: two, userId: "user-c", createdAt: joined });
+    await db
+      .insert(workspaceMembers)
+      .values({ workspaceId: one, userId: "user-c", createdAt: joined });
+
+    // Joined at the same moment: the lower workspace id wins, whatever the insert order.
+    expect(await resolveWorkspace(db, "user-c")).toBe(one);
+    expect(await resolveWorkspace(db, "user-c")).toBe(one);
+
+    // An older membership wins over a lower id.
+    await db
+      .update(workspaceMembers)
+      .set({ createdAt: new Date("2026-10-01T00:00:00Z") })
+      .where(and(eq(workspaceMembers.userId, "user-c"), eq(workspaceMembers.workspaceId, two)));
+    expect(await resolveWorkspace(db, "user-c")).toBe(two);
+
+    // A requested membership wins over both; a requested non-membership falls back.
+    expect(await resolveWorkspace(db, "user-c", one)).toBe(one);
+    expect(await resolveWorkspace(db, "user-c", A.workspaceId)).toBe(two);
   });
 });

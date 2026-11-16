@@ -23,7 +23,11 @@ export function workspaceId() {
     .references(() => workspaces.id, { onDelete: "cascade" });
 }
 
-/** Who belongs to a workspace. Phase 2 has one member per workspace, its owner. */
+/**
+ * Who belongs to a workspace. Phase 2 has one member per workspace, its owner. The app's tenant
+ * role can only read this table: trusted server code writes it on the owner connection (the
+ * creator becomes owner at sign-up; an invite needs the invited user to accept).
+ */
 export const workspaceMembers = pgTable(
   "workspace_members",
   {
@@ -32,6 +36,7 @@ export const workspaceMembers = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     role: text().notNull().default("owner"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.workspaceId, t.userId] }),

@@ -1,4 +1,4 @@
-import { sql, type TablesRelationalConfig } from "drizzle-orm";
+import { asc, desc, eq, sql, type TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT, PgTransaction } from "drizzle-orm/pg-core";
 import {
   auditLog,
@@ -20,8 +20,8 @@ import {
 export const TENANT_ROLE = "earshot_app";
 
 /**
- * Who a transaction acts for. Resolve `workspaceId` from `workspace_members` for the signed-in
- * user before calling `withTenant`: that lookup spans workspaces, so it runs as the owner.
+ * Who a transaction acts for: the signed-in user, and a workspace that `resolveWorkspace` chose
+ * for them. Never pass a workspace id from a request straight through.
  */
 export type TenantContext = { userId: string; workspaceId: string };
 
@@ -48,10 +48,46 @@ export const tenantTables = [
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Runs `fn` in a transaction pinned to one workspace (docs/adr/0019). The transaction takes
- * the `earshot_app` role and sets `app.user_id` and `app.workspace_id`, all with
- * transaction-local scope, so every query `fn` makes through `tx` sees and writes only that
- * workspace's rows, and nothing carries over to the connection's next transaction.
+ * Picks the workspace a user acts in, or null if they belong to none. Returns `requestedId` if
+ * the user is a member of it, and otherwise the user's oldest membership (ties broken by
+ * workspace id), so the answer is always one of the user's own workspaces and never depends on
+ * row order. The result can differ from `requestedId`; compare them if the caller needs that
+ * exact workspace.
+ *
+ * Run it on the owner connection, not inside `withTenant`: memberships span workspaces, and RLS
+ * would hide all but the current one.
+ */
+export async function resolveWorkspace<
+  TQueryResult extends PgQueryResultHKT,
+  TFullSchema extends Record<string, unknown>,
+  TSchema extends TablesRelationalConfig,
+>(
+  db: PgDatabase<TQueryResult, TFullSchema, TSchema>,
+  userId: string,
+  requestedId?: string,
+): Promise<string | null> {
+  // A malformed id can't be a membership; skip it rather than let the uuid cast throw.
+  const requested = requestedId !== undefined && UUID.test(requestedId) ? requestedId : undefined;
+  const [membership] = await db
+    .select({ workspaceId: workspaceMembers.workspaceId })
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.userId, userId))
+    .orderBy(
+      // One round trip: the requested workspace sorts first when the user belongs to it.
+      ...(requested ? [desc(sql`${workspaceMembers.workspaceId} = ${requested}`)] : []),
+      asc(workspaceMembers.createdAt),
+      asc(workspaceMembers.workspaceId),
+    )
+    .limit(1);
+  return membership?.workspaceId ?? null;
+}
+
+/**
+ * Runs `fn` in a transaction pinned to one workspace and one user (docs/adr/0019). The
+ * transaction takes the `earshot_app` role and sets `app.user_id` and `app.workspace_id`, all
+ * with transaction-local scope, so every query `fn` makes through `tx` sees and writes only that
+ * workspace's rows, records sessions and audit entries only in that user's name, and nothing
+ * carries over to the connection's next transaction.
  *
  * Works with any Postgres Drizzle database that runs interactive transactions: `createPoolDb`
  * in production, PGlite in tests. Neon's HTTP driver can't, and throws.
