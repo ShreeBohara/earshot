@@ -54,7 +54,8 @@ export const sessions = pgTable(
 
 /**
  * The append-only event log (docs/adr/0004): one row per `EventEnvelope` from
- * `@earshot/core`. Not partitioned yet; docs/adr/0019 says when to revisit that.
+ * `@earshot/core`. The app role may only read and insert here (migration 0009). Not partitioned
+ * yet; docs/adr/0019 says when to revisit that.
  */
 export const sessionEvents = pgTable(
   "session_events",

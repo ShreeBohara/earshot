@@ -1,7 +1,7 @@
 -- Writes: as workspace A, earshot_app can write its own rows, but can't insert or update a row
 -- into B, can't change or delete B's rows, and can't point a row at one of B's. It can't create,
--- delete, or join workspaces at all: those writes are denied outright (see also
--- 50_workspace_members.sql).
+-- delete, or join workspaces at all, or change or delete a session event: those writes are denied
+-- outright (see also 50_workspace_members.sql and 70_session_events.sql).
 begin;
 select plan(70);
 
@@ -123,6 +123,10 @@ select throws_ok($$update workspace_members set workspace_id = 'bbbbbbbb-bbbb-4b
   where workspace_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'$$,
   '42501', 'permission denied for table workspace_members',
   'workspace_members: A can''t move a member into B');
+select throws_ok($$update session_events set workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+  where id = 'a0000000-0000-4000-8000-000000000005'$$,
+  '42501', 'permission denied for table session_events',
+  'session_events: A can''t move an event into B (the log is append-only)');
 select throws_ok(format(
   $$update %I set workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' where id = %L$$, t, a_id),
   '42501', format('new row violates row-level security policy for table "%s"', t),
@@ -132,12 +136,11 @@ from (values
   (2, 'crm_connections', 'a0000000-0000-4000-8000-000000000002'),
   (3, 'crm_entities', 'a0000000-0000-4000-8000-000000000003'),
   (4, 'sessions', 'a0000000-0000-4000-8000-000000000004'),
-  (5, 'session_events', 'a0000000-0000-4000-8000-000000000005'),
-  (6, 'utterances', 'a0000000-0000-4000-8000-000000000006'),
-  (7, 'proposals', 'a0000000-0000-4000-8000-000000000007'),
-  (8, 'sync_jobs', 'a0000000-0000-4000-8000-000000000008'),
-  (9, 'commitments', 'a0000000-0000-4000-8000-000000000009'),
-  (10, 'facts', 'a0000000-0000-4000-8000-000000000010')
+  (5, 'utterances', 'a0000000-0000-4000-8000-000000000006'),
+  (6, 'proposals', 'a0000000-0000-4000-8000-000000000007'),
+  (7, 'sync_jobs', 'a0000000-0000-4000-8000-000000000008'),
+  (8, 'commitments', 'a0000000-0000-4000-8000-000000000009'),
+  (9, 'facts', 'a0000000-0000-4000-8000-000000000010')
 ) as v(ord, t, a_id)
 order by v.ord;
 
@@ -149,6 +152,10 @@ select throws_ok($$update workspace_members set role = 'owner'
   where workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'$$,
   '42501', 'permission denied for table workspace_members',
   'workspace_members: A can''t update B''s member');
+select throws_ok($$update session_events set type = 'session.pwned'
+  where id = 'b0000000-0000-4000-8000-000000000005'$$,
+  '42501', 'permission denied for table session_events',
+  'session_events: A can''t update B''s event, or any event');
 select is_empty(format($$update %I set %s where id = %L returning id$$, t, change, b_id),
   format('%s: A''s update of B''s row changes nothing', t))
 from (values
@@ -156,12 +163,11 @@ from (values
   (2, 'crm_connections', 'status = ''pwned''', 'b0000000-0000-4000-8000-000000000002'),
   (3, 'crm_entities', 'name = ''Pwned''', 'b0000000-0000-4000-8000-000000000003'),
   (4, 'sessions', 'engine = ''pwned''', 'b0000000-0000-4000-8000-000000000004'),
-  (5, 'session_events', 'type = ''session.pwned''', 'b0000000-0000-4000-8000-000000000005'),
-  (6, 'utterances', 'text = ''Pwned''', 'b0000000-0000-4000-8000-000000000006'),
-  (7, 'proposals', 'status = ''rejected''', 'b0000000-0000-4000-8000-000000000007'),
-  (8, 'sync_jobs', 'attempts = attempts + 1', 'b0000000-0000-4000-8000-000000000008'),
-  (9, 'commitments', 'status = ''cancelled''', 'b0000000-0000-4000-8000-000000000009'),
-  (10, 'facts', 'key = ''pwned''', 'b0000000-0000-4000-8000-000000000010')
+  (5, 'utterances', 'text = ''Pwned''', 'b0000000-0000-4000-8000-000000000006'),
+  (6, 'proposals', 'status = ''rejected''', 'b0000000-0000-4000-8000-000000000007'),
+  (7, 'sync_jobs', 'attempts = attempts + 1', 'b0000000-0000-4000-8000-000000000008'),
+  (8, 'commitments', 'status = ''cancelled''', 'b0000000-0000-4000-8000-000000000009'),
+  (9, 'facts', 'key = ''pwned''', 'b0000000-0000-4000-8000-000000000010')
 ) as v(ord, t, change, b_id)
 order by v.ord;
 
@@ -173,6 +179,9 @@ select throws_ok($$delete from workspace_members
   where workspace_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'$$,
   '42501', 'permission denied for table workspace_members',
   'workspace_members: A can''t remove B''s member');
+select throws_ok($$delete from session_events where id = 'b0000000-0000-4000-8000-000000000005'$$,
+  '42501', 'permission denied for table session_events',
+  'session_events: A can''t delete B''s event, or any event');
 select is_empty(format($$delete from %I where id = %L returning id$$, t, b_id),
   format('%s: A can''t delete B''s row', t))
 from (values
@@ -180,12 +189,11 @@ from (values
   (2, 'crm_connections', 'b0000000-0000-4000-8000-000000000002'),
   (3, 'crm_entities', 'b0000000-0000-4000-8000-000000000003'),
   (4, 'sessions', 'b0000000-0000-4000-8000-000000000004'),
-  (5, 'session_events', 'b0000000-0000-4000-8000-000000000005'),
-  (6, 'utterances', 'b0000000-0000-4000-8000-000000000006'),
-  (7, 'proposals', 'b0000000-0000-4000-8000-000000000007'),
-  (8, 'sync_jobs', 'b0000000-0000-4000-8000-000000000008'),
-  (9, 'commitments', 'b0000000-0000-4000-8000-000000000009'),
-  (10, 'facts', 'b0000000-0000-4000-8000-000000000010')
+  (5, 'utterances', 'b0000000-0000-4000-8000-000000000006'),
+  (6, 'proposals', 'b0000000-0000-4000-8000-000000000007'),
+  (7, 'sync_jobs', 'b0000000-0000-4000-8000-000000000008'),
+  (8, 'commitments', 'b0000000-0000-4000-8000-000000000009'),
+  (9, 'facts', 'b0000000-0000-4000-8000-000000000010')
 ) as v(ord, t, b_id)
 order by v.ord;
 

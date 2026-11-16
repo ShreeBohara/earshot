@@ -45,7 +45,7 @@ The `session_events` table arrives with the schema PR: `workspace_id`, `session_
 
 ## Postgres store
 
-`PgEventStore(db, tenant)` in `packages/db` takes `createPoolDb` or PGlite, as `withTenant` does, and passes the same contract tests as `InMemoryEventStore`, run against PGlite. Migrations 0007 and 0008 add the columns it needs.
+`PgEventStore(db, tenant)` in `packages/db` takes `createPoolDb` or PGlite, as `withTenant` does, and passes the same contract tests as `InMemoryEventStore`, run against PGlite. Migrations 0007 and 0008 add the columns it needs, and 0009 makes the log append-only for the app role.
 
 **Transaction shape.** `PgEventStore` runs each `append` and `read` in its own `withTenant` transaction. `appendEvents(tx, …)`, `readEvents(tx, …)`, and `rebuildProjections(tx, …)` take a transaction the caller already holds, so it can append and project together. An append makes these statements, after `withTenant`'s `SET LOCAL ROLE` and `set_config`:
 
@@ -56,6 +56,8 @@ The `session_events` table arrives with the schema PR: `workspace_id`, `session_
 5. One multi-row `INSERT`, with `workspace_id` taken from `app.workspace_id`, never from the caller.
 
 A read is one range scan on the primary key. Events come back frozen, as they do from memory.
+
+**Append-only in the database.** Migration 0009 revokes `UPDATE` and `DELETE` on `session_events` from `earshot_app`, so tenant code can only read and append events, in its own workspace too, whatever query it runs. pgTAP checks the grants and the denials. Deleting a session, a member, a user, or a workspace still deletes the events under it, because `ON DELETE CASCADE` runs as the table's owner, not as the role that deleted the parent row.
 
 **Errors.** Both stores run `prepareAppend`, so every batch the in-memory store refuses, the Postgres store refuses with the same error and message. Beyond that:
 
@@ -114,7 +116,6 @@ await withTenant(db, { userId, workspaceId }, async (tx) => {
 - Strict validation means one bad event stops a replay. The fix is a new event or an upcaster, never an edit to the log.
 - JSONL is larger than a binary format.
 - PGlite runs one transaction at a time, so CI never interleaves two appends. Triggers stand in for a writer that commits between the check and the insert, which tests the error mapping but not the lock under load.
-- `session_events` grants the app role `UPDATE` and `DELETE`, which an append-only log doesn't need. Narrowing them, as for `audit_log`, is a separate change.
 
 ## More information
 

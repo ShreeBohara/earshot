@@ -20,7 +20,7 @@ insert into tenant_tables (name, key, privs, policies, ord) values
   ('crm_entities', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 5),
   ('sessions', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}',
    '{tenant_isolation,actor_insert,actor_update,actor_delete}', 6),
-  ('session_events', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 7),
+  ('session_events', 'workspace_id', '{INSERT,SELECT}', '{tenant_isolation}', 7),
   ('utterances', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 8),
   ('proposals', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 9),
   ('sync_jobs', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 10),
@@ -189,7 +189,8 @@ select is_empty(
   'every table the app writes that names a member binds that member to app.user_id'
 );
 
--- Grants: exactly what each tenant table needs; read-only membership, append-only audit (13)...
+-- Grants: exactly what each tenant table needs; read-only membership, and an append-only
+-- audit log and event log (13)...
 select table_privs_are(
   'public', t.name::name, 'earshot_app', t.privs,
   format('earshot_app has exactly %s on %s', array_to_string(t.privs, ', '), t.name)

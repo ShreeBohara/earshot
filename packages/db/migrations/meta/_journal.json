@@ -64,6 +64,13 @@
       "when": 1794790549747,
       "tag": "0008_projection_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794790638178,
+      "tag": "0009_session_events_append_only",
+      "breakpoints": true
     }
   ]
 }
