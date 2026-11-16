@@ -8,6 +8,7 @@ export {
   UnknownSessionError,
 } from "./event-store";
 export { type DbHealth, readDbHealth, stampBranch } from "./health";
+export { rebuildProjections, type SessionProjections } from "./projections";
 export * as schema from "./schema";
 export {
   resolveWorkspace,

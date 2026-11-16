@@ -1,0 +1,349 @@
+import { fromJsonl, NO_EVENTS, ProjectionError } from "@earshot/events";
+import {
+  demoSessionId,
+  demoSessionJsonl,
+  draft,
+  ended,
+  proposal,
+  readFixture,
+  review,
+  SESSION_ID,
+  started,
+  utterance,
+  uuid,
+} from "@earshot/events/testing";
+import type { PGlite } from "@electric-sql/pglite";
+import { asc, desc, eq } from "drizzle-orm";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { appendEvents, PgEventStore, UnknownSessionError } from "../src/event-store";
+import { rebuildProjections } from "../src/projections";
+import {
+  crmEntities,
+  proposals,
+  sessionEvents,
+  sessions,
+  syncJobs,
+  utterances,
+} from "../src/schema";
+import { withTenant } from "../src/tenant";
+import { A, B, cloneDb, migratedDb } from "./db";
+import { createTenant } from "./tenants";
+
+type Db = Awaited<ReturnType<typeof migratedDb>>["db"];
+
+/** The demo's targets: Acme Corp's deal, and Acme Corp itself. */
+const DEMO_DEAL = "01a0f831-afe8-7fff-84cf-71639949085b";
+const DEMO_COMPANY = "01a0f831-ac00-75a0-a2b2-cb79eb1835bf";
+
+const snapshot = JSON.parse(readFixture("demo-session.projections.json"));
+
+let template: PGlite;
+const opened: PGlite[] = [];
+
+// A has the demo session, with every event appended and the CRM records its proposals target,
+// plus SESSION_ID with no events. B has a session of its own.
+beforeAll(async () => {
+  const { client, db } = await migratedDb();
+  await createTenant(db, A, [demoSessionId, SESSION_ID]);
+  await createTenant(db, B, [uuid(0xbbbb)]);
+  await db.insert(crmEntities).values([
+    { id: DEMO_DEAL, workspaceId: A.workspaceId, kind: "deal", externalId: "d1", name: "Acme" },
+    {
+      id: DEMO_COMPANY,
+      workspaceId: A.workspaceId,
+      kind: "company",
+      externalId: "c1",
+      name: "Acme",
+    },
+  ]);
+  const drafts = fromJsonl(demoSessionJsonl).map(({ sessionId: _, ...event }) => event);
+  await new PgEventStore(db, A).append(demoSessionId, NO_EVENTS, drafts);
+  template = client;
+});
+
+afterEach(async () => {
+  await Promise.all(opened.splice(0).map((client) => client.close()));
+});
+
+afterAll(async () => {
+  await template.close();
+});
+
+async function fresh(): Promise<Db> {
+  const copy = await cloneDb(template);
+  opened.push(copy.client);
+  return copy.db;
+}
+
+const rebuild = (db: Db, sessionId: string, tenant = A) =>
+  withTenant(db, tenant, (tx) => rebuildProjections(tx, sessionId));
+
+/** Every projection row of a session, read as the owner. */
+async function rowsOf(db: Db, sessionId: string) {
+  return {
+    session: await db.select().from(sessions).where(eq(sessions.id, sessionId)),
+    utterances: await db
+      .select()
+      .from(utterances)
+      .where(eq(utterances.sessionId, sessionId))
+      .orderBy(asc(utterances.seq)),
+    proposals: await db
+      .select()
+      .from(proposals)
+      .where(eq(proposals.sessionId, sessionId))
+      .orderBy(asc(proposals.seq)),
+  };
+}
+
+/**
+ * The rows, as A reads them, turned back into the projections' shapes: columns renamed,
+ * timestamps as ISO strings, the risk flags decoded, and `status`, `durationMs`, `lastSeq`, and
+ * `lastEventAt` derived from the session's row and its last event.
+ */
+function readProjections(db: Db, sessionId: string) {
+  return withTenant(db, A, async (tx) => {
+    const [session] = await tx.select().from(sessions).where(eq(sessions.id, sessionId));
+    const [last] = await tx
+      .select({ seq: sessionEvents.seq, ts: sessionEvents.ts })
+      .from(sessionEvents)
+      .where(eq(sessionEvents.sessionId, sessionId))
+      .orderBy(desc(sessionEvents.seq))
+      .limit(1);
+    const utteranceRows = await tx
+      .select()
+      .from(utterances)
+      .where(eq(utterances.sessionId, sessionId))
+      .orderBy(asc(utterances.seq));
+    const proposalRows = await tx
+      .select()
+      .from(proposals)
+      .where(eq(proposals.sessionId, sessionId))
+      .orderBy(asc(proposals.seq));
+    return {
+      session:
+        session && last
+          ? {
+              sessionId: session.id,
+              status: session.endedAt ? "ended" : "active",
+              mode: session.mode,
+              engine: session.engine,
+              providers: session.providers,
+              startedAt: session.startedAt.toISOString(),
+              endedAt: session.endedAt?.toISOString() ?? null,
+              durationMs: session.endedAt
+                ? session.endedAt.getTime() - session.startedAt.getTime()
+                : null,
+              costUsd: Number(session.costUsd),
+              lastSeq: last.seq,
+              lastEventAt: last.ts.toISOString(),
+            }
+          : null,
+      utterances: utteranceRows.map((row) => ({
+        utteranceId: row.id,
+        seq: row.seq,
+        ts: row.ts?.toISOString(),
+        witness: row.witness,
+        text: row.text,
+        confidence: row.confidence,
+        startMs: row.startedMs,
+        endMs: row.endedMs,
+        words: row.words,
+      })),
+      proposals: proposalRows.map((row) => ({
+        proposalId: row.id,
+        type: row.type,
+        targetEntityId: row.targetEntityId,
+        status: row.status,
+        fields: row.fields,
+        riskFlags: row.riskFlags.map((flag) => {
+          const [kind, field] = flag.split(":");
+          return field === undefined ? { kind } : { kind, field };
+        }),
+        seq: row.seq,
+        ts: row.createdAt.toISOString(),
+        review:
+          row.reviewedSeq === null
+            ? null
+            : {
+                decision: row.status,
+                editDiff: row.editDiff,
+                reviewerMs: row.reviewerMs,
+                seq: row.reviewedSeq,
+                ts: row.reviewedAt?.toISOString(),
+              },
+      })),
+    };
+  });
+}
+
+describe("rebuildProjections", () => {
+  it("writes rows that read back as the committed projection snapshot", async () => {
+    const db = await fresh();
+    expect(await rebuild(db, demoSessionId)).toEqual(snapshot);
+    expect(await readProjections(db, demoSessionId)).toEqual(snapshot);
+  });
+
+  it("restores identical rows after they're deleted", async () => {
+    const db = await fresh();
+    await rebuild(db, demoSessionId);
+    const before = await rowsOf(db, demoSessionId);
+
+    await db.delete(utterances).where(eq(utterances.sessionId, demoSessionId));
+    await db.delete(proposals).where(eq(proposals.sessionId, demoSessionId));
+    await db
+      .update(sessions)
+      .set({ startedAt: new Date(), endedAt: null, costUsd: "0", providers: {} })
+      .where(eq(sessions.id, demoSessionId));
+    expect((await rowsOf(db, demoSessionId)).utterances).toEqual([]);
+
+    await rebuild(db, demoSessionId);
+    expect(await rowsOf(db, demoSessionId)).toEqual(before);
+  });
+
+  it("writes the same rows again, and removes rows the log doesn't produce", async () => {
+    const db = await fresh();
+    await rebuild(db, demoSessionId);
+    const before = await rowsOf(db, demoSessionId);
+
+    await db.insert(utterances).values({
+      workspaceId: A.workspaceId,
+      sessionId: demoSessionId,
+      seq: 99,
+      witness: "unbiased",
+      text: "A stray row.",
+      startedMs: 0,
+      endedMs: 1,
+    });
+    await db.insert(proposals).values({
+      workspaceId: A.workspaceId,
+      sessionId: demoSessionId,
+      type: "note",
+      fields: {},
+    });
+    await rebuild(db, demoSessionId);
+    expect(await rowsOf(db, demoSessionId)).toEqual(before);
+  });
+
+  it("updates proposals in place, so their sync jobs survive a rebuild", async () => {
+    const db = await fresh();
+    const { proposals: views } = await rebuild(db, demoSessionId);
+    const approved = views.find((view) => view.status === "approved")?.proposalId ?? "";
+    await db.insert(syncJobs).values({
+      workspaceId: A.workspaceId,
+      proposalId: approved,
+      adapter: "hubspot",
+      idempotencyKey: `${approved}:hubspot`,
+    });
+    await rebuild(db, demoSessionId);
+    expect(await db.select({ id: syncJobs.proposalId }).from(syncJobs)).toEqual([{ id: approved }]);
+  });
+
+  it("follows the log as it grows: reviews, word timings, and the end", async () => {
+    const db = await fresh();
+    const store = new PgEventStore(db, A);
+    const withEmptyWords = utterance(2);
+    withEmptyWords.payload.words = [];
+    await store.append(SESSION_ID, NO_EVENTS, [
+      draft(1, started()),
+      draft(2, utterance(1)),
+      draft(3, withEmptyWords),
+      draft(4, proposal(1)),
+    ]);
+    const first = await rebuild(db, SESSION_ID);
+    expect(first.session).toMatchObject({ status: "active", endedAt: null });
+    const [created] = (await rowsOf(db, SESSION_ID)).proposals;
+    expect(created).toMatchObject({ status: "proposed", seq: 3, reviewedSeq: null });
+    expect((await rowsOf(db, SESSION_ID)).utterances.map((row) => row.words)).toEqual([null, []]);
+
+    await store.append(SESSION_ID, 3, [draft(5, review(1, "approved")), draft(6, ended())]);
+    await rebuild(db, SESSION_ID);
+    const { session, proposals: [reviewed] = [] } = await rowsOf(db, SESSION_ID);
+    expect(reviewed).toMatchObject({
+      status: "approved",
+      reviewedSeq: 4,
+      reviewedAt: new Date("2026-11-10T19:15:05.000Z"),
+      updatedAt: new Date("2026-11-10T19:15:05.000Z"),
+      createdAt: created?.createdAt,
+    });
+    expect(session).toMatchObject([
+      { endedAt: new Date("2026-11-10T19:15:40.000Z"), costUsd: "0.0040" },
+    ]);
+  });
+
+  it("won't take over another session's proposal that has the same id", async () => {
+    const db = await fresh();
+    const { proposals: views } = await rebuild(db, demoSessionId);
+    const copied = proposal(1);
+    copied.payload.proposalId = views[0]?.proposalId;
+    await new PgEventStore(db, A).append(SESSION_ID, NO_EVENTS, [
+      draft(1, started()),
+      draft(2, copied),
+    ]);
+    const before = await rowsOf(db, demoSessionId);
+    await expect(rebuild(db, SESSION_ID)).rejects.toThrow(
+      `proposal ${views[0]?.proposalId} belongs to another session`,
+    );
+    expect(await rowsOf(db, demoSessionId)).toEqual(before);
+  });
+
+  it("leaves out a target that isn't in the workspace's CRM mirror", async () => {
+    const db = await fresh();
+    await db.delete(crmEntities).where(eq(crmEntities.id, DEMO_DEAL));
+    const unmirrored = proposal(1);
+    unmirrored.payload.targetEntityId = "hubspot:deal:42";
+    const store = new PgEventStore(db, A);
+    await store.append(SESSION_ID, NO_EVENTS, [draft(1, started()), draft(2, unmirrored)]);
+
+    const { proposals: views } = await rebuild(db, demoSessionId);
+    await rebuild(db, SESSION_ID);
+    const targets = async (sessionId: string) =>
+      (await rowsOf(db, sessionId)).proposals.map((row) => row.targetEntityId);
+    expect(await targets(demoSessionId)).toEqual(
+      views.map((view) => (view.targetEntityId === DEMO_DEAL ? null : view.targetEntityId)),
+    );
+    expect(await targets(SESSION_ID)).toEqual([null]);
+  });
+
+  it("clears the rows of a session that has no events, and leaves its session row alone", async () => {
+    const db = await fresh();
+    const [row] = (await rowsOf(db, SESSION_ID)).session;
+    await db.insert(utterances).values({
+      workspaceId: A.workspaceId,
+      sessionId: SESSION_ID,
+      seq: 0,
+      witness: "biased",
+      text: "No event says this.",
+      startedMs: 0,
+      endedMs: 1,
+    });
+    expect(await rebuild(db, SESSION_ID)).toEqual({ session: null, utterances: [], proposals: [] });
+    expect(await rowsOf(db, SESSION_ID)).toEqual({ session: [row], utterances: [], proposals: [] });
+  });
+
+  it("appends and rebuilds in one transaction, which a log replay refuses rolls back", async () => {
+    const db = await fresh();
+    await withTenant(db, A, async (tx) => {
+      await appendEvents(tx, SESSION_ID, NO_EVENTS, [draft(1, started()), draft(2, utterance(1))]);
+      await rebuildProjections(tx, SESSION_ID);
+    });
+    expect((await rowsOf(db, SESSION_ID)).utterances).toHaveLength(1);
+
+    // A review of a proposal that doesn't exist: the store takes it, the projection refuses it.
+    const failing = withTenant(db, A, async (tx) => {
+      await appendEvents(tx, SESSION_ID, 1, [draft(3, review(7, "approved"))]);
+      await rebuildProjections(tx, SESSION_ID);
+    });
+    await expect(failing).rejects.toBeInstanceOf(ProjectionError);
+    expect(await new PgEventStore(db, A).read(SESSION_ID)).toHaveLength(2);
+  });
+});
+
+describe("tenant isolation for projections", () => {
+  it("won't let B rebuild A's projections", async () => {
+    const db = await fresh();
+    await rebuild(db, demoSessionId);
+    const before = await rowsOf(db, demoSessionId);
+    await expect(rebuild(db, demoSessionId, B)).rejects.toBeInstanceOf(UnknownSessionError);
+    expect(await rowsOf(db, demoSessionId)).toEqual(before);
+  });
+});

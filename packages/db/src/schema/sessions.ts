@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  doublePrecision,
   foreignKey,
   index,
   integer,
@@ -8,7 +9,6 @@ import {
   numeric,
   pgTable,
   primaryKey,
-  real,
   text,
   timestamp,
   unique,
@@ -102,21 +102,27 @@ export const sessionEvents = pgTable(
 );
 
 /**
- * Final utterances, projected from the log, from either witness: `biased` (transcribed with
- * the CRM's names as keyterms) or `unbiased` (without them).
+ * Final utterances, projected from the log by `rebuildProjections`, from either witness:
+ * `biased` (transcribed with the CRM's names as keyterms) or `unbiased` (without them). Each row
+ * holds one `UtteranceView` from `@earshot/events`.
  */
 export const utterances = pgTable(
   "utterances",
   {
+    /** The id from the `utterance.final` event, which proposal evidence points at. */
     id: uuid().primaryKey().defaultRandom(),
     workspaceId: workspaceId(),
     sessionId: uuid("session_id").notNull(),
+    /** The seq of the `utterance.final` event. */
     seq: integer().notNull(),
+    /** The `utterance.final` event's `ts`. */
+    ts: timestamp({ withTimezone: true }),
     witness: text().notNull(),
     text: text().notNull(),
-    /** Word timings and confidences, as the provider reported them. */
-    words: jsonb().$type<unknown[]>().notNull().default([]),
-    confidence: real(),
+    /** Word timings and confidences, as the provider reported them; null when it sent none. */
+    words: jsonb().$type<unknown[]>().default([]),
+    /** Double precision, so a confidence reads back exactly as the event has it. */
+    confidence: doublePrecision(),
     /** Offsets from the start of the session. */
     startedMs: integer("started_ms").notNull(),
     endedMs: integer("ended_ms").notNull(),

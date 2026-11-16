@@ -7,6 +7,7 @@ import {
   jsonb,
   pgTable,
   text,
+  timestamp,
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -16,7 +17,10 @@ import { workspaceId } from "./workspaces";
 
 /**
  * A proposed CRM change, waiting for a human (docs/adr/0007). Every value in `fields` carries
- * its evidence: utterance, character span, audio offsets, and confidence.
+ * its evidence: utterance, character span, audio offsets, and confidence. `rebuildProjections`
+ * writes each row from one `ProposalView` in `@earshot/events`: `id` is the event's
+ * `proposalId`, `created_at` the `proposal.created` event's `ts`, and `updated_at` the latest
+ * review's `ts`, or `created_at` before any review.
  *
  * `target_entity_id` references `crm_entities` through a foreign key that lives in migration
  * 0004 instead of here: it needs `ON DELETE SET NULL (target_entity_id)`, which Drizzle can't
@@ -32,12 +36,18 @@ export const proposals = pgTable(
     type: text().notNull(),
     targetEntityId: uuid("target_entity_id"),
     fields: jsonb().$type<Record<string, unknown>>().notNull(),
+    /** Each flag as its `kind`, or as `kind:field` when it's about one field (`date:dueDate`). */
     riskFlags: text("risk_flags").array().notNull().default(sql`'{}'::text[]`),
     status: text().notNull().default("proposed"),
     /** What the reviewer changed, when the status is `edited`. */
     editDiff: jsonb("edit_diff").$type<Record<string, unknown>>(),
     /** How long the reviewer took to decide. */
     reviewerMs: integer("reviewer_ms"),
+    /** The seq of the `proposal.created` event. */
+    seq: integer(),
+    /** The seq and `ts` of the latest `proposal.reviewed` event; null until the first review. */
+    reviewedSeq: integer("reviewed_seq"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     ...timestamps(),
   },
   (t) => [
@@ -54,6 +64,8 @@ export const proposals = pgTable(
       "proposals_status_check",
       sql`${t.status} in ('proposed', 'approved', 'edited', 'rejected', 'synced', 'failed')`,
     ),
+    check("proposals_seq_check", sql`${t.seq} >= 0`),
+    check("proposals_reviewed_seq_check", sql`${t.reviewedSeq} >= 0`),
   ],
 );
 

@@ -63,8 +63,8 @@ export class UnknownSessionError extends Error {
  * what Postgres would store differently from how it was written, namely ids with uppercase hex,
  * a `ts` in year 0000, and payload strings that contain U+0000 or an unpaired surrogate.
  *
- * To append and do more in one transaction, call `appendEvents` and `readEvents` inside your own
- * `withTenant` instead.
+ * To append and project in one transaction, call `appendEvents`, `readEvents`, and
+ * `rebuildProjections` inside your own `withTenant` instead.
  */
 export class PgEventStore<
   TQueryResult extends PgQueryResultHKT,
@@ -105,7 +105,7 @@ export class PgEventStore<
 
 /**
  * `EventStore.append` inside a transaction from `withTenant`, so the caller can do more in the
- * same transaction, such as rebuilding projections. It locks the session (`lockSession`), reads the
+ * same transaction, such as `rebuildProjections`. It locks the session (`lockSession`), reads the
  * session's last seq, runs the checks `InMemoryEventStore` runs (`prepareAppend`), and inserts
  * the batch into the transaction's workspace. The lock lasts until the transaction ends.
  *
