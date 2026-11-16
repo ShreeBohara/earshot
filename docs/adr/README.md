@@ -22,4 +22,7 @@ Earshot records architectural decisions as short MADR files, one per decision. S
 | [0015](0015-mit-license.md) | MIT license | Accepted (2026-11-15) |
 | [0016](0016-main-is-v2-v1-frozen.md) | `main` is v2; v1 is frozen on a tag and a branch | Accepted (2026-11-15) |
 | [0017](0017-per-pr-environments.md) | Per-PR environments: separate Workers plus a Neon branch from a seed-only parent, with expiry and a janitor | Accepted (2026-11-15) |
-| [0018](0018-database-access-from-workers.md) | Database access from Workers: `neon-http` for one-shot reads now; Phase 2 chooses the transaction path for RLS | Proposed; decided in Phase 2 |
+| [0018](0018-database-access-from-workers.md) | Database access from Workers: a `neon-serverless` pool for tenant transactions, `neon-http` for one-shot reads | Accepted (2026-11-15) |
+| [0019](0019-tenant-isolation-with-row-level-security.md) | Tenant isolation with row-level security, proven by pgTAP in PGlite | Accepted (2026-11-15) |
+| [0020](0020-event-store.md) | Event store: an append-only log per session, upcasting on read, pure projections, and JSONL files | Accepted (2026-11-15) |
+| [0021](0021-key-handling.md) | Key handling: on-device storage, per-request use, an optional envelope-encrypted vault | Accepted (2026-11-15) |

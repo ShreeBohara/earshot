@@ -3,7 +3,7 @@ import { defineConfig } from "drizzle-kit";
 // Migrations always use the direct (non-pooled) connection string.
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./src/schema.ts",
+  schema: "./src/schema/index.ts",
   out: "./migrations",
   strict: true,
   verbose: true,

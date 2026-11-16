@@ -26,6 +26,22 @@ jobs:
         with:
           fetch-depth: 0 # turbo --affected compares against the base branch
           persist-credentials: false
+      # A migration on the base branch may already have run against a database, and editing it
+      # would leave that database out of step with the file (docs/adr/0019). New migration files
+      # and changes under meta/ pass.
+      - name: Merged migrations are unchanged
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          changes=$(git diff --diff-filter=MDR --name-status "origin/${BASE_REF}...HEAD" -- 'packages/db/migrations/*.sql')
+          if [ -n "$changes" ]; then
+            while IFS=$'\t' read -r status file _; do
+              echo "::error file=${file}::Migrations are immutable once merged, and ${file} is already on ${BASE_REF} (git status ${status}). Add a new migration instead of editing, renaming, or deleting it."
+            done <<< "$changes"
+            exit 1
+          fi
+          echo "No migration from ${BASE_REF} was edited, renamed, or deleted."
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

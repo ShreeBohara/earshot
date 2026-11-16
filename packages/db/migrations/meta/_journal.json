@@ -15,6 +15,41 @@
       "when": 1794762858795,
       "tag": "0001_app_meta",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794785488152,
+      "tag": "0002_better_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794785630831,
+      "tag": "0003_core_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794785637724,
+      "tag": "0004_tenant_isolation",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794786916770,
+      "tag": "0005_session_event_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794787348311,
+      "tag": "0006_member_actors",
+      "breakpoints": true
     }
   ]
 }

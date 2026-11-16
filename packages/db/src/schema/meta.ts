@@ -3,7 +3,7 @@ import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 /**
  * Deployment metadata as key/value pairs. CI writes `branch` after migrating each Neon
  * branch, so the health check can prove which branch a Worker is really connected to.
- * Phase 2 adds the real schema (users, sessions, events, proposals, …).
+ * Not a tenant table: the health check reads it as the owner.
  */
 export const appMeta = pgTable("app_meta", {
   key: text().primaryKey(),

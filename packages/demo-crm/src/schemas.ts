@@ -78,7 +78,8 @@ export const ConfusableGroup = z.object({
 });
 export type ConfusableGroup = z.infer<typeof ConfusableGroup>;
 
-export const CrmEntityKind = z.enum(["company", "contact", "deal", "activity"]);
+/** The kinds `crm_entities` allows (its check constraint, in `@earshot/db`). */
+export const CrmEntityKind = z.enum(["company", "contact", "deal"]);
 export type CrmEntityKind = z.infer<typeof CrmEntityKind>;
 
 /** One row in the shape of the future `crm_entities` table. */
