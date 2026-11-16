@@ -16,7 +16,7 @@
     "hono": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "catalog:",
+    "@cloudflare/vitest-plugin": "catalog:",
     "@earshot/tsconfig": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",

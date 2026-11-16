@@ -4,8 +4,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "earshot-web",
   "main": ".open-next/worker.js",
-  // 2026-08-15: the newest date the test runtime (vitest-pool-workers 0.22) supports; keep tests and production on the same date.
-  "compatibility_date": "2026-08-15",
+  // 2026-11-10: the newest date the test runtime (@cloudflare/vitest-plugin 1.8, workerd 1.20261110) supports; keep tests and production on the same date.
+  "compatibility_date": "2026-11-10",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "services": [
