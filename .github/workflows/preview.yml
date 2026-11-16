@@ -64,7 +64,7 @@ jobs:
           pnpm --filter @earshot/db db:migrate
           pnpm --filter @earshot/db db:stamp "preview/pr-$PR"
 
-      - name: Render this PR's wrangler configs (BETTER_AUTH_URL is the preview's own origin)
+      - name: Render this PR's wrangler configs (BETTER_AUTH_URL and EDGE_PUBLIC_URL are the preview's own origins)
         run: pnpm --filter @earshot/scripts exec tsx render-wrangler.ts --target "pr-$PR" --sha "$SHA" --workers-subdomain "$SUBDOMAIN"
 
       - name: Deploy the edge Worker (it owns the Durable Objects, so it goes first)
@@ -76,10 +76,11 @@ jobs:
       - name: Build the web Worker (next build, then the OpenNext bundle)
         run: pnpm turbo run build:worker --filter=@earshot/web
 
-      # Auth fails closed without BETTER_AUTH_SECRET, email sign-in without the Resend pair, and
-      # the key vault without EARSHOT_VAULT_MASTER_KEY: the preview environment's copy is dev's
-      # key, since preview branches fork from dev with its sealed rows (docs/vault-key-rotation.md).
-      # Empty values are dropped rather than uploaded.
+      # Auth fails closed without BETTER_AUTH_SECRET, the session routes without
+      # EARSHOT_SESSION_TICKET_SECRET, email sign-in without the Resend pair, and the key vault
+      # without EARSHOT_VAULT_MASTER_KEY: the preview environment's copy is dev's key, since
+      # preview branches fork from dev with its sealed rows (docs/vault-key-rotation.md). Empty
+      # values are dropped rather than uploaded.
       - name: Deploy the web Worker with its secrets
         working-directory: apps/web
         env:
@@ -89,12 +90,14 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_FROM: ${{ vars.EMAIL_FROM }}
           VAULT_MASTER_KEY: ${{ secrets.EARSHOT_VAULT_MASTER_KEY }}
+          TICKET_SECRET: ${{ secrets.EARSHOT_SESSION_TICKET_SECRET }}
         run: |
           umask 077
           jq -n --arg u "$DB_URL" --arg s "$AUTH_SECRET" --arg r "$RESEND_API_KEY" --arg f "$EMAIL_FROM" \
-            --arg v "$VAULT_MASTER_KEY" \
+            --arg v "$VAULT_MASTER_KEY" --arg t "$TICKET_SECRET" \
             '{DATABASE_URL: $u, BETTER_AUTH_SECRET: $s, RESEND_API_KEY: $r, EMAIL_FROM: $f,
-              EARSHOT_VAULT_MASTER_KEY: $v} | with_entries(select(.value != ""))' \
+              EARSHOT_VAULT_MASTER_KEY: $v, EARSHOT_SESSION_TICKET_SECRET: $t}
+             | with_entries(select(.value != ""))' \
             > "$RUNNER_TEMP/web.secrets.json"
           pnpm exec opennextjs-cloudflare deploy --config "wrangler.pr-$PR.jsonc" -- --secrets-file "$RUNNER_TEMP/web.secrets.json"
           rm -f "$RUNNER_TEMP/web.secrets.json"

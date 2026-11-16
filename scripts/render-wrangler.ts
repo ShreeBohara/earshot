@@ -7,8 +7,9 @@
 // Each environment gets its own Workers, so the web Worker's WORKER_SELF_REFERENCE must point
 // at its own name (OpenNext doesn't rewrite it) and EDGE must point at the same environment's
 // edge Worker. With --workers-subdomain, the web Worker also gets BETTER_AUTH_URL, its own
-// workers.dev origin. Version preview URLs aren't an option: Cloudflare doesn't generate them for
-// Workers that define Durable Objects (docs/adr/0017).
+// workers.dev origin, and EDGE_PUBLIC_URL, the same environment's edge Worker's, where browsers
+// open session sockets. Version preview URLs aren't an option: Cloudflare doesn't generate them
+// for Workers that define Durable Objects (docs/adr/0017).
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
@@ -57,15 +58,27 @@ export function renderEdge(template: WranglerConfig, target: Target, sha: string
   return withVars({ ...template, name: workerNames(target).edge }, target, sha);
 }
 
+function workersDevOrigin(worker: string, workersSubdomain: string): string {
+  if (!/^[a-z0-9-]+$/.test(workersSubdomain)) {
+    throw new Error(`invalid workers.dev subdomain "${workersSubdomain}"`);
+  }
+  return `https://${worker}.${workersSubdomain}.workers.dev`;
+}
+
 /**
  * The web Worker's public origin on workers.dev. Better Auth binds magic links, OAuth callbacks,
  * and passkeys to it (BETTER_AUTH_URL).
  */
 export function webOrigin(target: Target, workersSubdomain: string): string {
-  if (!/^[a-z0-9-]+$/.test(workersSubdomain)) {
-    throw new Error(`invalid workers.dev subdomain "${workersSubdomain}"`);
-  }
-  return `https://${workerNames(target).web}.${workersSubdomain}.workers.dev`;
+  return workersDevOrigin(workerNames(target).web, workersSubdomain);
+}
+
+/**
+ * The edge Worker's public origin on workers.dev, where browsers open session sockets
+ * (EDGE_PUBLIC_URL on the web Worker, docs/adr/0023).
+ */
+export function edgeOrigin(target: Target, workersSubdomain: string): string {
+  return workersDevOrigin(workerNames(target).edge, workersSubdomain);
 }
 
 export function renderWeb(
@@ -90,6 +103,7 @@ export function renderWeb(
     rendered.vars = {
       ...rendered.vars,
       BETTER_AUTH_URL: webOrigin(target, options.workersSubdomain),
+      EDGE_PUBLIC_URL: edgeOrigin(target, options.workersSubdomain),
     };
   }
   return rendered;

@@ -43,8 +43,10 @@ To use real services, copy `apps/web/.dev.vars.example` to `apps/web/.dev.vars` 
 | `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` | No Google button. The callback URL is `<BETTER_AUTH_URL>/api/auth/callback/google`. |
 | `RESEND_API_KEY` and `EMAIL_FROM` | Links print to the terminal in development. Built bundles refuse to send. |
 | `EARSHOT_VAULT_MASTER_KEY` | The server vault is off: Settings → Keys offers only on-device storage. Set it (32 random bytes, base64; `.dev.vars.example` shows how to generate one) to try storing keys on the server. |
+| `EARSHOT_SESSION_TICKET_SECRET` | Session tickets are signed with a development-only secret, which the edge Worker's `wrangler dev` also falls back to. Required outside `next dev`, at least 32 bytes, and the same on both Workers ([ADR-0023](docs/adr/0023-minted-credentials-and-session-tickets.md)). |
+| `EDGE_PUBLIC_URL` | The browser opens session sockets on `EDGE_DEV_URL` (`http://localhost:8787`). Required outside `next dev`: the edge Worker's origin, https unless it's localhost. |
 
-`pnpm --filter @earshot/web preview` runs the production Worker build in workerd. It has no zero-setup mode, so it needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL=http://localhost:8787` in `.dev.vars`.
+`pnpm --filter @earshot/web preview` runs the production Worker build in workerd. It has no zero-setup mode, so it needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL=http://localhost:8787` in `.dev.vars`. Starting a session there also needs `EARSHOT_SESSION_TICKET_SECRET` and `EDGE_PUBLIC_URL`, with the edge Worker on another port (`wrangler dev --port 8788`).
 
 End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts`. `e2e/keys.spec.ts` signs up a new user with the magic link the server prints, which it reads from `apps/web/.data/e2e/dev-server.log`, so it needs zero-setup mode: with a `.dev.vars` file present, wrangler ignores the port the tests set for `BETTER_AUTH_URL`. Move the file aside while it runs. The health check in `e2e/smoke.spec.ts` needs a deployed stack, so it runs only against previews (set `BASE_URL`).
 
@@ -99,6 +101,9 @@ Every pull request from a branch in this repository gets its own preview stack: 
 | `RESEND_API_KEY` | With the `EMAIL_FROM` variable, sends magic links. |
 | `AUTH_GITHUB_CLIENT_SECRET`, `AUTH_GOOGLE_CLIENT_SECRET` | Production only, with the `AUTH_GITHUB_CLIENT_ID` and `AUTH_GOOGLE_CLIENT_ID` variables: OAuth sign-in. |
 | `EARSHOT_VAULT_MASTER_KEY` | Optional: turns on the server vault for AI keys. In `production`, production's key; in `preview`, the `dev` branch's key, because preview databases fork from `dev` with its sealed rows. Never change it outside [the rotation runbook](docs/vault-key-rotation.md). |
+| `EARSHOT_SESSION_TICKET_SECRET` | Required for sessions: the session and ticket routes fail closed without it. At least 32 random bytes (`openssl rand -base64 32`), one per environment. The edge Worker verifies tickets with the same value, so it gets this secret too once its socket route lands (Phase 3 WP6). |
+
+`render-wrangler.ts` also gives each web Worker `EDGE_PUBLIC_URL`, its own environment's edge Worker origin, where browsers open session sockets.
 
 **Pull requests from forks don't get a preview.** The preview and deploy steps need secrets, such as Cloudflare and Neon credentials, and GitHub withholds secrets from fork PRs so that untrusted code can never read them. Workflows deliberately use `pull_request`, never `pull_request_target`. Fork PRs still run CI, which doesn't need secrets, and the Chromatic step is skipped when its token is absent.
 
