@@ -407,6 +407,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@earshot/keys':
+        specifier: workspace:*
+        version: link:../keys
       '@neondatabase/serverless':
         specifier: 'catalog:'
         version: 1.2.0
