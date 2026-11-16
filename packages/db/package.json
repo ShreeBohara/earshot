@@ -20,6 +20,7 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
+    "@earshot/demo-crm": "workspace:*",
     "@earshot/tsconfig": "workspace:*",
     "@electric-sql/pglite": "catalog:",
     "@electric-sql/pglite-pgtap": "catalog:",

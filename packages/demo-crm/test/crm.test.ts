@@ -130,8 +130,9 @@ describe("confusable groups", () => {
 
 describe("entity rows", () => {
   const rows = toEntityRows();
-  it("emits one row per record", () => {
-    expect(rows.length).toBe(companies.length + contacts.length + deals.length + activities.length);
+  it("emits one row per company, contact, and deal, and none for activities", () => {
+    expect(rows.length).toBe(companies.length + contacts.length + deals.length);
+    expect(activities.length).toBeGreaterThan(0);
   });
   it("has unique (kind, externalId) keys", () => {
     expect(unique(rows.map((r) => `${r.kind}:${r.externalId}`))).toBe(true);

@@ -20,7 +20,7 @@ import {
 } from "@earshot/demo-crm";
 ```
 
-The five datasets are validated with Zod when the module loads, and the types (`Company`, `Contact`, `Deal`, `Activity`, `ConfusableGroup`) are inferred from the same schemas. `toEntityRows()` flattens companies, contacts, deals, and activities into `{ kind, externalId, name, aliases, properties }` rows, the shape of the future `crm_entities` table. Raw JSON is also available as `@earshot/demo-crm/data/*.json`.
+The five datasets are validated with Zod when the module loads, and the types (`Company`, `Contact`, `Deal`, `Activity`, `ConfusableGroup`) are inferred from the same schemas. `toEntityRows()` flattens companies, contacts, and deals into `{ kind, externalId, name, aliases, properties }` rows, the shape of the `crm_entities` table. Activities are history, not records a rep links an update to, so they stay out of those rows; use `activities` directly. Raw JSON is also available as `@earshot/demo-crm/data/*.json`.
 
 ## Regenerating
 

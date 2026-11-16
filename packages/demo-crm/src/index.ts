@@ -22,16 +22,13 @@ export const activities: Activity[] = Activity.array().parse(activitiesJson);
 export const confusables: ConfusableGroup[] = ConfusableGroup.array().parse(confusablesJson);
 
 /**
- * Flattens a dataset into `crm_entities` rows: companies, contacts, deals, and activities, in
- * that order. `name` is what a rep would say aloud; `properties` carries everything else.
+ * Flattens a dataset into `crm_entities` rows: companies, contacts, and deals, in that order.
+ * `name` is what a rep would say aloud; `properties` carries everything else. Activities are
+ * history rather than records a rep links an update to, so they stay out of `crm_entities`
+ * (its kind check allows only these three); use `activities` directly.
  */
 export function toEntityRows(
-  data: Pick<CrmDataset, "companies" | "contacts" | "deals" | "activities"> = {
-    companies,
-    contacts,
-    deals,
-    activities,
-  },
+  data: Pick<CrmDataset, "companies" | "contacts" | "deals"> = { companies, contacts, deals },
 ): CrmEntityRow[] {
   const rows: CrmEntityRow[] = [];
   for (const { id, name, aliases, ...properties } of data.companies) {
@@ -48,9 +45,6 @@ export function toEntityRows(
   }
   for (const { id, name, ...properties } of data.deals) {
     rows.push({ kind: "deal", externalId: id, name, aliases: [], properties });
-  }
-  for (const { id, subject, ...properties } of data.activities) {
-    rows.push({ kind: "activity", externalId: id, name: subject, aliases: [], properties });
   }
   return rows;
 }

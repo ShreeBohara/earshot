@@ -414,6 +414,9 @@ importers:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@neondatabase/serverless@1.2.0)
     devDependencies:
+      '@earshot/demo-crm':
+        specifier: workspace:*
+        version: link:../demo-crm
       '@earshot/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
