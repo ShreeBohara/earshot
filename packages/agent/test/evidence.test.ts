@@ -101,22 +101,69 @@ describe("evidenceFor", () => {
     expect(evidence.confidence).toBe(dealStage.confidence);
   });
 
-  it("falls back to interpolation where the words can't be lined up with the text", () => {
-    const formatted = utterance("They want $50k for it.", {
-      startMs: 1000,
-      endMs: 3200,
+  // The formatter wrote "$50k" where the provider heard "fifty thousand", with less confidence.
+  // The utterance's own confidence (0.8) sits below the clean words and above the amount.
+  const amount = utterance("They want $50k for it.", {
+    confidence: 0.8,
+    startMs: 1000,
+    endMs: 3200,
+    words: [
+      { w: "They", startMs: 1000, endMs: 1200, confidence: 0.95 },
+      { w: "want", startMs: 1250, endMs: 1500, confidence: 0.95 },
+      { w: "fifty", startMs: 1550, endMs: 1900, confidence: 0.6 },
+      { w: "thousand", startMs: 1950, endMs: 2400, confidence: 0.55 },
+      { w: "for", startMs: 2500, endMs: 2700, confidence: 0.95 },
+      { w: "it", startMs: 2750, endMs: 3000, confidence: 0.95 },
+    ],
+  });
+
+  function evidenceOf(quote: string, utterances: readonly UtteranceFinalV2[]) {
+    const location = locateQuote(quote, utterances);
+    if (!location) throw new Error(`"${quote}" not found`);
+    return evidenceFor(location);
+  }
+
+  it("covers the unmatched words of a partly lined-up quote, and their confidence (Codex's case)", () => {
+    // "want" lines up; "$50k" doesn't. The window runs through "thousand", not just "want", and
+    // the confidence is the amount's, low enough to flag.
+    expect(evidenceOf("want $50k", [amount])).toMatchObject({
+      span: [5, 14],
+      audioMs: [1250, 2400],
+      confidence: 0.55,
+    });
+    expect(evidenceOf("$50k", [amount])).toMatchObject({ audioMs: [1550, 2400], confidence: 0.55 });
+  });
+
+  it("still uses word timings, uncapped, when every word of the quote lines up", () => {
+    // Full coverage: the words' own confidence, even above the utterance's 0.8.
+    expect(evidenceOf("for it", [amount])).toMatchObject({
+      audioMs: [2500, 3000],
+      confidence: 0.95,
+    });
+  });
+
+  it("caps a partial match at the utterance's confidence, so it can't raise it", () => {
+    // "at" has no recognized word; "Dana" and "noon" do, at 0.99. The match is partial, so 0.8.
+    const noon = utterance("Call Dana at noon.", {
+      confidence: 0.8,
+      startMs: 0,
+      endMs: 1800,
       words: [
-        { w: "They", startMs: 1000, endMs: 1200, confidence: 0.9 },
-        { w: "want", startMs: 1250, endMs: 1500, confidence: 0.9 },
-        { w: "fifty", startMs: 1550, endMs: 1900, confidence: 0.6 },
-        { w: "thousand", startMs: 1950, endMs: 2400, confidence: 0.6 },
+        { w: "Call", startMs: 0, endMs: 300, confidence: 0.99 },
+        { w: "Dana", startMs: 400, endMs: 800, confidence: 0.99 },
+        { w: "noon", startMs: 1200, endMs: 1700, confidence: 0.99 },
       ],
     });
-    const location = locateQuote("$50k", [formatted]);
-    if (!location) throw new Error("not found");
-    const evidence = evidenceFor(location);
-    expect(evidence.confidence).toBe(0.9); // the utterance's, since no word lines up with "$50k"
-    expect(evidence.audioMs[0]).toBeGreaterThanOrEqual(1000);
-    expect(evidence.audioMs[1]).toBeLessThanOrEqual(3200);
+    expect(evidenceOf("Dana at noon", [noon])).toMatchObject({
+      audioMs: [400, 1700],
+      confidence: 0.8,
+    });
+    // Nothing recognized to attribute "at" to: interpolation, with the utterance's confidence.
+    expect(evidenceOf("at", [noon])).toEqual({
+      utteranceId: noon.utteranceId,
+      span: [10, 12],
+      audioMs: [1000, 1200], // 1,800 ms × offset / 18 characters
+      confidence: 0.8,
+    });
   });
 });

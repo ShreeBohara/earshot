@@ -1,4 +1,4 @@
-import { ProposalCreatedV1 } from "@earshot/core";
+import { ProposalCreatedV1, type UtteranceFinalV2 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import { attachEvidence } from "../src/attach";
 import type { ToolProposal } from "../src/schema";
@@ -154,6 +154,43 @@ describe("attachEvidence", () => {
     expect(valid(attachEvidence(update, context)).targetEntityId).toBeNull();
     const onDeal = { ...update, target: "Acme Corp - Security Platform" };
     expect(valid(attachEvidence(onDeal, context)).targetEntityId).toBe(DEMO_DEAL_ID);
+  });
+
+  it("flags an amount whose words the provider heard with low confidence", () => {
+    const amount: UtteranceFinalV2 = {
+      utteranceId: "01a1c6e5-0000-7000-8000-0000000000aa",
+      text: "They want $50k for it.",
+      confidence: 0.8,
+      startMs: 1000,
+      endMs: 3200,
+      witness: "biased",
+      words: [
+        { w: "They", startMs: 1000, endMs: 1200, confidence: 0.95 },
+        { w: "want", startMs: 1250, endMs: 1500, confidence: 0.95 },
+        { w: "fifty", startMs: 1550, endMs: 1900, confidence: 0.6 },
+        { w: "thousand", startMs: 1950, endMs: 2400, confidence: 0.55 },
+        { w: "for", startMs: 2500, endMs: 2700, confidence: 0.95 },
+        { w: "it", startMs: 2750, endMs: 3000, confidence: 0.95 },
+      ],
+    };
+    const proposal = valid(
+      attachEvidence(
+        {
+          type: "deal_update",
+          target: "Acme Corp - Security Platform",
+          fields: { stage: null, amount: { value: 50000, quote: "want $50k" }, closeDate: null },
+        },
+        { utterances: [amount], entities: DEMO_ENTITIES },
+      ),
+    );
+    expect(proposal.fields.amount?.evidence).toMatchObject({
+      audioMs: [1250, 2400],
+      confidence: 0.55,
+    });
+    expect(proposal.riskFlags).toEqual([
+      { kind: "number", field: "amount" },
+      { kind: "low_confidence", field: "amount" },
+    ]);
   });
 
   it("keeps a numeric amount and flags it", () => {

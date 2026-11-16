@@ -3,7 +3,7 @@
 // the utterance, the `[start, end)` character span, the audio window, and a confidence.
 //
 // Phase 4 replaces this with the entity linker, the normalizers, and the faithfulness check.
-import type { Evidence, UtteranceFinalV2 } from "@earshot/core";
+import type { Evidence, UtteranceFinalV2, Word } from "@earshot/core";
 
 /** How a quote was found, from strictest to most lenient. */
 export type QuoteMatch =
@@ -55,27 +55,66 @@ export function locateQuote(
 }
 
 /**
- * The evidence for a located quote. With word timings, the span maps to the words it overlaps:
- * their audio window and the lowest of their confidences. Without them, or where the words can't
- * be lined up with the text, the window is interpolated by character position across the
- * utterance, and the confidence is the utterance's.
+ * The evidence for a located quote.
+ * - With word timings, when every word of the text the span touches lines up with a recognized
+ *   word: those words' audio window, and the lowest of their confidences.
+ * - When only some of them line up (the text says "$50k" where the provider heard "fifty
+ *   thousand"), the evidence is every recognized word between the nearest lined-up words outside
+ *   the span, so the unmatched words count too. Which words those are is an inference, so the
+ *   confidence is also capped at the utterance's: a partial match can never raise it.
+ * - Without word timings, or with no recognized word left to attribute, the window is
+ *   interpolated by character position across the utterance, and the confidence is the
+ *   utterance's.
  */
 export function evidenceFor(location: QuoteLocation): Evidence {
   const { utterance, span } = location;
   const [start, end] = span;
-  const overlapping = alignWords(utterance).filter(
-    (aligned) => aligned.start < end && aligned.end > start,
+  const fromWords = (recognized: readonly Word[], confidence: number): Evidence => ({
+    utteranceId: utterance.utteranceId,
+    span: [start, end],
+    audioMs: [
+      Math.min(...recognized.map((word) => word.startMs)),
+      Math.max(...recognized.map((word) => word.endMs)),
+    ],
+    confidence,
+  });
+  const recognized = utterance.words ?? [];
+  const textWords = words(utterance.text);
+  const covered = textWords.flatMap((word, index) =>
+    word.start < end && word.end > start ? [index] : [],
   );
-  if (overlapping.length > 0) {
-    return {
-      utteranceId: utterance.utteranceId,
-      span: [start, end],
-      audioMs: [
-        Math.min(...overlapping.map((aligned) => aligned.word.startMs)),
-        Math.max(...overlapping.map((aligned) => aligned.word.endMs)),
-      ],
-      confidence: Math.min(...overlapping.map((aligned) => aligned.word.confidence)),
-    };
+  const first = covered[0];
+  const last = covered.at(-1);
+  if (recognized.length > 0 && first !== undefined && last !== undefined) {
+    const alignment = alignWords(recognized, textWords);
+    const byTextWord = new Map<number, Word>();
+    for (const [index, textIndex] of alignment.entries()) {
+      const word = recognized[index];
+      if (textIndex >= 0 && word) byTextWord.set(textIndex, word);
+    }
+    const matched = covered.map((index) => byTextWord.get(index));
+    if (matched.every((word) => word !== undefined)) {
+      return fromWords(matched, Math.min(...matched.map((word) => word.confidence)));
+    }
+    // Partial: attribute every recognized word between the anchors, the last word lined up
+    // before the span and the first one after it.
+    let left = -1;
+    let right = recognized.length;
+    for (const [index, textIndex] of alignment.entries()) {
+      if (textIndex < 0) continue;
+      if (textIndex < first) left = index;
+      else if (textIndex > last) {
+        right = index;
+        break;
+      }
+    }
+    const attributed = recognized.slice(left + 1, right);
+    if (attributed.length > 0) {
+      return fromWords(
+        attributed,
+        Math.min(utterance.confidence, ...attributed.map((word) => word.confidence)),
+      );
+    }
   }
   const length = Math.max(utterance.text.length, 1);
   const startMs = utterance.startMs;
@@ -203,36 +242,30 @@ function findWords(text: string, quoteWords: readonly string[]): readonly [numbe
   return null;
 }
 
-interface AlignedWord {
-  readonly word: NonNullable<UtteranceFinalV2["words"]>[number];
-  readonly start: number;
-  readonly end: number;
-}
-
 /** How far ahead in the text a word may be found when the words and the text disagree. */
 const ALIGN_LOOKAHEAD = 3;
 
 /**
- * Lines each recognized word up with a word of the text. Providers' words usually match the
- * text one for one, punctuation aside; where they don't (a number written as digits, a word the
- * formatter merged), a word is looked for a few text words ahead, and left out if it isn't there.
+ * Lines each recognized word up with a word of the text: returns, per recognized word, the index
+ * of its text word, or -1. Providers' words usually match the text one for one, punctuation
+ * aside; where they don't (a number written as digits, a word the formatter merged), a word is
+ * looked for a few text words ahead, and left unmatched if it isn't there. Matched indices only
+ * ever increase.
  */
-function alignWords(utterance: UtteranceFinalV2): AlignedWord[] {
-  const recognized = utterance.words ?? [];
-  if (recognized.length === 0) return [];
-  const textWords = words(utterance.text);
-  const out: AlignedWord[] = [];
+function alignWords(recognized: readonly Word[], textWords: readonly TextWord[]): number[] {
+  const out: number[] = [];
   let next = 0;
   for (const word of recognized) {
     const key = keyOf(stripEdges(word.w));
+    let found = -1;
     for (let k = next; k < textWords.length && k <= next + ALIGN_LOOKAHEAD; k++) {
-      const textWord = textWords[k];
-      if (textWord && textWord.key === key) {
-        out.push({ word, start: textWord.start, end: textWord.end });
+      if (textWords[k]?.key === key) {
+        found = k;
         next = k + 1;
         break;
       }
     }
+    out.push(found);
   }
   return out;
 }
