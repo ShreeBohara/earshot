@@ -18,7 +18,10 @@ export interface Provider {
   /** What the key unlocks, for the Settings → Keys screen. */
   readonly use: "llm" | "stt" | "llm+speech";
   /** A cheap authenticated GET that succeeds only with a valid key. */
-  readonly validate: { readonly url: string; readonly headers: (key: string) => HeadersInit };
+  readonly validate: {
+    readonly url: string;
+    readonly headers: (key: string) => Readonly<Record<string, string>>;
+  };
 }
 
 export const PROVIDERS: Readonly<Record<ProviderId, Provider>> = {
@@ -97,29 +100,58 @@ export function last4(secret: string): string {
   return trimmed.length <= 4 ? "••••" : trimmed.slice(-4);
 }
 
+/** Why a key didn't validate: a fixed code, never anything the provider sent back. */
+export type ValidationFailure = "rejected" | "rate_limited" | "upstream_error" | "unreachable";
+
 export type ValidationResult =
   | { readonly ok: true; readonly status: number }
-  | { readonly ok: false; readonly status?: number; readonly reason: string };
+  | {
+      readonly ok: false;
+      readonly status?: number;
+      readonly code: ValidationFailure;
+      /** A sentence for the UI, written here; never the provider's own message. */
+      readonly reason: string;
+    };
+
+/** The part of `fetch` that validation uses. The global `fetch` fits it. */
+export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
  * Checks a key against its provider. Runs wherever `fetchImpl` does: in a Worker route that
- * forwards the key for this one request, or in tests with a fake fetch. Never echoes the key.
+ * forwards the key for this one request, or in tests with a fake fetch. Never echoes the key,
+ * and never reads the provider's response body: some providers quote part of the key in their
+ * error text.
  */
 export async function validateKey(
   provider: ProviderId,
   secret: string,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: FetchLike = fetch,
 ): Promise<ValidationResult> {
   const { url, headers } = PROVIDERS[provider].validate;
+  let response: Response;
   try {
-    const response = await fetchImpl(url, { method: "GET", headers: headers(secret.trim()) });
-    if (response.ok) return { ok: true, status: response.status };
-    const reason =
-      response.status === 401 || response.status === 403
-        ? "The provider rejected this key."
-        : `The provider answered ${response.status}.`;
-    return { ok: false, status: response.status, reason };
+    response = await fetchImpl(url, { method: "GET", headers: headers(secret.trim()) });
   } catch {
-    return { ok: false, reason: "Couldn't reach the provider. Check your connection and retry." };
+    return {
+      ok: false,
+      code: "unreachable",
+      reason: "Couldn't reach the provider. Check your connection and retry.",
+    };
   }
+  // Release the connection without reading what the provider wrote.
+  response.body?.cancel().catch(() => {});
+  const { status } = response;
+  if (response.ok) return { ok: true, status };
+  if (status === 401 || status === 403) {
+    return { ok: false, status, code: "rejected", reason: "The provider rejected this key." };
+  }
+  if (status === 429) {
+    return {
+      ok: false,
+      status,
+      code: "rate_limited",
+      reason: "The provider is limiting requests. Wait a minute and retry.",
+    };
+  }
+  return { ok: false, status, code: "upstream_error", reason: `The provider answered ${status}.` };
 }

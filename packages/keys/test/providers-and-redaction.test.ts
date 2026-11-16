@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   containsSecret,
   createRedactingLogger,
+  findSecretFragment,
   isProviderId,
   last4,
   PROVIDER_IDS,
@@ -80,5 +81,51 @@ describe("redaction", () => {
     log.info(`retrying with ${CANARY}`);
     expect(lines).toHaveLength(2);
     for (const line of lines) expect(containsSecret(line, CANARY)).toBe(false);
+  });
+});
+
+describe("validateKey failures", () => {
+  it("classify with fixed codes", async () => {
+    const answer = (status: number) => async () => new Response(`echo ${CANARY}`, { status });
+    const cases = [
+      [401, "rejected"],
+      [403, "rejected"],
+      [429, "rate_limited"],
+      [500, "upstream_error"],
+      [404, "upstream_error"],
+    ] as const;
+    for (const [status, code] of cases) {
+      expect(await validateKey("openai", CANARY, answer(status))).toMatchObject({
+        ok: false,
+        status,
+        code,
+      });
+    }
+    const unreachable = async () => {
+      throw new Error("offline");
+    };
+    expect(await validateKey("openai", CANARY, unreachable)).toMatchObject({
+      ok: false,
+      code: "unreachable",
+    });
+  });
+
+  it("never read the provider's response body, only release it", async () => {
+    const pull = vi.fn();
+    const cancel = vi.fn();
+    const body = new ReadableStream({ pull, cancel }, { highWaterMark: 0 });
+    await validateKey("openai", CANARY, async () => new Response(body, { status: 401 }));
+    expect(pull).not.toHaveBeenCalled();
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+});
+
+describe("findSecretFragment", () => {
+  it("finds any run of eight characters of a secret, and nothing shorter", () => {
+    expect(findSecretFragment("clean text", CANARY)).toBeUndefined();
+    expect(findSecretFragment(`…${CANARY.slice(10, 18)}…`, CANARY)).toBe(CANARY.slice(10, 18));
+    expect(findSecretFragment(`…${CANARY.slice(10, 17)}…`, CANARY)).toBeUndefined();
+    expect(findSecretFragment("the pin is 1234", " 1234 ")).toBe("1234");
+    expect(findSecretFragment("anything", "")).toBeUndefined();
   });
 });
