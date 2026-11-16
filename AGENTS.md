@@ -11,6 +11,7 @@ Earshot v2 is a pnpm + Turborepo monorepo with a Python lab. Read `ROADMAP.md` a
 - `packages/db`: Drizzle schema, migrations, the client, and `withTenant` (row-level security; pgTAP tests in `test/pgtap`)
 - `packages/events`: the session event store: payload registry and upcasters, projections, deterministic replay, JSONL
 - `packages/keys`: AI key handling: on-device storage, the envelope-encrypted vault, validation, and log redaction
+- `packages/voice`: the browser voice runtime: capture and resampling, the speech-to-text adapters, the Debrief engine, the price table and pure machines (`./prices`, `./machines`, no DOM), and fakes (`./testing`); `pnpm test` runs in Node, `pnpm test:browser` in Chromium
 - `packages/demo-crm`: the deterministic demo CRM, with confusable-name groups
 - `packages/tokens`, `packages/ui`: design tokens and components
 - `packages/tsconfig`: shared TypeScript presets
