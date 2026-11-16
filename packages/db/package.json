@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@earshot/events": "workspace:*",
     "@earshot/keys": "workspace:*",
     "@neondatabase/serverless": "catalog:",
     "drizzle-orm": "catalog:"

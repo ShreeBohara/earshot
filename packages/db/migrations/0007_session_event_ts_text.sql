@@ -1,0 +1,2 @@
+ALTER TABLE "session_events" ADD COLUMN "ts_text" text;--> statement-breakpoint
+ALTER TABLE "session_events" ADD CONSTRAINT "session_events_ts_text_check" CHECK ("session_events"."ts_text" is null or "session_events"."ts_text"::timestamptz = "session_events"."ts");

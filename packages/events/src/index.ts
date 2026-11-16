@@ -1,3 +1,5 @@
+// The envelope every store reads and writes, so a store's users need not depend on @earshot/core.
+export type { EventEnvelope } from "@earshot/core";
 export {
   ConcurrencyError,
   EventValidationError,
@@ -27,7 +29,16 @@ export {
   parseEnvelope,
 } from "./registry";
 export { type ProjectionStates, type ReplayOptions, replay } from "./replay";
-export { type EventDraft, type EventStore, InMemoryEventStore, NO_EVENTS } from "./store";
+export {
+  type AppendBatch,
+  checkExpectedLastSeq,
+  checkFromSeq,
+  type EventDraft,
+  type EventStore,
+  InMemoryEventStore,
+  NO_EVENTS,
+  prepareAppend,
+} from "./store";
 export {
   latestVersions,
   type PayloadDefinition,

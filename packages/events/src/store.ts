@@ -43,9 +43,90 @@ export interface EventStore {
   read(sessionId: string, fromSeq?: number): Promise<readonly EventEnvelope[]>;
 }
 
+/** Throws a `RangeError` unless `expectedLastSeq` is an integer >= `NO_EVENTS`. */
+export function checkExpectedLastSeq(expectedLastSeq: number): void {
+  if (!Number.isInteger(expectedLastSeq) || expectedLastSeq < NO_EVENTS) {
+    throw new RangeError(
+      `expectedLastSeq must be an integer >= ${NO_EVENTS}, got ${expectedLastSeq}`,
+    );
+  }
+}
+
+/** Throws a `RangeError` unless `fromSeq` is a non-negative integer. */
+export function checkFromSeq(fromSeq: number): void {
+  if (!Number.isInteger(fromSeq) || fromSeq < 0) {
+    throw new RangeError(`fromSeq must be a non-negative integer, got ${fromSeq}`);
+  }
+}
+
+/** A batch for `prepareAppend`, and what the store knows about the session's log. */
+export interface AppendBatch {
+  sessionId: string;
+  expectedLastSeq: number;
+  /** The seq of the last event in the log, or `NO_EVENTS` when the log is empty. */
+  actualLastSeq: number;
+  events: readonly EventDraft[];
+  /** Ids already in the log. Only ids that appear in `events` need to be in it. */
+  existingIds: ReadonlySet<string>;
+  registry?: EventRegistry;
+}
+
+/**
+ * The checks `append` makes, shared by every store so that they refuse the same batches with the
+ * same errors, in the same order. First the log must end at `expectedLastSeq`
+ * (`ConcurrencyError`). Then, event by event: a writer-chosen `seq` must be the next one
+ * (`ConcurrencyError`), the envelope and the payload must be valid (`EventValidationError`,
+ * `UnknownEventError`), and the id must not be in the session yet (`StreamError`). Returns the
+ * events to store, numbered from `actualLastSeq + 1`, as frozen copies. It has no side effects,
+ * so a store writes all of the result or nothing.
+ */
+export function prepareAppend(batch: AppendBatch): readonly EventEnvelope[] {
+  const { sessionId, expectedLastSeq, actualLastSeq, events } = batch;
+  const registry = batch.registry ?? defaultRegistry;
+  if (expectedLastSeq !== actualLastSeq) {
+    const reason = expectedLastSeq < actualLastSeq ? "stale" : "gap";
+    throw new ConcurrencyError(sessionId, expectedLastSeq, actualLastSeq, reason);
+  }
+
+  const ids = new Set(batch.existingIds);
+  return events.map((draft, index) => {
+    const seq = actualLastSeq + 1 + index;
+    if (draft.seq !== undefined && draft.seq !== seq) {
+      const reason = draft.seq < seq ? "stale" : "gap";
+      throw new ConcurrencyError(
+        sessionId,
+        expectedLastSeq,
+        actualLastSeq,
+        reason,
+        `session ${sessionId}: event ${index} of the batch is numbered ${draft.seq}, but the next seq is ${seq} (${reason})`,
+      );
+    }
+    const event = parseEnvelope(
+      {
+        id: draft.id,
+        sessionId,
+        seq,
+        type: draft.type,
+        schemaVersion: draft.schemaVersion,
+        ts: draft.ts,
+        payload: draft.payload,
+      },
+      `event ${index} of the batch`,
+    );
+    registry.validate(event);
+    if (ids.has(event.id)) {
+      throw new StreamError(`event id ${event.id} is already in session ${sessionId}`);
+    }
+    ids.add(event.id);
+    return deepFreeze(structuredClone(event));
+  });
+}
+
 /**
  * An `EventStore` in memory, for tests, the replay demo, and local sessions. Stored events are
- * frozen copies, so neither the writer nor a reader can change the log after the fact.
+ * frozen copies, so neither the writer nor a reader can change the log after the fact. It is the
+ * reference implementation: `describeEventStoreContract` in `@earshot/events/testing` holds every
+ * store to its behavior.
  */
 export class InMemoryEventStore implements EventStore {
   readonly #registry: EventRegistry;
@@ -60,60 +141,23 @@ export class InMemoryEventStore implements EventStore {
     expectedLastSeq: number,
     events: readonly EventDraft[],
   ): Promise<readonly EventEnvelope[]> {
-    if (!Number.isInteger(expectedLastSeq) || expectedLastSeq < NO_EVENTS) {
-      throw new RangeError(
-        `expectedLastSeq must be an integer >= ${NO_EVENTS}, got ${expectedLastSeq}`,
-      );
-    }
+    checkExpectedLastSeq(expectedLastSeq);
     // Everything below runs synchronously, so concurrent appends can't interleave.
     const log = this.#logs.get(sessionId) ?? [];
-    const actualLastSeq = log.length - 1;
-    if (expectedLastSeq !== actualLastSeq) {
-      const reason = expectedLastSeq < actualLastSeq ? "stale" : "gap";
-      throw new ConcurrencyError(sessionId, expectedLastSeq, actualLastSeq, reason);
-    }
-
-    const ids = new Set(log.map((event) => event.id));
-    const stored = events.map((draft, index) => {
-      const seq = actualLastSeq + 1 + index;
-      if (draft.seq !== undefined && draft.seq !== seq) {
-        const reason = draft.seq < seq ? "stale" : "gap";
-        throw new ConcurrencyError(
-          sessionId,
-          expectedLastSeq,
-          actualLastSeq,
-          reason,
-          `session ${sessionId}: event ${index} of the batch is numbered ${draft.seq}, but the next seq is ${seq} (${reason})`,
-        );
-      }
-      const event = parseEnvelope(
-        {
-          id: draft.id,
-          sessionId,
-          seq,
-          type: draft.type,
-          schemaVersion: draft.schemaVersion,
-          ts: draft.ts,
-          payload: draft.payload,
-        },
-        `event ${index} of the batch`,
-      );
-      this.#registry.validate(event);
-      if (ids.has(event.id)) {
-        throw new StreamError(`event id ${event.id} is already in session ${sessionId}`);
-      }
-      ids.add(event.id);
-      return deepFreeze(structuredClone(event));
+    const stored = prepareAppend({
+      sessionId,
+      expectedLastSeq,
+      actualLastSeq: log.length - 1,
+      events,
+      existingIds: new Set(log.map((event) => event.id)),
+      registry: this.#registry,
     });
-
     this.#logs.set(sessionId, [...log, ...stored]);
     return stored;
   }
 
   async read(sessionId: string, fromSeq = 0): Promise<readonly EventEnvelope[]> {
-    if (!Number.isInteger(fromSeq) || fromSeq < 0) {
-      throw new RangeError(`fromSeq must be a non-negative integer, got ${fromSeq}`);
-    }
+    checkFromSeq(fromSeq);
     return (this.#logs.get(sessionId) ?? []).slice(fromSeq);
   }
 }

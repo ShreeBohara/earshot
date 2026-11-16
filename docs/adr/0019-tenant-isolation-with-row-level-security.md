@@ -25,6 +25,7 @@ Within a workspace there are two more risks. A member who could write `workspace
 - Only `SELECT` on `workspace_members`.
 - Only `SELECT`, and `UPDATE` on the `name` column, on `workspaces`. The app can read and rename its workspace, but can't create or delete one, or change `id`, `created_at`, or any column added later.
 - Only `SELECT` and `INSERT` on `audit_log`, so the app can't change its history.
+- Only `SELECT` and `INSERT` on `session_events`, since migration 0009 revoked `UPDATE` and `DELETE`, so the event log is append-only too (ADR-0020). Deleting a session still deletes its events: `ON DELETE CASCADE` runs as the table's owner, not as the role that deleted the session.
 
 Grants are explicit per table, with no default privileges, so a new table stays closed to the app until a migration opens it. They come last in the migration, after every policy. The owner owns every table and isn't subject to RLS. It runs migrations, seeds, Better Auth, membership changes, and the few reads that span workspaces. `earshot_app` has no privileges on Better Auth's tables.
 
@@ -63,13 +64,14 @@ Tenant tables reference `user` only through `workspace_members`.
 
 **Foreign keys match on `workspace_id`.** Foreign-key checks bypass RLS. With a plain `session_id` key, workspace A could attach a row to B's session if it knew the id. Every reference between tenant tables is composite, `(workspace_id, session_id) → sessions (workspace_id, id)` and so on, so a row can only point inside its own workspace. `proposals.target_entity_id` needs `ON DELETE SET NULL (target_entity_id)`, so that key is hand-written in migration 0004 too.
 
-**Proof: pgTAP in PGlite.** pgTAP (`@electric-sql/pglite-pgtap`) runs inside PGlite, the WebAssembly build of Postgres, with pgvector and pg_trgm, on every CI run and with no database server. A Vitest harness applies the migrations and seeds workspaces A and B with a row in every tenant table. It then runs each `packages/db/test/pgtap/*.sql` file in a fresh copy of that database. A file fails on any `not ok` line, a missing plan, or a plan mismatch, and the failure shows the TAP output. The seven files hold 271 assertions:
+**Proof: pgTAP in PGlite.** pgTAP (`@electric-sql/pglite-pgtap`) runs inside PGlite, the WebAssembly build of Postgres, with pgvector and pg_trgm, on every CI run and with no database server. A Vitest harness applies the migrations and seeds workspaces A and B with a row in every tenant table. It then runs each `packages/db/test/pgtap/*.sql` file in a fresh copy of that database. A file fails on any `not ok` line, a missing plan, or a plan mismatch, and the failure shows the TAP output. The eight files hold 284 assertions:
 
 - **Structure:** the role's attributes, RLS and the exact policies on exactly the tenant tables, the policy text, exact table and column grants, and composite keys.
 - **Reads:** each workspace sees only its own rows, and the other workspace's ids return nothing.
 - **Writes:** inserting or moving a row into B fails, A's updates and deletes of B's rows match nothing or are denied, and A can't point a row at one of B's.
 - **Failing closed:** with no workspace set, or an empty one, the tables are empty and writes fail.
 - **The audit log:** updates, deletes, and `TRUNCATE` are denied.
+- **The event log:** updates, deletes, and `TRUNCATE` of `session_events` are denied, the app's own events included, and deleting a session, member, user, or workspace still removes the events under it.
 - **Membership:** `workspace_members` is isolated and read-only to the app, and Better Auth's tables are closed to it.
 - **Actors:**
   - Sessions and audit entries can't name another member, or nobody.
