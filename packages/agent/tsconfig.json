@@ -1,0 +1,10 @@
+{
+  "extends": "@earshot/tsconfig/base.json",
+  "compilerOptions": {
+    // The source runs in workerd (SessionDO) and Node, so it gets the web platform's globals and
+    // no Node types: a `process` or `Buffer` in src/ fails the typecheck.
+    "lib": ["ES2023", "WebWorker"],
+    "types": []
+  },
+  "include": ["src"]
+}

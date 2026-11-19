@@ -1,0 +1,36 @@
+{
+  "name": "@earshot/agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Earshot's turn extraction: the ProposalExtractor, its Anthropic and Groq adapters on AI SDK 7, evidence by quotation, turn outcomes, usage pricing, and fetch-level cassettes.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts",
+    "./cassettes/*": "./cassettes/*"
+  },
+  "scripts": {
+    "cassettes:gen": "tsx scripts/gen-cassettes.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "catalog:",
+    "@ai-sdk/groq": "catalog:",
+    "@earshot/core": "workspace:*",
+    "ai": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "catalog:",
+    "@earshot/demo-crm": "workspace:*",
+    "@earshot/events": "workspace:*",
+    "@earshot/keys": "workspace:*",
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "jsonc-parser": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
