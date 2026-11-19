@@ -41,3 +41,49 @@ export interface FakeVoice {
 
 /** The query flag that asks for fake mode under `next dev`: `/capture?voice=fake`. */
 export const FAKE_VOICE_PARAM = { name: "voice", value: "fake" } as const;
+
+/**
+ * Fake mode's other query flags: `script=d001` plays an eval debrief instead of the demo session
+ * (the e2e Worker serves its scenario), and `llm=groq` names Groq's cassettes instead of
+ * Anthropic's.
+ */
+export const FAKE_SCRIPT_PARAM = "script";
+export const FAKE_LLM_PARAM = "llm";
+
+/**
+ * Where each scripted line is spoken in the WAV Chrome's fake microphone plays: the renderer's
+ * timing.json (`DebriefTiming` in @earshot/evals), as the fake-microphone eval (e2e/eval) puts it
+ * on the page before the page loads, in `globalThis[FAKE_TIMING_GLOBAL]`. With it, the fake
+ * adapter hears each press's line on the WAV's own timings; without it, each line is spread over
+ * a fixed span from the start of its press.
+ */
+export interface FakeTiming {
+  readonly turns: readonly {
+    readonly text: string;
+    readonly startMs: number;
+    readonly endMs: number;
+    readonly words: readonly {
+      readonly w: string;
+      readonly startMs: number;
+      readonly endMs: number;
+    }[];
+  }[];
+}
+
+export const FAKE_TIMING_GLOBAL = "__earshotFakeTiming";
+
+/**
+ * What the page's fake adapters have received, for the fake-microphone smoke test to read:
+ * `globalThis[FAKE_STATS_GLOBAL]()`. `timing` says whether the lines follow a WAV's timing.json.
+ */
+export interface FakeVoiceStats {
+  readonly timing: "wav" | "fixed";
+  readonly adapters: readonly {
+    readonly samplesReceived: number;
+    readonly bytesReceived: number;
+    readonly finalizes: number;
+    readonly turnsEmitted: number;
+  }[];
+}
+
+export const FAKE_STATS_GLOBAL = "__earshotFakeVoiceStats";

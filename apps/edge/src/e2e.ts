@@ -1,6 +1,6 @@
 // The edge Worker for end-to-end runs and local development without LLM keys (spec WP11 step 4):
-// the same Worker, with turn extraction answered from `@earshot/agent`'s committed cassettes, so
-// nothing reaches a provider. `pnpm --filter @earshot/edge dev:e2e` serves it.
+// the same Worker, with turn extraction answered from committed cassettes, so nothing reaches a
+// provider. `pnpm --filter @earshot/edge dev:e2e` serves it.
 //
 // It also answers `GET /v1/e2e/scenario`: what the capture screen's development-only fake mode
 // must send for the cassettes to answer (spec WP9). A cassette is keyed by the whole LLM request,
@@ -9,15 +9,22 @@
 // endpoint doubles as the fake mode's check that this Worker, and not the production one (which
 // would send the turn to a real provider), is the one listening.
 //
+// Which cassette answers a turn: the eval script (`@earshot/evals`) whose call time the session
+// started with, since every script has its own and the fake-microphone eval starts each session
+// with its script's; otherwise the demo session's, `@earshot/agent`'s.
+//
 // A Worker's entry may export only handlers and classes, so the scenario lives in e2e-scenario.ts.
 //
 // Only development and test runs use this entry; production deploys `src/index.ts`, which never
-// imports `@earshot/agent/testing` (it bundles the cassettes).
+// imports `@earshot/agent/testing` or `@earshot/evals` (they bundle the cassettes), and the
+// bundle check fails if either reaches it.
 
 import { CASSETTES, type Cassette, createCassetteFetch } from "@earshot/agent/testing";
 import type { LlmProvider } from "@earshot/core";
+import { debriefAt } from "@earshot/evals";
+import { evalCassette } from "@earshot/evals/cassettes";
 import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
-import { productionAgent, withFetch } from "./agent";
+import { productionAgent, withTurnFetch } from "./agent";
 import { handleE2eRequest } from "./e2e-scenario";
 import EdgeWorker from "./index";
 import { queueSink } from "./queue";
@@ -34,11 +41,19 @@ export function demoCassette(provider: LlmProvider): Cassette {
   };
 }
 
+/** The cassette for a turn in a session that started at `callTime`: its eval script's, or the demo's. */
+export function turnCassette(provider: LlmProvider, callTime: string): Cassette {
+  const script = debriefAt(callTime);
+  return script ? evalCassette(provider, script.id) : demoCassette(provider);
+}
+
 export class SessionDO extends SessionRuntime {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env, {
       // A fresh cassette fetch per turn, so each turn replays its own interaction.
-      agent: withFetch(productionAgent, (provider) => createCassetteFetch(demoCassette(provider))),
+      agent: withTurnFetch(productionAgent, (provider, turn) =>
+        createCassetteFetch(turnCassette(provider, turn.callTime)),
+      ),
       sink: queueSink(env.FLUSH),
       priceStt,
       priceTableDate: PRICE_TABLE_DATE,

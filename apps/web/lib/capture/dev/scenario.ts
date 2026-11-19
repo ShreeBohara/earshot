@@ -1,6 +1,7 @@
-// Development only (see ../fake.ts): asks the edge Worker for its e2e scenario. Only
-// `wrangler dev src/e2e.ts` answers it, so this doubles as the check that turns go to cassettes
-// rather than to a real provider. app/(app)/capture/page.tsx imports it only under `next dev`.
+// Development only (see ../fake.ts): asks the edge Worker for its e2e scenario: the demo
+// session, or an eval debrief by id. Only `wrangler dev src/e2e.ts` answers it, so this doubles
+// as the check that turns go to cassettes rather than to a real provider.
+// app/(app)/capture/page.tsx imports it only under `next dev`.
 import "server-only";
 import { EntityRef } from "@earshot/core";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -25,9 +26,19 @@ function isScenario(value: unknown): value is FakeScenario {
   );
 }
 
-export async function loadFakeVoiceSetup(): Promise<FakeVoiceSetup> {
+/** Which scenario to ask for: an eval script's id (`d001`), and whose cassettes. */
+export interface ScenarioChoice {
+  readonly script?: string | undefined;
+  readonly llm?: string | undefined;
+}
+
+export async function loadFakeVoiceSetup(choice: ScenarioChoice = {}): Promise<FakeVoiceSetup> {
   const { edgeOrigin } = readSessionConfig(getCloudflareContext().env, "development");
-  const scenarioUrl = `${edgeOrigin.replace(/^ws/, "http")}${SCENARIO_PATH}`;
+  const query = new URLSearchParams();
+  if (choice.script && /^d\d{3}$/.test(choice.script)) query.set("script", choice.script);
+  if (choice.llm === "anthropic" || choice.llm === "groq") query.set("llm", choice.llm);
+  const search = query.size > 0 ? `?${query}` : "";
+  const scenarioUrl = `${edgeOrigin.replace(/^ws/, "http")}${SCENARIO_PATH}${search}`;
   try {
     const response = await fetch(scenarioUrl, {
       cache: "no-store",
