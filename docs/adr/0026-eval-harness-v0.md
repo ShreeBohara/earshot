@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-19). The first half of WP11 is built: the scripts, the renderer, the CI render and cache step, and the cassettes. The second half adds the fake-microphone Playwright project, the smoke test, the eval wiring, the baselines, and the live workflow, then marks this ADR accepted.
+Accepted (2026-11-19). The first half of WP11 built the scripts, the renderer, the CI render and cache step, and the cassettes. The second half built the fake-microphone Playwright projects and the smoke test, the `ui` and `eval` wiring, the report and baselines, and the live workflow. What only CI's first runs on Kokoro WAVs can confirm is listed under More information.
 
 ## Context and problem
 
@@ -114,7 +114,46 @@ Phase 3's gate needs the fake-microphone end-to-end test running in CI (G3), and
 
   On a miss, it runs `uv sync --project lab --group tts` and renders with `--prune`. Its outputs are the WAV directory, the manifest, and whether the cache hit.
 - The `eval-render` workflow runs the action. It's `workflow_dispatch` only, so it never touches a required job, and it can upload the WAVs as an artifact.
+- `ci`'s required `ui` job and the `eval` workflow call the same action before they play the WAVs.
 - Every Action is pinned to a full commit SHA.
+
+### The fake-microphone eval
+
+- Two Playwright projects in `apps/web`, both on the zero-setup `next dev` and the e2e edge Worker (`wrangler dev src/e2e.ts`) that the `capture` project already starts:
+  - `capture-smoke` (`e2e/eval/capture-smoke.spec.ts`) plays d001's first turn. It checks that an `AnalyserNode` on the captured track measures a non-zero RMS, that PCM reached the fake speech-to-text adapter, and that the adapter heard the whole line.
+  - `capture-eval` (`e2e/eval/capture-eval.spec.ts`) depends on it, so it doesn't run when the smoke test fails. It has one test per script.
+- **One browser per WAV.** Chrome's fake microphone file is fixed at launch: `--use-file-for-fake-audio-capture=<abs>.wav%noloop`, with `--use-fake-device-for-media-stream` and `--use-fake-ui-for-media-stream`. The default headless shell plays it. `EARSHOT_EVAL_CHANNEL=chromium` switches to new headless, should a runner need it (spec §8).
+- **The WAV's clock.** Chrome starts the file when getUserMedia opens it. Locally, over all 30 scripts, the first turn's speech reached the page between 27 ms before and 90 ms after timing.json's offset (median 68 ms), counting from getUserMedia's resolution. An init script wraps getUserMedia to note that moment. It also hangs an `AnalyserNode` on the track, for the RMS and the speech onset, and reads the track's settings.
+- **Each run:**
+  1. It signs up a new user in zero-setup mode and loads the demo CRM.
+  2. It opens `/capture?voice=fake&script=<id>`.
+  3. It clicks Start, a user gesture, so the `AudioContext` starts.
+  4. It holds Space from 250 ms before each turn's `startMs` to 200 ms after its `endMs`, on that clock. A press that comes late, because the engine wasn't ready, is held as long as an on-time one, and its lateness goes in the result.
+- **The session context.** `GET /v1/e2e/scenario?script=<id>` serves the script's scenario: `DEMO_SESSION_ENTITIES`, `startedAt` equal to the script's call time, and its time zone. SessionDO takes the call time from `start.startedAt`.
+  - The e2e Worker answers each turn from `evalCassette(provider, scriptId)`. It finds the script by the session's call time with `debriefAt`; every script has its own call time, and a test checks it. Other sessions get the demo cassettes.
+  - `withTurnFetch` picks the cassette when the turn runs, from its session context. The extractor SessionDO built, which checked the model, is rebuilt with the turn's `fetch`.
+- **The fake adapter follows the WAV.** The test puts the script's timing.json on the page as `__earshotFakeTiming`. The fake voice checks that it says the scenario's lines, then feeds each turn's text, offsets, and words to the fake adapter on its `presses` timeline.
+- **Results come off the session socket.** Every event SessionDO commits is sent to the client, so the test reads `turn.completed`, `proposal.created`, and `turn.measured` from the socket's frames, with no hook in the app. The same reading works against any stack, live runs included.
+- **What a run must show:**
+  - each turn ends as `proposals`, or as `nothing_to_propose` when it expects none;
+  - each proposal, in order, has the expected type, demo CRM target id, and `KEY_FIELDS` exactly;
+  - the transcript is the script's text, word for word (CI only);
+  - every turn with a card has its `turn.measured`.
+- **Each run records:**
+  - its latency stages, from `turn.measured`: end of speech (the release) to the last final, to the first proposal, to its card's paint;
+  - whether the browser's audio processing was on. The app asks for echo cancellation, noise suppression, and auto gain; Chromium advises them off for injected files, and the eval records rather than changes them;
+  - the speech onset, and each press's lateness.
+- **The report.** A Playwright reporter writes each run's results as one report: p50 and p95 (nearest rank, always a measured value), max, and a row per script. `pnpm --filter @earshot/evals eval:report` merges shards' reports, writes the Markdown to the job summary, and compares it with the baseline.
+- **Baselines are written on purpose.** `pnpm --filter @earshot/evals baseline:update <report.json>` writes `packages/evals/baselines/ci.json`. It takes only a whole run, all 30 scripts as scripted, on Kokoro WAVs. `--live` writes `baselines/live-<date>.json`, per provider pair. CI never writes either. The CI numbers come from `next dev` with fakes, so they track the pipeline's own overhead (G1a), not what a rep feels (G1b).
+- **`--stub`** (`render_debriefs.py --stub`) is **not for evaluation.** It renders a tone per word where timing.json puts the word, so the plumbing can be checked without the model. Stub renders go to `lab/.cache/wavs-stub`, never into Kokoro's directory. Their manifest names the pseudo model file `STUB-TONES-NOT-FOR-EVALUATION`, which CI's eval and both baselines refuse.
+
+### Where it runs
+
+| Where | What | When |
+|---|---|---|
+| `ci` › `ui` (required, 30 min) | The smoke test, then d001, d010, d016, d025, d030 | Every PR, and pushes to main |
+| `eval` | The smoke test and all 30, in 4 shards of one browser at a time, then a job that merges the reports. Its `--check` fails unless every script ran and passed. | PRs that touch the voice, agent, core, edge, capture, or eval code, the WAV inputs, the lockfile, or the workflow (a `changes` job decides, so a required `eval` check passes when skipped); nightly on main; by hand |
+| `eval-live` | All 30 on real providers, per pair | Only when `EVAL_LIVE_ENABLED` is `true`: nightly, or by hand |
 
 ### Cost policy
 
@@ -123,11 +162,13 @@ Phase 3's gate needs the fake-microphone end-to-end test running in CI (G3), and
   - The eval job will use the fake speech-to-text adapter and these cassettes. A cassette `fetch` throws on any request it can't answer, rather than reaching the network.
   - A test checks that the cassettes hold nothing key-shaped.
 - **Live runs are gated.** Only `eval-live` uses live keys:
-  - it's off unless `EVAL_LIVE_ENABLED` is `true`;
-  - its secrets are scoped to the `eval-live` environment;
-  - a budget guard refuses to start above `EVAL_LIVE_BUDGET_USD`;
-  - traces, video, and HAR are off;
-  - its recorded cassettes are saved as artifacts, to review before committing.
+  - it's off unless `EVAL_LIVE_ENABLED` is `true`, and never runs on pull requests;
+  - its secrets (`EVAL_ASSEMBLYAI_KEY`, `EVAL_DEEPGRAM_KEY`, `EVAL_ANTHROPIC_KEY`, `EVAL_GROQ_KEY`) are scoped to the `eval-live` environment;
+  - a budget guard (`pnpm --filter @earshot/evals eval:budget`) refuses to start above `EVAL_LIVE_BUDGET_USD`, default $1.00. It prices each fixture on each pair from the price table: socket time is the WAV plus 25 s, and each turn is 4,000 input and 400 output tokens, against the cassettes' 3,600 and 90 to 140. Then it adds a quarter. All 30 scripts on the four pairs come to about $0.90 on stub-length audio (13 minutes), inside the default; Kokoro's real durations decide;
+  - traces, video, screenshots, and HAR are off, since a key is typed into Settings → Keys;
+  - sessions on AssemblyAI open at most 5 new streams a minute, its free tier's limit;
+  - the page's clock is pinned to the script's call time (`page.clock.setFixedTime`) and its time zone, so the expected dates still hold;
+  - the report and a draft `live-<date>.json` are saved as artifacts, to review before committing.
 
 ## Consequences
 
@@ -147,10 +188,14 @@ Phase 3's gate needs the fake-microphone end-to-end test running in CI (G3), and
 ## More information
 
 - Phase 3 build spec, WP11. Research notes: `capture_llm_eval.md` §5 (local TTS) and §6 (Chrome's fake microphone).
-- Left for the second half:
-  - the `capture-eval` Playwright project and the smoke test;
-  - `apps/edge/src/e2e.ts` with the cassette extractor, the eval and `ui` job wiring, and the baselines;
-  - `eval-live` and its budget guard.
+- To check on the first `ui` and `eval` runs on Kokoro WAVs:
+  - that the headless shell plays the file on GitHub's runners (locally it does, on macOS; spec §8);
+  - that the first turn's speech arrives within about 100 ms of timing.json's offset, as it does locally;
+  - that noise suppression and auto gain don't stop Kokoro's speech registering on the `AnalyserNode`;
+  - the shards' wall time, and the baseline. `baselines/ci.json` is recorded from the first green `eval` run's `eval-report` artifact, not from local stub runs.
+- Not built yet:
+  - saving the live run's raw provider responses as cassettes, which needs a recording entry on the edge Worker;
+  - running `eval-live` against a production build, which needs a deployed stack (spec §6). Until then it runs `next dev` with the production edge entry.
 - To check on the first `eval-render` run:
   - how fast Kokoro renders on the runners;
   - that phonemization works without apt;

@@ -63,6 +63,18 @@ Fake mode sends `start` with the scenario's entities, call time, and time zone i
 
 End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts`. The capture tests (`e2e/capture/`) also start the e2e edge Worker on port 8787, and give Chrome a fake microphone. They cover a keyboard-only debrief, the live region, reduced motion, the docked session across pages, and press-to-feedback under 200 ms: `pnpm --filter @earshot/web exec playwright test e2e/capture`. The reduced-motion test compares pixels only against a baseline for your platform. Where there's none (CI's Linux has none yet), it runs its motion checks and skips the pixels. Record a baseline with `--update-snapshots`. `e2e/keys.spec.ts` signs up a new user with the magic link the server prints, which it reads from `apps/web/.data/e2e/dev-server.log`, so it needs zero-setup mode: with a `.dev.vars` file present, wrangler ignores the port the tests set for `BETTER_AUTH_URL`. Move the file aside while it runs. The health check in `e2e/smoke.spec.ts` needs a deployed stack, so it runs only against previews (set `BASE_URL`).
 
+### The fake-microphone eval
+
+`e2e/eval/` plays the 30 eval debriefs (`packages/evals/debriefs/`) as WAVs through Chrome's fake microphone into the capture screen, one browser per WAV, on the same fake mode and e2e Worker, and checks every turn's proposals against its script ([ADR-0026](docs/adr/0026-eval-harness-v0.md)). A smoke test runs first, and the eval doesn't run if it fails. CI plays Kokoro's WAVs. Locally, without downloading the model, render stub tones instead. They check the plumbing only, are **not an evaluation**, and CI refuses them:
+
+```sh
+uv run --project lab python lab/scripts/render_debriefs.py --stub
+cd apps/web
+EARSHOT_EVAL_WAVS=lab/.cache/wavs-stub EARSHOT_EVAL_SCRIPTS=d001,d010 pnpm exec playwright test --project=capture-eval --workers=1
+```
+
+Leave out `EARSHOT_EVAL_SCRIPTS` for all 30, about 15 minutes in real time. The run prints a report, with latency p50 and p95 from each turn's `turn.measured`, and writes it to `apps/web/.data/eval/report.json`. With Kokoro's WAVs in `lab/.cache/wavs` (`uv sync --project lab --group tts`, then `render_debriefs.py` without `--stub`), leave out `EARSHOT_EVAL_WAVS`. `packages/evals/baselines/ci.json` is written on purpose, from a green CI `eval` run's `eval-report` artifact: `pnpm --filter @earshot/evals baseline:update <report.json>`.
+
 ## Commands
 
 | Task | Command |
@@ -73,6 +85,7 @@ End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm -
 | Test | `pnpm test` |
 | End-to-end tests (Playwright and axe) | `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts e2e/capture` |
 | A debrief with no keys | `pnpm --filter @earshot/edge dev:e2e` and `pnpm --filter @earshot/web dev`, then `/capture?voice=fake` |
+| The fake-microphone eval, on stub WAVs | `uv run --project lab python lab/scripts/render_debriefs.py --stub`, then in `apps/web`: `EARSHOT_EVAL_WAVS=lab/.cache/wavs-stub pnpm exec playwright test --project=capture-eval --workers=1` |
 | Build | `pnpm build` |
 | Regenerate contracts | `pnpm contracts:gen` |
 | Storybook (`@earshot/ui`, plus the web app's stories) | `pnpm --filter @earshot/ui storybook` |

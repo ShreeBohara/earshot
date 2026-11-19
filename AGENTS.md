@@ -13,10 +13,10 @@ Earshot v2 is a pnpm + Turborepo monorepo with a Python lab. Read `ROADMAP.md` a
 - `packages/keys`: AI key handling: on-device storage, the envelope-encrypted vault, validation, and log redaction
 - `packages/voice`: the browser voice runtime: capture and resampling, the speech-to-text adapters, the Debrief engine, the client session runtime (`./session`: `SessionClient` and the store the screen subscribes to), the price table and pure machines (`./prices`, `./machines`, no DOM), and fakes, including an in-memory SessionDO (`./testing`); `pnpm test` runs in Node, `pnpm test:browser` in Chromium
 - `packages/demo-crm`: the deterministic demo CRM, with confusable-name groups
-- `packages/evals`: eval harness v0: 30 debrief scripts with ground truth (`debriefs/`), their schema and coverage rules, the session context their cassettes are keyed on, and the cassettes for both LLM adapters (`@earshot/evals/cassettes`; regenerate with `pnpm --filter @earshot/evals cassettes:gen`)
+- `packages/evals`: eval harness v0: 30 debrief scripts with ground truth (`debriefs/`), their schema and coverage rules, the session context their cassettes are keyed on, the cassettes for both LLM adapters (`@earshot/evals/cassettes`; regenerate with `pnpm --filter @earshot/evals cassettes:gen`), and the fake-microphone eval's turn checks, report, baselines (`baseline:update`), and live budget guard. The eval itself is `apps/web/e2e/eval/` (the `capture-smoke` and `capture-eval` Playwright projects)
 - `packages/tokens`, `packages/ui`: design tokens and components
 - `packages/tsconfig`: shared TypeScript presets
-- `lab/`: Python 3.13 (uv): generated Pydantic contracts, tests, experiments, and the Kokoro renderer for the eval WAVs (`scripts/render_debriefs.py`, in the `tts` group)
+- `lab/`: Python 3.13 (uv): generated Pydantic contracts, tests, experiments, and the Kokoro renderer for the eval WAVs (`scripts/render_debriefs.py`, in the `tts` group; `--stub` renders tones for local plumbing checks, never for evaluation)
 
 ## Commands
 
