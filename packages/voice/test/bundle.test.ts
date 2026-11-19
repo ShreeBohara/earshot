@@ -6,6 +6,11 @@ import { fileURLToPath } from "node:url";
 import { build, type Metafile } from "esbuild";
 import { describe, expect, it } from "vitest";
 
+/** Escapes every character with a meaning in a regular expression, backslash included. */
+function escapeRegExp(text: string): string {
+  return text.replace(/[\\^$.*+?()[\]{}|/]/g, "\\$&");
+}
+
 const root = fileURLToPath(new URL("..", import.meta.url));
 const LAZY =
   /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(?:@ricky0123\/vad-web|onnxruntime-web|onnxruntime-common)\//;
@@ -50,9 +55,7 @@ describe("the browser bundle", () => {
     // The entry reaches the lazy chunk only through a dynamic import.
     const entryText = result.outputFiles.find((file) => file.path.endsWith(entryName))?.text ?? "";
     const lazyFile = path.basename(lazy[0]?.[0] ?? "");
-    expect(entryText).toMatch(
-      new RegExp(`import\\(\\s*"\\./${lazyFile.replace(/[.]/g, "\\.")}"\\s*\\)`),
-    );
-    expect(entryText).not.toMatch(new RegExp(`from\\s*"\\./${lazyFile.replace(/[.]/g, "\\.")}"`));
+    expect(entryText).toMatch(new RegExp(`import\\(\\s*"\\./${escapeRegExp(lazyFile)}"\\s*\\)`));
+    expect(entryText).not.toMatch(new RegExp(`from\\s*"\\./${escapeRegExp(lazyFile)}"`));
   }, 60_000);
 });

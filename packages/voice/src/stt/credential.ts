@@ -36,7 +36,11 @@ export function providerSocketUrl(
       retryable: false,
     });
   }
-  url.pathname = `${url.pathname.replace(/\/+$/, "")}${path}`;
+  // Trim trailing slashes by scanning back once: a regex like /\/+$/ backtracks on long runs of "/".
+  const base = url.pathname;
+  let end = base.length;
+  while (end > 0 && base.charCodeAt(end - 1) === 0x2f) end -= 1;
+  url.pathname = `${base.slice(0, end)}${path}`;
   url.hash = "";
   return url;
 }
