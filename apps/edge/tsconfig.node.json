@@ -1,0 +1,6 @@
+{
+  // The parts that also run in Node: the flush consumer and its PGlite tests, and the Vitest config.
+  // No Workers types here, so nothing in src/flush.ts can lean on a Workers global.
+  "extends": "@earshot/tsconfig/node.json",
+  "include": ["src/flush.ts", "test/node", "vitest.config.ts"]
+}

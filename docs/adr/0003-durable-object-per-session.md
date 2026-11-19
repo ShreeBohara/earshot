@@ -36,4 +36,6 @@ The Durable Objects live in `apps/edge`, a Hono Worker deployed separately from 
 
 ## More information
 
-Phase 1 ships only a skeleton: `/health` calls a `ping()` method that counts calls in the object's SQLite table. The real `SessionDO` arrives in Phase 3.
+Phase 1 shipped only a skeleton: `/health` calls a `ping()` method that counts calls in the object's SQLite table.
+
+**Phase 3 (2026-11-19).** The real `SessionDO` is built: ADR-0024 has the protocol, the SQLite log, resume, turns, the cost meter, the Queue flush, and cleanup. Auth is in two places: the edge Worker checks the session ticket (ADR-0023) and the `Origin`, and `SessionDO` pins the first ticket's user and workspace and spends each ticket once. Per-user rate limits for creating sessions live in the web app (ADR-0023); `SessionDO` enforces per-session limits.

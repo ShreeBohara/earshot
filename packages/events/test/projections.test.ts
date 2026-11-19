@@ -201,12 +201,13 @@ describe("the Phase 3 event types", () => {
     expect(withThem.session).toEqual({ ...without.session, lastSeq: 5, lastEventAt: tsFor(5) });
   });
 
-  it("may follow session.ended, as the final usage record does", () => {
-    const log = sessionLog([started(), utterance(1), ended(), usageRecorded(2)]);
+  it("may follow session.ended, and a late usage record adds to the session's cost", () => {
+    // session.ended's total (0.004) already holds earlier usage; the late record (0.0003) adds.
+    const log = sessionLog([started(), usageRecorded(1), utterance(1), ended(), usageRecorded(2)]);
     expect(replay(log, defaultProjections).session).toMatchObject({
       status: "ended",
-      costUsd: 0.004,
-      lastSeq: 3,
+      costUsd: 0.0043,
+      lastSeq: 4,
     });
   });
 });

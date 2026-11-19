@@ -22,7 +22,8 @@ export interface SessionView {
 /**
  * Folds `session.started` and `session.ended` into a `SessionView`; `null` until the session
  * starts. A session log must open with `session.started`. Events may follow `session.ended`,
- * because reviews and late transcripts often land after capture stops.
+ * because reviews and late transcripts often land after capture stops; `usage.recorded` after the
+ * end adds to the session's cost.
  */
 export const sessionProjection: Projection<SessionView | null> = {
   initial: null,
@@ -60,6 +61,21 @@ export const sessionProjection: Projection<SessionView | null> = {
         lastEventAt: event.ts,
       };
     }
+    if (event.type === "usage.recorded" && state.status === "ended") {
+      // Usage reported after the end (a speech-to-text socket that closed late) adds to the
+      // total session.ended recorded; before the end, session.ended's total already includes it.
+      return {
+        ...state,
+        costUsd: roundUsd((state.costUsd ?? 0) + event.payload.costUsd),
+        lastSeq: event.seq,
+        lastEventAt: event.ts,
+      };
+    }
     return { ...state, lastSeq: event.seq, lastEventAt: event.ts };
   },
 };
+
+/** Rounds to a billionth of a dollar, as SessionDO's meter does, so sums stay exact enough. */
+function roundUsd(usd: number): number {
+  return Math.round(usd * 1e9) / 1e9;
+}

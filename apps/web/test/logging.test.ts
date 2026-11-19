@@ -148,6 +148,7 @@ describe("Better Auth's own error logging, end to end", () => {
       ),
       db,
       log,
+      purgeSessions: async () => {},
       sendMagicLink: async () => {
         throw new Error(`could not send ${SESSION_TOKEN} to ${EMAIL} with ${PROVIDER_KEY}`);
       },

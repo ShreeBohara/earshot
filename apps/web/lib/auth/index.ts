@@ -3,6 +3,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb, requestScopedDb } from "../db";
 import { createLogger } from "../log";
 import { MODE, readAuthConfig, secretValues } from "./config";
+import { purgeSessionsViaEdge } from "./edge";
 import { type Auth, createAuth } from "./server";
 
 export type { Auth } from "./server";
@@ -33,6 +34,7 @@ export async function getAuth(): Promise<Auth> {
     config: readAuthConfig(getCloudflareContext().env, MODE),
     db: requestScopedDb,
     log,
+    purgeSessions: purgeSessionsViaEdge(log),
   });
   return auth;
 }

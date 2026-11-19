@@ -46,6 +46,8 @@ type TestAuthOptions = {
   log?: Logger;
   rateLimit?: boolean;
   fetch?: AuthDeps["fetch"];
+  /** What account deletion calls to purge session storage; by default it does nothing. */
+  purgeSessions?: AuthDeps["purgeSessions"];
 };
 
 /** A Better Auth instance wired like the app's, against a test database. */
@@ -57,6 +59,7 @@ export function testAuth({
   log = memoryLogger(),
   rateLimit = false,
   fetch,
+  purgeSessions = async () => {},
 }: TestAuthOptions): Auth {
   return createAuth({
     config: readAuthConfig(
@@ -66,6 +69,7 @@ export function testAuth({
     db,
     log,
     rateLimit,
+    purgeSessions,
     ...(outbox ? { sendMagicLink: async (message) => void outbox.push(message) } : {}),
     ...(fetch ? { fetch } : {}),
   });

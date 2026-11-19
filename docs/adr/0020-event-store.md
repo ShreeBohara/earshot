@@ -83,7 +83,7 @@ The session check comes before the insert, not from the foreign key, because Pos
 
 Migration 0008 lets the tables hold the projections exactly: `utterances.ts`; `utterances.words` made nullable, because null (the provider sent no timings) differs from `[]`; `utterances.confidence` widened from `real`, which keeps about seven significant digits, to `double precision`; and `proposals.seq`, `reviewed_seq`, and `reviewed_at`. `proposals.created_at` holds the `proposal.created` timestamp and `updated_at` the latest review's. Risk flags go into the existing `text[]` as `kind`, or `kind:field` for a flag on one field. Two values are adjusted: a target entity that isn't in the workspace's CRM mirror is stored as null, as `ON DELETE SET NULL` would leave it, and a missing cost is stored as `cost_usd` 0, rounded to four places like any cost. Tests check that the demo session's rows read back as `demo-session.projections.json`, and that deleting the rows and rebuilding restores them exactly.
 
-**What Phase 3's `SessionDO` flush calls.** One transaction per batch:
+**What Phase 3's `SessionDO` flush calls.** As built (2026-11-19), the flush is `flushBatch` in `apps/edge/src/flush.ts`, and ADR-0024 has the whole design, including how it tells a lost ack from a second writer and repairs a gap from the Durable Object. The plan below is what it follows. One transaction per batch:
 
 ```ts
 await withTenant(db, { userId, workspaceId }, async (tx) => {

@@ -2,7 +2,12 @@
 // isolate (lib/auth/index.ts) and tests build their own against PGlite. No Next or Cloudflare
 // imports here beyond Better Auth's own Next cookie plugin, which no-ops outside a request.
 import { passkey } from "@better-auth/passkey";
-import { deleteSoleMemberWorkspaces, ensureWorkspace, schema } from "@earshot/db";
+import {
+  deleteSoleMemberWorkspaces,
+  ensureWorkspace,
+  schema,
+  soleMemberWorkspaceSessionIds,
+} from "@earshot/db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
@@ -50,11 +55,19 @@ export const RATE_LIMIT_RULES = {
   "/delete-user": { window: 600, max: 5 },
 } as const;
 
+/**
+ * Deletes the Durable Object storage of these capture sessions (the edge Worker's RPC
+ * `purgeSessions`, lib/auth/edge.ts). Resolves once every session is purged; throws otherwise.
+ */
+export type PurgeSessions = (sessionIds: readonly string[]) => Promise<void>;
+
 export type AuthDeps = {
   config: AuthConfig;
   /** The owner connection. In the app it resolves to the current request's pool on every use. */
   db: AppDb;
   log: Logger;
+  /** Purges deleted sessions' Durable Object storage before an account's rows go. */
+  purgeSessions: PurgeSessions;
   /** Replaces the sender built from `config` (tests). */
   sendMagicLink?: SendMagicLink;
   /** For Resend (tests replace it). */
@@ -63,7 +76,15 @@ export type AuthDeps = {
   rateLimit?: boolean;
 };
 
-export function createAuth({ config, db, log, sendMagicLink, fetch, rateLimit }: AuthDeps) {
+export function createAuth({
+  config,
+  db,
+  log,
+  purgeSessions,
+  sendMagicLink,
+  fetch,
+  rateLimit,
+}: AuthDeps) {
   const limited = rateLimit ?? config.mode === "production";
   const send =
     sendMagicLink ??
@@ -96,6 +117,20 @@ export function createAuth({ config, db, log, sendMagicLink, fetch, rateLimit }:
         // Delete the workspaces only this user belongs to first (cascading their tenant data);
         // deleting the user then cascades their sessions, accounts, passkeys, and memberships.
         beforeDelete: async (user) => {
+          // A session's Durable Object keeps its own copy of the log until Postgres confirms it,
+          // and a deleted session never can be: purge that storage first. If the purge fails,
+          // stop before anything is deleted, so the user can simply try again.
+          const sessionIds = await soleMemberWorkspaceSessionIds(db, user.id);
+          try {
+            await purgeSessions(sessionIds);
+          } catch (error) {
+            log.error("account deletion stopped: purging session storage failed", { error });
+            throw new APIError("SERVICE_UNAVAILABLE", {
+              code: "PURGE_FAILED",
+              message:
+                "We couldn't finish deleting your session data. Nothing was deleted; try again in a minute.",
+            });
+          }
           await deleteSoleMemberWorkspaces(db, user.id);
         },
       },

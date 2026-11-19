@@ -1,0 +1,17 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars. Placeholders only below.
+#
+# Zero-setup mode: with every line commented out, `pnpm dev` verifies session tickets with the
+# development-only secret `next dev` signs them with, accepts sockets from http://localhost:3000
+# (WEB_ORIGIN in wrangler.jsonc), and the flush consumer skips Postgres: each session's events stay
+# in its Durable Object.
+
+# Session tickets (docs/adr/0023). The same value as the web app's; at least 32 random bytes
+# (`openssl rand -base64 32`). Required outside development.
+# EARSHOT_SESSION_TICKET_SECRET=replace-with-at-least-32-random-bytes
+
+# The flush consumer's database: the pooled connection string of your personal Neon branch.
+# DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=require
+
+# Optional: send LLM calls through Cloudflare AI Gateway (turn its logs off in its settings).
+# AI_GATEWAY_ACCOUNT_ID=your-account-id
+# AI_GATEWAY_ID=your-gateway-id

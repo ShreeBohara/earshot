@@ -26,6 +26,7 @@ import {
   crmConnections,
   passkey,
   session,
+  sessions,
   user,
   workspaceMembers,
   workspaces,
@@ -93,6 +94,43 @@ export async function deleteSoleMemberWorkspaces<
   TSchema extends TablesRelationalConfig,
 >(db: AnyPgDatabase<TQueryResult, TFullSchema, TSchema>, userId: string): Promise<string[]> {
   if (!userId) throw new TypeError("deleteSoleMemberWorkspaces: a user id is required");
+  const deleted = await db
+    .delete(workspaces)
+    .where(soleMemberWorkspaceFilter(db, userId))
+    .returning({ id: workspaces.id });
+  return deleted.map((row) => row.id);
+}
+
+/**
+ * The ids of every capture session in the workspaces `userId` is the only member of: the
+ * sessions that deleting their account deletes. Account deletion purges these sessions' Durable
+ * Object storage first, because a session's object keeps its own copy of the log until Postgres
+ * confirms it, and a deleted session never can be. Runs on the owner connection.
+ */
+export async function soleMemberWorkspaceSessionIds<
+  TQueryResult extends PgQueryResultHKT,
+  TFullSchema extends Record<string, unknown>,
+  TSchema extends TablesRelationalConfig,
+>(db: AnyPgDatabase<TQueryResult, TFullSchema, TSchema>, userId: string): Promise<string[]> {
+  if (!userId) throw new TypeError("soleMemberWorkspaceSessionIds: a user id is required");
+  const soleWorkspaces = db
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(soleMemberWorkspaceFilter(db, userId));
+  const rows = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(inArray(sessions.workspaceId, soleWorkspaces))
+    .orderBy(asc(sessions.id));
+  return rows.map((row) => row.id);
+}
+
+/** `workspaces` rows `userId` belongs to with no other member, as a where clause on `workspaces`. */
+function soleMemberWorkspaceFilter<
+  TQueryResult extends PgQueryResultHKT,
+  TFullSchema extends Record<string, unknown>,
+  TSchema extends TablesRelationalConfig,
+>(db: AnyPgDatabase<TQueryResult, TFullSchema, TSchema>, userId: string) {
   const memberships = db
     .select({ workspaceId: workspaceMembers.workspaceId })
     .from(workspaceMembers)
@@ -103,11 +141,7 @@ export async function deleteSoleMemberWorkspaces<
     .where(
       and(eq(workspaceMembers.workspaceId, workspaces.id), ne(workspaceMembers.userId, userId)),
     );
-  const deleted = await db
-    .delete(workspaces)
-    .where(and(inArray(workspaces.id, memberships), notExists(otherMembers)))
-    .returning({ id: workspaces.id });
-  return deleted.map((row) => row.id);
+  return and(inArray(workspaces.id, memberships), notExists(otherMembers));
 }
 
 /** The JSON document `GET /api/account/export` returns. */
