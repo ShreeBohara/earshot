@@ -2,6 +2,15 @@
 // Never import it from production code; the web app's bundle check fails if FAKE_STT_MARKER
 // turns up in a production bundle.
 export { FakeCaptureSource } from "./fake-capture";
+export { FakePageLifecycle } from "./fake-page";
+export {
+  type FakeProposal,
+  FakeSessionConnection,
+  FakeSessionServer,
+  type FakeSessionServerOptions,
+  type FakeSessionTicket,
+  type FakeTurn,
+} from "./fake-session-server";
 export { FakeServerSocket, FakeSocketServer, settle } from "./fake-socket";
 export {
   createFakeSttAdapter,
