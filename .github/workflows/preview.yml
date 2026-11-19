@@ -1,7 +1,8 @@
 name: preview
 
-# A full stack per PR: earshot-edge-pr-N + earshot-web-pr-N Workers and a Neon branch
-# preview/pr-N forked from the seed-only `dev` branch (docs/adr/0017). Torn down by
+# A full stack per PR: earshot-edge-pr-N + earshot-web-pr-N Workers, the edge Worker's
+# earshot-flush-pr-N queues, and a Neon branch preview/pr-N forked from the seed-only `dev`
+# branch (docs/adr/0017). Torn down by
 # preview-cleanup.yml when the PR closes; janitor.yml and Neon branch expiry are backstops.
 
 on:
@@ -67,11 +68,34 @@ jobs:
       - name: Render this PR's wrangler configs (BETTER_AUTH_URL and EDGE_PUBLIC_URL are the preview's own origins)
         run: pnpm --filter @earshot/scripts exec tsx render-wrangler.ts --target "pr-$PR" --sha "$SHA" --workers-subdomain "$SUBDOMAIN"
 
-      - name: Deploy the edge Worker (it owns the Durable Objects, so it goes first)
+      # The edge Worker produces to and consumes this PR's own flush queues (docs/adr/0024), and
+      # its deploy fails if they don't exist. Idempotent, so the next push's run passes too. The
+      # CI token needs Queues edit access; preview-cleanup.yml deletes the queues with the PR.
+      - name: Create this PR's flush queues
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         working-directory: apps/edge
-        run: pnpm exec wrangler deploy --config "wrangler.pr-$PR.jsonc"
+        run: |
+          for queue in "earshot-flush-pr-$PR" "earshot-flush-pr-$PR-dlq"; do
+            pnpm exec wrangler queues info "$queue" > /dev/null 2>&1 || pnpm exec wrangler queues create "$queue"
+          done
+
+      # The session socket fails closed without EARSHOT_SESSION_TICKET_SECRET (the same value the
+      # web Worker signs with), and the flush consumer skips Postgres without DATABASE_URL, this
+      # PR's Neon branch. WEB_ORIGIN is a var, rendered above. Empty values are dropped.
+      - name: Deploy the edge Worker with its secrets (it owns the Durable Objects, so it goes first)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DB_URL: ${{ steps.neon.outputs.db_url_pooled }}
+          TICKET_SECRET: ${{ secrets.EARSHOT_SESSION_TICKET_SECRET }}
+        working-directory: apps/edge
+        run: |
+          umask 077
+          jq -n --arg u "$DB_URL" --arg t "$TICKET_SECRET" \
+            '{DATABASE_URL: $u, EARSHOT_SESSION_TICKET_SECRET: $t} | with_entries(select(.value != ""))' \
+            > "$RUNNER_TEMP/edge.secrets.json"
+          pnpm exec wrangler deploy --config "wrangler.pr-$PR.jsonc" --secrets-file "$RUNNER_TEMP/edge.secrets.json"
+          rm -f "$RUNNER_TEMP/edge.secrets.json"
 
       - name: Build the web Worker (next build, then the OpenNext bundle)
         run: pnpm turbo run build:worker --filter=@earshot/web

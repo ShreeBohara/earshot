@@ -11,14 +11,29 @@
     "bindings": [{ "name": "SESSION", "class_name": "SessionDO" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SessionDO"] }],
-  // SessionDO hands its log to this queue in batches (docs/adr/0024); the consumer that flushes it
-  // to Postgres comes with Phase 3 WP7.
+  // The flush to Postgres (docs/adr/0024). This Worker produces and consumes; render-wrangler.ts
+  // names the queues per target (earshot-flush-pr-N for previews), and the preview workflow
+  // creates them before deploying.
   "queues": {
-    "producers": [{ "binding": "FLUSH", "queue": "earshot-flush" }]
+    "producers": [
+      { "binding": "FLUSH", "queue": "earshot-flush" },
+      // The consumer sends a batch that can never succeed straight here, without retrying it.
+      { "binding": "FLUSH_DLQ", "queue": "earshot-flush-dlq" }
+    ],
+    "consumers": [
+      {
+        "queue": "earshot-flush",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        // Above the default of 3: repairing a gap can take a delivery or two.
+        "max_retries": 5,
+        "dead_letter_queue": "earshot-flush-dlq"
+      }
+    ]
   },
   // WEB_ORIGIN is the session socket's Origin allow-list (comma-separated); render-wrangler.ts sets
   // each target's web origin. Secrets live outside this file (env.d.ts, .dev.vars.example):
-  // EARSHOT_SESSION_TICKET_SECRET. Optional: AI_GATEWAY_ACCOUNT_ID, AI_GATEWAY_ID.
+  // EARSHOT_SESSION_TICKET_SECRET and DATABASE_URL. Optional: AI_GATEWAY_ACCOUNT_ID, AI_GATEWAY_ID.
   "vars": { "WEB_ORIGIN": "http://localhost:3000", "DEPLOY_ENV": "development", "GIT_SHA": "dev" },
   "observability": { "enabled": true }
 }

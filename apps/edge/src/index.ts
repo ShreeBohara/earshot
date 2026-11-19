@@ -1,10 +1,10 @@
-// The edge Worker (docs/adr/0003): the session socket's front door, and the Durable Objects that
-// hold sessions.
+// The edge Worker (docs/adr/0003): the session socket's front door, the Durable Objects that hold
+// sessions, and the Queue consumer that flushes them to Postgres.
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { productionAgent } from "./agent";
 import { createApp } from "./app";
 import { PRICE_TABLE_DATE, priceStt } from "./prices";
-import { type PurgeResult, purgeSessions, queueSink } from "./queue";
+import { handleFlushQueue, type PurgeResult, purgeSessions, queueSink } from "./queue";
 import { SessionRuntime } from "./session-do";
 
 /** One per capture session, with production dependencies: `@earshot/agent` and the Queue. */
@@ -22,12 +22,16 @@ export class SessionDO extends SessionRuntime {
 const app = createApp();
 
 /**
- * The default entrypoint: HTTP (`fetch`), and one RPC method for the web app's `EDGE` service
- * binding, `purgeSessions`. RPC methods aren't reachable over HTTP.
+ * The default entrypoint: HTTP (`fetch`), the flush consumer (`queue`), and one RPC method for the
+ * web app's `EDGE` service binding, `purgeSessions`. RPC methods aren't reachable over HTTP.
  */
 export default class EdgeWorker extends WorkerEntrypoint<Env> {
   override fetch(request: Request): Promise<Response> | Response {
     return app.fetch(request, this.env, this.ctx);
+  }
+
+  override async queue(batch: MessageBatch): Promise<void> {
+    await handleFlushQueue(batch, this.env, this.ctx);
   }
 
   /**

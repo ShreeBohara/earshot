@@ -319,12 +319,18 @@ importers:
       '@earshot/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@earshot/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@earshot/events':
         specifier: workspace:*
         version: link:../../packages/events
       '@earshot/keys':
         specifier: workspace:*
         version: link:../../packages/keys
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@neondatabase/serverless@1.2.0)(kysely@0.29.9)
       hono:
         specifier: 'catalog:'
         version: 4.13.18
@@ -338,6 +344,15 @@ importers:
       '@earshot/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@electric-sql/pglite':
+        specifier: 'catalog:'
+        version: 0.5.16
+      '@electric-sql/pglite-pgvector':
+        specifier: 'catalog:'
+        version: 0.0.16(@electric-sql/pglite@0.5.16)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

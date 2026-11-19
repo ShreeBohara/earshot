@@ -1,7 +1,8 @@
 name: preview-cleanup
 
 # Tears down a PR's preview when it closes: the web Worker first (it binds to the edge
-# Worker), then the edge Worker and its Durable Objects, then the Neon branch.
+# Worker), then the edge Worker and its Durable Objects, then its flush queues, then the Neon
+# branch.
 # Each step continues on error; janitor.yml catches anything left behind.
 
 on:
@@ -52,6 +53,17 @@ jobs:
         continue-on-error: true
         working-directory: apps/edge
         run: pnpm exec wrangler delete --name "earshot-edge-pr-$PR" --force
+
+      # After the edge Worker: a queue can't be deleted while a Worker consumes it.
+      - name: Delete this PR's flush queues
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        continue-on-error: true
+        working-directory: apps/edge
+        run: |
+          for queue in "earshot-flush-pr-$PR" "earshot-flush-pr-$PR-dlq"; do
+            pnpm exec wrangler queues delete "$queue" || true
+          done
 
       - name: Delete the Neon branch
         continue-on-error: true

@@ -3,5 +3,7 @@
   "compilerOptions": {
     "types": ["@cloudflare/vitest-plugin/types"]
   },
-  "include": ["src", "test", "worker-configuration.d.ts", "env.d.ts"]
+  "include": ["src", "test", "worker-configuration.d.ts", "env.d.ts"],
+  // The flush consumer's Postgres tests run in Node, against PGlite: tsconfig.node.json.
+  "exclude": ["test/node"]
 }

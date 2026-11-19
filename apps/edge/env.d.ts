@@ -10,6 +10,12 @@ interface EdgeSecrets {
    * does, so a fresh clone works with no `.dev.vars`.
    */
   EARSHOT_SESSION_TICKET_SECRET?: string;
+  /**
+   * Neon's pooled connection string, for the Queue consumer that flushes sessions to Postgres.
+   * Without it the consumer acks each batch and logs "flush skipped": the events stay in each
+   * session's Durable Object.
+   */
+  DATABASE_URL?: string;
   /** Route LLM calls through Cloudflare AI Gateway; only when both are set (@earshot/agent). */
   AI_GATEWAY_ACCOUNT_ID?: string;
   AI_GATEWAY_ID?: string;

@@ -141,11 +141,30 @@ jobs:
         env:
           SUBDOMAIN: ${{ vars.CF_WORKERS_SUBDOMAIN }}
         run: pnpm --filter @earshot/scripts exec tsx render-wrangler.ts --target production --sha "$GITHUB_SHA" --workers-subdomain "$SUBDOMAIN"
-      - name: Deploy the edge Worker
+      # The flush queues must exist before the edge Worker that binds them deploys (docs/adr/0024).
+      - name: Create the flush queues if they're missing
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         working-directory: apps/edge
-        run: pnpm exec wrangler deploy --config wrangler.production.jsonc
+        run: |
+          for queue in earshot-flush earshot-flush-dlq; do
+            pnpm exec wrangler queues info "$queue" > /dev/null 2>&1 || pnpm exec wrangler queues create "$queue"
+          done
+      # The session socket fails closed without EARSHOT_SESSION_TICKET_SECRET, and the flush
+      # consumer skips Postgres without DATABASE_URL. Empty values are dropped rather than uploaded.
+      - name: Deploy the edge Worker with its secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DB_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+          TICKET_SECRET: ${{ secrets.EARSHOT_SESSION_TICKET_SECRET }}
+        working-directory: apps/edge
+        run: |
+          umask 077
+          jq -n --arg u "$DB_URL" --arg t "$TICKET_SECRET" \
+            '{DATABASE_URL: $u, EARSHOT_SESSION_TICKET_SECRET: $t} | with_entries(select(.value != ""))' \
+            > "$RUNNER_TEMP/edge.secrets.json"
+          pnpm exec wrangler deploy --config wrangler.production.jsonc --secrets-file "$RUNNER_TEMP/edge.secrets.json"
+          rm -f "$RUNNER_TEMP/edge.secrets.json"
       - name: Build the web Worker (next build, then the OpenNext bundle)
         run: pnpm turbo run build:worker --filter=@earshot/web
       # Auth fails closed without BETTER_AUTH_SECRET, and the session routes without

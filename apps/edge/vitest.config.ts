@@ -29,6 +29,12 @@ export default defineConfig({
           sequence: { groupOrder: 1 },
         },
       },
+      {
+        // The flush consumer against Postgres compiled to WebAssembly, with every migration: the
+        // same flushBatch code path the Worker runs, minus workerd.
+        extends: true,
+        test: { name: "node", include: ["test/node/**/*.test.ts"], environment: "node" },
+      },
     ],
   },
 });

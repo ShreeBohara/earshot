@@ -1,6 +1,8 @@
-// The Workers side of the flush: the producer sink SessionDO sends through, and the purge fan-out
-// for deletion.
-import { type FlushMessage, type FlushSink, sendBatches } from "./flush-message";
+// The Workers side of the flush (spec WP7): the producer sink SessionDO sends through, the Queue
+// consumer's glue around `flushBatch`, and the purge fan-out for deletion.
+import { createPoolDb } from "@earshot/db";
+import { type FlushStore, flushBatch, postgresFlushStore, type SessionRpc } from "./flush";
+import { type FlushMessage, type FlushSink, parseRange, sendBatches } from "./flush-message";
 import { createLogger } from "./log";
 
 /** SessionDO's sink in production: the `FLUSH` producer, as JSON, within `sendBatch`'s limits. */
@@ -12,6 +14,59 @@ export function queueSink(queue: Queue<FlushMessage>): FlushSink {
       }
     },
   };
+}
+
+/** The consumer's view of a session's Durable Object. */
+export function sessionRpc(env: Env, sessionId: string): SessionRpc {
+  const stub = env.SESSION.get(env.SESSION.idFromName(sessionId));
+  return {
+    readRange: async (fromSeq, toSeq) => parseRange(await stub.readRange(fromSeq, toSeq)),
+    confirmFlushed: async (seq) => {
+      await stub.confirmFlushed(seq);
+    },
+  };
+}
+
+/**
+ * The `queue()` handler for `earshot-flush` (and each preview's `earshot-flush-pr-N`). One pool
+ * per batch, closed after it (docs/adr/0018). With no `DATABASE_URL` (zero-setup development) it
+ * acks each batch and logs that the flush was skipped: the events stay in SessionDO.
+ */
+export async function handleFlushQueue(
+  batch: MessageBatch,
+  env: Env,
+  ctx: ExecutionContext,
+  options: {
+    /** Seams for the workerd tests: a fake Postgres, and fake session RPCs. */
+    readonly store?: (url: string) => { store: FlushStore; close(): Promise<void> };
+    readonly session?: (sessionId: string) => SessionRpc;
+  } = {},
+): Promise<void> {
+  const url = env.DATABASE_URL?.trim();
+  const log = createLogger(url ? [url] : []);
+  if (!url) {
+    log.info("flush skipped", { messages: batch.messages.length, reason: "no_database_url" });
+    batch.ackAll();
+    return;
+  }
+  const opened = options.store?.(url) ?? openPostgres(url);
+  try {
+    await flushBatch(batch, {
+      store: opened.store,
+      session: options.session ?? ((sessionId) => sessionRpc(env, sessionId)),
+      deadLetter: async (body) => {
+        await env.FLUSH_DLQ.send(body, { contentType: "json" });
+      },
+      log,
+    });
+  } finally {
+    ctx.waitUntil(opened.close());
+  }
+}
+
+function openPostgres(url: string): { store: FlushStore; close(): Promise<void> } {
+  const db = createPoolDb(url);
+  return { store: postgresFlushStore(db), close: () => db.$client.end() };
 }
 
 const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

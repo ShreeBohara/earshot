@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   edgeOrigin,
   parseTarget,
+  queueNames,
   readTemplate,
   renderEdge,
   renderWeb,
@@ -54,6 +55,26 @@ describe("per-PR configs", () => {
     }
   });
 
+  it("give the edge Worker this PR's own flush queue and dead-letter queue", () => {
+    expect(edge.queues).toEqual({
+      producers: [
+        { binding: "FLUSH", queue: "earshot-flush-pr-12" },
+        { binding: "FLUSH_DLQ", queue: "earshot-flush-pr-12-dlq" },
+      ],
+      consumers: [
+        {
+          ...edgeTemplate.queues?.consumers?.[0],
+          queue: "earshot-flush-pr-12",
+          dead_letter_queue: "earshot-flush-pr-12-dlq",
+        },
+      ],
+    });
+    expect(queueNames(target)).toEqual({
+      flush: "earshot-flush-pr-12",
+      deadLetter: "earshot-flush-pr-12-dlq",
+    });
+  });
+
   it("keep everything else from the templates", () => {
     expect(edge.durable_objects).toEqual(edgeTemplate.durable_objects);
     expect(web.assets).toEqual(webTemplate.assets);
@@ -64,6 +85,12 @@ describe("per-PR configs", () => {
 describe("production configs", () => {
   const target = parseTarget("production");
   const web = renderWeb(webTemplate, target, "abc1234");
+
+  it("keep the template's queue names", () => {
+    const edge = renderEdge(edgeTemplate, target, "abc1234");
+    expect(edge.queues).toEqual(edgeTemplate.queues);
+    expect(queueNames(target)).toEqual({ flush: "earshot-flush", deadLetter: "earshot-flush-dlq" });
+  });
 
   it("use the base names", () => {
     expect(web.name).toBe("earshot-web");
@@ -115,8 +142,28 @@ describe("EDGE_PUBLIC_URL", () => {
   });
 });
 
+describe("WEB_ORIGIN", () => {
+  it("lets only the same environment's web Worker open session sockets", () => {
+    const pr = renderEdge(edgeTemplate, parseTarget("pr-12"), "abc1234", {
+      workersSubdomain: "acme",
+    });
+    const production = renderEdge(edgeTemplate, parseTarget("production"), "abc1234", {
+      workersSubdomain: "acme",
+    });
+    expect(pr.vars?.WEB_ORIGIN).toBe("https://earshot-web-pr-12.acme.workers.dev");
+    expect(production.vars?.WEB_ORIGIN).toBe("https://earshot-web.acme.workers.dev");
+    expect(pr.vars).toMatchObject({ DEPLOY_ENV: "pr-12", GIT_SHA: "abc1234" });
+  });
+
+  it("keeps the template's localhost origin without a subdomain", () => {
+    const edge = renderEdge(edgeTemplate, parseTarget("pr-12"), "abc1234");
+    expect(edge.vars?.WEB_ORIGIN).toBe(edgeTemplate.vars?.WEB_ORIGIN);
+  });
+});
+
 describe("worker names", () => {
   it("stay within Cloudflare's 63-character limit for large PR numbers", () => {
     expect(workerNames({ kind: "pr", number: 9_999_999 }).edge.length).toBeLessThanOrEqual(63);
+    expect(queueNames({ kind: "pr", number: 9_999_999 }).deadLetter.length).toBeLessThanOrEqual(63);
   });
 });
