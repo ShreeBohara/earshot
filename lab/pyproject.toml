@@ -10,8 +10,20 @@ dependencies = ["pydantic>=2.11"]
 [dependency-groups]
 dev = [
   "datamodel-code-generator>=0.90",
+  # The eval renderer's DSP and its tests (scripts/render_debriefs.py) run in the default sync;
+  # only the speech model needs the tts group.
+  "numpy>=2.2",
   "pytest>=8.4",
   "ruff>=0.15",
+  "scipy>=1.15",
+]
+# Kokoro, for rendering the eval debriefs to WAV (Phase 3 spec, WP11). A group of its own, so
+# the checks job's `uv sync --project lab` never installs onnxruntime (spec decision 14):
+#   uv sync --project lab --group tts
+tts = [
+  "kokoro-onnx==0.6.1",
+  "numpy>=2.2",
+  "scipy>=1.15",
 ]
 
 [build-system]
@@ -31,4 +43,6 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# scripts/ isn't a package; the renderer's tests import it as a module.
+pythonpath = ["scripts"]
 addopts = "-q"

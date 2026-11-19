@@ -39,6 +39,8 @@ wrangler.*.jsonc
 
 # python
 .venv/
+# the lab's downloaded model files and rendered eval WAVs (lab/scripts/render_debriefs.py)
+lab/.cache/
 __pycache__/
 *.pyc
 .pytest_cache/

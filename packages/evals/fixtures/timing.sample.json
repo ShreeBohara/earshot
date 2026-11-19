@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "hash": "23c17aacd864bf333b9fa81750612244",
+  "voice": "af_heart",
+  "sampleRate": 48000,
+  "durationMs": 7360,
+  "tailMs": 1000,
+  "turns": [
+    {
+      "index": 0,
+      "startMs": 1500,
+      "endMs": 3960,
+      "text": "I owe Dana Lee a revised quote by Friday.",
+      "words": [
+        {
+          "w": "I",
+          "startMs": 1500,
+          "endMs": 1559
+        },
+        {
+          "w": "owe",
+          "startMs": 1617,
+          "endMs": 1793
+        },
+        {
+          "w": "Dana",
+          "startMs": 1851,
+          "endMs": 2086
+        },
+        {
+          "w": "Lee",
+          "startMs": 2144,
+          "endMs": 2320
+        },
+        {
+          "w": "a",
+          "startMs": 2379,
+          "endMs": 2437
+        },
+        {
+          "w": "revised",
+          "startMs": 2496,
+          "endMs": 2906
+        },
+        {
+          "w": "quote",
+          "startMs": 2964,
+          "endMs": 3257
+        },
+        {
+          "w": "by",
+          "startMs": 3316,
+          "endMs": 3433
+        },
+        {
+          "w": "Friday.",
+          "startMs": 3491,
+          "endMs": 3901
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "startMs": 5160,
+      "endMs": 6360,
+      "text": "That's all for Acme.",
+      "words": [
+        {
+          "w": "That's",
+          "startMs": 5160,
+          "endMs": 5503
+        },
+        {
+          "w": "all",
+          "startMs": 5560,
+          "endMs": 5731
+        },
+        {
+          "w": "for",
+          "startMs": 5789,
+          "endMs": 5960
+        },
+        {
+          "w": "Acme.",
+          "startMs": 6017,
+          "endMs": 6303
+        }
+      ]
+    }
+  ]
+}
