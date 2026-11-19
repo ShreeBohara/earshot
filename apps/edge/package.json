@@ -6,18 +6,23 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "build": "wrangler deploy --dry-run --outdir dist",
+    "dev:e2e": "wrangler dev src/e2e.ts",
+    "build": "wrangler deploy --dry-run --outdir dist && node scripts/check-bundle.mjs",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types --strict-vars=false",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "hono": "catalog:"
+    "@earshot/agent": "workspace:*",
+    "@earshot/core": "workspace:*",
+    "@earshot/events": "workspace:*",
+    "@earshot/keys": "workspace:*",
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
-    "@earshot/core": "workspace:*",
     "@earshot/tsconfig": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",

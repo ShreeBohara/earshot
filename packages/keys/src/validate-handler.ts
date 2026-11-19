@@ -162,7 +162,8 @@ async function readBody(request: Request, maxBytes: number): Promise<string | nu
     offset += chunk.byteLength;
   }
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    // Both options spelled out: Workers' types require `ignoreBOM`.
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(bytes);
   } catch {
     return null;
   }

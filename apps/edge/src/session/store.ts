@@ -1,0 +1,343 @@
+// SessionDO's SQLite: the event log, written before anything leaves the object (spec WP6 step 3).
+//
+//   meta         one row per setting: who the session belongs to, its lifecycle, flush progress,
+//                the cost meter, and limits
+//   events       the log: contiguous seq from 0, UUIDv7 ids, the DO clock's ts
+//   client_msgs  every client message that was handled, so a resend gets the same answer
+//   tickets      every ticket `jti` that opened a socket, so a ticket opens one socket
+//   utterances   which turn each utterance belongs to (`utterance.final` doesn't say), and a
+//                guard against the same utterance being final twice
+//
+// All methods are synchronous: SQLite-backed Durable Object storage runs queries synchronously,
+// and `transactionSync` makes a message's writes atomic.
+import { defaultRegistry, type EventEnvelope, parseEnvelope } from "@earshot/events";
+import type { FlushEvent } from "../flush-message";
+
+const SCHEMA = [
+  "CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)",
+  `CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE,
+    type TEXT NOT NULL, schema_version INTEGER NOT NULL, ts TEXT NOT NULL, payload TEXT NOT NULL)`,
+  "CREATE TABLE IF NOT EXISTS client_msgs (msg_id TEXT PRIMARY KEY, seq INTEGER, done_at TEXT NOT NULL, error TEXT)",
+  "CREATE TABLE IF NOT EXISTS tickets (jti TEXT PRIMARY KEY, used_at TEXT NOT NULL)",
+  `CREATE TABLE IF NOT EXISTS utterances (utterance_id TEXT PRIMARY KEY, turn_id TEXT NOT NULL,
+    seq INTEGER NOT NULL)`,
+  "CREATE INDEX IF NOT EXISTS utterances_turn_seq ON utterances (turn_id, seq)",
+];
+
+/** Every setting `meta` holds. Values are strings; numbers are stored in decimal. */
+export type MetaKey =
+  // Pinned on the first connection, from its verified ticket.
+  | "sid"
+  | "uid"
+  | "wid"
+  // `start`: the seq of `session.started`, when it arrived by the DO's clock, and its settings.
+  | "started_seq"
+  | "capture_started_ms"
+  | "call_time"
+  | "time_zone"
+  | "entities"
+  // `end` (or an idle session ended by the DO): the seq of `session.ended`, and when.
+  | "ended_seq"
+  | "ended_ms"
+  // The flush: the last seq handed to the Queue, the last seq Postgres confirmed, and when the
+  // oldest event not yet handed over was written.
+  | "enqueued_seq"
+  | "flushed_seq"
+  | "unflushed_since_ms"
+  // Cleanup after the end: re-sends of unconfirmed events, and the final deletion.
+  | "resend_count"
+  | "resend_due_ms"
+  | "cleanup_due_ms"
+  // The cost meter's totals (JSON), and recent turn starts for the turn limit (JSON).
+  | "meter"
+  | "turn_starts"
+  // Set by `purge()`: the object refuses everything until the tombstone itself is deleted.
+  | "purged_ms";
+
+/** An event as `append` takes it: SessionDO numbers it, mints its id, and stamps its time. */
+export interface NewEvent {
+  readonly type: string;
+  readonly schemaVersion: number;
+  readonly payload: Record<string, unknown>;
+}
+
+/** A handled client message: the seq of the last event it appended, and the error it got. */
+export interface DoneMessage {
+  readonly seq: number | null;
+  readonly error: { readonly code: string; readonly retryable: boolean } | null;
+}
+
+type EventRow = {
+  seq: number;
+  id: string;
+  type: string;
+  schema_version: number;
+  ts: string;
+  payload: string;
+};
+
+export class SessionStore {
+  readonly #storage: DurableObjectStorage;
+  readonly #meta = new Map<MetaKey, string>();
+  #lastSeq = -1;
+  #lastEventMs: number | null = null;
+  #hasTables = false;
+
+  constructor(storage: DurableObjectStorage) {
+    this.#storage = storage;
+  }
+
+  get #sql(): SqlStorage {
+    return this.#storage.sql;
+  }
+
+  /**
+   * Loads `meta` and the log's end into memory. Creates nothing: the tables appear with the first
+   * write, so an object that was never used, or whose storage was deleted, holds no data at all.
+   */
+  open(): void {
+    this.#meta.clear();
+    this.#lastSeq = -1;
+    this.#lastEventMs = null;
+    this.#hasTables =
+      this.#sql
+        .exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'events'")
+        .toArray().length > 0;
+    if (!this.#hasTables) return;
+    for (const statement of SCHEMA) this.#sql.exec(statement); // tables added since, if any
+    for (const row of this.#sql.exec<{ k: string; v: string }>("SELECT k, v FROM meta")) {
+      this.#meta.set(row.k as MetaKey, String(row.v));
+    }
+    const last = this.#sql
+      .exec<{ seq: number; ts: string }>("SELECT seq, ts FROM events ORDER BY seq DESC LIMIT 1")
+      .toArray()[0];
+    this.#lastSeq = last?.seq ?? -1;
+    this.#lastEventMs = last ? Date.parse(last.ts) : null;
+  }
+
+  /**
+   * Runs `fn` in one SQLite transaction; if it throws, nothing it wrote is kept. Every write goes
+   * through here, so this is where the tables are created.
+   */
+  transaction<T>(fn: () => T): T {
+    const meta = new Map(this.#meta);
+    const lastSeq = this.#lastSeq;
+    const lastEventMs = this.#lastEventMs;
+    const hadTables = this.#hasTables;
+    try {
+      return this.#storage.transactionSync(() => {
+        if (!this.#hasTables) {
+          for (const statement of SCHEMA) this.#sql.exec(statement);
+          this.#hasTables = true;
+        }
+        return fn();
+      });
+    } catch (error) {
+      // The rollback undid the rows; undo the in-memory copies too.
+      this.#meta.clear();
+      for (const [key, value] of meta) this.#meta.set(key, value);
+      this.#lastSeq = lastSeq;
+      this.#lastEventMs = lastEventMs;
+      this.#hasTables = hadTables;
+      throw error;
+    }
+  }
+
+  /** The seq of the last event, or -1 before the first. */
+  get lastSeq(): number {
+    return this.#lastSeq;
+  }
+
+  /** When the last event was written, by the DO's clock, or null before the first. */
+  get lastEventMs(): number | null {
+    return this.#lastEventMs;
+  }
+
+  get(key: MetaKey): string | undefined {
+    return this.#meta.get(key);
+  }
+
+  /** A numeric setting, or `fallback` when it's unset. */
+  getNumber(key: MetaKey, fallback: number): number;
+  getNumber(key: MetaKey): number | undefined;
+  getNumber(key: MetaKey, fallback?: number): number | undefined {
+    const value = this.#meta.get(key);
+    return value === undefined ? fallback : Number(value);
+  }
+
+  set(key: MetaKey, value: string | number): void {
+    const text = String(value);
+    if (this.#meta.get(key) === text) return;
+    this.#sql.exec(
+      "INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v",
+      key,
+      text,
+    );
+    this.#meta.set(key, text);
+  }
+
+  delete(key: MetaKey): void {
+    if (!this.#meta.has(key)) return;
+    this.#sql.exec("DELETE FROM meta WHERE k = ?", key);
+    this.#meta.delete(key);
+  }
+
+  /**
+   * Appends events after the last seq, with UUIDv7 ids and the DO clock's time, and returns their
+   * envelopes. Each is checked against `@earshot/events`' registry first, as Postgres will check
+   * it, so the log can't hold an event the flush would refuse. Call inside `transaction`.
+   */
+  append(
+    sessionId: string,
+    events: readonly NewEvent[],
+    clock: { readonly now: number; readonly newId: () => string },
+  ): EventEnvelope[] {
+    const ts = new Date(clock.now).toISOString();
+    const appended: EventEnvelope[] = [];
+    for (const event of events) {
+      const envelope = parseEnvelope({
+        id: clock.newId(),
+        sessionId,
+        seq: this.#lastSeq + 1,
+        type: event.type,
+        schemaVersion: event.schemaVersion,
+        ts,
+        payload: event.payload,
+      });
+      defaultRegistry.validate(envelope);
+      this.#sql.exec(
+        "INSERT INTO events (seq, id, type, schema_version, ts, payload) VALUES (?, ?, ?, ?, ?, ?)",
+        envelope.seq,
+        envelope.id,
+        envelope.type,
+        envelope.schemaVersion,
+        envelope.ts,
+        JSON.stringify(envelope.payload),
+      );
+      this.#lastSeq = envelope.seq;
+      this.#lastEventMs = clock.now;
+      appended.push(envelope);
+    }
+    return appended;
+  }
+
+  /** Events with `from <= seq <= to`, in seq order, as envelopes. */
+  *events(sessionId: string, from: number, to = this.#lastSeq): Generator<EventEnvelope> {
+    if (!this.#hasTables) return;
+    for (const row of this.#sql.exec<EventRow>(
+      "SELECT seq, id, type, schema_version, ts, payload FROM events WHERE seq >= ? AND seq <= ? ORDER BY seq",
+      from,
+      to,
+    )) {
+      yield {
+        id: row.id,
+        sessionId,
+        seq: row.seq,
+        type: row.type,
+        schemaVersion: row.schema_version,
+        ts: row.ts,
+        payload: JSON.parse(row.payload) as Record<string, unknown>,
+      };
+    }
+  }
+
+  /** Events with `from <= seq <= to` as the flush sends them: drafts numbered by SessionDO. */
+  flushEvents(from: number, to = this.#lastSeq, limit = Number.POSITIVE_INFINITY): FlushEvent[] {
+    const events: FlushEvent[] = [];
+    if (!this.#hasTables) return events;
+    for (const row of this.#sql.exec<EventRow>(
+      "SELECT seq, id, type, schema_version, ts, payload FROM events WHERE seq >= ? AND seq <= ? ORDER BY seq",
+      from,
+      to,
+    )) {
+      if (events.length >= limit) break;
+      events.push({
+        id: row.id,
+        seq: row.seq,
+        type: row.type,
+        schemaVersion: row.schema_version,
+        ts: row.ts,
+        payload: JSON.parse(row.payload) as Record<string, unknown>,
+      });
+    }
+    return events;
+  }
+
+  /** How a client message was answered, if it was handled before. */
+  done(msgId: string): DoneMessage | undefined {
+    if (!this.#hasTables) return undefined;
+    const row = this.#sql
+      .exec<{ seq: number | null; error: string | null }>(
+        "SELECT seq, error FROM client_msgs WHERE msg_id = ?",
+        msgId,
+      )
+      .toArray()[0];
+    if (!row) return undefined;
+    return {
+      seq: row.seq,
+      error: row.error ? (JSON.parse(row.error) as DoneMessage["error"]) : null,
+    };
+  }
+
+  /** Records a client message as handled. Call in the transaction that wrote its events. */
+  markDone(msgId: string, answer: DoneMessage, now: number): void {
+    this.#sql.exec(
+      "INSERT INTO client_msgs (msg_id, seq, done_at, error) VALUES (?, ?, ?, ?)",
+      msgId,
+      answer.seq,
+      new Date(now).toISOString(),
+      answer.error ? JSON.stringify(answer.error) : null,
+    );
+  }
+
+  /** Records a ticket's `jti` as used. False if it was used before. */
+  useTicket(jti: string, now: number): boolean {
+    const used = this.#sql.exec("SELECT 1 FROM tickets WHERE jti = ?", jti).toArray().length > 0;
+    if (used) return false;
+    this.#sql.exec(
+      "INSERT INTO tickets (jti, used_at) VALUES (?, ?)",
+      jti,
+      new Date(now).toISOString(),
+    );
+    return true;
+  }
+
+  /** The seq of the `utterance.final` that carried this utterance, if one did. */
+  utteranceSeq(utteranceId: string): number | undefined {
+    if (!this.#hasTables) return undefined;
+    return this.#sql
+      .exec<{ seq: number }>("SELECT seq FROM utterances WHERE utterance_id = ?", utteranceId)
+      .toArray()[0]?.seq;
+  }
+
+  /** Files an utterance under its turn. Call in the transaction that appended it. */
+  addUtterance(utteranceId: string, turnId: string, seq: number): void {
+    this.#sql.exec(
+      "INSERT INTO utterances (utterance_id, turn_id, seq) VALUES (?, ?, ?)",
+      utteranceId,
+      turnId,
+      seq,
+    );
+  }
+
+  /** The payloads of a turn's utterances, in seq order. */
+  turnUtterances(turnId: string): Record<string, unknown>[] {
+    if (!this.#hasTables) return [];
+    return this.#sql
+      .exec<{ payload: string }>(
+        `SELECT events.payload AS payload FROM utterances JOIN events ON events.seq = utterances.seq
+         WHERE utterances.turn_id = ? ORDER BY utterances.seq`,
+        turnId,
+      )
+      .toArray()
+      .map((row) => JSON.parse(row.payload) as Record<string, unknown>);
+  }
+
+  /** Forgets the in-memory copies, after `deleteAll()` removed the tables under them. */
+  forget(): void {
+    this.#meta.clear();
+    this.#lastSeq = -1;
+    this.#lastEventMs = null;
+    this.#hasTables = false;
+  }
+}

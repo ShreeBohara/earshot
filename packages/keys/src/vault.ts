@@ -16,6 +16,11 @@ export interface SealedSecret {
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+
+/** UTF-8 bytes on a plain ArrayBuffer. Workers' types widen `encode()` to ArrayBufferLike. */
+function utf8(text: string): Bytes {
+  return encoder.encode(text) as Bytes;
+}
 const GCM = "AES-GCM";
 
 function fromBase64(value: string): Bytes {
@@ -86,14 +91,15 @@ export async function sealSecret(
   secret: string,
   context: string,
 ): Promise<SealedSecret> {
-  const additionalData = encoder.encode(context);
-  const dek = await crypto.subtle.generateKey({ name: GCM, length: 256 }, true, [
+  const additionalData = utf8(context);
+  // An AES key, never a key pair: Workers' types return the union for every algorithm.
+  const dek = (await crypto.subtle.generateKey({ name: GCM, length: 256 }, true, [
     "encrypt",
     "decrypt",
-  ]);
+  ])) as CryptoKey;
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = new Uint8Array(
-    await crypto.subtle.encrypt({ name: GCM, iv, additionalData }, dek, encoder.encode(secret)),
+    await crypto.subtle.encrypt({ name: GCM, iv, additionalData }, dek, utf8(secret)),
   );
   const dekIv = crypto.getRandomValues(new Uint8Array(12));
   const wrappedDek = new Uint8Array(
@@ -124,7 +130,7 @@ export async function openSecret(
   sealed: SealedSecret,
   context: string,
 ): Promise<string> {
-  const additionalData = encoder.encode(context);
+  const additionalData = utf8(context);
   const dek = await unwrapDek(master, sealed, additionalData, false);
   const plain = await crypto.subtle.decrypt(
     { name: GCM, iv: sealed.iv, additionalData },
@@ -141,7 +147,7 @@ export async function rewrapSecret(
   sealed: SealedSecret,
   context: string,
 ): Promise<SealedSecret> {
-  const additionalData = encoder.encode(context);
+  const additionalData = utf8(context);
   const dek = await unwrapDek(oldMaster, sealed, additionalData, true);
   const dekIv = crypto.getRandomValues(new Uint8Array(12));
   const wrappedDek = new Uint8Array(
