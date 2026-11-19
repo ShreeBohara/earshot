@@ -251,6 +251,59 @@ describe("account deletion", () => {
     expect(bRows).toEqual([expect.objectContaining({ text: "Transcript line from BO" })]);
   });
 
+  it("purges the storage of A's sessions before deleting them, and none of B's", async () => {
+    const purged: string[][] = [];
+    auth = testAuth({ db, outbox, purgeSessions: async (ids) => void purged.push([...ids]) });
+    const a = await seededTenant("ana@acme.example", "ANA");
+    const b = await seededTenant("bo@globex.example", "BO");
+    const sessionsOf = async (workspaceId: string) =>
+      (
+        await db
+          .select({ id: sessions.id })
+          .from(sessions)
+          .where(eq(sessions.workspaceId, workspaceId))
+      )
+        .map((row) => row.id)
+        .sort();
+    const aSessions = await sessionsOf(a.viewer.workspaceId);
+    const bSessions = await sessionsOf(b.viewer.workspaceId);
+    expect(aSessions).toHaveLength(1);
+
+    const response = await auth.handler(
+      authRequest("/delete-user", { body: {}, cookie: a.cookie }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(purged).toEqual([aSessions]);
+    expect(purged.flat().some((id) => bSessions.includes(id))).toBe(false);
+    expect(await sessionsOf(b.viewer.workspaceId)).toEqual(bSessions);
+  });
+
+  it("deletes nothing, and says to retry, when purging session storage fails", async () => {
+    auth = testAuth({
+      db,
+      outbox,
+      purgeSessions: async () => {
+        throw new Error("edge unavailable");
+      },
+    });
+    const a = await seededTenant("ana@acme.example", "ANA");
+
+    const response = await auth.handler(
+      authRequest("/delete-user", { body: {}, cookie: a.cookie }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ code: "PURGE_FAILED" });
+    expect(await db.select().from(user).where(eq(user.id, a.viewer.user.id))).toHaveLength(1);
+    expect(
+      await db.select().from(workspaces).where(eq(workspaces.id, a.viewer.workspaceId)),
+    ).toHaveLength(1);
+    expect(
+      await db.select().from(sessions).where(eq(sessions.workspaceId, a.viewer.workspaceId)),
+    ).toHaveLength(1);
+  });
+
   it("refuses without a recent sign-in, and deletes nothing", async () => {
     const a = await seededTenant("ana@acme.example", "ANA");
     await db.execute(

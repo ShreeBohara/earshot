@@ -4,6 +4,7 @@ export {
   deleteSoleMemberWorkspaces,
   ensureWorkspace,
   personalWorkspaceName,
+  soleMemberWorkspaceSessionIds,
 } from "./account";
 export { createHttpDb, createPoolDb, type HttpDb, type PoolDb } from "./client";
 export {
