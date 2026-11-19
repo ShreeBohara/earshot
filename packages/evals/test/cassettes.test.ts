@@ -10,7 +10,7 @@ describe("the committed eval cassettes", () => {
   it("are what scripts/gen-cassettes.ts generates today (run `pnpm --filter @earshot/evals cassettes:gen` after changing a script, or after @earshot/agent changes its requests)", async () => {
     const generated = await generateEvalCassettes();
     expect(JSON.parse(JSON.stringify(generated))).toEqual(EVAL_CASSETTES);
-  });
+  }, 60_000); // generating all 236 turns takes several seconds on CI runners
 
   it("hold one cassette per script and provider, with one interaction per turn", () => {
     for (const provider of EVAL_PROVIDERS) {

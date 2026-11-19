@@ -115,11 +115,7 @@ export function resolveDatePhrase(
   const weekday = now.getUTCDay();
   const relative = (value: Day): ResolvedDate => ({ date: isoDay(value), relative: true });
 
-  let phrase = quote
-    .toLowerCase()
-    .replace(/[.,;:!?]+$/u, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  let phrase = trimTrailingPunctuation(quote.toLowerCase()).replace(/\s+/g, " ").trim();
   phrase = phrase.replace(/^(?:by|on|for|due)\s+/u, "");
 
   if (phrase === "today") return relative(today);
@@ -226,3 +222,12 @@ export const CORRECTION_MARKER =
 /** Digits or a number word ("one" is too common to count). */
 export const NUMBER_PATTERN =
   /\d|\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|dozen|percent)\b/iu;
+
+const TRAILING_PUNCTUATION = new Set([".", ",", ";", ":", "!", "?"]);
+
+/** Drops trailing `.,;:!?` by scanning back once; a regex like /[.,;:!?]+$/ backtracks on long runs. */
+function trimTrailingPunctuation(text: string): string {
+  let end = text.length;
+  while (end > 0 && TRAILING_PUNCTUATION.has(text.charAt(end - 1))) end -= 1;
+  return text.slice(0, end);
+}
