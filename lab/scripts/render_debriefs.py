@@ -19,6 +19,13 @@ package: kokoro-onnx phonemizes through espeakng-loader, whose wheels bundle the
 
     uv sync --project lab --group tts
     uv run --project lab --group tts python lab/scripts/render_debriefs.py --prune
+
+`--stub` is NOT FOR EVALUATION. It renders tones instead of speech, one per word where
+timing.json puts the word, so the fake-microphone e2e test can run on a machine without the model
+(the default sync is enough). Its WAVs go to lab/.cache/wavs-stub, never beside Kokoro's, and its
+manifest names the pseudo model file STUB-TONES-NOT-FOR-EVALUATION, which CI's eval refuses.
+
+    uv run --project lab python lab/scripts/render_debriefs.py --stub
 """
 
 from __future__ import annotations
@@ -65,6 +72,18 @@ PINS = Path(__file__).resolve().with_name("kokoro_files.json")
 
 # The installed packages whose versions can change the audio, and so the hash.
 TTS_PACKAGES = ("kokoro-onnx", "onnxruntime", "espeakng-loader", "phonemizer", "numpy", "scipy")
+
+# `--stub` (NOT FOR EVALUATION): its own output directory, and a pseudo model file in the
+# manifest and the hash, so a stub WAV can never pass for a Kokoro render. @earshot/evals reads
+# the same name as STUB_RENDER_MODEL.
+WAVS_STUB = LAB / ".cache" / "wavs-stub"
+STUB_MODEL_NAME = "STUB-TONES-NOT-FOR-EVALUATION"
+STUB_VERSION = 1
+STUB_MS_PER_CHAR = 60
+STUB_PACKAGES = ("numpy", "scipy")
+STUB_SHA256 = hashlib.sha256(
+    f"{STUB_MODEL_NAME} v{STUB_VERSION}, {STUB_MS_PER_CHAR} ms per character".encode()
+).hexdigest()
 
 VOICE_PATTERN = re.compile(r"^[ab][fm]_[a-z]+$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -407,7 +426,11 @@ def summary_markdown(scripts: Sequence[Script], result: RenderResult) -> str:
         )
     rendered = sum(status == "rendered" for status in result.statuses.values())
     total = sum(cast(int, entry["durationMs"]) for entry in entries.values()) / 1000
-    head = f"### Eval WAVs\n\n{len(scripts)} scripts, {total:.0f} s of audio, {rendered} rendered."
+    title = "Stub WAVs (tones, NOT FOR EVALUATION)" if is_stub_manifest(result.manifest) else ""
+    head = (
+        f"### {title or 'Eval WAVs'}\n\n"
+        f"{len(scripts)} scripts, {total:.0f} s of audio, {rendered} rendered."
+    )
     return "\n".join([head, "", *rows, ""])
 
 
@@ -534,6 +557,48 @@ class KokoroSynthesizer:
         return np.asarray(audio, dtype=np.float32).reshape(-1)
 
 
+# --- The stub voice (NOT FOR EVALUATION) ---------------------------------------------------------
+
+
+class StubVoice:
+    """NOT FOR EVALUATION: tones instead of speech, for checking the e2e plumbing without the
+    model. Each turn lasts STUB_MS_PER_CHAR per character (a space after each word counted), and
+    each word is a tone exactly where spread_words puts it, with silence in the gaps, so the
+    audio matches timing.json's word offsets. The pitch steps from word to word, so noise
+    suppression doesn't settle on it as a steady hum."""
+
+    RAMP_MS = 8
+
+    def synthesize(self, text: str, voice: str, speed: float) -> FloatArray:
+        words = text.split()
+        weight = sum(len(word) + 1 for word in words)
+        total = _round_half_up(weight * STUB_MS_PER_CHAR / speed * SOURCE_RATE / 1000)
+        out = np.zeros(total, dtype=np.float32)
+        ramp = max(1, self.RAMP_MS * SOURCE_RATE // 1000)
+        at = 0.0
+        for index, word in enumerate(words):
+            share = (len(word) + 1) / weight * total
+            start = _round_half_up(at)
+            end = _round_half_up(at + share * len(word) / (len(word) + 1))
+            if end > start:
+                t = np.arange(end - start) / SOURCE_RATE
+                pitch = 170.0 + 30.0 * (index % 4)
+                tone = 0.35 * np.sin(2 * np.pi * pitch * t) + 0.1 * np.sin(4 * np.pi * pitch * t)
+                edge = min(ramp, (end - start) // 2)
+                if edge > 0:
+                    fade = 0.5 - 0.5 * np.cos(np.pi * np.arange(edge) / edge)
+                    tone[:edge] *= fade
+                    tone[-edge:] *= fade[::-1]
+                out[start:end] = tone.astype(np.float32)
+            at += share
+        return out
+
+
+def is_stub_manifest(manifest: Mapping[str, object]) -> bool:
+    model = manifest.get("model")
+    return isinstance(model, dict) and STUB_MODEL_NAME in model
+
+
 def installed_versions(names: Iterable[str]) -> dict[str, str]:
     versions: dict[str, str] = {}
     for name in names:
@@ -552,12 +617,20 @@ def installed_versions(names: Iterable[str]) -> dict[str, str]:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0] if __doc__ else None)
     parser.add_argument("--debriefs", type=Path, default=DEBRIEFS, help="script directory")
-    parser.add_argument("--out", type=Path, default=WAVS, help="where WAVs and timing go")
+    parser.add_argument(
+        "--out", type=Path, help="where WAVs and timing go (lab/.cache/wavs, or wavs-stub)"
+    )
     parser.add_argument("--models", type=Path, default=MODELS, help="model file cache")
     parser.add_argument("--pins", type=Path, default=PINS, help="pinned model files (JSON)")
     parser.add_argument("--only", help="comma-separated script ids, such as d001,d002")
     parser.add_argument("--prune", action="store_true", help="delete WAVs no script uses")
     parser.add_argument("--summary", type=Path, help="append a Markdown table to this file")
+    parser.add_argument(
+        "--stub",
+        action="store_true",
+        help="NOT FOR EVALUATION: tones instead of Kokoro, to check the e2e plumbing without "
+        "the model; writes to lab/.cache/wavs-stub",
+    )
     return parser
 
 
@@ -565,29 +638,52 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     only = cast(str | None, args.only)
     prune = cast(bool, args.prune)
+    stub = cast(bool, args.stub)
+    out = cast(Path | None, args.out) or (WAVS_STUB if stub else WAVS)
     if only and prune:
         print(
             "render_debriefs: --prune needs every script, so it can't go with --only",
             file=sys.stderr,
         )
         return 2
+    if stub and out.resolve() == WAVS.resolve():
+        print(
+            f"render_debriefs: --stub never writes beside Kokoro's renders in {WAVS}",
+            file=sys.stderr,
+        )
+        return 2
     try:
         scripts = load_scripts(cast(Path, args.debriefs), only.split(",") if only else None)
-        pins = load_pins(cast(Path, args.pins))
-        models = cast(Path, args.models)
+        if stub:
+            print(
+                "render_debriefs: --stub renders TONES, NOT SPEECH, to check the e2e plumbing; "
+                "never use these WAVs for evaluation",
+                file=sys.stderr,
+            )
+            result = render(
+                scripts,
+                out,
+                model_sha256={STUB_MODEL_NAME: STUB_SHA256},
+                packages=installed_versions(STUB_PACKAGES),
+                synthesizer=StubVoice,
+                prune=prune,
+            )
+        else:
+            pins = load_pins(cast(Path, args.pins))
+            models = cast(Path, args.models)
 
-        def kokoro() -> Synthesizer:
-            files = {role: fetch_verified(pin, models) for role, pin in pins.items()}
-            return KokoroSynthesizer(files["model"], files["voices"])
+            def kokoro() -> Synthesizer:
+                files = {role: fetch_verified(pin, models) for role, pin in pins.items()}
+                return KokoroSynthesizer(files["model"], files["voices"])
 
-        result = render(
-            scripts,
-            cast(Path, args.out),
-            model_sha256={pin.name: pin.sha256 for pin in pins.values()},
-            packages=installed_versions(TTS_PACKAGES),
-            synthesizer=kokoro,
-            prune=prune,
-        )
+            result = render(
+                scripts,
+                out,
+                model_sha256={pin.name: pin.sha256 for pin in pins.values()},
+                packages=installed_versions(TTS_PACKAGES),
+                synthesizer=kokoro,
+                prune=prune,
+            )
     except RenderError as error:
         print(f"render_debriefs: {error}", file=sys.stderr)
         return 1
