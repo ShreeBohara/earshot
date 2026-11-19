@@ -37,20 +37,28 @@ describe("the targets", () => {
 });
 
 describe("messages a second", () => {
-  it("refuses a burst past the limit with rate_limited, then closes a client that keeps going", async () => {
+  it("closes the socket at the first message past the rate, and handles nothing after it", async () => {
     const { socket } = await open();
-    const ack = { t: "ack", seq: 0 };
-    for (let n = 0; n < 40; n++) socket.send(ack);
-    // hello took one token of the burst, and a few refill while the burst arrives.
-    const refused = await socket.waitForCount(
-      (m) => m.t === "error" && m.code === "rate_limited",
-      10,
+    await socket.request(startMessage());
+    const turnId = uuidv7();
+    // A burst well past the bucket, ending with a turn_end: it must never run, because some of
+    // the utterances before it were over the rate.
+    const burst = Array.from({ length: SESSION_LIMITS.messageBurst + 10 }, (_, n) =>
+      utteranceMessage(turnId, utteranceOf(`Line ${n}.`)),
     );
-    expect(refused[0]).toEqual({ t: "error", code: "rate_limited", retryable: true });
+    for (const message of burst) socket.send(message);
+    socket.send(turnEndMessage(turnId, canaryKey()));
 
-    for (let n = 0; n < SESSION_LIMITS.refusalsBeforeClose + 10; n++) socket.send(ack);
     expect((await socket.closed).code).toBe(SESSION_CLOSE_CODES.rate_limited.code);
-  });
+    expect(socket.received.some((m) => m.t === "error" && m.code === "rate_limited")).toBe(false);
+    // Every stored event reaches the socket, so its events are the log up to the close.
+    const events = socket.events();
+    expect(events.some((event) => event.type === "turn.completed")).toBe(false);
+    // Only messages inside the burst were stored; the client resends the rest on reconnect.
+    const stored = events.filter((event) => event.type === "utterance.final").length;
+    expect(stored).toBeGreaterThan(0);
+    expect(stored).toBeLessThan(burst.length);
+  }, 20_000);
 });
 
 describe("turns per window", () => {

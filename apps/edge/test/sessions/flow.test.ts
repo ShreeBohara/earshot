@@ -196,7 +196,13 @@ describe("refusals", () => {
     const before = socket.received.length;
     socket.send(strayKey);
     await socket.waitFor(() => socket.received.length > before);
-    expect(socket.received.at(-1)).toEqual({ t: "error", code: "bad_message", retryable: false });
+    // The refusal names the msgId, so the client drops the message instead of resending it.
+    expect(socket.received.at(-1)).toEqual({
+      t: "error",
+      code: "bad_message",
+      retryable: false,
+      msgId: strayKey.msgId,
+    });
 
     const nul = utteranceMessage(uuidv7(), utteranceOf("a\u0000b"));
     socket.send(nul);

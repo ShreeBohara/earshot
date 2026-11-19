@@ -103,6 +103,20 @@ function msgIdOf(message: ClientMessage): { msgId?: string } {
   return "msgId" in message ? { msgId: message.msgId } : {};
 }
 
+/** Where a client frame's msgId sits: the client writes `t`, then `msgId`, near the start. */
+const RAW_MSG_ID =
+  /"msgId"\s*:\s*"([0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})"/;
+
+/**
+ * The msgId of a frame that failed to parse, read from its first 256 characters without parsing
+ * the rest (it may be oversized or not JSON at all); none if it isn't there.
+ */
+function rawMsgIdOf(frame: string | ArrayBuffer): { msgId?: string } {
+  if (typeof frame !== "string") return {};
+  const match = RAW_MSG_ID.exec(frame.slice(0, 256));
+  return match?.[1] ? { msgId: match[1] } : {};
+}
+
 /** The entities `start` stored, or none. */
 function readEntities(stored: string | undefined): EntityRef[] {
   if (!stored) return [];
@@ -251,14 +265,12 @@ export class SessionRuntime extends DurableObject<Env> {
       bucket = newBucket(now);
       this.#buckets.set(attachment.connId, bucket);
     }
-    const rate = takeMessage(bucket, now);
-    if (rate === "close") {
+    // Once the socket went over the rate, frames still arriving before the close are dropped
+    // unhandled, so nothing after the first refused message can run out of order.
+    if (bucket.closed) return;
+    if (takeMessage(bucket, now) === "close") {
       this.#log.warn("socket closed", { close: "rate_limited" });
       closeWith(ws, "rate_limited");
-      return;
-    }
-    if (rate === "refuse") {
-      sendMessage(ws, { t: "error", code: "rate_limited", retryable: true });
       return;
     }
 
@@ -307,10 +319,13 @@ export class SessionRuntime extends DurableObject<Env> {
       return;
     }
     this.#log.warn("message refused", { reason });
+    // With the msgId the client can drop the message for good, instead of resending it on
+    // every reconnect.
     sendMessage(ws, {
       t: "error",
       code: reason === "too_large" ? "too_large" : "bad_message",
       retryable: false,
+      ...rawMsgIdOf(frame),
     });
   }
 

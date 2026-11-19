@@ -6,8 +6,6 @@ export const SESSION_LIMITS = Object.freeze({
   messagesPerSecond: 20,
   /** Messages one socket may send at once (a reconnect's resends), before the rate applies. */
   messageBurst: 20,
-  /** Refused messages, net of what the rate drains, before the socket closes with `rate_limited`. */
-  refusalsBeforeClose: 100,
   /** Turns per window. */
   turnsPerWindow: 30,
   /** The turn limit's window. */
@@ -42,30 +40,31 @@ export const FLUSH_TIMING = Object.freeze({
 export interface RateBucket {
   tokens: number;
   at: number;
-  refusals: number;
+  /** The socket went over the rate and is closing: nothing more from it is handled. */
+  closed: boolean;
 }
 
 export function newBucket(now: number): RateBucket {
-  return { tokens: SESSION_LIMITS.messageBurst, at: now, refusals: 0 };
+  return { tokens: SESSION_LIMITS.messageBurst, at: now, closed: false };
 }
 
 /**
- * Takes one message from the bucket: `ok`, `refuse` (answer `rate_limited` and drop it), or
- * `close` once a client keeps going regardless. Refusals drain at the same rate tokens refill, so
- * one burst (a reconnect's resends) only costs refusals, while a client that stays well over the
- * rate piles them up until it's closed.
+ * Takes one message from the bucket: `ok`, or `close` for the first message past the rate.
+ * Dropping one message and handling the next would break the log's order (an `utterance` lost
+ * before the `turn_end` that runs its turn), so the socket closes instead. The client reconnects
+ * after a backoff and resends everything unacknowledged, in order; it paces itself well under the
+ * rate, so only a misbehaving client gets here.
  */
-export function takeMessage(bucket: RateBucket, now: number): "ok" | "refuse" | "close" {
-  const drained = (Math.max(0, now - bucket.at) / 1000) * SESSION_LIMITS.messagesPerSecond;
-  bucket.tokens = Math.min(SESSION_LIMITS.messageBurst, bucket.tokens + drained);
-  bucket.refusals = Math.max(0, bucket.refusals - drained);
+export function takeMessage(bucket: RateBucket, now: number): "ok" | "close" {
+  const refilled = (Math.max(0, now - bucket.at) / 1000) * SESSION_LIMITS.messagesPerSecond;
+  bucket.tokens = Math.min(SESSION_LIMITS.messageBurst, bucket.tokens + refilled);
   bucket.at = now;
   if (bucket.tokens >= 1) {
     bucket.tokens -= 1;
     return "ok";
   }
-  bucket.refusals += 1;
-  return bucket.refusals > SESSION_LIMITS.refusalsBeforeClose ? "close" : "refuse";
+  bucket.closed = true;
+  return "close";
 }
 
 /** The turn starts still inside the window, oldest first, from `meta.turn_starts`. */
