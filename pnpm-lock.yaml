@@ -328,6 +328,9 @@ importers:
       '@earshot/keys':
         specifier: workspace:*
         version: link:../../packages/keys
+      '@earshot/voice':
+        specifier: workspace:*
+        version: link:../../packages/voice
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@neondatabase/serverless@1.2.0)(kysely@0.29.9)

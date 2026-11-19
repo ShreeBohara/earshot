@@ -19,6 +19,7 @@
     "@earshot/db": "workspace:*",
     "@earshot/events": "workspace:*",
     "@earshot/keys": "workspace:*",
+    "@earshot/voice": "workspace:*",
     "drizzle-orm": "catalog:",
     "hono": "catalog:",
     "zod": "catalog:"

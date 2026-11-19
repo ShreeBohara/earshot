@@ -1,8 +1,8 @@
 // The cost meter (spec WP6 step 7): client usage priced from the dated table, LLM usage priced by
 // the agent, totals in meta, and the total on session.ended.
 import { scenario } from "@earshot/agent/testing";
+import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
 import { describe, expect, it, vi } from "vitest";
-import { PRICE_TABLE_DATE, priceStt } from "../../src/prices";
 import { readMeter } from "../../src/session/meter";
 import {
   canaryKey,

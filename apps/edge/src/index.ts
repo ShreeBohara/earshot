@@ -1,9 +1,9 @@
 // The edge Worker (docs/adr/0003): the session socket's front door, the Durable Objects that hold
 // sessions, and the Queue consumer that flushes them to Postgres.
 import { WorkerEntrypoint } from "cloudflare:workers";
+import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
 import { productionAgent } from "./agent";
 import { createApp } from "./app";
-import { PRICE_TABLE_DATE, priceStt } from "./prices";
 import { handleFlushQueue, type PurgeResult, purgeSessions, queueSink } from "./queue";
 import { SessionRuntime } from "./session-do";
 

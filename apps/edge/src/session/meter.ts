@@ -3,7 +3,9 @@
 // transaction, so the totals always equal the sum of the log's usage events. `session.ended`
 // carries the total; the client shows a running total from the events themselves.
 import type { UsageRecordedV1 } from "@earshot/core";
-import { roundUsd } from "../prices";
+
+/** Rounds to a billionth of a dollar, so sums of many small prices stay exact enough to show. */
+const roundUsd = (usd: number) => Math.round(usd * 1e9) / 1e9;
 
 export interface MeterTotals {
   /** Everything, in USD. */

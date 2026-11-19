@@ -33,10 +33,10 @@ import {
   uuidv7,
 } from "@earshot/core";
 import type { EventEnvelope } from "@earshot/events";
+import type { PriceResult, SttUsageInput } from "@earshot/voice/prices";
 import type { TurnAgent, TurnResult } from "./agent";
 import { type FlushSink, packFlushMessages, type SessionIdentity } from "./flush-message";
 import { createLogger, type Logger } from "./log";
-import type { PriceResult, SttUsageInput } from "./prices";
 import { hasUnstorableString, toStorable } from "./session/jsonb";
 import {
   FLUSH_TIMING,

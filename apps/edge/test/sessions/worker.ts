@@ -8,10 +8,10 @@
 //   them and scan them for leaks. `failSink` makes the recorder throw.
 import { type Cassette, cassette, createCassetteFetch } from "@earshot/agent/testing";
 import type { LlmProvider } from "@earshot/core";
+import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
 import { productionAgent, withFetch } from "../../src/agent";
 import { demoCassette } from "../../src/e2e";
 import type { FlushMessage, FlushSink } from "../../src/flush-message";
-import { PRICE_TABLE_DATE, priceStt } from "../../src/prices";
 import { SessionRuntime } from "../../src/session-do";
 
 export { default } from "../../src/index";

@@ -7,8 +7,8 @@
 
 import { CASSETTES, type Cassette, createCassetteFetch } from "@earshot/agent/testing";
 import type { LlmProvider } from "@earshot/core";
+import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
 import { productionAgent, withFetch } from "./agent";
-import { PRICE_TABLE_DATE, priceStt } from "./prices";
 import { queueSink } from "./queue";
 import { SessionRuntime } from "./session-do";
 
