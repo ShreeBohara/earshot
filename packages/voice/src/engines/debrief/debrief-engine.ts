@@ -115,6 +115,10 @@ interface Finalizing {
   readonly turn: Turn;
   readonly trigger: TurnTrigger;
   timer: unknown;
+  /** Its force-finalize went out on the current socket. */
+  sent: boolean;
+  /** Its wait is over; it ends as soon as every earlier turn has. */
+  expired: boolean;
 }
 
 const TIMER_NAMES = ["idle", "retry", "keepAlive", "flush", "silence"] as const;
@@ -186,7 +190,12 @@ export class DebriefEngine implements VoiceEngine {
   #cursor = 0;
 
   #currentTurn: Turn | undefined;
-  #finalizing: Finalizing | undefined;
+  /**
+   * Released turns still waiting on their finals, oldest first. A second release can come before
+   * the first one's final lands; each queued turn then takes the finals that arrive until the
+   * provider ends it, so transcripts stay with the press they came from.
+   */
+  #finalizing: Finalizing[] = [];
   /** A release's force-finalize, waiting for an open, caught-up socket. */
   #pendingFinalize = false;
   #providerTurnOpen = false;
@@ -334,8 +343,11 @@ export class DebriefEngine implements VoiceEngine {
 
   #onFrame(frame: CaptureFrame): void {
     this.#emit({ type: "level", mic: levelFromRms(frame.rms), agent: 0 });
-    this.#preRoll.write(frame.pcm);
-    if (this.#gate !== "closed" && !this.#isMuted()) {
+    const muted = this.#isMuted();
+    // Muted audio (the agent speaking) never reaches the provider, not even as the pre-roll a
+    // hands-free wake replays: the ring keeps silence in its place, so its timing still lines up.
+    this.#preRoll.write(muted ? new Int16Array(frame.pcm.length) : frame.pcm);
+    if (this.#gate !== "closed" && !muted) {
       this.#speech.append(frame.pcm);
       if (frame.rms >= this.#settings.voicedRms) this.#lastVoicedSample = this.#speech.end;
       this.#pump(false);
@@ -374,9 +386,9 @@ export class DebriefEngine implements VoiceEngine {
   }
 
   #beginFinalize(turn: Turn, trigger: TurnTrigger): void {
-    if (this.#finalizing) this.#endFinalizingTurn(); // the previous release: keep turns in order
     turn.endSample = this.#speech.end;
-    this.#finalizing = { turn, trigger, timer: undefined };
+    // Queue behind any release still waiting on its finals, rather than ending that one early.
+    this.#finalizing.push({ turn, trigger, timer: undefined, sent: false, expired: false });
     this.#pendingFinalize = true;
     this.#syncWant();
     this.#sendFinalize();
@@ -391,8 +403,8 @@ export class DebriefEngine implements VoiceEngine {
     if (this.#connection !== connection || this.#socket.state !== "open") return;
     this.#pendingFinalize = false;
     connection.finalize();
-    const finalizing = this.#finalizing;
-    if (!finalizing) return;
+    const unsent = this.#finalizing.filter((finalizing) => !finalizing.sent);
+    if (unsent.length === 0) return;
     const recentlyVoiced =
       this.#speech.end - this.#lastVoicedSample <= this.#settings.voicedTailSamples;
     const waitMs = this.#providerTurnOpen
@@ -400,25 +412,39 @@ export class DebriefEngine implements VoiceEngine {
       : recentlyVoiced
         ? this.#settings.quietReleaseWaitMs
         : 0;
-    if (waitMs === 0) {
-      this.#endFinalizingTurn();
-      return;
+    for (const finalizing of unsent) {
+      finalizing.sent = true;
+      this.#clock.clearTimeout(finalizing.timer);
+      if (waitMs === 0) finalizing.expired = true;
+      else finalizing.timer = this.#clock.setTimeout(() => this.#expire(finalizing), waitMs);
     }
-    this.#clock.clearTimeout(finalizing.timer);
-    finalizing.timer = this.#clock.setTimeout(() => {
-      if (this.#finalizing === finalizing) this.#endFinalizingTurn();
-    }, waitMs);
+    this.#endExpiredTurns();
   }
 
-  #endFinalizingTurn(): void {
-    const finalizing = this.#finalizing;
+  /** A queued turn's wait ran out: end it now if it's first in line, else right after the rest. */
+  #expire(finalizing: Finalizing): void {
+    if (!this.#finalizing.includes(finalizing)) return;
+    finalizing.expired = true;
+    this.#endExpiredTurns();
+  }
+
+  #endExpiredTurns(): void {
+    while (this.#finalizing[0]?.expired) this.#endOldestTurn();
+  }
+
+  /** Ends the oldest released turn still waiting on its finals. */
+  #endOldestTurn(): void {
+    const finalizing = this.#finalizing.shift();
     if (!finalizing) return;
     this.#clock.clearTimeout(finalizing.timer);
-    this.#finalizing = undefined;
-    this.#pendingFinalize = false;
+    this.#pendingFinalize = this.#finalizing.some((waiting) => !waiting.sent);
     this.#emitTurnEnd(finalizing.turn, finalizing.trigger);
     this.#syncWant();
     for (const resolve of this.#turnWaiters) resolve();
+  }
+
+  #endAllWaitingTurns(): void {
+    while (this.#finalizing.length > 0) this.#endOldestTurn();
   }
 
   #emitTurnEnd(turn: Turn, trigger: TurnTrigger): void {
@@ -458,7 +484,8 @@ export class DebriefEngine implements VoiceEngine {
 
   /** Starts streaming: on arming hands-free, or when the VAD hears speech after a silence. */
   #wake(withPreRoll: boolean): void {
-    if (withPreRoll) {
+    // Waking on the agent's own voice while muted must not replay it either.
+    if (withPreRoll && !this.#isMuted()) {
       this.#speech.append(this.#preRoll.read(this.#preRoll.end - this.#settings.preRollSamples));
     }
     this.#clearTimer("silence");
@@ -539,7 +566,7 @@ export class DebriefEngine implements VoiceEngine {
       !this.#suspended &&
       (this.#pressed ||
         this.#gate === "draining" ||
-        this.#finalizing !== undefined ||
+        this.#finalizing.length > 0 ||
         (this.#mode === "hands_free" && this.#streaming));
     if (needed !== this.#socket.context.wanted) {
       this.#socketEvent({ type: needed ? "want" : "release" });
@@ -702,16 +729,18 @@ export class DebriefEngine implements VoiceEngine {
     this.#providerTurnOpen = false;
     this.#clearTimer("keepAlive");
     // A force-finalize sent on the lost socket must go again on the next one, after the replay.
-    const finalizing = this.#finalizing;
-    if (finalizing && !this.#pendingFinalize) {
+    for (const finalizing of this.#finalizing) {
+      if (!finalizing.sent || finalizing.expired) continue;
       this.#clock.clearTimeout(finalizing.timer);
+      finalizing.sent = false;
       this.#pendingFinalize = true;
     }
     this.#socketEvent({ type: expected ? "closed" : "dropped" });
   }
 
   #onFinal(utterance: UtteranceFinalV2): void {
-    let turn = this.#finalizing?.turn ?? this.#currentTurn;
+    // Finals arrive in audio order, so they belong to the oldest release still waiting.
+    let turn = this.#finalizing[0]?.turn ?? this.#currentTurn;
     const orphan = turn === undefined && this.#mode === "push_to_talk";
     if (!turn) {
       turn = this.#newTurn();
@@ -725,8 +754,10 @@ export class DebriefEngine implements VoiceEngine {
   }
 
   #onProviderEndOfTurn(): void {
-    if (this.#finalizing) {
-      this.#endFinalizingTurn();
+    if (this.#finalizing.length > 0) {
+      // The provider answers releases in order: this end of turn closes the oldest one.
+      this.#endOldestTurn();
+      this.#endExpiredTurns();
       return;
     }
     if (this.#mode === "hands_free" && this.#currentTurn) {
@@ -740,7 +771,7 @@ export class DebriefEngine implements VoiceEngine {
   #giveUp(reason: "attempts_exhausted" | "rejected"): void {
     this.#suspended = true;
     this.#emit({ type: "error", code: this.#lastConnectError, retryable: reason !== "rejected" });
-    if (this.#finalizing) this.#endFinalizingTurn();
+    this.#endAllWaitingTurns();
   }
 
   /** Sends whole messages from the cursor; with `flush`, the remainder too. */
@@ -784,7 +815,7 @@ export class DebriefEngine implements VoiceEngine {
     }
     await this.#waitForTurnEnd(this.#settings.flushTimeoutMs + this.#settings.finalizeTimeoutMs);
     if (this.#gate === "draining") this.#onDrained();
-    this.#endFinalizingTurn();
+    this.#endAllWaitingTurns();
     this.#gate = "closed";
     for (const key of TIMER_NAMES) this.#clearTimer(key);
     await this.#vad?.destroy().catch(() => {});
@@ -797,10 +828,10 @@ export class DebriefEngine implements VoiceEngine {
   }
 
   #waitForTurnEnd(timeoutMs: number): Promise<void> {
-    if (this.#gate !== "draining" && !this.#finalizing) return Promise.resolve();
+    if (this.#gate !== "draining" && this.#finalizing.length === 0) return Promise.resolve();
     return new Promise((resolve) => {
       const done = () => {
-        if (this.#gate === "draining" || this.#finalizing) return;
+        if (this.#gate === "draining" || this.#finalizing.length > 0) return;
         this.#clock.clearTimeout(timer);
         this.#turnWaiters.delete(done);
         resolve();
@@ -835,7 +866,7 @@ export class DebriefEngine implements VoiceEngine {
     let next: EngineState;
     if (recovering && wanted) next = "reconnecting";
     else if (this.#pressed || (this.#mode === "hands_free" && this.#speaking)) next = "recording";
-    else if (this.#gate === "draining" || this.#finalizing) next = "finalizing";
+    else if (this.#gate === "draining" || this.#finalizing.length > 0) next = "finalizing";
     else next = "armed";
     this.#setState(next);
   }

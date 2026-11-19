@@ -229,6 +229,23 @@ describe("push-to-talk", () => {
     expect(h.story()).toEqual(["final 1 Acme renewed for two years", "turn_end 1 ptt_release"]);
   });
 
+  it("keeps each press's final with its own turn when the next press ends before it lands", async () => {
+    const h = harness({ fake: { faults: { finalDelayMs: 900 } } });
+    await h.start();
+    await press(h, 320);
+    await press(h, 320);
+    // The first press is still waiting on its final: the second release doesn't end it early.
+    expect(h.story()).toEqual([]);
+    await h.clock.advance(2_000);
+    // 320 ms presses carry only each script turn's first word; what matters is which turn gets it.
+    expect(h.story()).toEqual([
+      "final 1 Acme",
+      "turn_end 1 ptt_release",
+      "final 2 Send",
+      "turn_end 2 ptt_release",
+    ]);
+  });
+
   it("gives up waiting after the finalize timeout, and delivers a late final as its own turn", async () => {
     const h = harness({ fake: { faults: { finalDelayMs: 4_000 } } });
     await h.start();
@@ -507,6 +524,57 @@ describe("hands-free", () => {
     const [, resumedAt] = h.fake.stats().baseOffsetsMs;
     expect(resumedAt).toBe(asleepAt / 16);
     expect(h.fake.stats().samplesReceived - asleepAt).toBeGreaterThanOrEqual(16_000);
+  });
+
+  it("never streams audio captured while muted, not even as a wake's pre-roll", async () => {
+    let muted = false;
+    const h = harness({ isMuted: () => muted, fake: { timeline: "absolute", endpointingMs: 600 } });
+    await h.start();
+    await h.engine.setHandsFree(true);
+    h.vad.speechStart();
+    await h.talk(3_300);
+    h.vad.speechEnd();
+    await h.talk(20_000, 0); // asleep after the long silence
+    const asleepAt = h.fake.stats().samplesReceived;
+    muted = true; // the agent speaks, and the VAD hears it
+    await h.talk(1_000);
+    h.vad.speechStart();
+    await h.talk(320);
+    expect(h.fake.stats().samplesReceived).toBe(asleepAt);
+    muted = false;
+    await h.talk(640);
+    expect(h.fake.stats().samplesReceived).toBe(asleepAt + 640 * 16);
+  });
+
+  it("replays silence, not muted audio, when it wakes after the mute ends", async () => {
+    let muted = false;
+    const h = harness({ isMuted: () => muted, fake: { timeline: "absolute", endpointingMs: 600 } });
+    const sent: Int16Array[] = [];
+    const original = h.fake.connect.bind(h.fake);
+    h.fake.connect = async (options) => {
+      const connection = await original(options);
+      const send = connection.send.bind(connection);
+      connection.send = (pcm) => {
+        sent.push(pcm.slice());
+        send(pcm);
+      };
+      return connection;
+    };
+    await h.start();
+    await h.engine.setHandsFree(true);
+    h.vad.speechStart();
+    await h.talk(3_300);
+    h.vad.speechEnd();
+    await h.talk(20_000, 0);
+    sent.length = 0;
+    muted = true;
+    await h.talk(1_000); // loud, but muted
+    muted = false;
+    h.vad.speechStart(); // wakes with the 1 s pre-roll
+    await h.clock.advance(0);
+    const preRoll = sent.flatMap((pcm) => Array.from(pcm)).slice(0, 16_000);
+    expect(preRoll.length).toBeGreaterThan(0);
+    expect(preRoll.every((sample) => sample === 0)).toBe(true);
   });
 
   it("keeps streaming without a silence cutoff when the VAD can't load", async () => {
