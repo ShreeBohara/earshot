@@ -1,0 +1,58 @@
+name: Eval WAVs
+description: >-
+  Restores the eval debrief WAVs (lab/.cache/wavs) from the Actions cache, or renders them with
+  Kokoro on a miss (Phase 3 spec, WP11 step 3; ADR-0026). Spends nothing and needs no secrets.
+  Call it after actions/checkout, in any job that plays the WAVs through Chrome's fake microphone.
+
+outputs:
+  wavs-dir:
+    description: The directory holding manifest.json and each script's <hash>.wav and <hash>.timing.json
+    value: lab/.cache/wavs
+  manifest:
+    description: manifest.json, which maps each script id to its WAV and timing file
+    value: lab/.cache/wavs/manifest.json
+  cache-hit:
+    description: '"true" when every WAV came from the cache as it was, so nothing was rendered'
+    value: ${{ steps.wavs.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+    # The WAVs. The key covers, coarsely, everything each WAV's own hash does: the scripts, the
+    # renderer, the model pins, and the lockfile (the package versions). On a miss the newest older
+    # entry is restored, and the renderer only renders scripts whose hash changed, so editing one
+    # script's expectations renders nothing and editing its text renders one WAV.
+    - id: wavs
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: lab/.cache/wavs
+        key: eval-wavs-v1-${{ runner.os }}-${{ hashFiles('packages/evals/debriefs/*.json', 'lab/scripts/render_debriefs.py', 'lab/scripts/kokoro_files.json', 'lab/uv.lock') }}
+        restore-keys: |
+          eval-wavs-v1-${{ runner.os }}-
+
+    # The model files (about 354 MB), keyed on their pins. Only a miss above needs them, and the
+    # renderer downloads only what isn't here, checking each file's size and SHA-256.
+    - if: steps.wavs.outputs.cache-hit != 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: lab/.cache/kokoro
+        key: kokoro-files-${{ hashFiles('lab/scripts/kokoro_files.json') }}
+
+    # kokoro-onnx and onnxruntime live in the lab's tts group, which the checks job never installs.
+    # No apt packages: kokoro-onnx phonemizes through espeakng-loader, whose wheel bundles
+    # libespeak-ng and its data.
+    - if: steps.wavs.outputs.cache-hit != 'true'
+      name: Install the lab's tts group
+      shell: bash
+      env:
+        UV_FROZEN: "1"
+      run: uv sync --project lab --group tts
+
+    - if: steps.wavs.outputs.cache-hit != 'true'
+      name: Render the debriefs that aren't cached
+      shell: bash
+      env:
+        UV_FROZEN: "1"
+      run: uv run --project lab --group tts python lab/scripts/render_debriefs.py --prune --summary "$GITHUB_STEP_SUMMARY"
