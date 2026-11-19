@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     "@earshot/demo-crm",
     "@earshot/events",
     "@earshot/keys",
+    "@earshot/voice",
   ],
   // `next dev` without DATABASE_URL runs PGlite in process (lib/db/dev.ts). Loaded by Node rather
   // than bundled, because it reads its WebAssembly and extension files at run time. Production

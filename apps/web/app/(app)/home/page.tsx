@@ -1,11 +1,11 @@
-import { KeyRoundIcon, PlayIcon } from "lucide-react";
+import { KeyRoundIcon, MicIcon, PlayIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { StartCard } from "@/components/start-card";
 import { displayName, requireViewer } from "@/lib/auth/viewer";
 
 export const metadata: Metadata = { title: "Home · Earshot" };
 
-/** A minimal home until capture and the review inbox arrive (Phases 3 and 5). */
+/** A minimal home until the review inbox arrives (Phase 5). */
 export default async function HomePage() {
   const viewer = await requireViewer("/home");
 
@@ -17,8 +17,8 @@ export default async function HomePage() {
         </p>
         <h1 className="font-serif text-4xl tracking-tight">Hello, {displayName(viewer.user)}</h1>
         <p className="max-w-prose text-pretty text-muted-foreground">
-          Capture and the review inbox are on the way. Until then, set up your keys or watch how a
-          debrief becomes CRM updates.
+          Debrief a call while it&apos;s fresh, set up your keys, or watch how a debrief becomes CRM
+          updates. The review inbox is on the way.
         </p>
       </header>
 
@@ -26,7 +26,16 @@ export default async function HomePage() {
         <h2 id="get-started" className="font-medium text-sm">
           Get started
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StartCard
+            href="/capture"
+            icon={MicIcon}
+            title="Debrief a call"
+            action="Start a debrief"
+            headingLevel="h3"
+          >
+            Hold to talk; Earshot drafts CRM changes with the words they came from.
+          </StartCard>
           <StartCard
             href="/settings/keys"
             icon={KeyRoundIcon}

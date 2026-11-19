@@ -1,5 +1,7 @@
 // Fails the build if development-only code reached the OpenNext Worker bundle. `next dev` runs
-// PGlite in process (lib/db/dev.ts); production builds must compile it out (docs/adr/0018).
+// PGlite in process (lib/db/dev.ts); production builds must compile it out (docs/adr/0018). The
+// capture screen's fake mode (lib/capture/dev/: the fake speech-to-text adapter and the e2e
+// scenario) is development-only too, client and server, and the scan covers both.
 //
 //   node scripts/check-worker-bundle.mjs [.open-next]
 import { readdirSync, readFileSync } from "node:fs";
@@ -9,13 +11,16 @@ const root = path.resolve(process.argv[2] ?? ".open-next");
 
 // Strings that survive minification: one from lib/db/dev.ts, one from lib/repo-path.ts as used by
 // lib/db/pglite.ts, and the names of PGlite's own runtime files. The serialized Next config lists
-// the PGlite packages in lowercase (`serverExternalPackages`), which these don't match.
+// the PGlite packages in lowercase (`serverExternalPackages`), which these don't match. Then
+// @earshot/voice/testing's FAKE_STT_MARKER, and the e2e scenario route lib/capture/dev/ asks.
 const MARKERS = [
   "earshot.dev-database",
   "pglite.wasm",
   "pglite.data",
   "PGlite",
   "drizzle-orm/pglite",
+  "earshot.fake-stt",
+  "/v1/e2e/scenario",
 ];
 const SCANNED = /\.(?:m?js|cjs|json|wasm)$/;
 
@@ -42,8 +47,8 @@ if (scanned === 0) {
   process.exit(1);
 }
 if (hits.length > 0) {
-  console.error("check-worker-bundle: development-only database code reached the Worker bundle:");
+  console.error("check-worker-bundle: development-only code reached the Worker bundle:");
   for (const hit of hits) console.error(`  ${hit}`);
   process.exit(1);
 }
-console.log(`check-worker-bundle: ${scanned} files, no PGlite or dev-database code`);
+console.log(`check-worker-bundle: ${scanned} files, no PGlite, dev-database, or fake-voice code`);
