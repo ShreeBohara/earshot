@@ -377,6 +377,11 @@ export function useCassette(stub: Stub, name: string | null): Promise<void> {
   return withSql(stub, (sql) => setTestSetting(sql, "cassette", name));
 }
 
+/** Stops the session's clock at `at` (ms since the epoch), or restarts it with `null`. */
+export function freezeClock(stub: Stub, at: number | null): Promise<void> {
+  return withSql(stub, (sql) => setTestSetting(sql, "now", at === null ? null : String(at)));
+}
+
 export function failSink(stub: Stub, failing: boolean): Promise<void> {
   return withSql(stub, (sql) => setTestSetting(sql, "sink", failing ? "fail" : null));
 }

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { FLUSH_TIMING, SESSION_LIMITS } from "../../src/session/limits";
 import {
   canaryKey,
+  freezeClock,
   meta,
   open,
   setMeta,
@@ -38,8 +39,10 @@ describe("the targets", () => {
 
 describe("messages a second", () => {
   it("closes the socket at the first message past the rate, and handles nothing after it", async () => {
-    const { socket } = await open();
+    const { socket, stub } = await open();
     await socket.request(startMessage());
+    // With the clock stopped the bucket can't refill, however slowly the runner handles the burst.
+    await freezeClock(stub, Date.now());
     const turnId = uuidv7();
     // A burst well past the bucket, ending with a turn_end: it must never run, because some of
     // the utterances before it were over the rate.
@@ -58,7 +61,7 @@ describe("messages a second", () => {
     const stored = events.filter((event) => event.type === "utterance.final").length;
     expect(stored).toBeGreaterThan(0);
     expect(stored).toBeLessThan(burst.length);
-  }, 20_000);
+  });
 });
 
 describe("turns per window", () => {

@@ -88,6 +88,12 @@ export class SessionDO extends SessionRuntime {
       sink: recordingSink(ctx.storage.sql),
       priceStt,
       priceTableDate: PRICE_TABLE_DATE,
+      // A test can stop the clock (`freezeClock`), so timing on a slow runner can't change what
+      // a rate or window test sees.
+      now: () => {
+        const frozen = testSetting(ctx.storage.sql, "now");
+        return frozen === undefined ? Date.now() : Number(frozen);
+      },
     });
   }
 }
