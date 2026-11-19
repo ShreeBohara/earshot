@@ -19,6 +19,10 @@ next-env.d.ts
 # local databases (apps/web's zero-setup PGlite lives in apps/web/.data/)
 .data/
 
+# voice assets copied and built by earshot-voice-assets (packages/voice) at dev and build time
+apps/web/public/vad/
+apps/web/public/voice/
+
 # tests
 playwright-report/
 test-results/

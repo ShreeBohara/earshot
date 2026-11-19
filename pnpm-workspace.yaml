@@ -66,5 +66,7 @@ trustPolicy: no-downgrade
 # pnpm 11+ fails the install when a dependency's install script hasn't been reviewed.
 allowBuilds:
   esbuild: true
+  # Via onnxruntime-web (packages/voice). Its postinstall only prints a version-scheme warning.
+  protobufjs: false
   sharp: true
   workerd: true
