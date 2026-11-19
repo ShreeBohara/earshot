@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "id": "d025",
+  "title": "Lantern Hospitality expands guest messaging; references and a title change",
+  "voice": "bm_daniel",
+  "callTime": "2026-12-02T18:20:00.000Z",
+  "timeZone": "America/Denver",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Lantern Hospitality wants to roll out guest messaging to six more hotels.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_053",
+          "fields": {
+            "body": {
+              "value": "They want to roll out guest messaging to six more hotels.",
+              "quote": "wants to roll out guest messaging to six more hotels"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Katherine Moore, their VP of operations, asked for references from two hotel groups by Friday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_078",
+          "fields": {
+            "title": {
+              "value": "Send Katherine Moore references from two hotel groups",
+              "quote": "references from two hotel groups"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "by Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Erik Nilsson runs their supply chain now, not procurement. Update his title to supply chain director.",
+      "tags": ["negation"],
+      "expect": [
+        {
+          "type": "contact",
+          "target": "ct_033",
+          "fields": {
+            "name": {
+              "value": "Erik Nilsson",
+              "quote": "Erik Nilsson"
+            },
+            "title": {
+              "value": "supply chain director",
+              "quote": "supply chain director"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "And I committed to a pricing workshop with Lantern in January.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "co_053",
+          "fields": {
+            "text": {
+              "value": "Run a pricing workshop with Lantern Hospitality in January",
+              "quote": "a pricing workshop with Lantern in January"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "release": "https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.1",
+  "note": "The files kokoro-onnx 0.6.1's README points to. Sizes and SHA-256s are GitHub's published asset digests (release API, read 2026-11-19); the assets were re-uploaded on 2026-08-18, so the pins also catch any later re-upload. CI's model cache is keyed on this file.",
+  "files": {
+    "model": {
+      "name": "kokoro-v1.0.onnx",
+      "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.1/kokoro-v1.0.onnx",
+      "size": 325505369,
+      "sha256": "beb0d1848dee9a49da392cc3df26958d46cfa35d321edf434f52949153f0df3a"
+    },
+    "voices": {
+      "name": "voices-v1.0.bin",
+      "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.1/voices-v1.0.bin",
+      "size": 28214398,
+      "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"
+    }
+  }
+}

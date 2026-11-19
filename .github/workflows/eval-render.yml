@@ -1,0 +1,57 @@
+name: eval-render
+
+# Manual only. Restores or renders the eval debrief WAVs with Kokoro, through the same composite
+# action the eval job will use, so the renderer and its caches can be exercised on GitHub's
+# runners without touching a required job. It spends nothing: no secrets, no provider calls
+# (Phase 3 spec, WP11 step 3; ADR-0026).
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Upload the WAVs, timing files, and manifest as an artifact, to listen to
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-render-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: wavs
+        uses: ./.github/actions/eval-wavs
+      - name: List the WAVs
+        env:
+          CACHE_HIT: ${{ steps.wavs.outputs.cache-hit }}
+          MANIFEST: ${{ steps.wavs.outputs.manifest }}
+        run: |
+          if [ "$CACHE_HIT" = "true" ]; then
+            {
+              echo "### Eval WAVs"
+              echo
+              echo "Every WAV came from the cache; nothing was rendered."
+              echo
+              echo "| Script | Audio | WAV |"
+              echo "|---|---|---|"
+              jq -r '.scripts | to_entries[] | "| \(.key) | \(.value.durationMs / 1000) s | `\(.value.wav)` |"' "$MANIFEST"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          jq '{renderer, model, packages, scripts: (.scripts | length)}' "$MANIFEST"
+          du -sh "$(dirname "$MANIFEST")"
+      - if: inputs.upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-wavs
+          path: lab/.cache/wavs
+          retention-days: 7
+          if-no-files-found: error

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "id": "d011",
+  "title": "Kestrel Aero closes the analytics add-on, with a kickoff on December 14th",
+  "voice": "af_jessica",
+  "callTime": "2026-12-03T16:15:00.000Z",
+  "timeZone": "America/Chicago",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Kestrel Aero, the Minneapolis one. Bruno Underhill, their CFO, signed off on the analytics add-on, so mark it closed won.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_006",
+          "fields": {
+            "stage": {
+              "value": "closed won",
+              "quote": "closed won"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The final number on the Kestrel add-on is one hundred thirty-two thousand after the multi-year discount.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_006",
+          "fields": {
+            "amount": {
+              "value": 132000,
+              "quote": "one hundred thirty-two thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Schedule the kickoff with Bruno Underhill for December 14th.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_010",
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Bruno Underhill",
+              "quote": "Schedule the kickoff with Bruno Underhill"
+            },
+            "dueDate": {
+              "value": "2026-12-14",
+              "quote": "December 14th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I didn't talk to Kestral Aero this week, so there's no update there.",
+      "tags": ["negation"],
+      "expect": []
+    }
+  ]
+}

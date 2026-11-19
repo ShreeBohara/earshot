@@ -1,0 +1,32 @@
+{
+  "name": "@earshot/evals",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Eval harness v0: 30 synthetic debrief scripts with ground truth, their schema and coverage rules, the session context they run in, the renderer's timing contract, and cassettes for both LLM adapters.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cassettes": "./src/cassettes.ts",
+    "./cassettes/*": "./cassettes/*",
+    "./debriefs/*": "./debriefs/*",
+    "./fixtures/*": "./fixtures/*"
+  },
+  "scripts": {
+    "cassettes:gen": "tsx scripts/gen-cassettes.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "@earshot/agent": "workspace:*",
+    "@earshot/core": "workspace:*",
+    "@earshot/demo-crm": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

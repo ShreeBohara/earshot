@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "id": "d010",
+  "title": "Harborview Marine renewal: a corrected amount, a later close, and updated terms",
+  "voice": "bm_george",
+  "callTime": "2026-12-02T16:40:00.000Z",
+  "timeZone": "Europe/London",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Harborview Marine renewal. Muhammad Hassan, their controller, wants it at one hundred eighty thousand, sorry, one hundred eighty-five thousand.",
+      "tags": ["self_correction"],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_005",
+          "fields": {
+            "amount": {
+              "value": 185000,
+              "quote": "one hundred eighty-five thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Keep the Harborview Marine renewal at contract sent, but the close date slips to January 20th.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_005",
+          "fields": {
+            "closeDate": {
+              "value": "2027-01-20",
+              "quote": "January 20th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Harborview Health is a separate account, so don't touch that one.",
+      "tags": ["negation"],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I need to send Muhammad Hassan the updated terms tomorrow.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_143",
+          "fields": {
+            "title": {
+              "value": "Send Muhammad Hassan the updated terms",
+              "quote": "send Muhammad Hassan the updated terms"
+            },
+            "dueDate": {
+              "value": "2026-12-03",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

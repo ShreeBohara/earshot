@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "id": "d016",
+  "title": "Pier Logistics' expansion goes to contract; Aisha Khan at Peer Logistics needs a call",
+  "voice": "am_puck",
+  "callTime": "2026-12-10T15:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Pier Logistics, P I E R, here in Chicago. Ingrid Dalgaard says the expansion is approved, so move it to contract sent.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_037",
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Pier wants to start in February instead of March, so pull the expansion's close date in to January 29th.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_037",
+          "fields": {
+            "closeDate": {
+              "value": "2027-01-29",
+              "quote": "January 29th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "And I need to call Aisha Khan over at Peer Logistics about their invoice dispute tomorrow.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_007",
+          "fields": {
+            "title": {
+              "value": "Call Aisha Khan about the invoice dispute",
+              "quote": "call Aisha Khan over at Peer Logistics about their invoice dispute"
+            },
+            "dueDate": {
+              "value": "2026-12-11",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Also, Ingrid Dalgaard's email changed to ingrid.dalgaard@pier-logistics.example.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": "ct_015",
+          "fields": {
+            "name": {
+              "value": "Ingrid Dalgaard",
+              "quote": "Ingrid Dalgaard"
+            },
+            "email": {
+              "value": "ingrid.dalgaard@pier-logistics.example",
+              "quote": "ingrid.dalgaard@pier-logistics.example"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

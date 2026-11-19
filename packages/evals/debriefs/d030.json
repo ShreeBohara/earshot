@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "id": "d030",
+  "title": "Atlas Freight's pilot grows to fifteen trucks; a rollout plan due tomorrow",
+  "voice": "am_liam",
+  "callTime": "2026-12-10T00:30:00.000Z",
+  "timeZone": "America/Denver",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Atlas Freight, the trucking company in Salt Lake City. Emeka Zielinski says the pilot is going well.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_005",
+          "fields": {
+            "body": {
+              "value": "The pilot is going well, according to Emeka Zielinski.",
+              "quote": "the pilot is going well"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Atlas wants to extend it to fifteen trucks, so update the pilot program to fourteen thousand dollars.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_013",
+          "fields": {
+            "amount": {
+              "value": 14000,
+              "quote": "fourteen thousand dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Signe Lindqvist, their COO, needs a rollout plan by tomorrow.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_041",
+          "fields": {
+            "title": {
+              "value": "Send Signe Lindqvist a rollout plan",
+              "quote": "a rollout plan"
+            },
+            "dueDate": {
+              "value": "2026-12-10",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I told Emeka Zielinski we'd add driver training at no extra cost.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "ct_147",
+          "fields": {
+            "text": {
+              "value": "Add driver training at no extra cost",
+              "quote": "add driver training at no extra cost"
+            },
+            "counterpart": {
+              "value": "Emeka Zielinski",
+              "quote": "Emeka Zielinski"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Atmos Industrial and Atmas Group are different accounts, so nothing changes for them.",
+      "tags": ["negation"],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "d012",
+  "title": "Sigma Tooling plans another expansion; a new operations director and a site visit",
+  "voice": "am_onyx",
+  "callTime": "2026-12-04T19:00:00.000Z",
+  "timeZone": "America/New_York",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Sigma Tooling in Boston wants to expand again next quarter, probably another five work cells.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_029",
+          "fields": {
+            "body": {
+              "value": "They want to expand again next quarter, probably another five work cells.",
+              "quote": "wants to expand again next quarter, probably another five work cells"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Sigma's new operations director is Paloma Ruiz, and her number is 555-0143.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": null,
+          "fields": {
+            "name": {
+              "value": "Paloma Ruiz",
+              "quote": "Paloma Ruiz"
+            },
+            "title": {
+              "value": "operations director",
+              "quote": "operations director"
+            },
+            "company": {
+              "value": "Sigma Tooling",
+              "quote": "Sigma"
+            },
+            "phone": {
+              "value": "555-0143",
+              "quote": "555-0143"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Book a site visit at Sigma with Paloma on Tuesday, no wait, Wednesday.",
+      "tags": ["self_correction"],
+      "expect": [
+        {
+          "type": "task",
+          "target": "co_029",
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Paloma Ruiz",
+              "quote": "Book a site visit at Sigma with Paloma"
+            },
+            "dueDate": {
+              "value": "2026-12-09",
+              "quote": "Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Sygma Tooling in San Diego is a different shop, so leave that record alone.",
+      "expect": []
+    }
+  ]
+}

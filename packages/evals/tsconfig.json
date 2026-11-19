@@ -1,0 +1,10 @@
+{
+  "extends": "@earshot/tsconfig/base.json",
+  "compilerOptions": {
+    // The source may run in workerd (the edge Worker's e2e entry loads the cassettes) as well as
+    // Node and the browser, so it gets the web platform's globals and no Node types.
+    "lib": ["ES2023", "WebWorker"],
+    "types": []
+  },
+  "include": ["src"]
+}

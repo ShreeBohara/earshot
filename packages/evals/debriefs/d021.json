@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "id": "d021",
+  "title": "Quarry Lane Media's analytics add-on qualifies; paperwork to Shawn Murphy",
+  "voice": "af_alloy",
+  "speed": 1.1,
+  "callTime": "2026-11-19T17:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Quarry Lane Media. Priya Nair, their general manager, wants the analytics add-on live before their spring campaign.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_020",
+          "fields": {
+            "body": {
+              "value": "Priya Nair wants the analytics add-on live before their spring campaign.",
+              "quote": "wants the analytics add-on live before their spring campaign"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Move the Quarry Lane analytics add-on to qualified to buy, and bump it to seven thousand, actually seven thousand five hundred.",
+      "tags": ["self_correction"],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_012",
+          "fields": {
+            "stage": {
+              "value": "qualified to buy",
+              "quote": "qualified to buy"
+            },
+            "amount": {
+              "value": 7500,
+              "quote": "seven thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Shawn Murphy on their supply chain team will handle the paperwork. Send him the order form by Tuesday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_072",
+          "fields": {
+            "title": {
+              "value": "Send Shawn Murphy the order form",
+              "quote": "Send him the order form"
+            },
+            "dueDate": {
+              "value": "2026-11-24",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Not urgent, but update Priya Nair's title to managing director.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": "ct_118",
+          "fields": {
+            "name": {
+              "value": "Priya Nair",
+              "quote": "Priya Nair"
+            },
+            "title": {
+              "value": "managing director",
+              "quote": "managing director"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

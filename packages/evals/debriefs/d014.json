@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "id": "d014",
+  "title": "Nite Security Group wants a two-site badge analytics pilot",
+  "voice": "am_echo",
+  "speed": 0.95,
+  "callTime": "2026-12-08T17:10:00.000Z",
+  "timeZone": "America/New_York",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Nite Security Group, the Pittsburgh one. Sarah Cohen, their COO, wants to pilot badge analytics at two sites.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_012",
+          "fields": {
+            "body": {
+              "value": "Sarah Cohen wants to pilot badge analytics at two sites.",
+              "quote": "wants to pilot badge analytics at two sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Send Sarah Cohen a pilot quote for fifteen thousand by Thursday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_149",
+          "fields": {
+            "title": {
+              "value": "Send Sarah Cohen a pilot quote for $15,000",
+              "quote": "Send Sarah Cohen a pilot quote for fifteen thousand"
+            },
+            "dueDate": {
+              "value": "2026-12-10",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Knight Security in Madison is a different company, and they're not part of this pilot.",
+      "tags": ["negation"],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Nite Security's IT team also wants our security questionnaire, and I need that done by December 18th.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "co_012",
+          "fields": {
+            "title": {
+              "value": "Complete the security questionnaire",
+              "quote": "our security questionnaire"
+            },
+            "dueDate": {
+              "value": "2026-12-18",
+              "quote": "by December 18th"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
