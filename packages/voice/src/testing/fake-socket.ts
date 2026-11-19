@@ -45,6 +45,10 @@ export class FakeServerSocket {
   readonly received: (string | Uint8Array)[] = [];
   /** The client's own close call, if it made one. */
   clientClose: { code: number | undefined; reason: string | undefined } | undefined;
+  /** Runs for each message the client sends, on a microtask, as a server would receive it. */
+  onMessage: ((data: string | Uint8Array) => void) | undefined;
+  /** Runs when the client closes the socket, on a microtask. */
+  onClientClose: ((code: number | undefined) => void) | undefined;
   #readyState = SOCKET_CONNECTING;
   #protocol = "";
 
@@ -69,16 +73,23 @@ export class FakeServerSocket {
           throw new Error("InvalidStateError: still connecting");
         }
         if (server.#readyState !== SOCKET_OPEN) return;
-        if (typeof data === "string") server.received.push(data);
-        else if (data instanceof ArrayBuffer) server.received.push(new Uint8Array(data.slice(0)));
-        else {
-          const view = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-          server.received.push(view.slice());
+        let message: string | Uint8Array;
+        if (typeof data === "string") message = data;
+        else if (data instanceof ArrayBuffer) message = new Uint8Array(data.slice(0));
+        else message = new Uint8Array(data.buffer, data.byteOffset, data.byteLength).slice();
+        server.received.push(message);
+        if (server.onMessage) {
+          const onMessage = server.onMessage;
+          queueMicrotask(() => onMessage(message));
         }
       },
       close(code, reason) {
         if (server.#readyState === SOCKET_CLOSED) return;
         server.clientClose = { code, reason };
+        if (server.onClientClose) {
+          const onClientClose = server.onClientClose;
+          queueMicrotask(() => onClientClose(code));
+        }
         const wasConnecting = server.#readyState === SOCKET_CONNECTING;
         server.#readyState = SOCKET_CLOSED;
         server.#deliver(() =>

@@ -1,6 +1,16 @@
-import { MAX_UTTERANCE_TEXT_CHARS, UtteranceFinalV2 } from "@earshot/core";
+import {
+  MAX_UTTERANCE_TEXT_CHARS,
+  parseClientMessage,
+  UtteranceFinalV2,
+  uuidv7,
+} from "@earshot/core";
 import { describe, expect, it } from "vitest";
-import { clampConfidence, toUtterances } from "../src/stt/normalize";
+import {
+  clampConfidence,
+  fitUtterance,
+  MAX_UTTERANCE_BYTES,
+  toUtterances,
+} from "../src/stt/normalize";
 import { counterIds } from "./support/ids";
 
 const offset = (baseOffsetMs: number) => (ms: number) => baseOffsetMs + ms;
@@ -94,6 +104,39 @@ describe("toUtterances", () => {
     expect(new Set(utterances.map((utterance) => utterance.utteranceId)).size).toBe(
       utterances.length,
     );
+  });
+
+  it("splits by serialized size too, so many word timings can't make a frame too large", () => {
+    // 1,500 one-letter words: 2,999 characters of text, but about 90 KB of JSON with timings.
+    const words = Array.from({ length: 1_500 }, (_, i) => ({
+      text: "a",
+      startMs: i * 100,
+      endMs: i * 100 + 80,
+      confidence: 0.9,
+    }));
+    const utterances = toUtterances(words, { toSessionMs: offset(0) });
+    expect(utterances.length).toBeGreaterThan(1);
+    for (const utterance of utterances) {
+      const message = {
+        t: "utterance",
+        msgId: uuidv7(),
+        turnId: "0000000a-0000-7000-8000-000000000001",
+        utterance,
+      };
+      expect(new TextEncoder().encode(JSON.stringify(utterance)).byteLength).toBeLessThanOrEqual(
+        MAX_UTTERANCE_BYTES,
+      );
+      expect(parseClientMessage(JSON.stringify(message)).ok).toBe(true);
+    }
+    expect(utterances.flatMap((utterance) => utterance.words ?? [])).toHaveLength(1_500);
+  });
+
+  it("leaves an utterance that already fits alone, provider text included", () => {
+    const [one] = toUtterances([{ text: "Acme", startMs: 0, endMs: 300, confidence: 0.8 }], {
+      toSessionMs: offset(0),
+      text: "Acme.",
+    });
+    expect(one && fitUtterance(one)).toEqual([one]);
   });
 
   it("clamps confidence to [0, 1] and parses Flux's string confidences", () => {

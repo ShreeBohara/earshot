@@ -1,7 +1,10 @@
 // `@earshot/voice`: the browser voice runtime. The pure parts have their own entries:
-// `@earshot/voice/machines` and `@earshot/voice/prices` (no DOM, for the edge Worker too), and
-// `@earshot/voice/testing` (fakes, never in production).
+// `@earshot/voice/machines` and `@earshot/voice/prices` (no DOM, for the edge Worker too),
+// `@earshot/voice/session` (the client session runtime), and `@earshot/voice/testing` (fakes,
+// never in production).
 
+// Auto-mute: the synchronous ref the Debrief engine's `isMuted` reads
+export { type AutoMuteRef, createAutoMute } from "./auto-mute";
 // Capture
 export {
   createResampler,

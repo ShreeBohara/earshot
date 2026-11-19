@@ -1,6 +1,7 @@
 // `@earshot/voice/machines`: pure reducers with no DOM types, imported by the browser and by the
-// edge Worker. test/no-dom.test.ts typechecks this entry without the DOM library. WP8 adds the
-// capture, connection, autoMute, retry, and silentResponse machines here.
+// edge Worker. test/no-dom.test.ts typechecks this entry without the DOM library (with WebCrypto
+// alone added, for `@earshot/core`). Each machine exports its states and events as `const` arrays,
+// and its tests decide every (state, event) pair against a table.
 export {
   type CaptureMode,
   ENGINE_STATES,
@@ -9,7 +10,93 @@ export {
   VOICE_ERROR_CODES,
   type VoiceErrorCode,
 } from "../codes";
+export {
+  AUTO_MUTE_EVENTS,
+  AUTO_MUTE_STATES,
+  type AutoMute,
+  type AutoMuteContext,
+  type AutoMuteEffect,
+  type AutoMuteEvent,
+  type AutoMuteEventType,
+  type AutoMutePolicy,
+  type AutoMuteState,
+  type AutoMuteStep,
+  autoMuteTransition,
+  DEFAULT_AUTO_MUTE_POLICY,
+  initialAutoMute,
+  isMuted,
+} from "./auto-mute";
 export { type BackoffOptions, backoffDelay } from "./backoff";
+export {
+  CAPTURE_EVENTS,
+  CAPTURE_STATES,
+  type Capture,
+  type CaptureContext,
+  type CaptureEffect,
+  type CaptureErrorKind,
+  type CaptureEvent,
+  type CaptureEventType,
+  type CaptureState,
+  type CaptureStep,
+  captureErrorKind,
+  captureTransition,
+  initialCapture,
+} from "./capture";
+export {
+  CLIENT_CLOSE_CODE,
+  CONNECTION_EVENTS,
+  CONNECTION_STATES,
+  type Connection,
+  type ConnectionCloseReason,
+  type ConnectionContext,
+  type ConnectionEffect,
+  type ConnectionEvent,
+  type ConnectionEventType,
+  type ConnectionPolicy,
+  type ConnectionState,
+  type ConnectionStep,
+  connectionFor,
+  connectionTransition,
+  initialConnection,
+  type TicketRefusal,
+} from "./connection";
+export {
+  DEFAULT_RETRY_POLICY,
+  initialRetry,
+  nextRetryDelay,
+  RETRY_EVENTS,
+  RETRY_STATES,
+  type Retry,
+  type RetryContext,
+  type RetryEffect,
+  type RetryEvent,
+  type RetryEventType,
+  type RetryFailure,
+  type RetryGiveUp,
+  type RetryInput,
+  type RetryPolicy,
+  type RetryState,
+  type RetryStep,
+  retryTransition,
+} from "./retry";
+export {
+  DEFAULT_SILENT_RESPONSE_POLICY,
+  initialSilentResponse,
+  isAudioOutputSafe,
+  SILENT_RESPONSE_EVENTS,
+  SILENT_RESPONSE_STATES,
+  type SilentReason,
+  type SilentResponse,
+  type SilentResponseContext,
+  type SilentResponseEffect,
+  type SilentResponseEvent,
+  type SilentResponseEventType,
+  type SilentResponsePolicy,
+  type SilentResponseState,
+  type SilentResponseStep,
+  type SilentTurnOutcome,
+  silentResponseTransition,
+} from "./silent-response";
 export {
   initialSpeechSocket,
   SPEECH_SOCKET_EVENTS,
