@@ -92,9 +92,9 @@ jobs:
         run: pnpm --filter @earshot/ui test:storybook
       - name: Capture worklet, fake microphone, VAD, and the Debrief engine end to end (Vitest browser mode)
         run: pnpm --filter @earshot/voice test:browser
-      - name: Sign-in, demo, Settings → Keys, and the demo CRM pass axe (next dev, in-process PGlite, no secrets)
+      - name: Sign-in, demo, Settings → Keys, the demo CRM, and the capture screen (next dev with in-process PGlite, the e2e edge Worker's cassettes, Chrome's fake microphone; no secrets, no providers)
         working-directory: apps/web
-        run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts
+        run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts e2e/capture
       - name: Publish to Chromatic
         if: env.HAS_CHROMATIC == 'true'
         uses: chromaui/action@5d18868345f53a8f61258ad393396c7e169100fd # v18.14.4
