@@ -756,6 +756,10 @@ export class CaptureController {
     const live = this.#live;
     if (!live || this.#state.phase !== "live") return;
     this.#update({ phase: "ending", paused: false, frozen: null, suspended: false });
+    // Invalidate capture still in flight, such as a microphone prompt the rep hasn't answered:
+    // if they grant it after ending, #arm sees a stale generation and closes the mic at once,
+    // rather than starting an engine for a session that's over.
+    this.#generation += 1;
     this.#capture({ type: "disarm" });
     await this.#releasing;
     try {

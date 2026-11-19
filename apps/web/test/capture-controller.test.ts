@@ -29,7 +29,13 @@ const SCENARIO: FakeScenario = {
 };
 
 function setup(
-  options: { keys?: StoredKeyMeta[]; revealed?: string; sessionStatus?: number } = {},
+  options: {
+    keys?: StoredKeyMeta[];
+    revealed?: string;
+    sessionStatus?: number;
+    /** Hold the microphone prompt open until `grantMicrophone()`. */
+    holdMicrophone?: boolean;
+  } = {},
 ) {
   const clock = new ManualClock();
   const server = new FakeSessionServer({
@@ -88,6 +94,7 @@ function setup(
   }) as typeof fetch;
 
   let micOpen = false;
+  let grant: (() => void) | undefined;
   const chimes: number[] = [];
   const deps: CaptureDeps = {
     fetch: fetchStub,
@@ -96,6 +103,7 @@ function setup(
       reveal: async () => options.revealed,
     },
     openMicrophone: async () => {
+      if (options.holdMicrophone) await new Promise<void>((resolve) => (grant = resolve));
       micOpen = true;
       return {
         stream: {} as MediaStream,
@@ -130,7 +138,16 @@ function setup(
     engineOptions: { capture: capture.factory(), clock, random: () => 0.5 },
   };
   const controller = new CaptureController(deps);
-  return { clock, server, capture, controller, routes, chimes, micOpen: () => micOpen };
+  return {
+    clock,
+    server,
+    capture,
+    controller,
+    routes,
+    chimes,
+    micOpen: () => micOpen,
+    grantMicrophone: () => grant?.(),
+  };
 }
 
 async function talk(t: ReturnType<typeof setup>, ms: number) {
@@ -224,6 +241,25 @@ describe("CaptureController in fake mode", () => {
     }
     expect(JSON.stringify(t.controller.getState().store?.getState())).not.toContain(fake.turnKey);
     t.controller.dispose();
+  });
+
+  it("closes a microphone granted after the debrief ended, and starts no engine", async () => {
+    const t = setup({ holdMicrophone: true });
+    t.controller.start({ selection: null, fake: createFakeVoice(SCENARIO) });
+    await settle(100);
+    await t.clock.advance(200);
+    // The session is ready while the rep is still looking at the microphone prompt.
+    expect(t.controller.getState().phase).toBe("live");
+    expect(t.micOpen()).toBe(false);
+    await t.controller.end();
+    expect(t.controller.getState().phase).toBe("ended");
+
+    t.grantMicrophone(); // the rep answers the prompt after ending
+    await settle(100);
+    await t.clock.advance(200);
+    expect(t.micOpen()).toBe(false);
+    expect(t.controller.getState().capture.state).not.toBe("armed");
+    expect(t.server.received.some((m) => m.t === "utterance")).toBe(false);
   });
 
   it("pauses live updates on screen without stopping capture", async () => {
