@@ -30,3 +30,4 @@ Earshot records architectural decisions as short MADR files, one per decision. S
 | [0023](0023-minted-credentials-and-session-tickets.md) | Provider credentials minted from per-request keys, and signed single-use session tickets for the edge socket | Accepted (2026-11-15) |
 | [0024](0024-session-runtime.md) | The session runtime: a SQLite-first SessionDO, acknowledged resume, and a Queue flush to Postgres | Accepted (2026-11-19) |
 | [0025](0025-llm-adapters-on-ai-sdk-7.md) | LLM adapters on AI SDK 7: providers built per call, per-turn keys, one batch tool, evidence by quotation, AI Gateway optional | Accepted (2026-11-15) |
+| [0026](0026-eval-harness-v0.md) | Eval harness v0: synthetic debrief scripts, Kokoro rendered in CI, Chrome's fake microphone, cassettes, and $0 CI | Proposed (2026-11-19); WP11's second half completes it |

@@ -13,9 +13,10 @@ Earshot v2 is a pnpm + Turborepo monorepo with a Python lab. Read `ROADMAP.md` a
 - `packages/keys`: AI key handling: on-device storage, the envelope-encrypted vault, validation, and log redaction
 - `packages/voice`: the browser voice runtime: capture and resampling, the speech-to-text adapters, the Debrief engine, the price table and pure machines (`./prices`, `./machines`, no DOM), and fakes (`./testing`); `pnpm test` runs in Node, `pnpm test:browser` in Chromium
 - `packages/demo-crm`: the deterministic demo CRM, with confusable-name groups
+- `packages/evals`: eval harness v0: 30 debrief scripts with ground truth (`debriefs/`), their schema and coverage rules, the session context their cassettes are keyed on, and the cassettes for both LLM adapters (`@earshot/evals/cassettes`; regenerate with `pnpm --filter @earshot/evals cassettes:gen`)
 - `packages/tokens`, `packages/ui`: design tokens and components
 - `packages/tsconfig`: shared TypeScript presets
-- `lab/`: Python 3.13 (uv): generated Pydantic contracts, tests, and experiments
+- `lab/`: Python 3.13 (uv): generated Pydantic contracts, tests, experiments, and the Kokoro renderer for the eval WAVs (`scripts/render_debriefs.py`, in the `tts` group)
 
 ## Commands
 
