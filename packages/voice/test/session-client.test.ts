@@ -3,6 +3,7 @@
 // acks to every socket, `working`, close codes, and ping/pong.
 import {
   type EventEnvelope,
+  MAX_MESSAGE_BYTES,
   SESSION_CLOSE_CODES,
   type SessionCloseName,
   type UtteranceFinalV2,
@@ -594,6 +595,37 @@ describe("SessionClient: the turn key", () => {
     expect(outbox.heldKeys).toBe(1);
     outbox.remove("00000000-0000-7000-8000-000000000001");
     expect(outbox.heldKeys).toBe(0);
+  });
+
+  it("sends an utterance too big for one frame as several, in order, refusing none", async () => {
+    const h = harness();
+    await started(h);
+    const words = Array.from({ length: 1_500 }, (_, i) => ({
+      w: "a",
+      startMs: i * 100,
+      endMs: i * 100 + 80,
+      confidence: 0.9,
+    }));
+    const big: UtteranceFinalV2 = {
+      ...utterance(words.map((word) => word.w).join(" ")),
+      words,
+      startMs: 0,
+      endMs: 149_980,
+    };
+    const turnId = newTurnId();
+    expect(h.client.sendUtterance(turnId, big)).not.toBeNull();
+    await h.flush();
+    const sent = h.server.received.filter((m) => m.t === "utterance");
+    expect(sent.length).toBeGreaterThan(1);
+    for (const message of sent) {
+      expect(new TextEncoder().encode(JSON.stringify(message)).byteLength).toBeLessThanOrEqual(
+        MAX_MESSAGE_BYTES,
+      );
+    }
+    expect(
+      sent.flatMap((m) => (m.t === "utterance" ? (m.utterance.words ?? []) : [])),
+    ).toHaveLength(1_500);
+    expect(h.client.store.getState().issues).toEqual([]);
   });
 
   it("refuses here a message SessionDO would refuse, such as a key-shaped utterance", async () => {

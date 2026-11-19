@@ -19,6 +19,7 @@ import {
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
   type LlmProvider,
+  MAX_MESSAGE_BYTES,
   parseServerMessage,
   SESSION_PROTOCOL_VERSION,
   SESSION_SUBPROTOCOL,
@@ -42,6 +43,7 @@ import {
   connectionFor,
   connectionTransition,
 } from "../machines/connection";
+import { fitUtterance } from "../stt/normalize";
 import {
   type Clock,
   createBrowserSocket,
@@ -306,7 +308,14 @@ export class SessionClient {
 
   /** A final transcript segment, as the voice engine's `final` event carries it. */
   sendUtterance(turnId: string, utterance: UtteranceFinalV2): string | null {
-    return this.#enqueue({ t: "utterance", msgId: this.#createId(), turnId, utterance });
+    // An utterance too big for one frame (long text, or many word timings) goes as several, in
+    // order, so none is refused and the turn keeps every word. Returns the last part's msgId.
+    let msgId: string | null = null;
+    for (const part of fitUtterance(utterance)) {
+      msgId = this.#enqueue({ t: "utterance", msgId: this.#createId(), turnId, utterance: part });
+      if (msgId === null) return null;
+    }
+    return msgId;
   }
 
   /** The turn is over: SessionDO runs its extraction with this key, once. */
@@ -372,6 +381,13 @@ export class SessionClient {
     if (!parsed.success) {
       this.#log.debug("message refused here", { t: message.t });
       this.reportIssue({ code: "bad_message", retryable: false, msgId: message.msgId });
+      return null;
+    }
+    // SessionDO refuses a frame past MAX_MESSAGE_BYTES before it can read the msgId, so a message
+    // that big would sit in the outbox forever: refuse it here instead.
+    if (new TextEncoder().encode(JSON.stringify(message)).byteLength > MAX_MESSAGE_BYTES) {
+      this.#log.debug("message refused here", { t: message.t, reason: "too_large" });
+      this.reportIssue({ code: "too_large", retryable: false, msgId: message.msgId });
       return null;
     }
     this.#outbox.add(message);
