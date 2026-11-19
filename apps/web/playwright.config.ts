@@ -2,8 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Smoke tests run against a deployed preview (set BASE_URL), or locally against `next dev` in its
 // zero-setup mode (in-process PGlite, no secrets), which Playwright starts on port 3100. The
-// health check in smoke.spec.ts needs a deployed stack; run e2e/sign-in.spec.ts and
-// e2e/keys.spec.ts locally.
+// health check in smoke.spec.ts needs a deployed stack; run e2e/sign-in.spec.ts, e2e/demo.spec.ts
+// (the /demo replay, at the test-only 8×), and e2e/keys.spec.ts locally.
 //
 // e2e/capture/ drives the capture screen in its development-only fake mode: Chrome's fake
 // microphone, the fake speech-to-text adapter, and the edge Worker's e2e entry, whose cassettes

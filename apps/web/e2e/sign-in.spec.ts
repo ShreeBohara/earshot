@@ -29,10 +29,3 @@ test("signed-out visitors to a signed-in page are sent to sign-in, with the way 
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Faccount$/);
   await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
 });
-
-test("the replay demo renders without an account and passes axe", async ({ page }) => {
-  await page.goto("/demo");
-  await expect(page.getByRole("heading", { level: 1, name: "A debrief, replayed" })).toBeVisible();
-  await expect(page.getByRole("article")).toHaveCount(5);
-  expect(await seriousViolations(page)).toEqual([]);
-});
