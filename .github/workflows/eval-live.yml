@@ -1,0 +1,117 @@
+name: eval-live
+
+# The live eval (Phase 3 spec, WP11 step 8; gate G1b; ADR-0026): the debrief WAVs through
+# Chrome's fake microphone into the capture screen on real providers, to measure latency per
+# provider pair. The only workflow that spends money, so it's guarded:
+#
+# - off unless the repository variable EVAL_LIVE_ENABLED is "true" (unset by default), and never
+#   on pull requests;
+# - its keys (EVAL_ASSEMBLYAI_KEY, EVAL_DEEPGRAM_KEY, EVAL_ANTHROPIC_KEY, EVAL_GROQ_KEY) are
+#   secrets of the eval-live environment only;
+# - a budget guard estimates the run's spend from the WAVs' durations, the price table, and the
+#   pairs, and refuses to start above EVAL_LIVE_BUDGET_USD (a repository variable, default 1.00);
+# - traces, video, screenshots, and HAR stay off, since a key is typed into the page;
+# - the run waits so AssemblyAI gets at most 5 new streams a minute (the free tier's limit).
+#
+# It runs against `next dev` and the production edge entry (`wrangler dev src/index.ts`): the
+# production build G1b asks for needs a deployed stack (spec §6). Its report and a draft
+# baselines/live-<date>.json are artifacts to review before committing.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      scripts:
+        description: Script ids, comma-separated (empty for all 30)
+        type: string
+        default: ""
+      pairs:
+        description: Provider pairs, comma-separated stt-provider:model+llm-provider:model (empty for the gate's four)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-live
+  cancel-in-progress: false
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  UV_FROZEN: 1
+
+jobs:
+  live:
+    if: vars.EVAL_LIVE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: eval-live
+    env:
+      EARSHOT_EVAL_SCRIPTS: ${{ inputs.scripts || vars.EVAL_LIVE_SCRIPTS }}
+      EVAL_LIVE_PAIRS: ${{ inputs.pairs || vars.EVAL_LIVE_PAIRS }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Eval WAVs (Kokoro, from the cache, or rendered on a miss)
+        id: wavs
+        uses: ./.github/actions/eval-wavs
+      - name: Budget guard (refuses to start above EVAL_LIVE_BUDGET_USD)
+        env:
+          BUDGET: ${{ vars.EVAL_LIVE_BUDGET_USD || '1.00' }}
+          MANIFEST: ${{ steps.wavs.outputs.manifest }}
+        run: |
+          pnpm --filter @earshot/evals eval:budget --manifest "$MANIFEST" --budget "$BUDGET" \
+            --pairs "$EVAL_LIVE_PAIRS" --scripts "$EARSHOT_EVAL_SCRIPTS" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Read the Playwright version
+        id: playwright
+        working-directory: apps/web
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Install Playwright Chromium
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Live eval (real providers; no traces, video, or HAR)
+        id: live
+        working-directory: apps/web
+        env:
+          EARSHOT_EVAL_MODE: live
+          EARSHOT_EVAL_REPORT: ${{ runner.temp }}/eval/live-report.json
+          EVAL_ASSEMBLYAI_KEY: ${{ secrets.EVAL_ASSEMBLYAI_KEY }}
+          EVAL_DEEPGRAM_KEY: ${{ secrets.EVAL_DEEPGRAM_KEY }}
+          EVAL_ANTHROPIC_KEY: ${{ secrets.EVAL_ANTHROPIC_KEY }}
+          EVAL_GROQ_KEY: ${{ secrets.EVAL_GROQ_KEY }}
+        run: pnpm exec playwright test --project=capture-eval --workers=1 --retries=0 --trace=off
+      - name: Report and draft baseline
+        if: ${{ !cancelled() && steps.live.outcome != 'skipped' }}
+        env:
+          REPORT: ${{ runner.temp }}/eval/live-report.json
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ ! -f "$REPORT" ]; then
+            echo "No live report: the run stopped before any debrief finished." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          pnpm --filter @earshot/evals eval:report "$REPORT" --title "Live eval" --summary "$GITHUB_STEP_SUMMARY"
+          pnpm --filter @earshot/evals baseline:update "$REPORT" --live --run "$RUN_URL"
+      - name: Upload the report and the draft baseline
+        if: ${{ !cancelled() && steps.live.outcome != 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-live
+          path: |
+            ${{ runner.temp }}/eval
+            packages/evals/baselines/live-*.json
+          retention-days: 30
+          if-no-files-found: ignore
