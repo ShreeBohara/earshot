@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "id": "d026",
+  "title": "Granite State Builders drops the analytics add-on this year",
+  "voice": "am_adam",
+  "callTime": "2026-12-03T21:00:00.000Z",
+  "timeZone": "America/New_York",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Bad news from Granite State Builders. They're not going ahead with the analytics add-on this year, so mark it closed lost.",
+      "tags": ["negation"],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_020",
+          "fields": {
+            "stage": {
+              "value": "closed lost",
+              "quote": "closed lost"
+            }
+          }
+        },
+        {
+          "type": "note",
+          "target": "co_059",
+          "fields": {
+            "body": {
+              "value": "They're not going ahead with the analytics add-on this year.",
+              "quote": "They're not going ahead with the analytics add-on this year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Shaun Murphy said Granite's budget got moved to their new headquarters build.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_059",
+          "fields": {
+            "body": {
+              "value": "Their budget was moved to their new headquarters build, according to Shaun Murphy.",
+              "quote": "budget got moved to their new headquarters build"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Set a reminder to check back with Shaun Murphy on March 1st.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_074",
+          "fields": {
+            "title": {
+              "value": "Check back with Shaun Murphy",
+              "quote": "check back with Shaun Murphy"
+            },
+            "dueDate": {
+              "value": "2027-03-01",
+              "quote": "March 1st"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

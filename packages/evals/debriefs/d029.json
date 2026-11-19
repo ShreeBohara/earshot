@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "id": "d029",
+  "title": "Sparrow Robotics' expansion is with legal; a corrected close date and a bigger order",
+  "voice": "bm_fable",
+  "callTime": "2026-12-08T20:15:00.000Z",
+  "timeZone": "America/New_York",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Sparrow Robotics debrief. Noor Moreau confirmed the expansion contract is with their legal team.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_039",
+          "fields": {
+            "body": {
+              "value": "The expansion contract is with their legal team, according to Noor Moreau.",
+              "quote": "the expansion contract is with their legal team"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The Sparrow close date moves to January 8th, sorry, January 6th, their first day back after the shutdown.",
+      "tags": ["self_correction"],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_003",
+          "fields": {
+            "closeDate": {
+              "value": "2027-01-06",
+              "quote": "January 6th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Sparrow also wants to add a second line, which takes the expansion to nine thousand.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_003",
+          "fields": {
+            "amount": {
+              "value": 9000,
+              "quote": "nine thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Luca Dalgaard, their controller, asked for the updated order form tomorrow.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_055",
+          "fields": {
+            "title": {
+              "value": "Send Luca Dalgaard the updated order form",
+              "quote": "the updated order form"
+            },
+            "dueDate": {
+              "value": "2026-12-09",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "That wraps up Sparrow.",
+      "expect": []
+    }
+  ]
+}

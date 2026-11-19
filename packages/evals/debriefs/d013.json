@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "id": "d013",
+  "title": "Zenith Packaging's pilot cut downtime; a business case deck for Erick Nilsson",
+  "voice": "bf_isabella",
+  "callTime": "2026-12-07T15:30:00.000Z",
+  "timeZone": "Europe/London",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Zenith Packaging, the Madison plant. Erick Nilsson, their facilities manager, says the pilot cut downtime by twelve percent.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_016",
+          "fields": {
+            "body": {
+              "value": "The pilot cut downtime by twelve percent, according to Erick Nilsson.",
+              "quote": "the pilot cut downtime by twelve percent"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "He wants to bring their head of finance, Mireille Kowalski, into the next call.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_049",
+          "fields": {
+            "title": {
+              "value": "Invite Mireille Kowalski to the next call",
+              "quote": "bring their head of finance, Mireille Kowalski, into the next call"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "I promised Erick Nilsson a business case deck by December 15th.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "ct_039",
+          "fields": {
+            "text": {
+              "value": "Send Erick Nilsson a business case deck",
+              "quote": "a business case deck"
+            },
+            "counterpart": {
+              "value": "Erick Nilsson",
+              "quote": "Erick Nilsson"
+            },
+            "dueDate": {
+              "value": "2026-12-15",
+              "quote": "by December 15th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Zenyth is a different account. Nothing to log there.",
+      "tags": ["negation"],
+      "expect": []
+    }
+  ]
+}

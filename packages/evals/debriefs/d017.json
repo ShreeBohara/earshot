@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "id": "d017",
+  "title": "Marsh Medical wants a cold storage monitoring pilot",
+  "voice": "af_kore",
+  "callTime": "2026-12-11T20:15:00.000Z",
+  "timeZone": "America/Phoenix",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Marsh Medical in Phoenix. Mary Allen runs their supply chain and wants a cold storage monitoring pilot.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_033",
+          "fields": {
+            "body": {
+              "value": "Mary Allen wants a cold storage monitoring pilot.",
+              "quote": "wants a cold storage monitoring pilot"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The Marsh pilot would cover eight clinics for ninety days at nine thousand six hundred dollars.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_033",
+          "fields": {
+            "body": {
+              "value": "The pilot would cover eight clinics for ninety days at $9,600.",
+              "quote": "pilot would cover eight clinics for ninety days at nine thousand six hundred dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "I told Mary Allen we'd send the pilot agreement a week from today.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "ct_135",
+          "fields": {
+            "text": {
+              "value": "Send Mary Allen the pilot agreement",
+              "quote": "send the pilot agreement"
+            },
+            "counterpart": {
+              "value": "Mary Allen",
+              "quote": "Mary Allen"
+            },
+            "dueDate": {
+              "value": "2026-12-18",
+              "quote": "a week from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Marshal Medical in Tampa isn't involved, so nothing for them.",
+      "tags": ["negation"],
+      "expect": []
+    }
+  ]
+}

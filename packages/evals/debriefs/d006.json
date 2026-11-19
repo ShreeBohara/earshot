@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "id": "d006",
+  "title": "Meridian Supply Co: warehouse sensors, a sixty-unit quote, and warranty terms",
+  "voice": "am_liam",
+  "callTime": "2026-11-24T17:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Met with Jeffrey Walsh at Meridian Supply Co about warehouse sensors for their Nashville site.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_043",
+          "fields": {
+            "body": {
+              "value": "Met Jeffrey Walsh about warehouse sensors for their Nashville site.",
+              "quote": "warehouse sensors for their Nashville site"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Jeffrey Walsh wants a quote for sixty units, and Meridian won't consider anything without a two-year warranty.",
+      "tags": ["negation"],
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_037",
+          "fields": {
+            "title": {
+              "value": "Send Jeffrey Walsh a quote for sixty units",
+              "quote": "a quote for sixty units"
+            }
+          }
+        },
+        {
+          "type": "note",
+          "target": "co_043",
+          "fields": {
+            "body": {
+              "value": "They won't consider anything without a two-year warranty.",
+              "quote": "Meridian won't consider anything without a two-year warranty"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "I told Jeffrey Walsh we'd have the warranty terms to him in two weeks.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "ct_037",
+          "fields": {
+            "text": {
+              "value": "Send Jeffrey Walsh the warranty terms",
+              "quote": "have the warranty terms to him"
+            },
+            "counterpart": {
+              "value": "Jeffrey Walsh",
+              "quote": "Jeffrey Walsh"
+            },
+            "dueDate": {
+              "value": "2026-12-08",
+              "quote": "in two weeks"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

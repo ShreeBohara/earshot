@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "id": "d005",
+  "title": "Northwind Logistics wants a route-planning pilot across forty depots",
+  "voice": "bf_emma",
+  "callTime": "2026-11-23T17:15:00.000Z",
+  "timeZone": "Europe/London",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Right, Northwind Logistics. John Whitaker, their finance chief, wants to trial route planning across forty depots.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_036",
+          "fields": {
+            "body": {
+              "value": "John Whitaker wants to trial route planning across forty depots.",
+              "quote": "wants to trial route planning across forty depots"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "John Whitaker needs a pilot proposal on his desk by Thursday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_148",
+          "fields": {
+            "title": {
+              "value": "Send John Whitaker a pilot proposal",
+              "quote": "a pilot proposal"
+            },
+            "dueDate": {
+              "value": "2026-11-26",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Their head of IT is Fiona Gallagher, and her email is fiona.gallagher@northwind-logistics.example.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": null,
+          "fields": {
+            "name": {
+              "value": "Fiona Gallagher",
+              "quote": "Fiona Gallagher"
+            },
+            "title": {
+              "value": "head of IT",
+              "quote": "head of IT"
+            },
+            "email": {
+              "value": "fiona.gallagher@northwind-logistics.example",
+              "quote": "fiona.gallagher@northwind-logistics.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Don't mix them up with Northwind Labs or Northwind Foods.",
+      "tags": ["negation"],
+      "expect": []
+    }
+  ]
+}

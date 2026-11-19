@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "id": "d004",
+  "title": "Globelex Systems renewal moves to contract sent at a higher amount",
+  "voice": "am_adam",
+  "speed": 1.05,
+  "callTime": "2026-11-20T21:05:00.000Z",
+  "timeZone": "America/New_York",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Globelex Systems renewal call just wrapped. Bryan Reilly, their VP of operations, is ready to move forward.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_027",
+          "fields": {
+            "body": {
+              "value": "Bryan Reilly, their VP of Operations, is ready to move forward with the renewal.",
+              "quote": "Bryan Reilly, their VP of operations, is ready to move forward"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Move the Globelex annual renewal to contract sent, and the amount goes up to forty-four thousand.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_026",
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            },
+            "amount": {
+              "value": 44000,
+              "quote": "forty-four thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "I promised Bryan Reilly we'd send the order form for signature by December 4th.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "ct_080",
+          "fields": {
+            "text": {
+              "value": "Send Bryan Reilly the order form for signature",
+              "quote": "send the order form for signature"
+            },
+            "counterpart": {
+              "value": "Bryan Reilly",
+              "quote": "Bryan Reilly"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "by December 4th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Glovex is a different account, so nothing changes there.",
+      "tags": ["negation"],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "id": "d009",
+  "title": "Summit Ridge Medical approves the starter plan and pushes the close to January",
+  "voice": "af_nova",
+  "callTime": "2026-12-01T21:25:00.000Z",
+  "timeZone": "America/Chicago",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Summit Ridge Medical, not Summit Ridge Capital. Their CFO, Yara Yilmaz, approved the starter plan at twenty-two thousand.",
+      "tags": ["negation"],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_016",
+          "fields": {
+            "amount": {
+              "value": 22000,
+              "quote": "twenty-two thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Push the close date on the Summit Ridge Medical starter plan to January 15th, because their board meets that week.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_016",
+          "fields": {
+            "closeDate": {
+              "value": "2027-01-15",
+              "quote": "January 15th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "I told Summit Ridge Medical we'd send over the HIPAA addendum by Friday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "co_045",
+          "fields": {
+            "text": {
+              "value": "Send Summit Ridge Medical the HIPAA addendum",
+              "quote": "send over the HIPAA addendum"
+            },
+            "counterpart": {
+              "value": "Summit Ridge Medical",
+              "quote": "Summit Ridge Medical"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "by Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "That's it for today.",
+      "expect": []
+    }
+  ]
+}

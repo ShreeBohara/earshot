@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "id": "d019",
+  "title": "Juniper Bay Telecom's pilot goes to contract; a new title for Geoffrey Walsh",
+  "voice": "af_aoede",
+  "callTime": "2026-11-17T19:05:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Juniper Bay Telecom pilot review. Geoffrey Walsh, who runs their supply chain, is happy with the results.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_004",
+          "fields": {
+            "body": {
+              "value": "Geoffrey Walsh is happy with the pilot results.",
+              "quote": "is happy with the results"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Move the Juniper Bay pilot to contract sent and set the amount to twenty-six thousand.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_023",
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            },
+            "amount": {
+              "value": 26000,
+              "quote": "twenty-six thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "The Juniper Bay pilot's close date is now December 31st.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": "deal_023",
+          "fields": {
+            "closeDate": {
+              "value": "2026-12-31",
+              "quote": "December 31st"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Also, Geoffrey Walsh's new title is director of supply chain.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": "ct_092",
+          "fields": {
+            "name": {
+              "value": "Geoffrey Walsh",
+              "quote": "Geoffrey Walsh"
+            },
+            "title": {
+              "value": "director of supply chain",
+              "quote": "director of supply chain"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "That's all from Juniper Bay.",
+      "expect": []
+    }
+  ]
+}

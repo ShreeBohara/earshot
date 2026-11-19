@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "id": "d027",
+  "title": "First meeting with Verdant Agritech: three hundred farms and a pilot under twenty thousand",
+  "voice": "bf_lily",
+  "speed": 0.95,
+  "callTime": "2026-12-04T19:30:00.000Z",
+  "timeZone": "America/Denver",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "First meeting with Verdant Agritech in Salt Lake City. They run irrigation for about three hundred farms.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_055",
+          "fields": {
+            "body": {
+              "value": "They run irrigation for about three hundred farms.",
+              "quote": "They run irrigation for about three hundred farms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Our contact is Elif Demir, head of operations. Her email is elif.demir@verdant-agritech.example.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": null,
+          "fields": {
+            "name": {
+              "value": "Elif Demir",
+              "quote": "Elif Demir"
+            },
+            "title": {
+              "value": "head of operations",
+              "quote": "head of operations"
+            },
+            "email": {
+              "value": "elif.demir@verdant-agritech.example",
+              "quote": "elif.demir@verdant-agritech.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Luca Castellano, their CFO, will only sign if the Verdant pilot is under twenty thousand dollars.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_055",
+          "fields": {
+            "body": {
+              "value": "Luca Castellano will only sign if the pilot is under $20,000.",
+              "quote": "will only sign if the Verdant pilot is under twenty thousand dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I promised Verdant a pilot proposal by December 11th.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "co_055",
+          "fields": {
+            "text": {
+              "value": "Send Verdant Agritech a pilot proposal",
+              "quote": "a pilot proposal"
+            },
+            "counterpart": {
+              "value": "Verdant Agritech",
+              "quote": "Verdant"
+            },
+            "dueDate": {
+              "value": "2026-12-11",
+              "quote": "by December 11th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "That's it from Verdant.",
+      "expect": []
+    }
+  ]
+}

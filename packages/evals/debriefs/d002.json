@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "id": "d002",
+  "title": "Akme Dynamics: budget approved, a security review, and a new procurement lead",
+  "voice": "am_michael",
+  "callTime": "2026-11-18T16:45:00.000Z",
+  "timeZone": "America/Chicago",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Quick one on Akme Dynamics, the Tampa account. Their controller, Dana Li, confirmed the budget for next year is approved.",
+      "expect": [
+        {
+          "type": "note",
+          "target": "co_044",
+          "fields": {
+            "body": {
+              "value": "Dana Li confirmed next year's budget is approved.",
+              "quote": "confirmed the budget for next year is approved"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Dana Li wants a security review call with our team on Tuesday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": "ct_145",
+          "fields": {
+            "title": {
+              "value": "Set up a security review call with Dana Li",
+              "quote": "a security review call with our team"
+            },
+            "dueDate": {
+              "value": "2026-11-24",
+              "quote": "on Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "And the new procurement lead at Akme is Hiroshi Tanabe. He'll sign off on the order form.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": null,
+          "fields": {
+            "name": {
+              "value": "Hiroshi Tanabe",
+              "quote": "Hiroshi Tanabe"
+            },
+            "title": {
+              "value": "procurement lead",
+              "quote": "procurement lead"
+            },
+            "company": {
+              "value": "Akme Dynamics",
+              "quote": "Akme"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I told Dana Li we'd hold Akme's pricing through March.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": "ct_145",
+          "fields": {
+            "text": {
+              "value": "Hold Akme Dynamics' pricing through March",
+              "quote": "hold Akme's pricing through March"
+            },
+            "counterpart": {
+              "value": "Dana Li",
+              "quote": "Dana Li"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
