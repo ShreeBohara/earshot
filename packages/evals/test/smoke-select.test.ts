@@ -72,7 +72,7 @@ describe("smoke.json", () => {
     expect(metrics.misses).toBe(0);
   }, 120_000); // about a second here; CI's runners under turbo are far slower
 
-  it("leaves out exactly the scripts where linker v1 links a snapped name wrongly from perfect drafts", async () => {
+  it("leaves out only scripts where linker v1 links a snapped name wrongly even from perfect drafts", async () => {
     const labels = readErrorLabels();
     const cassettes = readUnderstandingCassettes();
     for (const id of Object.keys(SMOKE_EXCLUDED)) {

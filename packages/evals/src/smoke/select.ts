@@ -67,7 +67,7 @@ export interface SmokeStrata {
   readonly handWritten: number;
 }
 
-/** The minimum of each stratum the 30 scripts must hold (targets, a few times the noise of one). */
+/** The minimum of each stratum the 30 scripts must hold (targets: over-sampling what the gate must see). */
 export const SMOKE_MINIMUMS = {
   note: 10,
   task: 10,
