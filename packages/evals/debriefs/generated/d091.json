@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "id": "d091",
+  "title": "Peer Logistics: a note on Peer Logistics, a new contact, Yasmin Haddad",
+  "voice": "bf_lily",
+  "callTime": "2027-01-01T14:20:00.000Z",
+  "timeZone": "America/New_York",
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Quick note on, uh, Peer Logistics: the budget is approved for next quarter.",
+      "heard": {
+        "biased": "Quick note on, uh, Pier Logistics: the budget is approved for next quarter."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_031",
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Pier Logistics",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "ambiguous_target"
+          ],
+          "fields": {
+            "body": {
+              "value": "The budget is approved for next quarter.",
+              "quote": "the budget is approved for next quarter"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Yasmin Haddad is the new plant manager at Peer Logistics.",
+      "heard": {
+        "biased": "Yasmin Haddad is the new plant manager at Pier Logistics."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Yasmin Haddad",
+              "quote": "Yasmin Haddad"
+            },
+            "title": {
+              "value": "plant manager",
+              "quote": "plant manager"
+            },
+            "company": {
+              "value": "Pier Logistics",
+              "quote": "Pier Logistics"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "That's all for Peer Logistics.",
+      "expect": []
+    }
+  ]
+}

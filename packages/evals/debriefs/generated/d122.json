@@ -1,0 +1,138 @@
+{
+  "version": 2,
+  "id": "d122",
+  "title": "Midland Steel Corp: the Midland Steel Corp pilot program deal, a task for Santiago Costa, and more",
+  "voice": "bm_fable",
+  "speed": 1.05,
+  "callTime": "2026-12-09T21:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_006",
+  "noise": {
+    "kind": "street",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Mark the Midland Steel Corp pilot program deal as presentation scheduled. Remind me to send Santiago Costa the invoice breakdown on Tuesday.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_014",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Midland Steel Corp pilot program",
+            "kind": "deal",
+            "company": "Midland Steel Corp"
+          },
+          "fields": {
+            "stage": {
+              "value": "presentation scheduled",
+              "quote": "presentation scheduled"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_026",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Santiago Costa",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Santiago Costa the invoice breakdown",
+              "quote": "the invoice breakdown"
+            },
+            "dueDate": {
+              "value": "2026-12-15",
+              "quote": "on Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "The MSC pilot program deal isn't at contract sent yet, it's still with, uh, at presentation scheduled.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_014",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "MSC pilot program",
+            "kind": "deal",
+            "company": "MSC"
+          },
+          "fields": {
+            "stage": {
+              "value": "presentation scheduled",
+              "quote": "presentation scheduled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Bump, um, the the Midland Steel Corp pilot program deal to twenty-eight thousand. Send Wanjiru Eriksen at Midland Steel Corp the rollout plan on Thursday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_014",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Midland Steel Corp pilot program",
+            "kind": "deal",
+            "company": "Midland Steel Corp"
+          },
+          "fields": {
+            "amount": {
+              "value": 28000,
+              "quote": "twenty-eight thousand"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_104",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Wanjiru Eriksen",
+            "kind": "contact",
+            "company": "Midland Steel Corp"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Wanjiru Eriksen the rollout plan",
+              "quote": "the rollout plan"
+            },
+            "dueDate": {
+              "value": "2026-12-10",
+              "quote": "on Thursday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

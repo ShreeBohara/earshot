@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "id": "d170",
+  "title": "Granite State Builders: a task for Ingrid Dube, the Granite analytics add-on deal, a meeting with Ingrid Dube, and more",
+  "voice": "am_puck",
+  "callTime": "2027-02-01T19:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_059",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Put together the case study for Ingrid Dube by February 13th.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_136",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ingrid Dube",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the case study for Ingrid Dube",
+              "quote": "the case study for Ingrid Dube"
+            },
+            "dueDate": {
+              "value": "2027-02-13",
+              "quote": "by February 13th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Can you set the Granite analytics add-on deal to seven thousand five hundred dollars and move the, you know, close to March 1st, I mean February 27th?",
+      "heard": {
+        "unbiased": "Can you set the Graniti analytics add-on deal to seven thousand five hundred dollars and move the, you know, close to March 1st, I mean February 27th?"
+      },
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Granite analytics add-on",
+            "kind": "deal",
+            "company": "Granite"
+          },
+          "fields": {
+            "amount": {
+              "value": 7500,
+              "quote": "seven thousand five hundred dollars"
+            },
+            "closeDate": {
+              "value": "2027-02-27",
+              "quote": "February 27th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Let's get a call going with Ingrid Dube over at Granite State Builders Tuesday.",
+      "heard": {
+        "unbiased": "Let's get a call going with Ingrid Dube over at Granyte State Builders Tuesday."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_136",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ingrid Dube",
+            "kind": "contact",
+            "company": "Granite State Builders"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Ingrid Dube",
+              "quote": "a call"
+            },
+            "date": {
+              "value": "2027-02-02",
+              "quote": "Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Follow up with Granite State Builders on the training plan on Monday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_059",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Granite State Builders",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow up with Granite State Builders on the training plan",
+              "quote": "on the training plan"
+            },
+            "dueDate": {
+              "value": "2027-02-08",
+              "quote": "on Monday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

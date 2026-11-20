@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "id": "d051",
+  "title": "Sigma Tooling: the Sigma Tooling deal, a task for Owen Lindqvist",
+  "voice": "bm_george",
+  "callTime": "2027-01-04T16:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_029",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "The Sigma Tooling deal is now at closed won, and the number is fifteen thousand five hundred. Make sure we loop in Owen Lindqvist on the rollout timeline in three weeks.",
+      "heard": {
+        "unbiased": "The Sigmatooling deal is now at closed won, and the number is fifteen thousand five hundred. Make sure we loop in Owen Lindqvist on the rollout timeline in three weeks."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_002",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma Tooling",
+            "kind": "deal",
+            "company": "Sigma Tooling"
+          },
+          "fields": {
+            "stage": {
+              "value": "closed won",
+              "quote": "closed won"
+            },
+            "amount": {
+              "value": 15500,
+              "quote": "fifteen thousand five hundred"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_133",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Owen Lindqvist",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Loop in Owen Lindqvist on the rollout timeline",
+              "quote": "loop in Owen Lindqvist on the rollout timeline"
+            },
+            "dueDate": {
+              "value": "2027-01-25",
+              "quote": "in three weeks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Bump the Sigma Tooling deal to nineteen thousand five hundred.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_002",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma Tooling",
+            "kind": "deal",
+            "company": "Sigma Tooling"
+          },
+          "fields": {
+            "amount": {
+              "value": 19500,
+              "quote": "nineteen thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Sygma Tooling is a separate account, so no changes there.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

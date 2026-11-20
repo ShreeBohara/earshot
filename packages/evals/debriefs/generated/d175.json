@@ -1,0 +1,116 @@
+{
+  "version": 2,
+  "id": "d175",
+  "title": "Granite State Builders: a note on Granite State Builders, a promise to Dmitri Castellano, a note on Dmitri Castellano",
+  "voice": "af_nova",
+  "speed": 0.9,
+  "callTime": "2026-12-22T22:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_059",
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Had a good call with Granite State Builders this morning, and their operations team is pushing hard for this.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_059",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Granite State Builders",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Their operations team is pushing hard for this.",
+              "quote": "their operations team is pushing hard for this"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Got off the phone with Granite State Builders, and they want to expand the rollout to two more sites.",
+      "heard": {
+        "unbiased": "Got off the phone with Granite State, and they want to expand the rollout to two more sites."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_059",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Granite State Builders",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to expand the rollout to two more sites.",
+              "quote": "they want to expand the rollout to two more sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "We owe Dmitri Castellano at Granite State Builders the updated pricing.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_120",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Dmitri Castellano",
+            "kind": "contact",
+            "company": "Granite State Builders"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Dmitri Castellano",
+              "quote": "Dmitri Castellano"
+            },
+            "text": {
+              "value": "Send Dmitri Castellano the updated pricing",
+              "quote": "the updated pricing"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Spoke with Dmitri Castellano from Granite today. Their CFO wants to see the ROI model.",
+      "heard": {
+        "unbiased": "Spoke with Dmitri Castellano from Granitte today. Their CFO wants to see the ROI model."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_120",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Dmitri Castellano",
+            "kind": "contact",
+            "company": "Granite"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "Their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

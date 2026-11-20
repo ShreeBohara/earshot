@@ -1,0 +1,157 @@
+{
+  "version": 2,
+  "id": "d125",
+  "title": "Summit Peak Capital: a note on Summit, a promise to Summit Peak Capital, a promise to Coastal Paper Systems, and more",
+  "voice": "af_sarah",
+  "callTime": "2027-01-26T17:30:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_024",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Summit called, you know, back, and they want to add the analytics module.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_024",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to add the analytics module.",
+              "quote": "they want to add the analytics module"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "We promised Summit Peak Capital a reference call with a similar customer on Friday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_024",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Peak Capital",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Set up a reference call for Summit Peak Capital with a similar customer",
+              "quote": "a reference call with a similar customer"
+            },
+            "dueDate": {
+              "value": "2027-01-29",
+              "quote": "on Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Promised, uh, Coastal Paper Systems an answer on the pricing tiers on Thursday.",
+      "heard": {
+        "biased": "Promised, uh, Coastal Power Systems an answer on the pricing tiers on Thursday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Coastal Power Systems",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "text": {
+              "value": "Give Coastal Power Systems an answer on the pricing tiers",
+              "quote": "an answer on the pricing tiers"
+            },
+            "dueDate": {
+              "value": "2027-01-28",
+              "quote": "on Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Schedule the kickoff with Owen Petrov in three weeks.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_034",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Owen Petrov",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Owen Petrov",
+              "quote": "Schedule the kickoff with Owen Petrov"
+            },
+            "dueDate": {
+              "value": "2027-02-16",
+              "quote": "in three weeks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "You can reach Tomas Berg on, um, at at 555-0103.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_030",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Tomas Berg",
+              "quote": "Tomas Berg"
+            },
+            "phone": {
+              "value": "555-0103",
+              "quote": "555-0103"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

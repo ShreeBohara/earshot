@@ -1,0 +1,76 @@
+{
+  "version": 2,
+  "id": "d166",
+  "title": "Pacific Crest Energy: a note on PCE, a task for the account",
+  "voice": "af_kore",
+  "callTime": "2026-12-22T14:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_048",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Met with the team at PCE, and they need their data to stay in the EU.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_048",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "PCE",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Not to be confused with Pacific Coast Electric, which is a different account.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Book a follow-up call by Thursday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_048",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Book a follow-up call",
+              "quote": "Book a follow-up call"
+            },
+            "dueDate": {
+              "value": "2026-12-24",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Pacific Coast Electric is a separate account, so no changes there.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "version": 2,
+  "id": "d132",
+  "title": "Glovex Systems: a meeting with Glovex Systems, the Glovex starter plan deal, a task for Bay Arbor Associates, and more",
+  "voice": "af_heart",
+  "callTime": "2027-01-18T20:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_022",
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Put a kickoff meeting on the the calendar with Glovex Systems on Friday at 2 pm.",
+      "heard": {
+        "unbiased": "Put a kickoff meeting on the the calendar with Glovex Systams on Friday at 2 pm."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Glovex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Glovex Systems",
+              "quote": "a kickoff meeting"
+            },
+            "date": {
+              "value": "2027-01-22",
+              "quote": "on Friday"
+            },
+            "time": {
+              "value": "14:00",
+              "quote": "at 2 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "The the Glovex starter plan deal is now at closed lost, and the number is ninety-five thousand dollars.",
+      "heard": {
+        "unbiased": "The the Grovex starter plan deal is now at closed lost, and the number is ninety-five thousand dollars."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_009",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Glovex starter plan",
+            "kind": "deal",
+            "company": "Glovex"
+          },
+          "fields": {
+            "stage": {
+              "value": "closed lost",
+              "quote": "closed lost"
+            },
+            "amount": {
+              "value": 95000,
+              "quote": "ninety-five thousand dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Let's get the support plan over to Bay Arbor Associates by the end of the month.",
+      "heard": {
+        "biased": "Let's get the support plan over to Bay Harbor Associates by the end of the month."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Bay Harbor Associates",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Get the support plan over to Bay Harbor Associates",
+              "quote": "get the support plan over to Bay Harbor Associates"
+            },
+            "dueDate": {
+              "value": "2027-01-31",
+              "quote": "by the end of the month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Quick note, um, quick note on on Tobias Moreau: they want the integration live before the holidays.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_081",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tobias Moreau",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They want the integration live before the holidays.",
+              "quote": "they want the integration live before the holidays"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

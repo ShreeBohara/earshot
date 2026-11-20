@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "id": "d124",
+  "title": "Zenyth Packaging: the Zenyth Packaging starter plan deal, a note on Mireille Bianchi, a task for Tobias Adeyemi",
+  "voice": "am_michael",
+  "callTime": "2027-02-05T01:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_002",
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "The Zenyth Packaging starter plan deal slipped, so the close date is now March 13th.",
+      "heard": {
+        "unbiased": "The Zenyth Packageng starter plan deal slipped, so the close date is now March 13th."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_039",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenyth Packaging starter plan",
+            "kind": "deal",
+            "company": "Zenyth Packaging"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-03-13",
+              "quote": "March 13th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Got off the phone with Mireille Bianchi, and their CFO wants to see the ROI model.",
+      "heard": {
+        "unbiased": "Got off the phone with Mireille Beanchi, and their CFO wants to see the ROI model."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_013",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mireille Bianchi",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Follow up, up with Tobias Adeyemi on the training plan in three weeks.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_028",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tobias Adeyemi",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow up with Tobias Adeyemi on the training plan",
+              "quote": "on the training plan"
+            },
+            "dueDate": {
+              "value": "2027-02-25",
+              "quote": "in three weeks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Bump the Zenyth Packaging starter plan deal to one hundred thirty-eight thousand, I mean one hundred twenty-eight thousand dollars.",
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_039",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenyth Packaging starter plan",
+            "kind": "deal",
+            "company": "Zenyth Packaging"
+          },
+          "fields": {
+            "amount": {
+              "value": 128000,
+              "quote": "one hundred twenty-eight thousand dollars"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

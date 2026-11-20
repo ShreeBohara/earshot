@@ -2,7 +2,7 @@
   "name": "@earshot/evals",
   "version": "0.0.0",
   "private": true,
-  "description": "Eval harness: 30 synthetic debrief scripts with ground truth, their schema and coverage rules, the session context they run in, the renderer timing contract, cassettes for both LLM adapters, and the fake-microphone eval checks, report, baselines, and live budget guard; and the confusable-name set for entity linking, its mishearing simulator, metrics, report, and linker v1's fit and ablations.",
+  "description": "Eval harness: 200 debrief scripts with ground truth (30 hand-written, 170 from a seeded grammar), their schema and coverage rules, the session context they run in, the renderer timing contract, cassettes for both LLM adapters, the fake-microphone eval checks, report, baselines, and live budget guard; the $0 understanding eval and its gate; and the confusable-name set for entity linking, its mishearing simulator, metrics, report, and linker v1's fit and ablations.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -12,11 +12,13 @@
     "./debriefs/*": "./debriefs/*",
     "./fixtures/*": "./fixtures/*",
     "./linking": "./src/linking/index.ts",
-    "./linking/*": "./linking/*"
+    "./linking/*": "./linking/*",
+    "./understanding": "./src/understanding/index.ts"
   },
   "scripts": {
     "baseline:update": "tsx scripts/update-baseline.ts",
     "cassettes:gen": "tsx scripts/gen-cassettes.ts",
+    "debriefs:gen": "tsx scripts/gen-debriefs.ts",
     "eval:budget": "tsx scripts/eval-live-budget.ts",
     "eval:linking": "tsx scripts/eval-linking.ts",
     "eval:report": "tsx scripts/eval-report.ts",

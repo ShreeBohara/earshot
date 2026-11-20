@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "id": "d032",
+  "title": "Redwood Robotics: a note on Redwood",
+  "voice": "am_puck",
+  "callTime": "2026-12-10T16:40:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_042",
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Met with the team at Redwood, and the budget is approved for next quarter.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_042",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Redwood",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The budget is approved for next quarter.",
+              "quote": "the budget is approved for next quarter"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Don't mix them up with Redwood Analytics.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "That's it for Redwood Robotics today.",
+      "expect": []
+    }
+  ]
+}

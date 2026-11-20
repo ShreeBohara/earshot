@@ -1,0 +1,141 @@
+{
+  "version": 2,
+  "id": "d155",
+  "title": "Redwood Analytics: a note on Redwood, Rafael Garza's details, a note on Rafael Garza, a meeting with Rafael Garza",
+  "voice": "am_fenrir",
+  "callTime": "2027-02-22T18:00:00.000Z",
+  "timeZone": "America/Denver",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Met with, uh, met with the team at Redwood, and legal hasn't approved the data processing terms.",
+      "heard": {
+        "unbiased": "Met with, uh, met with the team at Redwoud, and legal hasn't approved the data processing terms."
+      },
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_060",
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Redwood",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "ambiguous_target",
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "Legal hasn't approved the data processing terms.",
+              "quote": "legal hasn't approved the data processing terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Update the title for Rafael Garza to controller.",
+      "heard": {
+        "unbiased": "Update the title for Refael Garza to controller."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_008",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Rafael Garza",
+              "quote": "Rafael Garza"
+            },
+            "title": {
+              "value": "controller",
+              "quote": "controller"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Spoke with Rafael Garza from Redwood Analytics today. The security review passed.",
+      "heard": {
+        "unbiased": "Spoke with Ravael Garza from Redwood Analytics today. The security review passed."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_008",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rafael Garza",
+            "kind": "contact",
+            "company": "Redwood Analytics"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "The security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Let's get a call going with Rafael Garza over at Redwood Analytics Wednesday at 11:15 am.",
+      "heard": {
+        "unbiased": "Let's get a call going with Rafael Gorza over at Redwood Analytics Wednesday at 11:15 am."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_008",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rafael Garza",
+            "kind": "contact",
+            "company": "Redwood Analytics"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Rafael Garza",
+              "quote": "a call"
+            },
+            "date": {
+              "value": "2027-02-24",
+              "quote": "Wednesday"
+            },
+            "time": {
+              "value": "11:15",
+              "quote": "at 11:15 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Redwood Robotics is a separate account, so so no changes there.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

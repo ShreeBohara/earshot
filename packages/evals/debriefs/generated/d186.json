@@ -1,0 +1,109 @@
+{
+  "version": 2,
+  "id": "d186",
+  "title": "Opal Street Studios: the Opal annual renewal deal, the Opal Street Studios annual renewal deal, and more",
+  "voice": "bm_george",
+  "callTime": "2027-01-06T12:40:00.000Z",
+  "timeZone": "Europe/London",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "The Opal annual renewal deal isn't at contract sent yet, it's still at at appointment scheduled.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_024",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Opal annual renewal",
+            "kind": "deal",
+            "company": "Opal"
+          },
+          "fields": {
+            "stage": {
+              "value": "appointment scheduled",
+              "quote": "appointment scheduled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "The Opal Street Studios annual renewal deal is now at appointment scheduled, and the number is ninety-five thousand, actually one hundred thousand.",
+      "heard": {
+        "unbiased": "The Opal Striet Studios annual renewal deal is now at appointment scheduled, and the number is ninety-five thousand, actually one hundred thousand."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_024",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Opal Street Studios annual renewal",
+            "kind": "deal",
+            "company": "Opal Street Studios"
+          },
+          "fields": {
+            "stage": {
+              "value": "appointment scheduled",
+              "quote": "appointment scheduled"
+            },
+            "amount": {
+              "value": 100000,
+              "quote": "one hundred thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Booked the executive briefing with, uh, Opal Street Studios on January 17th at 9:45 am.",
+      "heard": {
+        "biased": "Booked the executive briefing with, uh, Opal Street on January 17th at 9:45 am."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_030",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Opal Street",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Executive briefing with Opal Street",
+              "quote": "the executive briefing"
+            },
+            "date": {
+              "value": "2027-01-17",
+              "quote": "on January 17th"
+            },
+            "time": {
+              "value": "09:45",
+              "quote": "at 9:45 am"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

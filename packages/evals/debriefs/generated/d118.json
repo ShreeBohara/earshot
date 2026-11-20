@@ -1,0 +1,79 @@
+{
+  "version": 2,
+  "id": "d118",
+  "title": "Harborview Marine: a note on Harborview, a promise to Atlas Fleet",
+  "voice": "af_alloy",
+  "callTime": "2027-01-28T16:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_046",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Met with the team at Harborview, and the security review passed.",
+      "heard": {
+        "unbiased": "Met with the team at Harbor View, and the security review passed."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_046",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "the security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "I promised Atlas Fleet the migration won't need any downtime.",
+      "heard": {
+        "biased": "I promised Atlas Freight the migration won't need any downtime.",
+        "unbiased": "I promised Atlas Fleed the migration won't need any downtime."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Atlas Freight",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict",
+            "negation"
+          ],
+          "fields": {
+            "text": {
+              "value": "The migration won't need any downtime.",
+              "quote": "the migration won't need any downtime"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "I didn't talk to Harborview Health this week, so there's no update there.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

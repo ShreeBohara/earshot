@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "id": "d168",
+  "title": "Delta Crossing Rail: a note on Hugo Fontaine, a meeting with Delta, a meeting with Hugo Fontaine",
+  "voice": "bm_george",
+  "callTime": "2026-11-10T14:00:00.000Z",
+  "timeZone": "Europe/London",
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Caught up with Hugo Fontaine over at Delta Crossing Rail, and they want the integration live before the holidays.",
+      "heard": {
+        "biased": "Caught up with Hugo Fonteine over at Delta Crossing Rail, and they want the integration live before the holidays."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Hugo Fonteine",
+            "kind": "contact",
+            "company": "Delta Crossing Rail"
+          },
+          "fields": {
+            "body": {
+              "value": "They want the integration live before the holidays.",
+              "quote": "they want the integration live before the holidays"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Delta wants, um, a site visit Wednesday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_038",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Delta",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Site visit with Delta",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2026-11-11",
+              "quote": "Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Hugo Fontaine and I are doing a renewal review on Tuesday, actually Wednesday.",
+      "heard": {
+        "unbiased": "Hugo Fontainne and I are doing a renewal review on Tuesday, actually Wednesday."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Hugo Fontaine",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Renewal review with Hugo Fontaine",
+              "quote": "a renewal review"
+            },
+            "date": {
+              "value": "2026-11-11",
+              "quote": "Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Caught up, um, caught up with Hugo Fontaine over at Delta Crossing Rail, and they don't need the analytics module this year.",
+      "heard": {
+        "unbiased": "Caught up, um, caught up with Hugo Fondaine over at Delta Crossing Rail, and they don't need the analytics module this year."
+      },
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Hugo Fontaine",
+            "kind": "contact",
+            "company": "Delta Crossing Rail"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "They don't need the analytics module this year.",
+              "quote": "they don't need the analytics module this year"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

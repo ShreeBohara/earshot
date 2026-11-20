@@ -1,0 +1,167 @@
+{
+  "version": 2,
+  "id": "d192",
+  "title": "Sparrow Robotics: a task for Freya Eriksen, a note on Harborview Hotels, a meeting with Noor Moreau, and more",
+  "voice": "af_kore",
+  "callTime": "2027-02-02T21:10:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_039",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Remind me to send Freya Eriksen the redlined contract by February 22nd.",
+      "heard": {
+        "unbiased": "Remind me to send Friya Eriksen the redlined contract by February 22nd."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_054",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Freya Eriksen",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Freya Eriksen the redlined contract",
+              "quote": "the redlined contract"
+            },
+            "dueDate": {
+              "value": "2027-02-22",
+              "quote": "by February 22nd"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Nothing changes for Delta Crossing Rail today.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Quick note on Harborview Hotels: they need their data to stay in the EU.",
+      "heard": {
+        "unbiased": "Quick note on Harbor View Hotels: they need their data to stay in the EU."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "named": {
+            "quote": "Harborview Hotels",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Calendar this: a contract walkthrough with Noor Moreau, on Wednesday at 3 pm.",
+      "heard": {
+        "unbiased": "Calendar this: a contract walkthrough with Nuor Moreau, on Wednesday at 3 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Noor Moreau",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Contract walkthrough with Noor Moreau",
+              "quote": "a contract walkthrough"
+            },
+            "attendees": {
+              "value": "Noor Moreau",
+              "quote": "Noor Moreau"
+            },
+            "date": {
+              "value": "2027-02-03",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "15:00",
+              "quote": "at 3 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "The Sparrow Robotics expansion number went up to ninety-six thousand. Let's get the support plan over to Noor Moreau by Monday, sorry, Tuesday.",
+      "heard": {
+        "unbiased": "The Sparrow Robodics expansion number went up to ninety-six thousand. Let's get the support plan over to Noor Moreau by Monday, sorry, Tuesday."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_003",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sparrow Robotics expansion",
+            "kind": "deal",
+            "company": "Sparrow Robotics"
+          },
+          "fields": {
+            "amount": {
+              "value": 96000,
+              "quote": "ninety-six thousand"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Noor Moreau",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the support plan over to Noor Moreau",
+              "quote": "get the support plan over to Noor Moreau"
+            },
+            "dueDate": {
+              "value": "2027-02-09",
+              "quote": "Tuesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

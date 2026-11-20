@@ -1,0 +1,158 @@
+{
+  "version": 2,
+  "id": "d099",
+  "title": "Verdant Agritech: a note on Luca Castellano, a meeting with Luca Castellano, a task for Luca Castellano",
+  "voice": "bf_emma",
+  "callTime": "2026-12-03T18:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_055",
+  "noise": {
+    "kind": "car",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Caught up with Luca Castellano over at Verdant Agritech, and they loved the new reporting dashboard.",
+      "heard": {
+        "unbiased": "Caught up with Luca Castallano over at Verdantagritech, and they loved the new reporting dashboard."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_113",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Castellano",
+            "kind": "contact",
+            "company": "Verdant Agritech"
+          },
+          "fields": {
+            "body": {
+              "value": "They loved the new reporting dashboard.",
+              "quote": "they loved the new reporting dashboard"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Got off, off the phone with Luca Castellano, and they want to add the analytics module.",
+      "heard": {
+        "unbiased": "Got off, off the phone with Luca Costellano, and they want to add the analytics module."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_113",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Castellano",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to add the analytics module.",
+              "quote": "they want to add the analytics module"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Had, uh, had a good call with Luca Castellano this morning, and the pilot is going well and they want a formal quote.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_113",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Castellano",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Luca Castellano can do, uh, a technical deep dive Monday at noon.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_113",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Castellano",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Technical deep dive with Luca Castellano",
+              "quote": "a technical deep dive"
+            },
+            "date": {
+              "value": "2026-12-07",
+              "quote": "Monday"
+            },
+            "time": {
+              "value": "12:00",
+              "quote": "at noon"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Put together the rollout plan for Luca Castellano by the end of the week.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_113",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Castellano",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the rollout plan for Luca Castellano",
+              "quote": "the rollout plan for Luca Castellano"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

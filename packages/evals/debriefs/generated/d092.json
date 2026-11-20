@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "id": "d092",
+  "title": "Globelex Systems: a task for Thomas Berg, a meeting with Bryan Reilly, Thomas Berg's details",
+  "voice": "af_sky",
+  "callTime": "2026-12-01T23:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Ping Thomas Berg over on, uh, at Globelex about the pilot results by Monday.",
+      "heard": {
+        "biased": "Ping Thomas Berg over on, uh, at Globalex about the pilot results by Monday.",
+        "unbiased": "Ping Thomaz Berg over on, uh, at Globelex about the pilot results by Monday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_005",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Thomas Berg",
+            "kind": "contact",
+            "company": "Globalex"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Thomas Berg about the pilot results",
+              "quote": "about the pilot results"
+            },
+            "dueDate": {
+              "value": "2026-12-07",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Calendar this: a contract walkthrough to, um, with Bryan Reilly, Friday at 9:15 am.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_080",
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Bryan Reilly",
+            "kind": "contact"
+          },
+          "expectFlags": [
+            "ambiguous_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Contract walkthrough with Bryan Reilly",
+              "quote": "a contract walkthrough"
+            },
+            "attendees": {
+              "value": "Bryan Reilly",
+              "quote": "Bryan Reilly"
+            },
+            "date": {
+              "value": "2026-12-04",
+              "quote": "Friday"
+            },
+            "time": {
+              "value": "09:15",
+              "quote": "at 9:15 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Thomas Berg moved into the general manager role.",
+      "heard": {
+        "unbiased": "Thomaz Berg moved into the general manager role."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_005",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Thomas Berg",
+              "quote": "Thomas Berg"
+            },
+            "title": {
+              "value": "general manager",
+              "quote": "general manager"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Don't, uh, don't mix them up with Glovex Systems.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,180 @@
+{
+  "version": 2,
+  "id": "d160",
+  "title": "Globelex Systems: the Globelex Systems annual renewal deal, a promise to Idris Tanaka, a task for Globelex, and more",
+  "voice": "am_echo",
+  "callTime": "2026-12-25T23:50:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_027",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Revised pricing for the Globelex Systems annual renewal deal: thirteen thousand dollars, I mean thirteen thousand five hundred.",
+      "heard": {
+        "biased": "Revised pricing for the Globalex Systems annual renewal deal: thirteen thousand dollars, I mean thirteen thousand five hundred."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_026",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globalex Systems annual renewal",
+            "kind": "deal",
+            "company": "Globalex Systems"
+          },
+          "fields": {
+            "amount": {
+              "value": 13500,
+              "quote": "thirteen thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "We owe, uh, we owe Idris Tanaka at Knight the renewal terms by Wednesday.",
+      "heard": {
+        "unbiased": "We owe, uh, we owe Idris Tanako at Knight the renewal terms by Wednesday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_105",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Idris Tanaka",
+            "kind": "contact",
+            "company": "Knight"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Idris Tanaka",
+              "quote": "Idris Tanaka"
+            },
+            "text": {
+              "value": "Send Idris Tanaka the renewal terms",
+              "quote": "the renewal terms"
+            },
+            "dueDate": {
+              "value": "2026-12-30",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I, um, I need to set up a demo for Globelex by Monday.",
+      "heard": {
+        "biased": "I, um, I need to set up a demo for Globalex by Monday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globalex",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Set up a demo for Globalex",
+              "quote": "set up a demo for Globalex"
+            },
+            "dueDate": {
+              "value": "2026-12-28",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Spoke, uh, with, uh, Bryan Reilly from Globelex Systems today. They're not renewing the support add-on.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_080",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bryan Reilly",
+            "kind": "contact",
+            "company": "Globelex Systems"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "They're not renewing the support add-on.",
+              "quote": "They're not renewing the support add-on"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Follow up with Marlow Medical on the single sign-on setup by tomorrow.",
+      "heard": {
+        "biased": "Follow up with Marlow Medikal on the single sign-on setup by tomorrow."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "named": {
+            "quote": "Marlow Medikal",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "title": {
+              "value": "Follow up with Marlow Medikal on the single sign-on setup",
+              "quote": "on the single sign-on setup"
+            },
+            "dueDate": {
+              "value": "2026-12-26",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

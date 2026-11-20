@@ -1,0 +1,160 @@
+{
+  "version": 2,
+  "id": "d082",
+  "title": "Coastal Power Systems: a note on Coastal Power Systems, a meeting with Luca Bianchi, a task for Allen Foster, and more",
+  "voice": "bf_lily",
+  "speed": 1.05,
+  "callTime": "2027-01-18T20:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_054",
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Got off the phone with Coastal Power Systems, and they want weekly check-ins during onboarding.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_054",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Coastal Power Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want weekly check-ins during onboarding.",
+              "quote": "they want weekly check-ins during onboarding"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Let's get, uh, let's get a call going with Luca Bianchi over at Coastal Power Systems on Wednesday at 4 pm.",
+      "heard": {
+        "unbiased": "Let's get, uh, let's get a call going with Luca Bienchi over at Coastal Power Systems on Wednesday at 4 pm."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_056",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Bianchi",
+            "kind": "contact",
+            "company": "Coastal Power Systems"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Luca Bianchi",
+              "quote": "a call"
+            },
+            "date": {
+              "value": "2027-01-20",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "16:00",
+              "quote": "at 4 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Schedule the kickoff with Allen Foster by Friday.",
+      "heard": {
+        "unbiased": "Schedule the kickoff with Alan Foster by Friday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_129",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Allen Foster",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Allen Foster",
+              "quote": "Schedule the kickoff with Allen Foster"
+            },
+            "dueDate": {
+              "value": "2027-01-22",
+              "quote": "by Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "We're doing a site visit Monday.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_054",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Site visit",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2027-01-25",
+              "quote": "Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "To do: review the security review with Luca Bianchi from Coastal Power Systems by February 21st.",
+      "heard": {
+        "unbiased": "To do: review the security review with Luca Bienchi from Coaztal Power Systems by February 21st."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_056",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Bianchi",
+            "kind": "contact",
+            "company": "Coastal Power Systems"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the security review with Luca Bianchi",
+              "quote": "review the security review with Luca Bianchi from Coastal Power Systems"
+            },
+            "dueDate": {
+              "value": "2027-02-21",
+              "quote": "by February 21st"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

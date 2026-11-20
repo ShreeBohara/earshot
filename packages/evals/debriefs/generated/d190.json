@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "id": "d190",
+  "title": "Atlas Freight: a note on Atlas Freight, a task for Atlas Freight, a new contact, Rhiannon Price",
+  "voice": "af_sky",
+  "callTime": "2027-01-05T14:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_005",
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Just left Atlas Freight. Their CFO wants to see the ROI model.",
+      "heard": {
+        "unbiased": "Just left Atles Freight. Their CFO wants to see the ROI model."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_005",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atlas Freight",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "Their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Don't mix them up with Atmos Industrial.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Action item: book a site visit with Atlas Freight.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_005",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atlas Freight",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Atlas Freight",
+              "quote": "book a site visit with Atlas Freight"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Rhiannon Price just joined Atlas Freight as their procurement lead.",
+      "heard": {
+        "biased": "Rhianon Price just joined Atlas Freight as their procurement lead.",
+        "unbiased": "Rhiannon Price just joined Atlas Freighd as their procurement lead."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Rhianon Price",
+              "quote": "Rhianon Price"
+            },
+            "company": {
+              "value": "Atlas Freight",
+              "quote": "Atlas Freight"
+            },
+            "title": {
+              "value": "procurement lead",
+              "quote": "procurement lead"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

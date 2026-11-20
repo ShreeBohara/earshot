@@ -1,0 +1,97 @@
+{
+  "version": 2,
+  "id": "d102",
+  "title": "Sparrow Robotics: a meeting with Sparrow Robotics, the Sparrow Robotics expansion deal, a promise to the account",
+  "voice": "af_kore",
+  "callTime": "2027-02-04T22:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_039",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Booked a demo with Sparrow Robotics on Tuesday.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_039",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sparrow Robotics",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Demo with Sparrow Robotics",
+              "quote": "a demo"
+            },
+            "date": {
+              "value": "2027-02-09",
+              "quote": "on Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Bump the Sparrow Robotics expansion deal to nineteen thousand five hundred, I mean eighteen thousand five hundred dollars.",
+      "heard": {
+        "unbiased": "Bump the Sparrow Rovotics expansion deal to nineteen thousand five hundred, I mean eighteen thousand five hundred dollars."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_003",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sparrow Robotics expansion",
+            "kind": "deal",
+            "company": "Sparrow Robotics"
+          },
+          "fields": {
+            "amount": {
+              "value": 18500,
+              "quote": "eighteen thousand five hundred dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "I, um, said we'd send over the updated pricing on Monday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_039",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send over the updated pricing",
+              "quote": "send over the updated pricing"
+            },
+            "dueDate": {
+              "value": "2027-02-08",
+              "quote": "on Monday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

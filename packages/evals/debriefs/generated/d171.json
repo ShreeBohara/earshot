@@ -1,0 +1,131 @@
+{
+  "version": 2,
+  "id": "d171",
+  "title": "Acme Dynamics: the Acme expansion deal, a task for Acme Dynamics, a note on Preeya Nair, a note on Dana Lee",
+  "voice": "am_fenrir",
+  "callTime": "2027-01-25T17:00:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_011",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "The Acme expansion deal should close by February 21st at ten thousand five hundred.",
+      "heard": {
+        "biased": "The Acmi expansion deal should close by February 21st at ten thousand five hundred."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_028",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acmi expansion",
+            "kind": "deal",
+            "company": "Acmi"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-02-21",
+              "quote": "February 21st"
+            },
+            "amount": {
+              "value": 10500,
+              "quote": "ten thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "I'll, um, I'll need to walk Acme Dynamics through the procurement process by Friday.",
+      "heard": {
+        "biased": "I'll, um, I'll need to walk Acmi Dynamics through the procurement process by Friday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acmi Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Walk Acmi Dynamics through the procurement process",
+              "quote": "walk Acmi Dynamics through the procurement process"
+            },
+            "dueDate": {
+              "value": "2027-01-29",
+              "quote": "by Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Got off the phone with Preeya Nair, and their CFO wants to see the ROI model.",
+      "heard": {
+        "unbiased": "Got off the phone with Preeya Nail, and their CFO wants to see the ROI model."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_089",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Preeya Nair",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Got off the phone with Dana Lee, and they want to add the analytics module.",
+      "heard": {
+        "unbiased": "Got off the phone with Dano Lee, and they want to add the analytics module."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_045",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Dana Lee",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to add the analytics module.",
+              "quote": "they want to add the analytics module"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

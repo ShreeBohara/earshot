@@ -1,0 +1,147 @@
+{
+  "version": 2,
+  "id": "d178",
+  "title": "Acme Dynamics: a meeting with Acme Dynamics, a promise to Eric Nilsson, a task for Teodor Ferreira, and more",
+  "voice": "bm_daniel",
+  "callTime": "2026-12-29T21:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_011",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Set up a call with Acme Dynamics on Thursday to, to go over the invoice dispute.",
+      "heard": {
+        "biased": "Set up a call with Akme Dynamics on Thursday to, to go over the invoice dispute.",
+        "unbiased": "Set up a call with Acme Dynamecs on Thursday to, to go over the invoice dispute."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Akme Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2026-12-31",
+              "quote": "on Thursday"
+            },
+            "title": {
+              "value": "Call with Akme Dynamics to go over the invoice dispute",
+              "quote": "go over the invoice dispute"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "That's all for Acme Dynamics.",
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "We owe Eric Nilsson at Globalex Systems the renewal terms by February 1st.",
+      "heard": {
+        "unbiased": "We owe Elic Nilsson at Globalex Systems the renewal terms by February 1st."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_062",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Eric Nilsson",
+            "kind": "contact",
+            "company": "Globalex Systems"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Eric Nilsson",
+              "quote": "Eric Nilsson"
+            },
+            "text": {
+              "value": "Send Eric Nilsson the renewal terms",
+              "quote": "the renewal terms"
+            },
+            "dueDate": {
+              "value": "2027-02-01",
+              "quote": "by February 1st"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Send Teodor Ferreira at Right Fabrication the renewal terms Friday.",
+      "heard": {
+        "biased": "Send Teodor Ferreira at Rite Fabrication the renewal terms Friday.",
+        "unbiased": "Send Tiodor Ferreira at Right Fabrication the renewal terms Friday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Ferreira",
+            "kind": "contact",
+            "company": "Rite Fabrication"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Teodor Ferreira the renewal terms",
+              "quote": "the renewal terms"
+            },
+            "dueDate": {
+              "value": "2027-01-01",
+              "quote": "Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "I promised them the reference architecture by the end of next month.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_011",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send the reference architecture",
+              "quote": "the reference architecture"
+            },
+            "dueDate": {
+              "value": "2027-01-31",
+              "quote": "by the end of next month"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

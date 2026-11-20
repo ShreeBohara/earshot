@@ -1,0 +1,110 @@
+{
+  "version": 2,
+  "id": "d038",
+  "title": "Lantern Hospitality: a note on Erik Nilsson, a task for Lantern Hospitality, a meeting with Lantern",
+  "voice": "am_liam",
+  "speed": 0.95,
+  "callTime": "2027-02-24T18:40:00.000Z",
+  "timeZone": "America/Chicago",
+  "noise": {
+    "kind": "street",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Spoke with Erik Nilsson from Lantern Hospitality today. The pilot is going well and they want a formal quote.",
+      "heard": {
+        "biased": "Spoke with Erik Nilssun from Lantern Hospitality today. The pilot is going well and they want a formal quote.",
+        "unbiased": "Spoke with Erik Nilsson from Lantern today. The pilot is going well and they want a formal quote."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_033",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Erik Nilssun",
+            "kind": "contact",
+            "company": "Lantern Hospitality"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "The pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Can you you add a task to get Lantern Hospitality a draft statement of work by tomorrow?",
+      "heard": {
+        "unbiased": "Can you you add a task to get Lontern Hospitality a draft statement of work by tomorrow?"
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_053",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Lantern Hospitality",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Get Lantern Hospitality a draft statement of work",
+              "quote": "get Lantern Hospitality a draft statement of work"
+            },
+            "dueDate": {
+              "value": "2027-02-25",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "We're meeting, uh, we're meeting Lantern on March 10th, actually March 9th for the quarterly business review.",
+      "heard": {
+        "unbiased": "We're meeting, uh, we're meeting Lantirn on March 10th, actually March 9th for the quarterly business review."
+      },
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_053",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Lantern",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-03-09",
+              "quote": "March 9th"
+            },
+            "title": {
+              "value": "Quarterly business review with Lantern",
+              "quote": "the quarterly business review"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

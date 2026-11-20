@@ -1,0 +1,164 @@
+{
+  "version": 2,
+  "id": "d130",
+  "title": "Acmi Dynamics: a meeting with Acmi Dynamics, the Acmi Dynamics analytics add-on deal, the Acmi Dynamics deal, and more",
+  "voice": "am_echo",
+  "callTime": "2027-01-07T19:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_040",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "We're meeting Acmi Dynamics tomorrow at noon for the quarterly business review.",
+      "heard": {
+        "biased": "We're meeting Akme Dynamics tomorrow at noon for the quarterly business review."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_040",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Akme Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "attendees": {
+              "value": "Akme Dynamics",
+              "quote": "Akme Dynamics"
+            },
+            "date": {
+              "value": "2027-01-08",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "12:00",
+              "quote": "at noon"
+            },
+            "title": {
+              "value": "Quarterly business review with Akme Dynamics",
+              "quote": "the quarterly business review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Bump the Acmi Dynamics analytics add-on deal deal with, uh, to seventy-two thousand.",
+      "heard": {
+        "biased": "Bump the Acmi Dynamics analytics add-on deal deal with, uh, to 72,000.",
+        "unbiased": "Bump the Acmi Dynamics analytics add-on deal deal with, uh, to 72,000."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_030",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acmi Dynamics analytics add-on",
+            "kind": "deal",
+            "company": "Acmi Dynamics"
+          },
+          "fields": {
+            "amount": {
+              "value": 72000,
+              "quote": "72,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "For the Acmi Dynamics deal, change the amount to fifty-three thousand and the stage to closed lost.",
+      "heard": {
+        "biased": "For the Acme Dynamics deal, change the amount to fifty-three thousand and the stage to closed lost."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_030",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme Dynamics",
+            "kind": "deal",
+            "company": "Acme Dynamics"
+          },
+          "fields": {
+            "amount": {
+              "value": 53000,
+              "quote": "fifty-three thousand"
+            },
+            "stage": {
+              "value": "closed lost",
+              "quote": "closed lost"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Meeting with the team at Acmi Friday about the security review.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_040",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acmi",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-01-08",
+              "quote": "Friday"
+            },
+            "title": {
+              "value": "Meeting with Acmi about the security review",
+              "quote": "the security review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Quick note on Acmi Dynamics: they loved the new reporting dashboard.",
+      "heard": {
+        "biased": "Quick note on Akme Dynamics: they loved the new reporting dashboard."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_040",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Akme Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They loved the new reporting dashboard.",
+              "quote": "they loved the new reporting dashboard"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

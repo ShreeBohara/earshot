@@ -1,0 +1,174 @@
+{
+  "version": 2,
+  "id": "d126",
+  "title": "Harborview Health: the Harborview Health multi-year agreement deal, a task for Owen Moreau, and more",
+  "voice": "am_fenrir",
+  "callTime": "2026-11-09T15:00:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_001",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Can you set the Harborview Health multi-year agreement deal to forty-nine thousand and move the close with, um, to January 22nd? Send Owen Moreau at, at Harborview Health the order form in two weeks.",
+      "heard": {
+        "unbiased": "Can you set the Harborview multi-year agreement deal to forty-nine thousand and move the close with, um, to January 22nd? Send Owen Moreau at, at Harborview Health the order form in two weeks."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_001",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview Health multi-year agreement",
+            "kind": "deal",
+            "company": "Harborview Health"
+          },
+          "fields": {
+            "amount": {
+              "value": 49000,
+              "quote": "forty-nine thousand"
+            },
+            "closeDate": {
+              "value": "2027-01-22",
+              "quote": "January 22nd"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Owen Moreau",
+            "kind": "contact",
+            "company": "Harborview Health"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Owen Moreau the order form",
+              "quote": "the order form"
+            },
+            "dueDate": {
+              "value": "2026-11-23",
+              "quote": "in two weeks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "I'm not touching the Harborview Marine account today.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Bump the Harborview Health multi-year deal to one hundred twenty-five thousand.",
+      "heard": {
+        "biased": "Bump the Harborview multi-year deal to 125,000.",
+        "unbiased": "Bump the Harborview Health multi-year deal to 125,000."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_001",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview multi-year",
+            "kind": "deal",
+            "company": "Harborview"
+          },
+          "fields": {
+            "amount": {
+              "value": 125000,
+              "quote": "125,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "We have a follow-up call with, um, Maren Dube from Harborview Health tomorrow at 4 pm.",
+      "heard": {
+        "unbiased": "We have a follow-up call with, um, Maren Dupe from Harborview Health tomorrow at 4 pm."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_082",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Maren Dube",
+            "kind": "contact",
+            "company": "Harborview Health"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Maren Dube",
+              "quote": "a follow-up call"
+            },
+            "date": {
+              "value": "2026-11-10",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "16:00",
+              "quote": "at 4 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "I promised Owen Moreau we won't charge for the extra seats.",
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Owen Moreau",
+            "kind": "contact"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "counterpart": {
+              "value": "Owen Moreau",
+              "quote": "Owen Moreau"
+            },
+            "text": {
+              "value": "We won't charge for the extra seats.",
+              "quote": "we won't charge for the extra seats"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

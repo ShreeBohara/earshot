@@ -1,0 +1,129 @@
+{
+  "version": 2,
+  "id": "d101",
+  "title": "Glovex Systems: a note on Glovex Systems, a note on Glovex, the Glovex Systems deal, a task for Quarry Lake Media",
+  "voice": "af_nova",
+  "callTime": "2027-01-12T19:50:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_022",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Update from from Glovex Systems: the security review passed.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Glovex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "the security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Met with the team at Glovex, and the security review passed.",
+      "heard": {
+        "unbiased": "Met with the team at Gluvex, and the security review passed."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Glovex",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "the security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "The Glovex Systems number went up to twelve thousand.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_009",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Glovex Systems",
+            "kind": "deal",
+            "company": "Glovex Systems"
+          },
+          "fields": {
+            "amount": {
+              "value": 12000,
+              "quote": "twelve thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "I owe Quarry Lake Media the integration guide by the end of the month.",
+      "heard": {
+        "biased": "I owe Quarry Lane Media the integration guide by the end of the month.",
+        "unbiased": "I owe Quary Lake Media the integration guide by the end of the month."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Quarry Lane Media",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Send Quarry Lane Media the integration guide",
+              "quote": "the integration guide"
+            },
+            "dueDate": {
+              "value": "2027-01-31",
+              "quote": "by the end of the month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "That's it, it for Glovex Systems today.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "id": "d096",
+  "title": "Zenith Packaging: a note on Zenith, a promise to Zenith Packaging, a meeting with Erick Nilsson",
+  "voice": "am_eric",
+  "speed": 1.05,
+  "callTime": "2026-12-21T20:50:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_016",
+  "noise": {
+    "kind": "car",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Got off the phone with Zenith, and the pilot is going well and they want a formal quote.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_016",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenith",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Quick note on Zenith: their CFO wants to see the ROI model.",
+      "heard": {
+        "unbiased": "Quick note on Zenidh: their CFO wants to see the ROI model."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_016",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenith",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "That's it for Zenith Packaging today.",
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "We promised Zenith Packaging we'd fix the procurement process issue by the end of next month.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_016",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenith Packaging",
+            "kind": "company"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Zenith Packaging",
+              "quote": "Zenith Packaging"
+            },
+            "text": {
+              "value": "Fix the procurement process issue for Zenith Packaging",
+              "quote": "fix the procurement process issue"
+            },
+            "dueDate": {
+              "value": "2027-01-31",
+              "quote": "by the end of next month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "We have a follow-up call with Erick Nilsson from Zenith Packaging tomorrow at 1:15 pm.",
+      "heard": {
+        "biased": "We have a follow-up call with Erick Nilsson from Zenith tomorrow at 1:15 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_039",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Erick Nilsson",
+            "kind": "contact",
+            "company": "Zenith"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Erick Nilsson",
+              "quote": "a follow-up call"
+            },
+            "attendees": {
+              "value": "Erick Nilsson",
+              "quote": "Erick Nilsson"
+            },
+            "date": {
+              "value": "2026-12-22",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "13:15",
+              "quote": "at 1:15 pm"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

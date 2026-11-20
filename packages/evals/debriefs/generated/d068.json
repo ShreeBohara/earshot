@@ -1,0 +1,127 @@
+{
+  "version": 2,
+  "id": "d068",
+  "title": "Knight Security: a note on Yara Varga, a note on Knight Security",
+  "voice": "bf_emma",
+  "callTime": "2027-02-22T23:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_028",
+  "noise": {
+    "kind": "street",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Got off the phone with Yara Varga, and they're reviewing the proposal with legal this week.",
+      "heard": {
+        "unbiased": "Got off the phone with Yarra Varga, and they're reviewing the proposal with legal this week."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_102",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Varga",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "they're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Caught up with, um, caught up with Yara Varga over at Knight, and they won't sign before the budget review.",
+      "heard": {
+        "unbiased": "Caught up with, um, caught up with Yara Vorga over at Knight, and they won't sign before the budget review."
+      },
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_102",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Varga",
+            "kind": "contact",
+            "company": "Knight"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "They won't sign before the budget review.",
+              "quote": "they won't sign before the budget review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Yara Varga mentioned that their CFO wants to see the ROI model.",
+      "heard": {
+        "unbiased": "Yara Valga mentioned that their CFO wants to see the ROI model."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_102",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Varga",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Had a good call with Knight Security this morning, and the pilot is going well and they want a formal quote.",
+      "heard": {
+        "unbiased": "Had a good call with Knight Securrity this morning, and the pilot is going well and they want a formal quote."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_028",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Knight Security",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "version": 2,
+  "id": "d047",
+  "title": "Rite Fabrication: a note on Sunita Yilmaz, a promise to Marie Allen, the Rite Fabrication deal, and more",
+  "voice": "bm_daniel",
+  "callTime": "2026-11-13T22:30:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_035",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Had a good call call with Sunita Yilmaz this morning, and the rollout slipped because of a hiring freeze.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_076",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sunita Yilmaz",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The rollout slipped because of a hiring freeze.",
+              "quote": "the rollout slipped because of a hiring freeze"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "I'm on the hook to deliver the order form to Marie Allen by December 3rd.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_004",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Marie Allen",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Deliver the order form to Marie Allen",
+              "quote": "deliver the order form to Marie Allen"
+            },
+            "dueDate": {
+              "value": "2026-12-03",
+              "quote": "by December 3rd"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The Rite Fabrication deal isn't at contract sent yet, it's still at decision maker bought in.",
+      "heard": {
+        "biased": "The Right Fabrication deal isn't at contract sent yet, it's still at decision maker bought in.",
+        "unbiased": "The Rite Fabrikation deal isn't at contract sent yet, it's still at decision maker bought in."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Right Fabrication",
+            "kind": "deal",
+            "company": "Right Fabrication"
+          },
+          "fields": {
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "The Rite starter plan number went up for, uh, to fifteen thousand dollars.",
+      "heard": {
+        "biased": "The Right starter plan number went up for, uh, to fifteen thousand dollars."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Right starter plan",
+            "kind": "deal",
+            "company": "Right"
+          },
+          "fields": {
+            "amount": {
+              "value": 15000,
+              "quote": "fifteen thousand dollars"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

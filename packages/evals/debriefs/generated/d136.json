@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "id": "d136",
+  "title": "Globalex Systems: a note on Globalex, a promise to Bryan Reilly, a new contact, Mateus Ferraz, and more",
+  "voice": "am_puck",
+  "callTime": "2026-12-01T15:10:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_015",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Globalex called back, and they're happy with the pricing but want better payment terms.",
+      "heard": {
+        "biased": "Globelex called back, and they're happy with the pricing but want better payment terms."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_015",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globelex",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're happy with the pricing but want better payment terms.",
+              "quote": "they're happy with the pricing but want better payment terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "I, uh, told Bryan Reilly over at Globelex Systems we'd share the order form by Monday, sorry, Friday.",
+      "heard": {
+        "biased": "I, uh, told Bryan Reilly over at Globalex Systems we'd share the order form by Monday, sorry, Friday.",
+        "unbiased": "I, uh, told Brian Reilly over at Globelex Systems we'd share the order form by Monday, sorry, Friday."
+      },
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_080",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bryan Reilly",
+            "kind": "contact",
+            "company": "Globalex Systems"
+          },
+          "fields": {
+            "text": {
+              "value": "Share the order form with Bryan Reilly",
+              "quote": "share the order form"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "You can reach Mateus Ferraz at 555-0185.",
+      "heard": {
+        "unbiased": "You can reach Mateus Ferras at 555-0185."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Mateus Ferraz",
+              "quote": "Mateus Ferraz"
+            },
+            "phone": {
+              "value": "555-0185",
+              "quote": "555-0185"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "For the Globalex Systems annual renewal deal, I promised the migration plan on Friday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "deal_033",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globalex Systems annual renewal",
+            "kind": "deal",
+            "company": "Globalex Systems"
+          },
+          "fields": {
+            "text": {
+              "value": "Send the migration plan for the Globalex Systems annual renewal deal",
+              "quote": "the migration plan"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "on Friday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

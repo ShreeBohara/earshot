@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "id": "d086",
+  "title": "Glovex Systems: a note on Glovex Systems, a task for Tobias Moreau, a meeting with Bay Harbor Associates, and more",
+  "voice": "am_eric",
+  "callTime": "2027-01-07T21:10:00.000Z",
+  "timeZone": "America/Chicago",
+  "noise": {
+    "kind": "street",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Glovex Systems called back, and they're consolidating vendors next year.",
+      "heard": {
+        "unbiased": "Glovex Systims called back, and they're consolidating vendors next year."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Glovex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're consolidating vendors next year.",
+              "quote": "they're consolidating vendors next year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Ping, ping Tobias Moreau over at Glovex Systems about the single sign-on setup by January 16th.",
+      "heard": {
+        "biased": "Ping, ping Tobias Moreao over at Glovex Systems about the single sign-on setup by January 16th."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_081",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tobias Moreao",
+            "kind": "contact",
+            "company": "Glovex Systems"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Tobias Moreao about the single sign-on setup",
+              "quote": "about the single sign-on setup"
+            },
+            "dueDate": {
+              "value": "2027-01-16",
+              "quote": "by January 16th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Put a kickoff meeting on the calendar with Bay Harbor Associates on Friday at 2:30 pm.",
+      "heard": {
+        "unbiased": "Put a kickoff meeting on the calendar with Bay Harbol Associates on Friday at 2:30 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_050",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bay Harbor Associates",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Bay Harbor Associates",
+              "quote": "a kickoff meeting"
+            },
+            "date": {
+              "value": "2027-01-08",
+              "quote": "on Friday"
+            },
+            "time": {
+              "value": "14:30",
+              "quote": "at 2:30 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Next step is to send Glovex Systems the migration plan by Tuesday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Glovex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Glovex Systems the migration plan",
+              "quote": "send Glovex Systems the migration plan"
+            },
+            "dueDate": {
+              "value": "2027-01-12",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "version": 2,
+  "id": "d100",
+  "title": "Peer Logistics: a task for Aisha Khan, a meeting with Freya Tanaka, a task for Maple & Pine Grocers, and more",
+  "voice": "af_jessica",
+  "callTime": "2027-02-25T22:30:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_031",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Let's get the order form over to Aisha Khan by March 22nd.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_007",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Aisha Khan",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the order form over to Aisha Khan",
+              "quote": "get the order form over to Aisha Khan"
+            },
+            "dueDate": {
+              "value": "2027-03-22",
+              "quote": "by March 22nd"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Lunch with Freya Tanaka Friday, actually Monday at 5 pm to, uh, talk about the reporting setup.",
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_121",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Freya Tanaka",
+            "kind": "contact"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-03-01",
+              "quote": "Monday"
+            },
+            "time": {
+              "value": "17:00",
+              "quote": "at 5 pm"
+            },
+            "title": {
+              "value": "Lunch with Freya Tanaka about the reporting setup",
+              "quote": "talk about the reporting setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "I need for, um, to set up a demo for Maple & Pine Grocers.",
+      "heard": {
+        "biased": "I need for, um, to set up a demo for Maple & Vine Grocers."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Maple & Vine Grocers",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Set up a demo for Maple & Vine Grocers",
+              "quote": "set up a demo for Maple & Vine Grocers"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Schedule the kickoff with Peer Logistics by April 8th.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_031",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Peer Logistics",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Peer Logistics",
+              "quote": "Schedule the kickoff with Peer Logistics"
+            },
+            "dueDate": {
+              "value": "2027-04-08",
+              "quote": "by April 8th"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "id": "d112",
+  "title": "Summit Ridge Medical: the Summit Ridge Medical starter deal, a task for Sunita Petrov, Sunita Varga's details, and more",
+  "voice": "bf_isabella",
+  "callTime": "2026-11-23T16:30:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_045",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "We agreed at, uh, on one hundred sixty-five thousand for the Summit Ridge Medical starter deal. Ping Sunita Petrov over at Summit Ridge Medical about the procurement process by December 19th, sorry, December 21st.",
+      "heard": {
+        "unbiased": "We agreed at, uh, on one hundred sixty-five thousand for the Summitridge Medical starter deal. Ping Sunita Petrov over at Summit Ridge Medical about the procurement process by December 19th, sorry, December 21st."
+      },
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_016",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Ridge Medical starter",
+            "kind": "deal",
+            "company": "Summit Ridge Medical"
+          },
+          "fields": {
+            "amount": {
+              "value": 165000,
+              "quote": "one hundred sixty-five thousand"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_142",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sunita Petrov",
+            "kind": "contact",
+            "company": "Summit Ridge Medical"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Sunita Petrov about the procurement process",
+              "quote": "about the procurement process"
+            },
+            "dueDate": {
+              "value": "2026-12-21",
+              "quote": "December 21st"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Met Sunita Varga from Summit Ridge Medical, they're the, um, director of engineering.",
+      "heard": {
+        "biased": "Met Sunita Varga from Summit Ridge, they're the, um, director of engineering."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_096",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Sunita Varga",
+              "quote": "Sunita Varga"
+            },
+            "company": {
+              "value": "Summit Ridge",
+              "quote": "Summit Ridge"
+            },
+            "title": {
+              "value": "director of engineering",
+              "quote": "director of engineering"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "I told, uh, I told Greta Costa over, uh, at Summit we'd share the support plan.",
+      "heard": {
+        "unbiased": "I told, uh, I told Greka Costa over, uh, at Sumit we'd share the support plan."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_091",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Greta Costa",
+            "kind": "contact",
+            "company": "Summit"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Greta Costa",
+              "quote": "Greta Costa"
+            },
+            "text": {
+              "value": "Share the support plan with Greta Costa",
+              "quote": "share the support plan"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "To to do: review the onboarding plan with Yara Yilmaz from Summit.",
+      "heard": {
+        "unbiased": "To to do: review the onboarding plan with Yaro Yilmaz from Sommit."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_106",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Yilmaz",
+            "kind": "contact",
+            "company": "Summit"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the onboarding plan with Yara Yilmaz",
+              "quote": "review the onboarding plan with Yara Yilmaz from Summit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "That wraps up Summit Ridge Medical.",
+      "expect": []
+    }
+  ]
+}

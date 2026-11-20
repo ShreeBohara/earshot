@@ -1,0 +1,156 @@
+{
+  "version": 2,
+  "id": "d104",
+  "title": "Summit Ridge Capital: a note on Summit, a task for Yara Brandt, a new contact, Yasmin Haddad, a meeting with Yara Brandt",
+  "voice": "bm_george",
+  "callTime": "2027-01-29T14:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_019",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Heads up, up on Summit: they need their data to stay in the EU.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Send Yara Brandt at, you know, Summit Ridge Capital a draft statement of work by the end of the week.",
+      "heard": {
+        "unbiased": "Send Yara Brondt at, you know, Summit Ridge Capital a draft statement of work by the end of the week."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_109",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Brandt",
+            "kind": "contact",
+            "company": "Summit Ridge Capital"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Yara Brandt a draft statement of work",
+              "quote": "a draft statement of work"
+            },
+            "dueDate": {
+              "value": "2027-01-29",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "New contact: Yasmin Haddad, head of operations, phone 555-0188.",
+      "heard": {
+        "biased": "New contact: Yasmin Heddad, head of operations, phone 555-0188.",
+        "unbiased": "New contact: Yasmin Hatdad, head of operations, phone 555-0188."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Yasmin Heddad",
+              "quote": "Yasmin Heddad"
+            },
+            "title": {
+              "value": "head of operations",
+              "quote": "head of operations"
+            },
+            "phone": {
+              "value": "555-0188",
+              "quote": "555-0188"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "We have a follow-up call with Yara Brandt from Summit on Monday, actually Friday at 10 am.",
+      "heard": {
+        "unbiased": "We have a follow-up call with Yara Brandt from Summet on Monday, actually Friday at 10 am."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_109",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Brandt",
+            "kind": "contact",
+            "company": "Summit"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Yara Brandt",
+              "quote": "a follow-up call"
+            },
+            "date": {
+              "value": "2027-02-05",
+              "quote": "Friday"
+            },
+            "time": {
+              "value": "10:00",
+              "quote": "at 10 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "I didn't talk with, um, to Summit Ridge Medical this week, so there's no update there.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

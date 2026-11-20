@@ -1,0 +1,146 @@
+{
+  "version": 2,
+  "id": "d121",
+  "title": "Northwind Foods: a meeting with Northwind Foods, a task for Northwind, a task for Northwind Foods, and more",
+  "voice": "am_liam",
+  "callTime": "2027-01-04T14:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_010",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I, uh, I, you know, set up an onsite visit at Northwind Foods on January 25th.",
+      "heard": {
+        "unbiased": "I, uh, I, you know, set up an onsite visit at Northwind Foodz on January 25th."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_010",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Foods",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Onsite visit at Northwind Foods",
+              "quote": "an onsite visit"
+            },
+            "date": {
+              "value": "2027-01-25",
+              "quote": "on January 25th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Action item: book a site visit with Northwind tomorrow.",
+      "heard": {
+        "unbiased": "Action item: book a site visit with North Wind tomorrow."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_010",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Northwind",
+              "quote": "book a site visit with Northwind"
+            },
+            "dueDate": {
+              "value": "2027-01-05",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Put together a pilot proposal for Northwind Foods by January 30th.",
+      "heard": {
+        "unbiased": "Put together a pilot proposal for Northwend Foods by January 30th."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_010",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Foods",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together a pilot proposal for Northwind Foods",
+              "quote": "a pilot proposal for Northwind Foods"
+            },
+            "dueDate": {
+              "value": "2027-01-30",
+              "quote": "by January 30th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Let's get the integration guide over to Basil Mining by Thursday.",
+      "heard": {
+        "biased": "Let's get the integration guide over to Basalt Mining by Thursday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Basalt Mining",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Get the integration guide over to Basalt Mining",
+              "quote": "get the integration guide over to Basalt Mining"
+            },
+            "dueDate": {
+              "value": "2027-01-07",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "I didn't talk to, um, Northwind Labs this week, so there's no, no update there.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

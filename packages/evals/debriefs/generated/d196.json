@@ -1,0 +1,144 @@
+{
+  "version": 2,
+  "id": "d196",
+  "title": "Globelex Systems: the Globelex Systems annual renewal deal, a task for Bryan Reilly, the the account deal, and more",
+  "voice": "bf_lily",
+  "callTime": "2026-12-24T15:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_027",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "For the Globelex Systems annual renewal deal, change the amount to thirteen thousand five hundred and the stage to appointment scheduled. To do: review the invoice dispute with Bryan Reilly from Globelex Systems by Tuesday.",
+      "heard": {
+        "biased": "For the Globelex Systems annual renewal deal, change the amount to 13,500 and the stage to appointment scheduled. To do: review the invoice dispute with Bryan Reilly from Globalex Systems by Tuesday.",
+        "unbiased": "For the Globelexsystems annual renewal deal, change the amount to 13,500 and the stage to appointment scheduled. To do: review the invoice dispute with Bryan Reily from Grobelex Systems by Tuesday."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_026",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globelex Systems annual renewal",
+            "kind": "deal",
+            "company": "Globelex Systems"
+          },
+          "fields": {
+            "amount": {
+              "value": 13500,
+              "quote": "13,500"
+            },
+            "stage": {
+              "value": "appointment scheduled",
+              "quote": "appointment scheduled"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_080",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bryan Reilly",
+            "kind": "contact",
+            "company": "Globalex Systems"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the invoice dispute with Bryan Reilly",
+              "quote": "review the invoice dispute with Bryan Reilly from Globalex Systems"
+            },
+            "dueDate": {
+              "value": "2026-12-29",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Schedule the kickoff with Bryan Reilly.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_080",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bryan Reilly",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Bryan Reilly",
+              "quote": "Schedule the kickoff with Bryan Reilly"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Bump the deal to fifty-four thousand.",
+      "heard": {
+        "biased": "Bump the deal to 54,000.",
+        "unbiased": "Bump the deal to 54,000."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_026",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "amount": {
+              "value": 54000,
+              "quote": "54,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Got off the phone with Globelex, and they loved the new reporting dashboard.",
+      "heard": {
+        "unbiased": "Got off the phone with Globe Lex, and they loved the new reporting dashboard."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globelex",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They loved the new reporting dashboard.",
+              "quote": "they loved the new reporting dashboard"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

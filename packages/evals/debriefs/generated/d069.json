@@ -1,0 +1,192 @@
+{
+  "version": 2,
+  "id": "d069",
+  "title": "Akme Dynamics: the Akme deal, a task for Dana Li, a note on Maple & Pine Grocers, a meeting with Dana Li, and more",
+  "voice": "am_michael",
+  "callTime": "2027-02-01T20:40:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_044",
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Bump the Akme deal to nineteen thousand five hundred dollars. Can you add a task to get Dana Li the rollout plan on Friday?",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_032",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Akme",
+            "kind": "deal",
+            "company": "Akme"
+          },
+          "fields": {
+            "amount": {
+              "value": 19500,
+              "quote": "nineteen thousand five hundred dollars"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_145",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Dana Li",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get Dana Li the rollout plan",
+              "quote": "get Dana Li the rollout plan"
+            },
+            "dueDate": {
+              "value": "2027-02-05",
+              "quote": "on Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Met with the team at, at Maple & Pine Grocers, and they're reviewing the proposal with legal this week.",
+      "heard": {
+        "biased": "Met with the team at, at Maple & Vine Grocers, and they're reviewing the proposal with legal this week."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Maple & Vine Grocers",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "they're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "We're meeting Dana Li on February 8th at 4 pm for the quarterly business review.",
+      "heard": {
+        "unbiased": "We're meeting Danna Li on February 8th at 4 pm for the quarterly business review."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_145",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Dana Li",
+            "kind": "contact"
+          },
+          "fields": {
+            "attendees": {
+              "value": "Dana Li",
+              "quote": "Dana Li"
+            },
+            "date": {
+              "value": "2027-02-08",
+              "quote": "on February 8th"
+            },
+            "time": {
+              "value": "16:00",
+              "quote": "at 4 pm"
+            },
+            "title": {
+              "value": "Quarterly business review with Dana Li",
+              "quote": "the quarterly business review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Please add Tobiah Fairweather from Akme, number 555-0106.",
+      "heard": {
+        "biased": "Please add Topiah Fairweather from Akme, number 555-0106.",
+        "unbiased": "Please add Tobiah Fairweather from Acme, number 555-0106."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Topiah Fairweather",
+              "quote": "Topiah Fairweather"
+            },
+            "company": {
+              "value": "Akme",
+              "quote": "Akme"
+            },
+            "phone": {
+              "value": "555-0106",
+              "quote": "555-0106"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Send Callum Whitfield at Akme Dynamics the data processing agreement by the end of next month.",
+      "heard": {
+        "biased": "Send Callum Whitfield at Acmi Dynamics the data processing agreement by the end of next month.",
+        "unbiased": "Send Callum Whitfield at Acme Dynamics the data processing agreement by the end of next month."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_097",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Callum Whitfield",
+            "kind": "contact",
+            "company": "Acmi Dynamics"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Callum Whitfield the data processing agreement",
+              "quote": "the data processing agreement"
+            },
+            "dueDate": {
+              "value": "2027-03-31",
+              "quote": "by the end of next month"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

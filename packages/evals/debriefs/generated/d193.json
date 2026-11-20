@@ -1,0 +1,174 @@
+{
+  "version": 2,
+  "id": "d193",
+  "title": "Peer Logistics: a task for Freya Tanaka, a promise to Freya Tanaka, a promise to Pierce Logistics, and more",
+  "voice": "bf_isabella",
+  "speed": 0.95,
+  "callTime": "2026-11-12T15:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_031",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "I'll need to to walk Freya Tanaka through the integration two weeks from today.",
+      "heard": {
+        "unbiased": "I'll need to to walk Freya Tamaka through the integration two weeks from today."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_121",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Freya Tanaka",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Walk Freya Tanaka through the integration",
+              "quote": "walk Freya Tanaka through the integration"
+            },
+            "dueDate": {
+              "value": "2026-11-26",
+              "quote": "two weeks from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "I told Freya Tanaka over at Peer Logistics we'd share the renewal terms on Monday.",
+      "heard": {
+        "unbiased": "I told Freya Tonaka over at Peer Logistics we'd share the renewal terms on Monday."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_121",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Freya Tanaka",
+            "kind": "contact",
+            "company": "Peer Logistics"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Freya Tanaka",
+              "quote": "Freya Tanaka"
+            },
+            "text": {
+              "value": "Share the renewal terms with Freya Tanaka",
+              "quote": "share the renewal terms"
+            },
+            "dueDate": {
+              "value": "2026-11-16",
+              "quote": "on Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "We promised Pierce Logistics a reference call with a similar customer by the end of next month.",
+      "heard": {
+        "biased": "We promised Pier Logistics a reference call with a similar customer by the end of next month."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Pier Logistics",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "text": {
+              "value": "Set up a reference call for Pier Logistics with a similar customer",
+              "quote": "a reference call with a similar customer"
+            },
+            "dueDate": {
+              "value": "2026-12-31",
+              "quote": "by the end of next month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "You can reach Rhiannon Price at 555-0127.",
+      "heard": {
+        "biased": "You can reach Rhianon Price at 555-0127."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Rhianon Price",
+              "quote": "Rhianon Price"
+            },
+            "phone": {
+              "value": "555-0127",
+              "quote": "555-0127"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "We owe Katherine Moore at Lantern Hospitality the implementation timeline by the end of next month.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_078",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Katherine Moore",
+            "kind": "contact",
+            "company": "Lantern Hospitality"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Katherine Moore",
+              "quote": "Katherine Moore"
+            },
+            "text": {
+              "value": "Send Katherine Moore the implementation timeline",
+              "quote": "the implementation timeline"
+            },
+            "dueDate": {
+              "value": "2026-12-31",
+              "quote": "by the end of next month"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

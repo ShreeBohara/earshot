@@ -1,0 +1,89 @@
+{
+  "version": 2,
+  "id": "d176",
+  "title": "Juniper Bay Telecom: a note on Juniper Bay Telecom, a task for Geoffrey Walsh",
+  "voice": "af_alloy",
+  "speed": 1.05,
+  "callTime": "2026-11-24T16:30:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_004",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Just left Juniper Bay Telecom. The rollout slipped because of a hiring freeze.",
+      "heard": {
+        "unbiased": "Just left Juniper Bay Talecom. The rollout slipped because of a hiring freeze."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_004",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Juniper Bay Telecom",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The rollout slipped because of a hiring freeze.",
+              "quote": "The rollout slipped because of a hiring freeze"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Ping Geoffrey Walsh over at Juniper Bay Telecom about the reporting setup on Tuesday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_092",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Geoffrey Walsh",
+            "kind": "contact",
+            "company": "Juniper Bay Telecom"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Geoffrey Walsh about the reporting setup",
+              "quote": "about the reporting setup"
+            },
+            "dueDate": {
+              "value": "2026-12-01",
+              "quote": "on Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Debrief from Juniper Bay Telecom. Procurement wants a three-year term.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_004",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Juniper Bay Telecom",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Procurement wants a three-year term.",
+              "quote": "Procurement wants a three-year term"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

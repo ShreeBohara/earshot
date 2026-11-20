@@ -1,0 +1,150 @@
+{
+  "version": 2,
+  "id": "d052",
+  "title": "Juniper Bay Telecom: a note on Geoffrey Walsh, a note on the account, a promise to Geoffrey Walsh, and more",
+  "voice": "am_eric",
+  "callTime": "2027-01-01T16:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_004",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Geoffrey Walsh mentioned, you know, that they're consolidating vendors next year.",
+      "heard": {
+        "unbiased": "Jeffrey Walsh mentioned, you know, that they're consolidating vendors next year."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_092",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Geoffrey Walsh",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They're consolidating vendors next year.",
+              "quote": "they're consolidating vendors next year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Support tickets have dropped since the upgrade.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_004",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "Support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Geoffrey Walsh is expecting the updated pricing from us, us Friday, make that Tuesday.",
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_092",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Geoffrey Walsh",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Send Geoffrey Walsh the updated pricing",
+              "quote": "the updated pricing"
+            },
+            "dueDate": {
+              "value": "2027-01-05",
+              "quote": "Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "The Juniper pilot program deal slipped, so the close date is now March 3rd.",
+      "heard": {
+        "unbiased": "The Juneper pilot program deal slipped, so the close date is now March 3rd."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_023",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Juniper pilot program",
+            "kind": "deal",
+            "company": "Juniper"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-03-03",
+              "quote": "March 3rd"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "We're doing a site visit tomorrow.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_004",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Site visit",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2027-01-02",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

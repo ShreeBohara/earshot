@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "id": "d105",
+  "title": "Acme Dynamics: a task for Preeya Nair, a promise to Acme Dynamics, a new contact, Dana Lewis",
+  "voice": "af_alloy",
+  "speed": 1.05,
+  "callTime": "2026-11-17T21:10:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_011",
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Ping Preeya Nair over at Acme Dynamics about the training plan by tomorrow.",
+      "heard": {
+        "biased": "Ping Preeya Nair over at Akme Dynamics about the training plan by tomorrow.",
+        "unbiased": "Ping Preeya Nair over at Acme about the training plan by tomorrow."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_089",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Preeya Nair",
+            "kind": "contact",
+            "company": "Akme Dynamics"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Preeya Nair about the training plan",
+              "quote": "about the training plan"
+            },
+            "dueDate": {
+              "value": "2026-11-18",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "I promised Acme Dynamics the updated pricing by the end of the week.",
+      "heard": {
+        "biased": "I promised Acmi Dynamics the updated pricing by the end of the week.",
+        "unbiased": "I promised Acme Dienamics the updated pricing by the end of the week."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acmi Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Acmi Dynamics",
+              "quote": "Acmi Dynamics"
+            },
+            "text": {
+              "value": "Send Acmi Dynamics the updated pricing",
+              "quote": "the updated pricing"
+            },
+            "dueDate": {
+              "value": "2026-11-20",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Dana Lewis from Acme Dynamics is, is taking over as finance director.",
+      "heard": {
+        "biased": "Dana Lee from Acmi Dynamics is, is taking over as finance director."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "name": {
+              "value": "Dana Lee",
+              "quote": "Dana Lee"
+            },
+            "company": {
+              "value": "Acmi Dynamics",
+              "quote": "Acmi Dynamics"
+            },
+            "title": {
+              "value": "finance director",
+              "quote": "finance director"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Don't mix, uh, don't mix them up with Akme Dynamics.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

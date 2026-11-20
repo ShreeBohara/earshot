@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "id": "d157",
+  "title": "Midland Steel Corp: a meeting with Midland Steel Corp, a note on Copperline Retail, a task for Santiago Costa",
+  "voice": "af_heart",
+  "callTime": "2027-01-22T23:20:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_006",
+  "noise": {
+    "kind": "street",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Midland Steel Corp agreed to to a workshop on the pilot results on Thursday.",
+      "heard": {
+        "unbiased": "Midland Sdeel Corp agreed to to a workshop on the pilot results on Thursday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_006",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Midland Steel Corp",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Workshop on the pilot results with Midland Steel Corp",
+              "quote": "a workshop on the pilot results"
+            },
+            "date": {
+              "value": "2027-01-28",
+              "quote": "on Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "New prospect, Copperline Retail. The rollout slipped because of a hiring freeze.",
+      "heard": {
+        "biased": "New prospect, Copperleaf Retail. The rollout slipped because of a hiring freeze.",
+        "unbiased": "New prospect, Copperlinne Retail. The rollout slipped because of a hiring freeze."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Copperleaf Retail",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "body": {
+              "value": "The rollout slipped because of a hiring freeze.",
+              "quote": "The rollout slipped because of a hiring freeze"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Put together the security questionnaire for Santiago Costa by Monday.",
+      "heard": {
+        "unbiased": "Put together the security questionnaire for Santiago Coste by Monday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_026",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Santiago Costa",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the security questionnaire for Santiago Costa",
+              "quote": "the security questionnaire for Santiago Costa"
+            },
+            "dueDate": {
+              "value": "2027-01-25",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

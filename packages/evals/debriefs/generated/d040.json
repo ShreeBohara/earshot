@@ -1,0 +1,74 @@
+{
+  "version": 2,
+  "id": "d040",
+  "title": "Kestrel Aero: a note on Kestrel Aero, a meeting with Bruno Underhill",
+  "voice": "af_alloy",
+  "callTime": "2027-01-26T18:50:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_056",
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Kestrel Aero called back, and they want the integration live before the holidays.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_056",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kestrel Aero",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want the integration live before the holidays.",
+              "quote": "they want the integration live before the holidays"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Schedule a pricing review with Bruno Underhill and their head of operations tomorrow.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_010",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bruno Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Pricing review with Bruno Underhill",
+              "quote": "a pricing review"
+            },
+            "attendees": {
+              "value": "Bruno Underhill and their head of operations",
+              "quote": "Bruno Underhill and their head of operations"
+            },
+            "date": {
+              "value": "2027-01-27",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "I didn't talk, uh, I didn't talk to Kestral Aero this week, so there's no update there.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

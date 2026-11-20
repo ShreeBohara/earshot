@@ -1,0 +1,150 @@
+{
+  "version": 2,
+  "id": "d145",
+  "title": "Consolidated Parts & Supply: the Consolidated onboarding package deal, a task for Stephen Clarke, and more",
+  "voice": "bf_lily",
+  "callTime": "2026-11-25T15:10:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_032",
+  "noise": {
+    "kind": "car",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "The Consolidated onboarding package number went up to two hundred thousand. Stephen Clarke asked for a couple of customer references.",
+      "heard": {
+        "unbiased": "The Consolidated onboarding package number went up to two hundred thousand. Stephan Clarke asked for a couple of customer references."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_015",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Consolidated onboarding package",
+            "kind": "deal",
+            "company": "Consolidated"
+          },
+          "fields": {
+            "amount": {
+              "value": 200000,
+              "quote": "two hundred thousand"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_124",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Stephen Clarke",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Stephen Clarke a couple of customer references",
+              "quote": "a couple of customer references"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Some news on the Consolidated onboarding package deal: their operations team is pushing hard for this.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "deal_015",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Consolidated onboarding package",
+            "kind": "deal",
+            "company": "Consolidated"
+          },
+          "fields": {
+            "body": {
+              "value": "Their operations team is pushing hard for this.",
+              "quote": "their operations team is pushing hard for this"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Let's, um, let's get a call going with Stephen Clarke over at Consolidated Parts & Supply Wednesday at 2:15 pm.",
+      "heard": {
+        "unbiased": "Let's, um, let's get a call going with Stephen Clarcke over at Consolidated Parts & Supply Wednesday at 2:15 pm."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_124",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Stephen Clarke",
+            "kind": "contact",
+            "company": "Consolidated Parts & Supply"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Stephen Clarke",
+              "quote": "a call"
+            },
+            "date": {
+              "value": "2026-12-02",
+              "quote": "Wednesday"
+            },
+            "time": {
+              "value": "14:15",
+              "quote": "at 2:15 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "I owe Redwood Analysts the updated pricing.",
+      "heard": {
+        "biased": "I owe Redwood Analytics the updated pricing."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Redwood Analytics",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Send Redwood Analytics the updated pricing",
+              "quote": "the updated pricing"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

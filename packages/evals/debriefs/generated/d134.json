@@ -1,0 +1,162 @@
+{
+  "version": 2,
+  "id": "d134",
+  "title": "Copperleaf Retail: a note on Mohammed Hassan, the Copperleaf Retail starter plan deal, and more",
+  "voice": "af_kore",
+  "callTime": "2026-12-25T09:20:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_041",
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Talked to Mohammed Hassan at Copperleaf Retail about next steps, and support tickets have dropped since the upgrade.",
+      "heard": {
+        "unbiased": "Talked to Mohamned Hassan at Copperleaf Retoil about next steps, and support tickets have dropped since the upgrade."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_088",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mohammed Hassan",
+            "kind": "contact",
+            "company": "Copperleaf Retail"
+          },
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The Copperleaf Retail starter plan deal should close by the end of next month at fifty-one thousand.",
+      "heard": {
+        "biased": "The Copperleaf starter plan deal should close by the end of next month at 51,000.",
+        "unbiased": "The Copperleaf Rettail starter plan deal should close by the end of next month at 51,000."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Copperleaf starter plan",
+            "kind": "deal",
+            "company": "Copperleaf"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-01-31",
+              "quote": "the end of next month"
+            },
+            "amount": {
+              "value": 51000,
+              "quote": "51,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Pierce Logistics wants a site visit tomorrow.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "named": {
+            "quote": "Pierce Logistics",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "title": {
+              "value": "Site visit with Pierce Logistics",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2026-12-26",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Lunch with Mohammed Hassan on Thursday to talk about the reporting setup.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_088",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mohammed Hassan",
+            "kind": "contact"
+          },
+          "fields": {
+            "attendees": {
+              "value": "Mohammed Hassan",
+              "quote": "Mohammed Hassan"
+            },
+            "date": {
+              "value": "2026-12-31",
+              "quote": "on Thursday"
+            },
+            "title": {
+              "value": "Lunch with Mohammed Hassan about the reporting setup",
+              "quote": "talk about the reporting setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "The Copperleaf Retail starter plan deal should close by the end of next month with, uh, at fifteen thousand five hundred dollars.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Copperleaf Retail starter plan",
+            "kind": "deal",
+            "company": "Copperleaf Retail"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-01-31",
+              "quote": "the end of next month"
+            },
+            "amount": {
+              "value": 15500,
+              "quote": "fifteen thousand five hundred dollars"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

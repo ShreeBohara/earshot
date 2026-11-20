@@ -1,0 +1,155 @@
+{
+  "version": 2,
+  "id": "d084",
+  "title": "Acmi Dynamics: a note on Acmi Dynamics, the Acmi Dynamics analytics add-on deal, a promise to Donna Lee, and more",
+  "voice": "bm_daniel",
+  "callTime": "2027-01-26T18:10:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_040",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Got off the phone with Acmi Dynamics, and they want to add the analytics module.",
+      "heard": {
+        "biased": "Got off the phone with Akme Dynamics, and they want to add the analytics module."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_040",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Akme Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to add the analytics module.",
+              "quote": "they want to add the analytics module"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Revised pricing for the Acmi Dynamics analytics add-on deal: sixteen thousand.",
+      "heard": {
+        "biased": "Revised pricing for the Acme Dynamics analytics add-on deal: sixteen thousand.",
+        "unbiased": "Revised pricing for the Acmi Dinamics analytics add-on deal: sixteen thousand."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_030",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme Dynamics analytics add-on",
+            "kind": "deal",
+            "company": "Acme Dynamics"
+          },
+          "fields": {
+            "amount": {
+              "value": 16000,
+              "quote": "sixteen thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "I told Donna Lee we'd send over the reference architecture two weeks from today.",
+      "heard": {
+        "unbiased": "I told Dana Lee we'd send over the reference architecture two weeks from today."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_112",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Donna Lee",
+            "kind": "contact"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Donna Lee",
+              "quote": "Donna Lee"
+            },
+            "text": {
+              "value": "Send Donna Lee the reference architecture",
+              "quote": "send over the reference architecture"
+            },
+            "dueDate": {
+              "value": "2027-02-09",
+              "quote": "two weeks from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "For the Acmi Dynamics deal, change the amount to one hundred forty-nine thousand dollars, sorry, one hundred thirty-nine thousand and the stage to decision maker bought in. Action item: book a site visit with Hana Underhill by January 31st.",
+      "heard": {
+        "biased": "For the Acme Dynamics deal, change the amount to 149,000, sorry, 139,000 and the stage to decision maker bought in. Action item: book a site visit with Hana Underhill by January 31st.",
+        "unbiased": "For the Acmi Dynamics deal, change the amount to 149,000, sorry, 139,000 and the stage to decision maker bought in. Action item: book a site visit with Hana Unterhill by January 31st."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_030",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme Dynamics",
+            "kind": "deal",
+            "company": "Acme Dynamics"
+          },
+          "fields": {
+            "amount": {
+              "value": 139000,
+              "quote": "139,000"
+            },
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_061",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Hana Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Hana Underhill",
+              "quote": "book a site visit with Hana Underhill"
+            },
+            "dueDate": {
+              "value": "2027-01-31",
+              "quote": "by January 31st"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

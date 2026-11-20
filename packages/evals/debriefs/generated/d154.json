@@ -1,0 +1,164 @@
+{
+  "version": 2,
+  "id": "d154",
+  "title": "Akme Dynamics: the Akme Dynamics site deal, a task for Dana Li, the Akme site rollout deal, and more",
+  "voice": "am_adam",
+  "callTime": "2026-12-21T20:30:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_044",
+  "noise": {
+    "kind": "car",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Sent the paperwork for the Akme Dynamics site deal, so move it to contract sent. Send Dana Li at Akme Dynamics the training schedule by January 5th.",
+      "heard": {
+        "biased": "Sent the paperwork for the Acmi Dynamics site deal, so move it to contract sent. Send Dana Li at Acmi Dynamics the training schedule by January 5th.",
+        "unbiased": "Sent the paperwork for the Akme Dynamics site deal, so move it to contract sent. Send Dana Li at Akme Dynamecs the training schedule by January 5th."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_032",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acmi Dynamics site",
+            "kind": "deal",
+            "company": "Acmi Dynamics"
+          },
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_145",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Dana Li",
+            "kind": "contact",
+            "company": "Acmi Dynamics"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Dana Li the training schedule",
+              "quote": "the training schedule"
+            },
+            "dueDate": {
+              "value": "2027-01-05",
+              "quote": "by January 5th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "The Akme site rollout deal is now at contract sent, and the number is eight thousand five hundred.",
+      "heard": {
+        "biased": "The Acmi site rollout deal is now at contract sent, and the number is eight thousand five hundred.",
+        "unbiased": "The Akmi site rollout deal is now at contract sent, and the number is eight thousand five hundred."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_032",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acmi site rollout",
+            "kind": "deal",
+            "company": "Acmi"
+          },
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            },
+            "amount": {
+              "value": 8500,
+              "quote": "eight thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Got off the phone with with Akme Dynamics, and the pilot is going well and they want a formal quote.",
+      "heard": {
+        "biased": "Got off the phone with with Acme Dynamics, and the pilot is going well and they want a formal quote."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_044",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I told, uh, I told Tomas Berg over at Summit we'd share the training schedule on Friday.",
+      "heard": {
+        "biased": "I told, uh, I told Tomas Berg over at Basalt we'd share the training schedule on Friday.",
+        "unbiased": "I told, uh, I told Tomos Berg over at Summit we'd share the training schedule on Friday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_030",
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Tomas Berg",
+            "kind": "contact",
+            "company": "Basalt"
+          },
+          "expectFlags": [
+            "ambiguous_target"
+          ],
+          "fields": {
+            "text": {
+              "value": "Share the training schedule with Tomas Berg",
+              "quote": "share the training schedule"
+            },
+            "dueDate": {
+              "value": "2026-12-25",
+              "quote": "on Friday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

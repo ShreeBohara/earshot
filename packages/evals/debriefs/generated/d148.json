@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "id": "d148",
+  "title": "Juniper Bay Telecom: a note on Geoffrey Walsh, a promise to Geoffrey Walsh",
+  "voice": "bf_alice",
+  "callTime": "2027-01-28T12:10:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_004",
+  "noise": {
+    "kind": "car",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Geoffrey Walsh mentioned that they want the integration live before the holidays.",
+      "heard": {
+        "unbiased": "Jeffrey Walsh mentioned that they want the integration live before the holidays."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_092",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Geoffrey Walsh",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They want the integration live before the holidays.",
+              "quote": "they want the integration live before the holidays"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "We promised Geoffrey Walsh we'd, um, fix the pilot results issue by March 2nd, sorry, March 3rd.",
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_092",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Geoffrey Walsh",
+            "kind": "contact"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Geoffrey Walsh",
+              "quote": "Geoffrey Walsh"
+            },
+            "text": {
+              "value": "Fix the pilot results issue for Geoffrey Walsh",
+              "quote": "fix the pilot results issue"
+            },
+            "dueDate": {
+              "value": "2027-03-03",
+              "quote": "March 3rd"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Geoffrey Walsh called back, and procurement wants a three-year term.",
+      "heard": {
+        "unbiased": "Geoffriy Walsh called back, and procurement wants a three-year term."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_092",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Geoffrey Walsh",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Procurement wants a three-year term.",
+              "quote": "procurement wants a three-year term"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

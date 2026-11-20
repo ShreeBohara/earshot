@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "id": "d180",
+  "title": "Atmas Group: a note on Mateo Underhill, Mateo Underhill's details, the Atmas Group deal",
+  "voice": "am_puck",
+  "callTime": "2026-11-12T15:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_014",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Had a good call with Mateo Underhill this morning, and support tickets have dropped since the upgrade.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mateo Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Mateo Underhill is the new controller at Atmas.",
+      "heard": {
+        "biased": "Mateo Underhill is the new controller at Atmos.",
+        "unbiased": "Matao Underhill is the new controller at Atmas."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_019",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Mateo Underhill",
+              "quote": "Mateo Underhill"
+            },
+            "title": {
+              "value": "controller",
+              "quote": "controller"
+            },
+            "company": {
+              "value": "Atmos",
+              "quote": "Atmos"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "We agreed on sixty-one thousand, make that fifty-one thousand for the Atmas Group deal.",
+      "heard": {
+        "biased": "We agreed on 61,000, make that 51,000 for the Atmas Group deal.",
+        "unbiased": "We agreed on 61,000, make that 51,000 for the Atmas Groub deal."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_008",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmas Group",
+            "kind": "deal",
+            "company": "Atmas Group"
+          },
+          "fields": {
+            "amount": {
+              "value": 51000,
+              "quote": "51,000"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "version": 2,
+  "id": "d181",
+  "title": "Summit Ridge Capital: a task for Ingrid Sandoval, a meeting with Oakmere Insurance, and more",
+  "voice": "af_bella",
+  "callTime": "2026-11-02T16:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "noise": {
+    "kind": "street",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Ingrid Sandoval asked for the migration plan tomorrow.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_077",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ingrid Sandoval",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Ingrid Sandoval the migration plan",
+              "quote": "the migration plan"
+            },
+            "dueDate": {
+              "value": "2026-11-03",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Meeting with the team at Oakmere Insurance on November 30th about the procurement process.",
+      "heard": {
+        "biased": "Meeting with the team at Oakmont Insurance on November 30th about the procurement process.",
+        "unbiased": "Meeting with the team at Oakmereinsurance on November 30th about the procurement process."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Oakmont Insurance",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "date": {
+              "value": "2026-11-30",
+              "quote": "on November 30th"
+            },
+            "title": {
+              "value": "Meeting with Oakmont Insurance about the procurement process",
+              "quote": "the procurement process"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Let's get a call going with Marcus Zielinski over at Summit Ridge Capital on November 26th at 5:15 pm.",
+      "heard": {
+        "unbiased": "Let's get a call going with Marcuz Zielinski over at Summet Ridge Capital on November 26th at 5:15 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_098",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Marcus Zielinski",
+            "kind": "contact",
+            "company": "Summit Ridge Capital"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Marcus Zielinski",
+              "quote": "a call"
+            },
+            "attendees": {
+              "value": "Marcus Zielinski",
+              "quote": "Marcus Zielinski"
+            },
+            "date": {
+              "value": "2026-11-26",
+              "quote": "on November 26th"
+            },
+            "time": {
+              "value": "17:15",
+              "quote": "at 5:15 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Summit agreed to a workshop on the expansion plan on Wednesday at 1 pm.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Workshop on the expansion plan with Summit",
+              "quote": "a workshop on the expansion plan"
+            },
+            "date": {
+              "value": "2026-11-04",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "13:00",
+              "quote": "at 1 pm"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "version": 2,
+  "id": "d200",
+  "title": "Sygma Tooling: a note on Sygma, a note on Leilani Okafor, a meeting with Sygma",
+  "voice": "am_liam",
+  "callTime": "2027-01-26T22:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_052",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Got off the phone with Sygma, and and they want weekly check-ins during onboarding.",
+      "heard": {
+        "unbiased": "Got off the phone with Sigma, and and they want weekly check-ins during onboarding."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_052",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sygma",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want weekly check-ins during onboarding.",
+              "quote": "they want weekly check-ins during onboarding"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Talked with, um, to Leilani Okafor at Sygma about, about next steps, and they're reviewing the proposal with legal this week.",
+      "heard": {
+        "biased": "Talked with, um, to Leilani Okafor at Sigma about, about next steps, and they're reviewing the proposal with legal this week.",
+        "unbiased": "Talked with, um, to Leilani Okaphor at Sygma about, about next steps, and they're reviewing the proposal with legal this week."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_043",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Leilani Okafor",
+            "kind": "contact",
+            "company": "Sigma"
+          },
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "they're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Sygma agreed with, uh, to a workshop on the rollout timeline on Tuesday, make that Friday at 4 pm.",
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_052",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sygma",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Workshop on the rollout timeline with Sygma",
+              "quote": "a workshop on the rollout timeline"
+            },
+            "date": {
+              "value": "2027-01-29",
+              "quote": "Friday"
+            },
+            "time": {
+              "value": "16:00",
+              "quote": "at 4 pm"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

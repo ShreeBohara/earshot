@@ -1,0 +1,116 @@
+{
+  "version": 2,
+  "id": "d055",
+  "title": "Globalex Systems: a meeting with Globalex Systems, a task for Sara Cohen, a new contact, Omar Delacroix",
+  "voice": "bm_lewis",
+  "callTime": "2027-01-29T19:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_015",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Globalex Systems wants, uh, a site visit on Wednesday.",
+      "heard": {
+        "biased": "Globelex Systems wants, uh, a site visit on Wednesday.",
+        "unbiased": "Globalex Systemz wants, uh, a site visit on Wednesday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_015",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globelex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Site visit with Globelex Systems",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2027-02-03",
+              "quote": "on Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I'll need to walk Sara Cohen through the expansion plan by March 11th.",
+      "heard": {
+        "unbiased": "I'll need to walk Sara Cahen through the expansion plan by March 11th."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_141",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sara Cohen",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Walk Sara Cohen through the expansion plan",
+              "quote": "walk Sara Cohen through the expansion plan"
+            },
+            "dueDate": {
+              "value": "2027-03-11",
+              "quote": "by March 11th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "I'm not touching the Globelex Systems account today.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Omar Delacroix is the new controller on, um, at, at Globalex Systems.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Omar Delacroix",
+              "quote": "Omar Delacroix"
+            },
+            "title": {
+              "value": "controller",
+              "quote": "controller"
+            },
+            "company": {
+              "value": "Globalex Systems",
+              "quote": "Globalex Systems"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

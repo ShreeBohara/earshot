@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "id": "d195",
+  "title": "Opal Street Studios: a note on Kwame Fontaine, Odette Abara's details, and more",
+  "voice": "am_echo",
+  "callTime": "2026-12-31T22:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_030",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Kwame Fontaine called back, and procurement wants a three-year term.",
+      "heard": {
+        "unbiased": "Kwame Fondaine called back, and procurement wants a three-year term."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_031",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kwame Fontaine",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Procurement wants a three-year term.",
+              "quote": "procurement wants a three-year term"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Update the title for Odette Abara to VP of finance.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_137",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Odette Abara",
+              "quote": "Odette Abara"
+            },
+            "title": {
+              "value": "VP of finance",
+              "quote": "VP of finance"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Bump the Opal Street Studios annual renewal deal to one hundred twelve thousand, actually one hundred seven thousand. Next step is to send Odette Abara a draft statement of work by January 6th.",
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_024",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Opal Street Studios annual renewal",
+            "kind": "deal",
+            "company": "Opal Street Studios"
+          },
+          "fields": {
+            "amount": {
+              "value": 107000,
+              "quote": "one hundred seven thousand"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_137",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Odette Abara",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Odette Abara a draft statement of work",
+              "quote": "send Odette Abara a draft statement of work"
+            },
+            "dueDate": {
+              "value": "2027-01-06",
+              "quote": "by January 6th"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

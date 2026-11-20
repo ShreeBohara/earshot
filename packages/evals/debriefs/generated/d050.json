@@ -1,0 +1,133 @@
+{
+  "version": 2,
+  "id": "d050",
+  "title": "Pacific Coast Electric: a task for Mateo Kowalski, the Pacific Coast Electric support deal, a new contact, Mateus Ferraz",
+  "voice": "af_bella",
+  "callTime": "2027-02-01T20:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_034",
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Action item: book a site visit with Mateo Kowalski by the end of the week.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_029",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mateo Kowalski",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Mateo Kowalski",
+              "quote": "book a site visit with Mateo Kowalski"
+            },
+            "dueDate": {
+              "value": "2027-02-05",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Can you you set the Pacific Coast Electric support deal to two hundred thirty-five thousand and move the close to February 11th?",
+      "heard": {
+        "biased": "Can you you set the Pacific Coast Electric support deal to 235,000 and move the close to February 11th?",
+        "unbiased": "Can you you set the Pacific Coast Electric support deal to 235,000 and move the close to February 11th?"
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_004",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Coast Electric support",
+            "kind": "deal",
+            "company": "Pacific Coast Electric"
+          },
+          "fields": {
+            "amount": {
+              "value": 235000,
+              "quote": "235,000"
+            },
+            "closeDate": {
+              "value": "2027-02-11",
+              "quote": "February 11th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "The Pacific Coast Electric support deal is now on, um, at decision maker bought in, and the number is one hundred three thousand.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_004",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Coast Electric support",
+            "kind": "deal",
+            "company": "Pacific Coast Electric"
+          },
+          "fields": {
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            },
+            "amount": {
+              "value": 103000,
+              "quote": "one hundred three thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "You can reach Mateus Ferraz at 555-0191.",
+      "heard": {
+        "unbiased": "You can reach Matteus Ferraz at 555-0191."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Mateus Ferraz",
+              "quote": "Mateus Ferraz"
+            },
+            "phone": {
+              "value": "555-0191",
+              "quote": "555-0191"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

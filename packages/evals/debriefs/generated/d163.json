@@ -1,0 +1,153 @@
+{
+  "version": 2,
+  "id": "d163",
+  "title": "Blue Harbor Analytics: a note on Blue Harbor Analytics, a meeting with Atmos Industrial, and more",
+  "voice": "am_eric",
+  "callTime": "2027-02-02T21:30:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_037",
+  "noise": {
+    "kind": "car",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Met with the team at Blue Harbor Analytics, and our champion is moving to a new role.",
+      "heard": {
+        "unbiased": "Met with the team at Blue Halbor Analytics, and our champion is moving to a new role."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Blue Harbor Analytics",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Our champion is moving to a new role.",
+              "quote": "our champion is moving to a new role"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Atmos Industrial wants wants a site visit on Thursday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_009",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Site visit with Atmos Industrial",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2027-02-04",
+              "quote": "on Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Kathryn Moore's email is kathryn.moore@blue-harbor-analytics.example.",
+      "heard": {
+        "unbiased": "Kathrin Moore's email is kathryn.moore@blue-harbor-analytics.example."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_064",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Kathryn Moore",
+              "quote": "Kathryn Moore"
+            },
+            "email": {
+              "value": "kathryn.moore@blue-harbor-analytics.example",
+              "quote": "kathryn.moore@blue-harbor-analytics.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Zoe Park's email is zoe.park@blue-harbor-analytics.example.",
+      "heard": {
+        "unbiased": "Zoe Perk's email is zoe.park@blue-harbor-analytics.example."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_111",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Zoe Park",
+              "quote": "Zoe Park"
+            },
+            "email": {
+              "value": "zoe.park@blue-harbor-analytics.example",
+              "quote": "zoe.park@blue-harbor-analytics.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Put, um, put together the integration guide for Bruno Dube in three days.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_090",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bruno Dube",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the integration guide for Bruno Dube",
+              "quote": "the integration guide for Bruno Dube"
+            },
+            "dueDate": {
+              "value": "2027-02-05",
+              "quote": "in three days"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

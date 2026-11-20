@@ -1,0 +1,164 @@
+{
+  "version": 2,
+  "id": "d093",
+  "title": "Atlas Freight: a note on Signe Lindqvist, a note on Emeka Zielinski, a note on Atlas, and more",
+  "voice": "am_echo",
+  "callTime": "2027-02-08T20:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_005",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Caught up with Signe Lindqvist over at Atlas Freight, and their operations team is pushing hard for this.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_041",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Signe Lindqvist",
+            "kind": "contact",
+            "company": "Atlas Freight"
+          },
+          "fields": {
+            "body": {
+              "value": "Their operations team is pushing hard for this.",
+              "quote": "their operations team is pushing hard for this"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Talked to Emeka Zielinski at Atlas Freight about next steps, and legal hasn't approved the data processing terms.",
+      "heard": {
+        "unbiased": "Talked to Emeka Zielinski at Atlas about next steps, and legal hasn't approved the data processing terms."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_147",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Emeka Zielinski",
+            "kind": "contact",
+            "company": "Atlas Freight"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "Legal hasn't approved the data processing terms.",
+              "quote": "legal hasn't approved the data processing terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Quick note, note on, uh, quick note on Atlas: their CFO wants to see the ROI model.",
+      "heard": {
+        "unbiased": "Quick note, note on, uh, quick note on Atras: their CFO wants to see the ROI model."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_005",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atlas",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Oakmere Insurance wants a site visit on February 12th.",
+      "heard": {
+        "biased": "Oakmont Insurance wants a site visit on February 12th."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Oakmont Insurance",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Site visit with Oakmont Insurance",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2027-02-12",
+              "quote": "on February 12th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Ping ping Emeka Zielinski over at Atlas Freight about the renewal terms.",
+      "heard": {
+        "unbiased": "Ping ping Emeka Zierinski over at Atlas Freight about the renewal terms."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_147",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Emeka Zielinski",
+            "kind": "contact",
+            "company": "Atlas Freight"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Emeka Zielinski about the renewal terms",
+              "quote": "about the renewal terms"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

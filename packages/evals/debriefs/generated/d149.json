@@ -1,0 +1,144 @@
+{
+  "version": 2,
+  "id": "d149",
+  "title": "Copperleaf Retail: a task for Mohammed Hassan, a meeting with Bay Arbor Associates, the Copperleaf Retail deal, and more",
+  "voice": "bm_fable",
+  "callTime": "2027-02-17T20:10:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_041",
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Make sure we loop in Mohammed Hassan on the security review.",
+      "heard": {
+        "unbiased": "Make sure we loop in Mohammed Haszan on the security review."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_088",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mohammed Hassan",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Loop in Mohammed Hassan on the security review",
+              "quote": "loop in Mohammed Hassan on the security review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Booked the executive briefing with Bay Arbor Associates on Friday at 8 am.",
+      "heard": {
+        "biased": "Booked the executive briefing with Bay Harbor Associates on Friday at 8 am."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Bay Harbor Associates",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Executive briefing with Bay Harbor Associates",
+              "quote": "the executive briefing"
+            },
+            "date": {
+              "value": "2027-02-19",
+              "quote": "on Friday"
+            },
+            "time": {
+              "value": "08:00",
+              "quote": "at 8 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "For the Copperleaf Retail deal, change the amount to nine thousand five hundred and the stage to contract sent.",
+      "heard": {
+        "biased": "For the Copperleaf deal, change the amount to 9,500 and the stage to contract sent.",
+        "unbiased": "For the Copperleaf Retair deal, change the amount to 9,500 and the stage to contract sent."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Copperleaf",
+            "kind": "deal",
+            "company": "Copperleaf"
+          },
+          "fields": {
+            "amount": {
+              "value": 9500,
+              "quote": "9,500"
+            },
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Put a kickoff meeting on the calendar with Mohammed Hassan on Tuesday at noon.",
+      "heard": {
+        "unbiased": "Put a kickoff meeting on the calendar with Mohammed Haszan on Tuesday at noon."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_088",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mohammed Hassan",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Mohammed Hassan",
+              "quote": "a kickoff meeting"
+            },
+            "attendees": {
+              "value": "Mohammed Hassan",
+              "quote": "Mohammed Hassan"
+            },
+            "date": {
+              "value": "2027-02-23",
+              "quote": "on Tuesday"
+            },
+            "time": {
+              "value": "12:00",
+              "quote": "at noon"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

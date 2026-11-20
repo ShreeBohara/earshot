@@ -1,0 +1,123 @@
+{
+  "version": 2,
+  "id": "d064",
+  "title": "Basalt Mining: a note on Basalt Mining, Odette Garza's details, a new contact, Rhiannon Price, a task for Basalt Mining",
+  "voice": "am_echo",
+  "callTime": "2027-01-04T18:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_049",
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "So for, um, so for for Basalt Mining, the new VP of operations is our sponsor now.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_049",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Basalt Mining",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The new VP of operations is our sponsor now.",
+              "quote": "the new VP of operations is our sponsor now"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Odette Garza is now head of customer success.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_086",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Odette Garza",
+              "quote": "Odette Garza"
+            },
+            "title": {
+              "value": "head of customer success",
+              "quote": "head of customer success"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "New, um, contact: Rhiannon Price, managing director, phone 555-0157.",
+      "heard": {
+        "unbiased": "New, um, contact: Rhianon Price, managing director, phone 555-0157."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Rhiannon Price",
+              "quote": "Rhiannon Price"
+            },
+            "title": {
+              "value": "managing director",
+              "quote": "managing director"
+            },
+            "phone": {
+              "value": "555-0157",
+              "quote": "555-0157"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "I'll need to walk Basalt Mining through the procurement process in ten days.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_049",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Basalt Mining",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Walk Basalt Mining through the procurement process",
+              "quote": "walk Basalt Mining through the procurement process"
+            },
+            "dueDate": {
+              "value": "2027-01-14",
+              "quote": "in ten days"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

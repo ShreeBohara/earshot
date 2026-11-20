@@ -1,0 +1,158 @@
+{
+  "version": 2,
+  "id": "d035",
+  "title": "Marsh Medical: a note on Marsh, a meeting with the account, a promise to Marsh Medical, and more",
+  "voice": "af_sky",
+  "callTime": "2027-01-13T00:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_033",
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Met, you know, with the team at Marsh, and and they want to expand the rollout to two more sites.",
+      "heard": {
+        "unbiased": "Met, you know, with the team at Mersh, and and they want to expand the rollout to two more sites."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_033",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Marsh",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to expand the rollout to two more sites.",
+              "quote": "they want to expand the rollout to two more sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Booked a kickoff call on Friday at 5 pm.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_033",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Kickoff call",
+              "quote": "a kickoff call"
+            },
+            "date": {
+              "value": "2027-01-15",
+              "quote": "on Friday"
+            },
+            "time": {
+              "value": "17:00",
+              "quote": "at 5 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I promised Marsh Medical the renewal terms.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_033",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Marsh Medical",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Send Marsh Medical the renewal terms",
+              "quote": "the renewal terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "We have a follow-up call with Mary Allen from Marsh on Tuesday.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_135",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mary Allen",
+            "kind": "contact",
+            "company": "Marsh"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Mary Allen",
+              "quote": "a follow-up call"
+            },
+            "attendees": {
+              "value": "Mary Allen",
+              "quote": "Mary Allen"
+            },
+            "date": {
+              "value": "2027-01-19",
+              "quote": "on Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Promised, you know, Mary Allen an answer on the data migration by Thursday.",
+      "heard": {
+        "unbiased": "Promised, you know, Mari Allen an answer on the data migration by Thursday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_135",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mary Allen",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Give Mary Allen an answer on the data migration",
+              "quote": "an answer on the data migration"
+            },
+            "dueDate": {
+              "value": "2027-01-14",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

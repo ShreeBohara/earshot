@@ -1,0 +1,114 @@
+{
+  "version": 2,
+  "id": "d049",
+  "title": "Akme Dynamics: a meeting with Akme Dynamics, a note on Atmos Industries, a task for Akme Dynamics site rollout",
+  "voice": "af_heart",
+  "callTime": "2027-02-22T15:30:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_044",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Akme Dynamics wants a site visit tomorrow.",
+      "heard": {
+        "biased": "Acme Dynamics wants a site visit tomorrow."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_044",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Site visit with Acme Dynamics",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2027-02-23",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "That's the the debrief for today.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Heads up on Atmos Industries: their IT team flagged the single sign-on setup.",
+      "heard": {
+        "biased": "Heads up on Atmos Industrial: their IT team flagged the single sign-on setup."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "body": {
+              "value": "Their IT team flagged the single sign-on setup.",
+              "quote": "their IT team flagged the single sign-on setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "I need to chase the signature on the Akme Dynamics site rollout deal by April 2nd.",
+      "heard": {
+        "biased": "I need to chase the signature on the Acme Dynamics site rollout deal by April 2nd.",
+        "unbiased": "I need to chase the signature on the Acme Dynamics site rollout deal by April 2nd."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "deal_032",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme Dynamics site rollout",
+            "kind": "deal",
+            "company": "Acme Dynamics"
+          },
+          "fields": {
+            "title": {
+              "value": "Chase the signature on the Acme Dynamics site rollout deal",
+              "quote": "chase the signature on the Acme Dynamics site rollout deal"
+            },
+            "dueDate": {
+              "value": "2027-04-02",
+              "quote": "by April 2nd"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

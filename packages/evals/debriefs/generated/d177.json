@@ -1,0 +1,125 @@
+{
+  "version": 2,
+  "id": "d177",
+  "title": "Nite Security Group: a note on Nite Security Group, a promise to Nite Security Group, a meeting with Atmos Industries",
+  "voice": "am_santa",
+  "callTime": "2027-01-14T00:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_012",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Just left Nite Security Group. They're no longer looking at other vendors.",
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nite Security Group",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "They're no longer looking at other vendors.",
+              "quote": "They're no longer looking at other vendors"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "I promised Nite Security Group we won't charge for the extra seats.",
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nite Security Group",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "text": {
+              "value": "We won't charge for the extra seats.",
+              "quote": "we won't charge for the extra seats"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Set up a call with Atmos Industries on Wednesday at 3:45 pm to go over the integration.",
+      "heard": {
+        "biased": "Set up a call with Atmos Industrial on Wednesday at 3:45 pm to go over the integration.",
+        "unbiased": "Set up a call with Atmoz Industries on Wednesday at 3:45 pm to go over the integration."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "date": {
+              "value": "2027-01-20",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "15:45",
+              "quote": "at 3:45 pm"
+            },
+            "title": {
+              "value": "Call with Atmos Industrial to go over the integration",
+              "quote": "go over the integration"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "That's it for Nite Security Group today.",
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I didn't, uh, talk to Knight Security this week, so there's no update there.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "version": 2,
+  "id": "d034",
+  "title": "Acme Dynamics: a meeting with Acme, a promise to Allan Foster, the Acme Dynamics expansion deal, and more",
+  "voice": "af_sarah",
+  "callTime": "2027-02-23T19:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_011",
+  "noise": {
+    "kind": "street",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Calendar this: a contract walkthrough with Acme, on Monday at 5 pm.",
+      "heard": {
+        "unbiased": "Calendar this: a contract walkthrough with Acma, on Monday at 5 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Contract walkthrough with Acme",
+              "quote": "a contract walkthrough"
+            },
+            "date": {
+              "value": "2027-03-01",
+              "quote": "on Monday"
+            },
+            "time": {
+              "value": "17:00",
+              "quote": "at 5 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I promised, uh, Allan Foster the migration won't need any downtime.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_060",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Allan Foster",
+            "kind": "contact"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "text": {
+              "value": "The migration won't need any downtime.",
+              "quote": "the migration won't need any downtime"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "For the Acme Dynamics expansion deal, change the amount to nine thousand five hundred and and the stage to contract sent. To do: review the onboarding plan with Dana Lee from Acme Dynamics by Wednesday.",
+      "heard": {
+        "biased": "For the Akme expansion deal, change the amount to 9,500 and and the stage to contract sent. To do: review the onboarding plan with Dana Lee from Akme Dynamics by Wednesday.",
+        "unbiased": "For the Acme Dynamics expansion deal, change the amount to 9,500 and and the stage to contract sent. To do: review the onboarding plan with Dana Lee from Acme Dynamics by Wednesday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_028",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Akme expansion",
+            "kind": "deal",
+            "company": "Akme"
+          },
+          "fields": {
+            "amount": {
+              "value": 9500,
+              "quote": "9,500"
+            },
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_045",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Dana Lee",
+            "kind": "contact",
+            "company": "Akme Dynamics"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the onboarding plan with Dana Lee",
+              "quote": "review the onboarding plan with Dana Lee from Akme Dynamics"
+            },
+            "dueDate": {
+              "value": "2027-02-24",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Some news on the Acme Dynamics expansion deal: they want weekly check-ins during onboarding.",
+      "heard": {
+        "unbiased": "Some news on the Acmedynamics expansion deal: they want weekly check-ins during onboarding."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "deal_028",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme Dynamics expansion",
+            "kind": "deal",
+            "company": "Acme Dynamics"
+          },
+          "fields": {
+            "body": {
+              "value": "They want weekly check-ins during onboarding.",
+              "quote": "they want weekly check-ins during onboarding"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

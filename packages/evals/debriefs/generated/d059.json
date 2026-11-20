@@ -1,0 +1,185 @@
+{
+  "version": 2,
+  "id": "d059",
+  "title": "Harborview Health: the Harborview Health multi-year deal, a note on Copperline Retail, and more",
+  "voice": "af_aoede",
+  "callTime": "2027-02-01T14:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_001",
+  "noise": {
+    "kind": "car",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Update at, uh, on Harborview Health multi-year: closed lost, thirty-two thousand dollars, closing April 9th.",
+      "heard": {
+        "unbiased": "Update at, uh, on Harbor View Health multi-year: closed lost, thirty-two thousand dollars, closing April 9th."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_001",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview Health multi-year",
+            "kind": "deal",
+            "company": "Harborview Health"
+          },
+          "fields": {
+            "stage": {
+              "value": "closed lost",
+              "quote": "closed lost"
+            },
+            "amount": {
+              "value": 32000,
+              "quote": "thirty-two thousand dollars"
+            },
+            "closeDate": {
+              "value": "2027-04-09",
+              "quote": "April 9th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Copperline Retail called, um, back, and support tickets have dropped since the upgrade.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "named": {
+            "quote": "Copperline Retail",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Set up a call with Maren Dube on Wednesday at 1:30 pm to go over the expansion plan.",
+      "heard": {
+        "unbiased": "Set up a call with Marren Dube on Wednesday at 1:30 pm to go over the expansion plan."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_082",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Maren Dube",
+            "kind": "contact"
+          },
+          "fields": {
+            "attendees": {
+              "value": "Maren Dube",
+              "quote": "Maren Dube"
+            },
+            "date": {
+              "value": "2027-02-03",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "13:30",
+              "quote": "at 1:30 pm"
+            },
+            "title": {
+              "value": "Call with Maren Dube to go over the expansion plan",
+              "quote": "go over the expansion plan"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "We have a follow-up call with Maren Dube from Harborview Health on Monday at 1:45 pm.",
+      "heard": {
+        "unbiased": "We have a follow-up call with Maren Duba from Harborviaw Health on Monday at 1:45 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_082",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Maren Dube",
+            "kind": "contact",
+            "company": "Harborview Health"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Maren Dube",
+              "quote": "a follow-up call"
+            },
+            "date": {
+              "value": "2027-02-08",
+              "quote": "on Monday"
+            },
+            "time": {
+              "value": "13:45",
+              "quote": "at 1:45 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "I I have to, uh, I have to call Harborview Health about the invoice dispute two weeks from today.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_001",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview Health",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Call Harborview Health about the invoice dispute",
+              "quote": "call Harborview Health about the invoice dispute"
+            },
+            "dueDate": {
+              "value": "2027-02-15",
+              "quote": "two weeks from today"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

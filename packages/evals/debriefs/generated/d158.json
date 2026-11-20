@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "id": "d158",
+  "title": "Midland Steel Corp: a task for Wanjiru Eriksen, a task for Santiago Costa, the Midland Steel Corp pilot program deal",
+  "voice": "af_nicole",
+  "speed": 0.95,
+  "callTime": "2027-01-04T18:00:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_006",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Schedule the kickoff with Wanjiru Eriksen by Wednesday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_104",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Wanjiru Eriksen",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Wanjiru Eriksen",
+              "quote": "Schedule the kickoff with Wanjiru Eriksen"
+            },
+            "dueDate": {
+              "value": "2027-01-06",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Let's, you know, get the order form over to Santiago Costa.",
+      "heard": {
+        "unbiased": "Let's, you know, get the order form over to Santiago Cosda."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_026",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Santiago Costa",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the order form over to Santiago Costa",
+              "quote": "get the order form over to Santiago Costa"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "The Midland Steel Corp pilot program deal is now at qualified to buy, and the number is ten thousand five hundred.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_014",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Midland Steel Corp pilot program",
+            "kind": "deal",
+            "company": "Midland Steel Corp"
+          },
+          "fields": {
+            "stage": {
+              "value": "qualified to buy",
+              "quote": "qualified to buy"
+            },
+            "amount": {
+              "value": 10500,
+              "quote": "ten thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I'm not touching the Meridian Supply Co account today.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

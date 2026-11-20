@@ -1,0 +1,114 @@
+{
+  "version": 2,
+  "id": "d167",
+  "title": "Meridian Supply Co: a note on Meridian Supply Co, a promise to Jeffrey Walsh, a meeting with Tobias Whitfield",
+  "voice": "af_jessica",
+  "callTime": "2026-11-16T15:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_043",
+  "noise": {
+    "kind": "street",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Heads up on, at, uh, on Meridian Supply Co: legal hasn't approved the data processing terms.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_043",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Meridian Supply Co",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "Legal hasn't approved the data processing terms.",
+              "quote": "legal hasn't approved the data processing terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "I told Jeffrey Walsh over at Meridian Supply Co we'd share the integration guide in three weeks.",
+      "heard": {
+        "unbiased": "I told Jeffrey Walsh over at Merridian Supply Co we'd share the integration guide in three weeks."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Jeffrey Walsh",
+            "kind": "contact",
+            "company": "Meridian Supply Co"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Jeffrey Walsh",
+              "quote": "Jeffrey Walsh"
+            },
+            "text": {
+              "value": "Share the integration guide with Jeffrey Walsh",
+              "quote": "share the integration guide"
+            },
+            "dueDate": {
+              "value": "2026-12-07",
+              "quote": "in three weeks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Tobias Whitfield can do, um, a technical deep dive tomorrow at 4:30 pm.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_123",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tobias Whitfield",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Technical deep dive with Tobias Whitfield",
+              "quote": "a technical deep dive"
+            },
+            "date": {
+              "value": "2026-11-17",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "16:30",
+              "quote": "at 4:30 pm"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

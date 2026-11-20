@@ -1,0 +1,136 @@
+{
+  "version": 2,
+  "id": "d061",
+  "title": "Sigma Tooling: a meeting with Sigma Tooling, a task for Oakmere Insurance, a new contact, Mateus Ferraz, and more",
+  "voice": "af_heart",
+  "callTime": "2027-01-21T15:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_029",
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "We're meeting Sigma Tooling on Wednesday at 2 pm for the quarterly business review.",
+      "heard": {
+        "biased": "We're meeting Sigma on Wednesday at 2 pm for the quarterly business review.",
+        "unbiased": "We're meeting Sigma on Wednesday at 2 pm for the quarterly business review."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_029",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-01-27",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "14:00",
+              "quote": "at 2 pm"
+            },
+            "title": {
+              "value": "Quarterly business review with Sigma",
+              "quote": "the quarterly business review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Remind me to send Oakmere Insurance a couple of customer references.",
+      "heard": {
+        "biased": "Remind me to send Oakmont Insurance a couple of customer references."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Oakmont Insurance",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Send Oakmont Insurance a couple of customer references",
+              "quote": "a couple of customer references"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Add Mateus Ferraz, managing director at Sigma.",
+      "heard": {
+        "unbiased": "Add Mateus Ferlaz, managing director at Sigma."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Mateus Ferraz",
+              "quote": "Mateus Ferraz"
+            },
+            "title": {
+              "value": "managing director",
+              "quote": "managing director"
+            },
+            "company": {
+              "value": "Sigma",
+              "quote": "Sigma"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Revised pricing for the Sigma expansion deal: fifty-three thousand.",
+      "heard": {
+        "biased": "Revised pricing for the Sigma expansion deal: 53,000.",
+        "unbiased": "Revised pricing for the Sigma expansion deal: 53,000."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_002",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma expansion",
+            "kind": "deal",
+            "company": "Sigma"
+          },
+          "fields": {
+            "amount": {
+              "value": 53000,
+              "quote": "53,000"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

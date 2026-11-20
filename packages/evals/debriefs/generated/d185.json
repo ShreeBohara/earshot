@@ -1,0 +1,129 @@
+{
+  "version": 2,
+  "id": "d185",
+  "title": "Pier Logistics: a note on Leilani Petrov, a note on Ingrid Dalgaard, a promise to Juniper Bay Telecare",
+  "voice": "am_adam",
+  "callTime": "2026-12-30T15:00:00.000Z",
+  "timeZone": "America/New_York",
+  "noise": {
+    "kind": "street",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Spoke with Leilani Petrov from Pier Logistics today. Support tickets have dropped since the upgrade.",
+      "heard": {
+        "biased": "Spoke with Leilani Petrov from Peer Logistics today. Support tickets have dropped since the upgrade."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_079",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Leilani Petrov",
+            "kind": "contact",
+            "company": "Peer Logistics"
+          },
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "Support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Spoke with Ingrid Dalgaard from Pier Logistics today. They want to add the analytics module.",
+      "heard": {
+        "biased": "Spoke with Ingrid Dal Gaard from Pier Logistics today. They want to add the analytics module.",
+        "unbiased": "Spoke with Ingrid Dalgaard from Pier Logistecs today. They want to add the analytics module."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_015",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ingrid Dal Gaard",
+            "kind": "contact",
+            "company": "Pier Logistics"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to add the analytics module.",
+              "quote": "They want to add the analytics module"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "I promised Juniper Bay Telecare their data never leaves their region.",
+      "heard": {
+        "biased": "I promised Juniper Bay Telecom their data never leaves their region.",
+        "unbiased": "I promised Juniper Bay Terecare their data never leaves their region."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Juniper Bay Telecom",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict",
+            "negation"
+          ],
+          "fields": {
+            "text": {
+              "value": "Their data never leaves their region.",
+              "quote": "their data never leaves their region"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "For the record, Ingrid Dalgaard says support tickets have dropped since the upgrade.",
+      "heard": {
+        "unbiased": "For the record, Ingrid Delgaard says support tickets have dropped since the upgrade."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_015",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ingrid Dalgaard",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

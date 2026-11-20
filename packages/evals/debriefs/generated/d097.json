@@ -1,0 +1,138 @@
+{
+  "version": 2,
+  "id": "d097",
+  "title": "Pier Logistics: the Pier Logistics expansion deal, the Pier expansion deal, a note on Marlow Medical, and more",
+  "voice": "bm_fable",
+  "callTime": "2027-02-26T20:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_003",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "The Pier Logistics expansion deal isn't at contract, uh, sent yet, it's still at qualified to buy.",
+      "heard": {
+        "unbiased": "The Pier Logystics expansion deal isn't at contract, uh, sent yet, it's still at qualified to buy."
+      },
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pier Logistics expansion",
+            "kind": "deal",
+            "company": "Pier Logistics"
+          },
+          "fields": {
+            "stage": {
+              "value": "qualified to buy",
+              "quote": "qualified to buy"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "The Pier expansion deal should close by the end of next month at ninety-two thousand.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pier expansion",
+            "kind": "deal",
+            "company": "Pier"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-03-31",
+              "quote": "the end of next month"
+            },
+            "amount": {
+              "value": 92000,
+              "quote": "ninety-two thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Got off the phone with Marlow Medical, and they're happy with the pricing but want better payment terms.",
+      "heard": {
+        "biased": "Got off the phone with Marshal Medical, and they're happy with the pricing but want better payment terms."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Marshal Medical",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "body": {
+              "value": "They're happy with the pricing but want better payment terms.",
+              "quote": "they're happy with the pricing but want better payment terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "We have a follow-up call with Leilani Petrov from Pier Logistics tomorrow at 2 pm.",
+      "heard": {
+        "unbiased": "We have a follow-up call with Leilani Petrov from Pier Lugistics tomorrow at 2 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_079",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Leilani Petrov",
+            "kind": "contact",
+            "company": "Pier Logistics"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Leilani Petrov",
+              "quote": "a follow-up call"
+            },
+            "date": {
+              "value": "2027-02-27",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "14:00",
+              "quote": "at 2 pm"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

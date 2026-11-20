@@ -1,0 +1,164 @@
+{
+  "version": 2,
+  "id": "d083",
+  "title": "Atmas Group: a task for Raaj Patel, a note on Raaj Patel, a note on Atmas Group, and more",
+  "voice": "bf_isabella",
+  "callTime": "2027-02-11T14:30:00.000Z",
+  "timeZone": "America/New_York",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "To do: review the procurement process with Raaj Patel from Atmas Group by the end of next month.",
+      "heard": {
+        "biased": "To do: review the procurement process with Raaj Padel from Atmas Group by the end of next month."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_065",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Raaj Padel",
+            "kind": "contact",
+            "company": "Atmas Group"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the procurement process with Raaj Padel",
+              "quote": "review the procurement process with Raaj Padel from Atmas Group"
+            },
+            "dueDate": {
+              "value": "2027-03-31",
+              "quote": "by the end of next month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Spoke with Raaj Patel from Atmas Group today. They don't need the analytics module this year.",
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_065",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Raaj Patel",
+            "kind": "contact",
+            "company": "Atmas Group"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "They don't need the analytics module this year.",
+              "quote": "They don't need the analytics module this year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Heads heads up at, uh, on Atmas Group: they're reviewing the proposal with legal this week.",
+      "heard": {
+        "biased": "Heads heads up at, uh, on Atmas: they're reviewing the proposal with legal this week."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_014",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmas",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "they're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Esperanza Quiroga just joined Atmas Group as their controller.",
+      "heard": {
+        "biased": "Esperanzo Quiroga just joined Atmas Group as their controller.",
+        "unbiased": "Esperanza Quirroga just joined Atmas Group as their controller."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Esperanzo Quiroga",
+              "quote": "Esperanzo Quiroga"
+            },
+            "company": {
+              "value": "Atmas Group",
+              "quote": "Atmas Group"
+            },
+            "title": {
+              "value": "controller",
+              "quote": "controller"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Action item: book a site visit with Atmas Group.",
+      "heard": {
+        "unbiased": "Action item: book a site visit with Atmos Group."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_014",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmas Group",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Atmas Group",
+              "quote": "book a site visit with Atmas Group"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

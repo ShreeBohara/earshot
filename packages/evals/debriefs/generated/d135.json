@@ -1,0 +1,57 @@
+{
+  "version": 2,
+  "id": "d135",
+  "title": "Tidewater Biotech: the Tidewater Biotech expansion deal",
+  "voice": "af_bella",
+  "callTime": "2026-11-09T17:00:00.000Z",
+  "timeZone": "America/New_York",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Bump the, uh, bump, um, the Tidewater Biotech expansion deal to ninety-one thousand.",
+      "heard": {
+        "unbiased": "Bump the, uh, bump, um, the Tidewater Biottech expansion deal to ninety-one thousand."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tidewater Biotech expansion",
+            "kind": "deal",
+            "company": "Tidewater Biotech"
+          },
+          "fields": {
+            "amount": {
+              "value": 91000,
+              "quote": "ninety-one thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "That's a, uh, the debrief for today.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Okay, that's everything on Tidewater Biotech.",
+      "expect": []
+    }
+  ]
+}

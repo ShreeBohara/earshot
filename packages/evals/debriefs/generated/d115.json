@@ -1,0 +1,147 @@
+{
+  "version": 2,
+  "id": "d115",
+  "title": "Summit Peak Capital: a task for Tomas Berg, a new contact, Hiroshi Vance, a note on Owen Petrov, and more",
+  "voice": "bf_isabella",
+  "speed": 1.05,
+  "callTime": "2026-12-02T19:30:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_024",
+  "noise": {
+    "kind": "street",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "To to, um, do: review the renewal terms with Tomas Berg from Summit Peak Capital Friday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_030",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tomas Berg",
+            "kind": "contact",
+            "company": "Summit Peak Capital"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the renewal terms with Tomas Berg",
+              "quote": "review the renewal terms with Tomas Berg from Summit Peak Capital"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Got a new contact, Hiroshi Vance, the finance director over at Summit Peak Capital.",
+      "heard": {
+        "biased": "Got a new contact, Hiroshi Vance, the finance director over at Summit Peak.",
+        "unbiased": "Got a new contact, Hiroshi Vance, the finance director over at Summik Peak Capital."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Hiroshi Vance",
+              "quote": "Hiroshi Vance"
+            },
+            "title": {
+              "value": "finance director",
+              "quote": "finance director"
+            },
+            "company": {
+              "value": "Summit Peak",
+              "quote": "Summit Peak"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Owen Petrov called back, and they need their data to stay in the EU.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_034",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Owen Petrov",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Schedule a pricing review with with Tomas Berg and their security lead on Wednesday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_030",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tomas Berg",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Pricing review with Tomas Berg",
+              "quote": "a pricing review"
+            },
+            "attendees": {
+              "value": "Tomas Berg and their security lead",
+              "quote": "Tomas Berg and their security lead"
+            },
+            "date": {
+              "value": "2026-12-09",
+              "quote": "on Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Don't mix them up for, uh, with Summit Ridge Capital.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

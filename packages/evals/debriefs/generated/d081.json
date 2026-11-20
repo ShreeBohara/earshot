@@ -1,0 +1,107 @@
+{
+  "version": 2,
+  "id": "d081",
+  "title": "Meridian Supply Co: a note on Jeffrey Walsh, a meeting with Jeffrey Walsh, a promise to Ironridge Textiles",
+  "voice": "bm_george",
+  "speed": 0.9,
+  "callTime": "2026-11-30T21:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_043",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Had a good call with Jeffrey Walsh this morning, and the new VP of operations is our sponsor now.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Jeffrey Walsh",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The new VP of operations is our sponsor now.",
+              "quote": "the new VP of operations is our sponsor now"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Booked a demo with Jeffrey Walsh tomorrow at 3:15 pm.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Jeffrey Walsh",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Demo with Jeffrey Walsh",
+              "quote": "a demo"
+            },
+            "attendees": {
+              "value": "Jeffrey Walsh",
+              "quote": "Jeffrey Walsh"
+            },
+            "date": {
+              "value": "2026-12-01",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "15:15",
+              "quote": "at 3:15 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "I promised Ironridge Textiles the redlined contract Friday.",
+      "heard": {
+        "biased": "I promised Ironbridge Textiles the redlined contract Friday."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Ironbridge Textiles",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send Ironbridge Textiles the redlined contract",
+              "quote": "the redlined contract"
+            },
+            "dueDate": {
+              "value": "2026-12-04",
+              "quote": "Friday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

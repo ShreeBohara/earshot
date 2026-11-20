@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "id": "d079",
+  "title": "Northwind Logistics: a note on Northwind Logistics, a task for John Whitaker, a note on John Whitaker",
+  "voice": "am_onyx",
+  "speed": 1.05,
+  "callTime": "2026-12-07T11:20:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_036",
+  "noise": {
+    "kind": "car",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Heads up, um, heads up at, um, on Northwind Logistics: the rollout slipped because of a hiring freeze.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Logistics",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The rollout slipped because of a hiring freeze.",
+              "quote": "the rollout slipped because of a hiring freeze"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Can you add a, um, task to, uh, get John Whitaker the security questionnaire by January 13th?",
+      "heard": {
+        "unbiased": "Can you add a, um, task to, uh, get Juhn Whitaker the security questionnaire by January 13th?"
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_148",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "John Whitaker",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get John Whitaker the security questionnaire",
+              "quote": "get John Whitaker the security questionnaire"
+            },
+            "dueDate": {
+              "value": "2027-01-13",
+              "quote": "by January 13th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "For the record, John Whitaker says they're happy with the pricing but want better payment terms.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_148",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "John Whitaker",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They're happy with the pricing but want better payment terms.",
+              "quote": "they're happy with the pricing but want better payment terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Can, uh, can you add add a task to get John Whitaker a couple of customer references Friday?",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_148",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "John Whitaker",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get John Whitaker a couple of customer references",
+              "quote": "get John Whitaker a couple of customer references"
+            },
+            "dueDate": {
+              "value": "2026-12-11",
+              "quote": "Friday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

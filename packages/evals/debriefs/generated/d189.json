@@ -1,0 +1,109 @@
+{
+  "version": 2,
+  "id": "d189",
+  "title": "Northwind Logistics: a note on Northwind, a meeting with Atmos Industries, a note on John Whitaker",
+  "voice": "am_eric",
+  "callTime": "2026-11-06T17:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_036",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Update from Northwind: procurement wants a three-year term.",
+      "heard": {
+        "unbiased": "Update from Norkhwind: procurement wants a three-year term."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Procurement wants a three-year term.",
+              "quote": "procurement wants a three-year term"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Put a kickoff meeting on the calendar with Atmos Industries on Wednesday at noon.",
+      "heard": {
+        "biased": "Put a kickoff meeting on the calendar with Atmos Industrial on Wednesday at noon.",
+        "unbiased": "Put a kickoff meeting on the calendar with Atmos Intustries on Wednesday at noon."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Atmos Industrial",
+              "quote": "a kickoff meeting"
+            },
+            "attendees": {
+              "value": "Atmos Industrial",
+              "quote": "Atmos Industrial"
+            },
+            "date": {
+              "value": "2026-11-11",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "12:00",
+              "quote": "at noon"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Had, uh, had a good call with John Whitaker this morning, and they're consolidating vendors next year.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_148",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "John Whitaker",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They're consolidating vendors next year.",
+              "quote": "they're consolidating vendors next year"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

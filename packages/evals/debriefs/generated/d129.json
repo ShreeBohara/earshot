@@ -1,0 +1,125 @@
+{
+  "version": 2,
+  "id": "d129",
+  "title": "Bay Harbor Associates: a note on Bay Harbor Associates, a new contact, Hana Okoro, a note on Petra Garza, and more",
+  "voice": "bm_george",
+  "callTime": "2026-11-24T00:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_050",
+  "noise": {
+    "kind": "street",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "So for Bay Harbor Associates, they're reviewing the proposal with legal this week.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_050",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bay Harbor Associates",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "they're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "You, you know, can reach Hana Okoro at 555-0130.",
+      "heard": {
+        "biased": "You, you know, can reach Hana Okafor at 555-0130."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "name": {
+              "value": "Hana Okafor",
+              "quote": "Hana Okafor"
+            },
+            "phone": {
+              "value": "555-0130",
+              "quote": "555-0130"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Petra Garza called back, and, and the security review passed.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_023",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Petra Garza",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "the security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "We agreed on seven thousand for the Bay Harbor Associates platform license deal.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_021",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bay Harbor Associates platform license",
+            "kind": "deal",
+            "company": "Bay Harbor Associates"
+          },
+          "fields": {
+            "amount": {
+              "value": 7000,
+              "quote": "seven thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "That's it for Bay Harbor Associates today.",
+      "expect": []
+    }
+  ]
+}

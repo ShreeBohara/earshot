@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "id": "d183",
+  "title": "Copperleaf Retail: a note on Copperleaf Retail, a task for the account, the Copperleaf Retail deal",
+  "voice": "bm_lewis",
+  "callTime": "2026-12-04T22:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_041",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Debrief, uh, debrief from Copperleaf Retail. The pilot isn't covering the warehouse sites.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_041",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Copperleaf Retail",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "The pilot isn't covering the warehouse sites.",
+              "quote": "The pilot isn't covering the warehouse sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Send them the onboarding checklist by tomorrow.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_041",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Send the onboarding checklist",
+              "quote": "the onboarding checklist"
+            },
+            "dueDate": {
+              "value": "2026-12-05",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "The Copperleaf Retail number went up to two hundred forty thousand dollars.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Copperleaf Retail",
+            "kind": "deal",
+            "company": "Copperleaf Retail"
+          },
+          "fields": {
+            "amount": {
+              "value": 240000,
+              "quote": "two hundred forty thousand dollars"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

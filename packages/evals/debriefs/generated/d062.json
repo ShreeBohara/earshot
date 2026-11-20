@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "id": "d062",
+  "title": "Blue Harbor Analytics: a note on Blue Harbor Analytics, a promise to Zoe Park, and more",
+  "voice": "af_river",
+  "speed": 0.9,
+  "callTime": "2027-01-26T21:10:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_037",
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Update from Blue Harbor Analytics: they want to expand the rollout to two more sites.",
+      "heard": {
+        "unbiased": "Update from Blue Harbor Analitics: they want to expand the rollout to two more sites."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Blue Harbor Analytics",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to expand the rollout to two more sites.",
+              "quote": "they want to expand the rollout to two more sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Zoe Park is expecting, you know, the security questionnaire from from us.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_111",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zoe Park",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Send Zoe Park the security questionnaire",
+              "quote": "the security questionnaire"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Promised Blue Harbor Analytics an answer on the legal review on Friday.",
+      "heard": {
+        "unbiased": "Promised Blue Harbor Analydics an answer on the legal review on Friday."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_037",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Blue Harbor Analytics",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Give Blue Harbor Analytics an answer on the legal review",
+              "quote": "an answer on the legal review"
+            },
+            "dueDate": {
+              "value": "2027-01-29",
+              "quote": "on Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Booked a kickoff call on February 23rd at 2:30 pm.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_037",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Kickoff call",
+              "quote": "a kickoff call"
+            },
+            "date": {
+              "value": "2027-02-23",
+              "quote": "on February 23rd"
+            },
+            "time": {
+              "value": "14:30",
+              "quote": "at 2:30 pm"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
