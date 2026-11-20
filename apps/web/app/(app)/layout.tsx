@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <CaptureSessionProvider>
-      <EvidenceProvider>
+      <EvidenceProvider viewerId={viewer.user.id}>
         <div className="flex min-h-svh flex-col">
           <a
             href="#main"

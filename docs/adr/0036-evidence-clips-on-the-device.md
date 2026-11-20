@@ -88,7 +88,12 @@ What that has to work within:
 
 ### Sign-out
 
-The account menu's Sign out stops capture (so no turn of a running debrief is kept after), deletes every clip and the key, then signs out, and signs out even if clearing fails (it waits at most 5 s). Deleting the account clears them too.
+The account menu's Sign out stops capture (so no turn of a running debrief is kept after), deletes every clip and the key, forgets the store's owner, then signs out, and signs out even if clearing fails (it waits at most 5 s). Deleting the account does the same, capture first.
+
+**The store belongs to one user** (added after the automated security review of #62). `earshot.evidence.owner` in localStorage records the signed-in user it's kept for: a user id, never a name or email.
+- **As the signed-in app opens,** a store recorded for anyone else, or for no one, is cleared before it's claimed. So the next user to sign in on a browser never inherits the last one's clips, however that session ended.
+- **Before each write,** a page keeps a clip only while its viewer still owns the store.
+- **Other tabs** hear the owner change as a `storage` event. They stop playing; a sign-out clears what's left, while another user's store is left to them.
 
 ### Never uploaded, and how that's held
 
@@ -116,7 +121,7 @@ The account menu's Sign out stops capture (so no turn of a running debrief is ke
 
 - Clips outlive their 24 hours on a device where Earshot isn't opened again: they're never played after it, but deleted only at the next open.
 - An XSS on Earshot's origin could play clips, as it could use the device keys; there's no Content Security Policy until Phase 10.
-- A sign-out that doesn't go through the account menu (a session that expires, or one signed out from another device) doesn't clear clips; they expire within 24 hours, keyed by session, so another account on the device never lists them. A debrief still running in another tab can keep a clip after a sign-out in this one.
+- A sign-out that doesn't go through the account menu (a session that expires, or one signed out from another device) doesn't clear clips at once. They stay encrypted until Earshot next opens in that browser. Then they're deleted if they belong to anyone but the viewer, or expire within 24 hours if they're the viewer's own.
 - A clip that couldn't be written (a full disk, a quota), and a debrief recorded here while clips were off, read later as "No audio on this device. It stays where you recorded it."
 - The page has a second polite live region besides the toaster, against ADR-0035's single one, though it speaks only when a clip is pressed and sits outside `<main>`.
 - On an iPhone, Web Audio follows the ring/silent switch, so a clip plays silently with it on silent (WebKit's `navigator.audioSession` could change that; it isn't used). WebKit also crackles audio played while an echo-cancelled microphone is live, which a clip in the tray during capture would be.

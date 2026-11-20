@@ -16,7 +16,12 @@ import { Input } from "@earshot/ui/components/input";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { authClient, describeAuthError } from "@/lib/auth/client";
-import { clearBrowserClips } from "@/lib/evidence/browser";
+import {
+  clearBrowserClips,
+  forgetBrowserClipsOwner,
+  signOutClearingClips,
+} from "@/lib/evidence/browser";
+import { useCaptureController } from "../capture/session-provider";
 import { REAUTH_HREF, ReauthNote } from "./reauth-note";
 
 const NOT_FRESH = new Set(["SESSION_NOT_FRESH", "SESSION_EXPIRED"]);
@@ -38,6 +43,7 @@ export function DeleteAccount({
   const [typed, setTyped] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<{ message: string; reauth: boolean } | null>(null);
+  const capture = useCaptureController();
   const confirmed = typed.trim().toLowerCase() === email.toLowerCase();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -57,9 +63,14 @@ export function DeleteAccount({
       });
       return;
     }
-    // The account is gone: so is its debriefs' audio on this device (Phase 5 WP9).
-    await clearBrowserClips();
-    window.location.assign("/?deleted=1");
+    // The account is gone: so is its debriefs' audio on this device (Phase 5 WP9). As at sign-out,
+    // capture stops before the clips go, so a debrief still running keeps no turn after them.
+    await signOutClearingClips({
+      stopCapture: () => capture.dispose(),
+      clearClips: () => clearBrowserClips(),
+      forgetOwner: forgetBrowserClipsOwner,
+      signOut: async () => window.location.assign("/?deleted=1"),
+    });
   }
 
   if (!fresh) {

@@ -9,8 +9,10 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { browserEvidence } from "@/lib/evidence/browser";
+import { browserEvidence, claimBrowserClips } from "@/lib/evidence/browser";
 import type { EvidenceHub } from "@/lib/evidence/hub";
+import { CLIPS_OWNER_KEY, clipsOwner } from "@/lib/evidence/owner";
+import { browserStorage } from "@/lib/evidence/setting";
 import { type CardEvidence, cardEvidence, type EvidenceSession } from "@/lib/evidence/state";
 import type { InboxProposal } from "@/lib/inbox/types";
 import { useClipsSetting } from "./use-clips-setting";
@@ -25,19 +27,42 @@ const noSubscription = () => () => {};
  * line that says a clip is playing. It sits in `(app)/layout.tsx`, so the line is outside `<main>`,
  * where nothing speaks on its own. The hub arrives after hydration: until then, and wherever no
  * provider is (the pilot, Storybook), cards render as they would without clips.
+ *
+ * The clips belong to the signed-in viewer (lib/evidence/owner.ts). As the app opens, clips
+ * another user left on this browser are cleared before anything is kept. When another tab signs
+ * out or another user signs in, this tab stops playing and keeps nothing more.
  */
 export function EvidenceProvider({
   children,
   hub: given,
+  viewerId,
 }: {
   children: ReactNode;
   hub?: EvidenceHub;
+  /** The signed-in user the device's clips are kept for; absent in Storybook and the tests. */
+  viewerId?: string;
 }) {
   const [hub, setHub] = useState<EvidenceHub | null>(given ?? null);
   useEffect(() => {
     if (!given) setHub(browserEvidence());
   }, [given]);
   useEffect(() => hub?.start(document), [hub]);
+  useEffect(() => {
+    if (!hub || given || !viewerId) return;
+    void claimBrowserClips(viewerId);
+    const onStorage = (event: StorageEvent) => {
+      // A null key is `localStorage.clear()`.
+      if (event.key !== CLIPS_OWNER_KEY && event.key !== null) return;
+      const owner = clipsOwner(browserStorage());
+      if (owner === viewerId) return;
+      // Writes stop on their own (`ownsBrowserClips`). Playback stops here, and a sign-out
+      // elsewhere clears what's left. Another user's store is theirs: their tab cleared it.
+      hub.stop();
+      if (owner === null) void hub.clear();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [hub, given, viewerId]);
   return (
     <EvidenceContext value={hub}>
       {children}

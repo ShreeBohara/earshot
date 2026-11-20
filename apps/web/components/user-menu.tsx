@@ -15,7 +15,11 @@ import { LogOutIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { useTransition } from "react";
 import { signOut } from "@/app/actions/session";
-import { clearBrowserClips, signOutClearingClips } from "@/lib/evidence/browser";
+import {
+  clearBrowserClips,
+  forgetBrowserClipsOwner,
+  signOutClearingClips,
+} from "@/lib/evidence/browser";
 import { useCaptureController } from "./capture/session-provider";
 
 function initials(name: string): string {
@@ -67,6 +71,7 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
               signOutClearingClips({
                 stopCapture: () => capture.dispose(),
                 clearClips: () => clearBrowserClips(),
+                forgetOwner: forgetBrowserClipsOwner,
                 signOut,
               }),
             )

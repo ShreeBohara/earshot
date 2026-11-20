@@ -4,9 +4,37 @@
 import { ClipPlayer, ClipStore } from "@earshot/voice/evidence";
 import type { CaptureClips } from "@/lib/capture/controller";
 import { EvidenceHub } from "./hub";
-import { readClipsSetting } from "./setting";
+import { claimClips, forgetClipsOwner, mayKeepClips, type OwnerStorage } from "./owner";
+import { browserStorage, readClipsSetting } from "./setting";
 
 let hub: EvidenceHub | undefined;
+/** The signed-in viewer this page keeps clips for, once the evidence provider has claimed them. */
+let viewerId: string | null = null;
+
+/** Where the clips' owner is recorded: `localStorage`, guarded (lib/evidence/setting.ts). */
+function ownerStorage(): OwnerStorage | undefined {
+  return browserStorage();
+}
+
+/**
+ * Binds this page's clips to the signed-in viewer, as the app opens (the evidence provider calls
+ * it). Clips another user left on this browser, or clips with no recorded owner, are cleared first
+ * (lib/evidence/owner.ts).
+ */
+export async function claimBrowserClips(userId: string): Promise<void> {
+  viewerId = userId;
+  await claimClips(userId, { storage: ownerStorage(), clear: () => clearBrowserClips() });
+}
+
+/** Whether this page may keep a clip now: its viewer still owns the device's clip store. */
+export function ownsBrowserClips(): boolean {
+  return mayKeepClips(viewerId, ownerStorage());
+}
+
+/** Forgets whose clips these are, after they're cleared: sign-out and account deletion. */
+export function forgetBrowserClipsOwner(): void {
+  forgetClipsOwner(ownerStorage());
+}
 
 /** The page's evidence hub, made on first use. */
 export function browserEvidence(): EvidenceHub {
@@ -21,7 +49,7 @@ export function browserEvidence(): EvidenceHub {
 
 /** Whether this device keeps clips now (Settings → Capture). Off while server rendering. */
 export function clipsEnabled(): boolean {
-  return typeof window !== "undefined" && readClipsSetting(window.localStorage) === "on";
+  return typeof window !== "undefined" && readClipsSetting(browserStorage()) === "on";
 }
 
 /** What the capture controller keeps each turn's audio through. */
@@ -29,6 +57,9 @@ export function browserClips(): CaptureClips {
   return {
     enabled: clipsEnabled,
     keep: (clip) => {
+      // Only for the viewer who owns the store: a tab still running a debrief after another user
+      // signed in, or after a sign-out elsewhere, keeps nothing more.
+      if (!ownsBrowserClips()) return;
       void browserEvidence()
         .store()
         .then((store) => store.put(clip))
@@ -62,20 +93,24 @@ export function clearBrowserClips(waitMs: number = CLEAR_WAIT_MS): Promise<void>
 }
 
 /**
- * Leaving this device signed out (spec §4.7: sign-out clears everything). Capture stops first, so
- * no turn of a debrief still running is kept after the clips are cleared; then the clips go; then
- * the sign-out itself, which runs even if clearing failed.
+ * Leaving this device signed out (spec §4.7: sign-out clears everything), or deleting the account.
+ * Capture stops first, so no turn of a debrief still running is kept after the clips are cleared;
+ * then the clips go, and the store's owner with them, which other tabs hear as a `storage` event;
+ * then the sign-out itself, which runs even if clearing failed.
  */
 export async function signOutClearingClips(steps: {
   readonly stopCapture: () => void;
   readonly clearClips: () => Promise<void>;
+  readonly forgetOwner: () => void;
   readonly signOut: () => Promise<void>;
 }): Promise<void> {
   steps.stopCapture();
   try {
     await steps.clearClips();
   } catch {
-    // The sign-out still happens; the clips expire within 24 hours and go at the next open.
+    // The sign-out still happens. The clips expire within 24 hours, and the next user to open
+    // Earshot here clears them anyway, since the store isn't theirs.
   }
+  steps.forgetOwner();
   await steps.signOut();
 }

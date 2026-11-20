@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { seriousViolations } from "../support/axe";
+import { signInAsNewUser } from "../support/sign-in";
 import { openFakeCapture, proposalCards, sayWithSpace, waitUntilReady } from "./support";
 
 // Evidence clips (Phase 5 spec WP9; ADR-0036) with Chrome's fake microphone: the capture screen says
@@ -241,4 +242,29 @@ test("turning clips off in Settings → Capture deletes the clip kept, and the c
   await expect
     .poll(() => page.evaluate(() => window.localStorage.getItem("earshot.persist.v1")))
     .not.toBeNull();
+});
+
+// The automated security review of #62: the clips belong to the user who kept them. A session that
+// ends without the menu's sign-out (it expired, or was signed out from another device) leaves them
+// in this browser, so the next user to open Earshot here clears them before anything is kept.
+test("the next user to sign in on this browser never inherits the last one's clips", async ({
+  page,
+}) => {
+  const start = await openFakeCapture(page);
+  await start.click();
+  await waitUntilReady(page);
+  await sayWithSpace(page);
+  const card = proposalCards(page).first();
+  await expect(card).toBeVisible({ timeout: 20_000 });
+  await expect(card.getByRole("button", { name: /^Play what you said/ }).first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect.poll(async () => (await evidenceStore(page))?.clips.length ?? 0).toBeGreaterThan(0);
+
+  // The session ends without the menu's sign-out: its cookies go, as when it expires.
+  await page.context().clearCookies();
+  // Another user signs in on this browser, and the app opens for them.
+  await signInAsNewUser(page);
+  await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+  await expect.poll(() => evidenceStore(page)).toEqual({ clips: [], keys: [] });
 });
