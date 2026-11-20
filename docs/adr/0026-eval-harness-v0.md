@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-19). The first half of WP11 built the scripts, the renderer, the CI render and cache step, and the cassettes. The second half built the fake-microphone Playwright projects and the smoke test, the `ui` and `eval` wiring, the report and baselines, and the live workflow. What only CI's first runs on Kokoro WAVs can confirm is listed under More information.
+Accepted (2026-11-19). The first half of WP11 built the scripts, the renderer, the CI render and cache step, and the cassettes. The second half built the fake-microphone Playwright projects and the smoke test, the `ui` and `eval` wiring, the report and baselines, and the live workflow. What only CI's first runs on Kokoro WAVs can confirm is listed under More information. Extended for Phase 4 (2026-11-20) by ADR-0031, harness v1; see "Amendment: Phase 4" below.
 
 ## Context and problem
 
@@ -184,6 +184,15 @@ Phase 3's gate needs the fake-microphone end-to-end test running in CI (G3), and
 - The cassettes bind an e2e session to a fixed entity list and call time. If `rankEntities` changes, or the e2e run doesn't pin the call time, requests miss and `CassetteMissError` says so.
 - Kokoro's output can drift across onnxruntime versions and CPUs. The hash covers package versions but not CPUs, and the tests never compare audio bytes.
 - Synthetic speech is easier than a rep in a car. Phase 8's consented recordings are the counterweight.
+
+## Amendment: Phase 4 (2026-11-20)
+
+Harness v1 (ADR-0031) builds on this harness rather than replacing it:
+
+- **Debrief format v2.** Each turn carries what both witnesses heard (`heard.biased`, `heard.unbiased`). Targets become `{ id, decision }`, with optional `expectFlags`, the `meeting` type, and per-script `noise`. The 30 files here stay format v1 on disk and are upgraded in code, so their WAVs and cassettes don't move.
+- **170 more scripts** come from a seeded grammar, in `debriefs/generated/`. The renderer and the WAV cache key still read only `debriefs/*.json`, so the fake-microphone eval still renders and plays exactly these 30. Swapping them for a stratified 30 of the 200 needs the changes ADR-0031 lists.
+- **Noise.** The renderer can mix car, street, or cafe noise under a script's speech at its SNR (Phase 4 WP10b). The noise spec joins a WAV's hash only when the script has one, so the 30 WAVs' hashes are unchanged.
+- **New gates.** `eval:understanding --check` runs all 200 debriefs through offline cassettes with seeded model-like errors, and `eval:linking --check` runs the confusable-name set; both run in `checks`. The live smoke eval is a new opt-in tier, and the fake-microphone eval and `eval-live` here are unchanged.
 
 ## More information
 

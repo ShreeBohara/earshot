@@ -1,6 +1,6 @@
-# Threat model (v1.1)
+# Threat model (v1.2)
 
-Version 1.1 covers everything up to the end of Phase 3:
+Version 1.2 covers everything up to the end of Phase 4:
 
 - the repository and its pipeline, from v0;
 - user accounts and sign-in;
@@ -8,7 +8,8 @@ Version 1.1 covers everything up to the end of Phase 3:
 - the session event log;
 - AI key handling;
 - data export and deletion;
-- voice capture, short-lived provider credentials, the session socket and its Durable Object, the Queue flush, and LLM calls on the user's own key (new in v1.1).
+- voice capture, short-lived provider credentials, the session socket and its Durable Object, the Queue flush, and LLM calls on the user's own key (from v1.1);
+- the understanding pipeline, the second witness, and the CI smoke eval (new in v1.2): the model quotes names and a deterministic linker resolves them, the browser sends each turn's audio to Groq on the user's key, and an opt-in CI job calls a real model on a dedicated key.
 
 Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces it with a full STRIDE model.
 
@@ -33,8 +34,13 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
   - the Queue that flushes each session's log to Postgres (ADR-0024);
   - LLM proposal extraction on the user's key, sent with each turn (ADR-0025);
   - the eval harness, which runs in CI on synthetic audio and recorded responses (ADR-0026).
+- **New in v1.2:**
+  - proposal schema v2 and the understanding pipeline: the model quotes the names it heard, and `SessionDO` resolves them with a deterministic entity linker against the workspace's records (ADR-0027, ADR-0028);
+  - the normalizers and the faithfulness check, which re-read every date and amount from the quoted words (ADR-0030);
+  - the second witness: with the rep's consent, the browser sends each turn's audio straight to Groq's Whisper on the rep's own Groq key, and `SessionDO` flags proposals where the two transcripts disagree (ADR-0029);
+  - eval harness v1: 200 debriefs and two $0 gates in `checks`, plus the opt-in live smoke eval, which calls a real model from CI on a dedicated key (ADR-0031).
 
-**Out of scope for v1.1**
+**Out of scope for v1.2**
 
 - CRM credentials and adapters. These start in Phase 6. The vault already encrypts CRM connections the same way as AI keys, but nothing writes them yet. Proposals stay inside Earshot until then: nothing is written to a CRM.
 - The Conversation engine (speech-to-speech). It was cut from Phase 3.
@@ -55,7 +61,12 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
 | The LLM key, per turn | Sent from the device in that turn's `turn_end` message over TLS, used for one extraction, and never written down |
 | Live session logs | Each `SessionDO`'s SQLite holds its session's events until Postgres confirms them, then for 24 hours |
 | Queue messages | Batches of session events (transcript text included) on their way to Postgres; the dead-letter queue holds refused batches |
-| Microphone audio | Streamed from the browser to the speech-to-text provider only; never sent to Earshot's servers |
+| Microphone audio | Streamed from the browser to the speech-to-text provider; with the second witness on, each turn's audio also goes from the browser to Groq. Never sent to Earshot's servers |
+| Each turn's audio, for the second witness (new in v1.2) | The page's memory only: from the press to the release plus 200 ms, capped at 120 s, dropped once Groq has answered |
+| The Groq key, for the second witness (new in v1.2) | On the device with the other AI keys; decrypted in the page and sent straight to `api.groq.com` in an `Authorization` header, once per turn, never through Earshot. (A rep who also picks Groq for extraction sends the same key on `turn_end`, as in v1.1) |
+| The second witness's transcripts (new in v1.2) | `utterance.final` events marked unbiased, in the session log, the Queue, and Postgres, like every other transcript |
+| What the linker read for each turn (new in v1.2) | `SessionDO`'s SQLite (`turns`): the records and context a turn's targets were linked against, so a late witness is compared the same way. Deleted with the session's storage |
+| `EVAL_SMOKE_ANTHROPIC_KEY` (new in v1.2) | The `eval-smoke` GitHub environment only; a key from a separate Anthropic workspace with its own monthly spend limit |
 | The Cloudflare token, the Neon credentials, and other CI secrets | GitHub environment secrets |
 | The integrity of the repository and its release artifacts | GitHub |
 
@@ -81,6 +92,8 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
   - AssemblyAI and Deepgram, to mint short-lived credentials (web Worker);
   - Anthropic and Groq, for proposal extraction, optionally through Cloudflare AI Gateway with logging off (`SessionDO`).
 - **Browser to speech-to-text provider.** Audio goes straight from the browser to the provider over TLS, opened with a credential that only works for a few seconds. Earshot's servers never see the audio.
+- **Browser to Groq, for the second witness (new in v1.2).** Only after the rep says yes, once per device, and only with a Groq key on the device. Each turn's audio goes over TLS to `api.groq.com` with the rep's long-lived Groq key, because Groq has no short-lived credential to mint (ADR-0029 amends ADR-0002 and ADR-0021 for this). Groq's CORS allows the call from the page. On this path Earshot's servers see neither the audio nor the key; they get only the transcript, through the session socket.
+- **CI to Anthropic, for the smoke eval (new in v1.2).** Off unless the repository variable `EVAL_SMOKE_ENABLED` is `true`. The key reaches only jobs in the `eval-smoke` environment, on `workflow_dispatch` or on pull requests from branches in this repository.
 - **Browser to the edge Worker.** The session socket opens only with a valid ticket for that session and an allowed `Origin`. Cookies play no part, so another site can't ride a signed-in browser.
 - **`SessionDO` to Postgres.** Events go through a Queue to a consumer that writes them with `withTenant`, as the session's own user and workspace.
 - **Public internet to Workers.** Preview and production URLs on workers.dev are public.
@@ -154,11 +167,23 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
 | The microphone staying on | Push-to-talk is the default. Ending a session releases the microphone, including a permission prompt answered after the end. On iOS, hiding the page suspends capture. |
 | Test-only code shipping to production | Build checks fail if the fake speech-to-text adapter, cassette extraction, the e2e scenario route, `@earshot/evals`, or PGlite reach a production bundle |
 
+### Understanding and the second witness (new in v1.2)
+
+| Threat | Mitigation now |
+|---|---|
+| A second company processing the rep's audio (Groq) | The witness is off until the rep says yes, asked once per device and only when a Groq key is on it; unanswered means off. The prompt tells the rep to turn on Zero Data Retention under Data Controls in Groq's console first. Each request carries one turn: from the press to the release plus 200 ms, capped at 120 s. Turns under 1 s send nothing. |
+| A device key used from the page | The Groq key is decrypted in the page and sent from it, which Groq's CORS allows. So an XSS on Earshot's origin could use it, which is the same exposure the device keys already have (see Known gaps). A test holds that the key goes only to `api.groq.com`, only in the `Authorization` header, and into neither the URL, the request body, the result, nor a log. The session protocol refuses key-shaped strings, so it can't reach the session log either. A future Content Security Policy must allow `connect-src https://api.groq.com`. |
+| A client forging the "unbiased" transcript | It can, but only for its own session, and a conflict never writes anything: it adds a `witness_conflict` flag, or turns a link into a question, for the rep to review. `SessionDO` refuses a witness for an unknown turn, a second witness for a turn, a reused utterance id, and times more than 1 s outside the turn, and resends are idempotent by msgId. The witness's text passes the same key-shape and size checks as every other message. |
+| Prompt injection steering a proposal to another account | The model no longer chooses CRM records. It gets no list of records and returns only the words it heard; `SessionDO`'s deterministic linker resolves those words against the workspace's own records, with calibrated thresholds, and asks when unsure. Words that aren't in the transcript are never linked (flagged `unsupported`), and a target taken from context alone is flagged `implied_target`. Dates and amounts are re-read from the quoted words, and the model's value is kept beside the reading and flagged when they differ. |
+| CRM names reaching a model provider for mining or embeddings | Nothing does in Phase 4. Confusion mining (WP6) hasn't run, and when it does its clips use fictional names only. Embeddings (WP13) were cut and moved to Phase 6; if they come, CRM names go to Workers AI, which lists zero data retention. |
+| The CI smoke key being stolen or overspent | The key lives only in the `eval-smoke` environment, which jobs reach only on `workflow_dispatch` or on pull requests from branches in this repository; fork PRs get no secrets. The job is skipped unless `EVAL_SMOKE_ENABLED` is `true`. A budget guard refuses a run whose estimate (× 1.25) passes `EVAL_SMOKE_BUDGET_USD`, and stops one whose measured spend does, and the key comes from a separate Anthropic workspace with a monthly spend limit. The job reports numbers only, never prompts, transcripts, or response bodies. |
+
 ## Known gaps
 
 - **Row-level security isn't a sandbox.** It catches app bugs, but code holding the connection, such as a successful SQL injection, could `RESET ROLE` or change `app.workspace_id`. The mitigation is that every query goes through Drizzle with parameters.
 - **Inside a workspace, child tables trust every member.** `session_events`, `utterances`, `proposals`, and `sync_jobs` aren't bound to their session's user. Phase 2 has one member per workspace. Team workspaces will need per-member rules, decided when manager review is designed (ADR-0019).
-- **XSS could use device keys.** An XSS on Earshot's origin could ask the browser to decrypt them, even though the wrapping key can't be exported. There is no Content-Security-Policy yet; it's planned for Phase 10. Until then, keep dependencies few and render all text as text.
+- **XSS could use device keys.** An XSS on Earshot's origin could ask the browser to decrypt them, even though the wrapping key can't be exported. There is no Content-Security-Policy yet; it's planned for Phase 10. Until then, keep dependencies few and render all text as text. Since v1.2 the page also uses the Groq key itself, for the second witness, which adds no new exposure beyond this one.
+- **The Groq key is long-lived and used from the page** (new in v1.2). Groq offers no short-lived credential, so the second witness sends the rep's own key from the browser on every turn, unlike speech-to-text, whose credentials live seconds. ADR-0029 records the exception. A Groq key used only for Earshot keeps a leak contained.
 - **Rate limits key on IP**, so users behind one shared IP share a budget.
 - **Nothing has run on real Neon or Cloudflare yet.** Unverified so far:
   - the role grant;
@@ -171,18 +196,19 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
   - the session socket through Cloudflare's edge, including the `Origin` check and the ticket subprotocol.
 - **The public workers.dev URLs** have no paid APIs behind them. Validation, minting, and extraction all use the user's own keys.
 - **Queue messages carry transcripts.** Batches of events, transcript text included, sit in the Queue until they're written, and refused batches sit in the dead-letter queue (24-hour retention on Workers Free, up to 14 days on Paid). Shorter retention, or encrypting batches, is a Phase 10 item.
-- **The provider spike (WP1) hasn't run.** It needs the user's keys. Until then these are unverified:
+- **The provider spike (Phase 3 WP1) hasn't run.** It needs the user's keys. Until then these are unverified:
   - that Deepgram accepts its grant from the browser through the `bearer` subprotocol;
   - AssemblyAI's exact token request and close codes;
   - whether Deepgram keeps keyterms in usage records unless `redact_usage` is set.
+- **The second witness's live check (Phase 4 WP9) hasn't run** (new in v1.2). It needs the user's approval: ten turns, under $0.01. Until then, Groq's CORS on a real request, its confidence fields, and its latency are as documented, not observed.
 - **AI Gateway's logging** is switched off per request with `cf-aig-collect-log: false`. The gateway's own setting still has to be checked on the first deploy.
-- **Speech-to-text providers see the audio** under their own terms. Earshot doesn't use Gemini's free tier, which trains on submitted data.
+- **Speech-to-text providers, and Groq when the second witness is on, see the audio** under their own terms. Earshot doesn't use Gemini's free tier, which trains on submitted data.
 
 ## What Phase 10 adds
 
 Phase 10 replaces this document with a full threat model: STRIDE across the whole system, plus the OWASP Top 10 for LLM applications. It also adds:
 
-- CSP headers;
+- CSP headers, allowing `connect-src https://api.groq.com` for the second witness;
 - dependency and secret scanning;
 - a key-rotation drill;
 - retention flows;

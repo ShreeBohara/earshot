@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15)
+Accepted (2026-11-15). Amended for Phase 4 (2026-11-20): the mirror's phonetic keys are filled, and the embedding stays empty. See "Amendment: Phase 4" below.
 
 ## Context and problem
 
@@ -32,6 +32,12 @@ An optional read-only CRM MCP connection can be attached to speech-to-speech ses
 - The mirror can be stale, and sync adds work and failure modes.
 - Mirrored CRM data needs the same tenant isolation as everything else.
 - The MCP read path depends on provider behavior that isn't yet confirmed.
+
+## Amendment: Phase 4 (2026-11-20)
+
+- **Phonetic keys are filled.** `crm_entities.phonetic_keys` holds the Double Metaphone codes of each row's name and aliases. The name toolkit in `@earshot/understanding/names` is the one place they're computed, and the demo CRM's loader writes them (Phase 4 WP2).
+- **The linker runs in `SessionDO`, on the records the session starts with.** The web app reads the mirror and sends the session's records in its `start` message: at most 250, each with its name, up to 20 aliases, and its parent company. `SessionDO` builds the entity linker's index (ADR-0028) from them, computing the keys with the same toolkit, so no turn waits on Postgres.
+- **No embeddings yet.** Embeddings through Workers AI and Postgres search (spec WP13) were cut from Phase 4 by its cut lines. The `embedding` column stays empty, and Phase 6 builds search with the mirror's sync. The linker v1 ablations measure what sound, trigrams, and context each add without them (ADR-0028).
 
 ## More information
 
