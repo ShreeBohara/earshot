@@ -1,6 +1,7 @@
 // The linking eval's report as Markdown, for the terminal and a GitHub job summary: the headline
-// metrics with the witness on and off, then one row per class (spec WP3 step 4), and for linker
-// v1 its ablation table (WP4 step 8).
+// metrics with the witness on and off, then one row per class (spec WP3 step 4), with the
+// witness's flags and the biased-only numbers beside the final ones for a linker that has one, and
+// for linker v1 its ablation table (WP4 step 8).
 import type { AblationRow } from "./ablations";
 import type { LinkingMetrics, LinkingReport } from "./metrics";
 import { CLASS_EXPECT, CLASS_LABELS, ITEM_CLASSES } from "./schema";
@@ -59,16 +60,23 @@ export function linkingMarkdown(
   ROWS.forEach((row, index) => {
     lines.push(`| ${row} | ${final[index]} | ${biased[index]} |`);
   });
+  const witnessColumns = report.witness
+    ? { head: " Flagged | Biased only: decided, wrong links, as expected |", rule: "---|---|" }
+    : { head: "", rule: "" };
   lines.push(
     "",
-    "| Class | What it is | Items | Best | Decided | Coverage | Wrong links | New when existing | Accuracy on decided | As expected |",
-    "|---|---|---|---|---|---|---|---|---|---|",
+    `| Class | What it is | Items | Best | Decided | Coverage | Wrong links | New when existing | Accuracy on decided | As expected |${witnessColumns.head}`,
+    `|---|---|---|---|---|---|---|---|---|---|${witnessColumns.rule}`,
   );
   for (const itemClass of ITEM_CLASSES) {
     const metrics = report.perClass[itemClass];
     if (metrics.items === 0) continue;
+    const biased = report.perClassBiasedOnly[itemClass];
+    const extra = report.witness
+      ? ` ${metrics.flagged} | ${biased.decided}, ${biased.wrongLinks}, ${pct(biased.asExpected / biased.items)} |`
+      : "";
     lines.push(
-      `| ${itemClass} | ${CLASS_LABELS[itemClass]} | ${metrics.items} | ${CLASS_EXPECT[itemClass]} | ${metrics.decided} | ${pct(metrics.coverage)} | ${metrics.wrongLinks} | ${metrics.newWhenExisting} | ${pct(metrics.accuracyOnDecided)} | ${pct(metrics.asExpected / metrics.items)} |`,
+      `| ${itemClass} | ${CLASS_LABELS[itemClass]} | ${metrics.items} | ${CLASS_EXPECT[itemClass]} | ${metrics.decided} | ${pct(metrics.coverage)} | ${metrics.wrongLinks} | ${metrics.newWhenExisting} | ${pct(metrics.accuracyOnDecided)} | ${pct(metrics.asExpected / metrics.items)} |${extra}`,
     );
   }
   const curve = report.riskCoverage.filter((point) => point.threshold > 0 && point.threshold < 1);
@@ -120,14 +128,14 @@ export function ablationMarkdown(rows: readonly AblationRow[], split: string): s
   const lines = [
     `#### Ablations: refit on calibration without each signal, scored on the ${split} split with the witness off`,
     "",
-    "| Variant | Removes | τ_link / δ / τ_new | Coverage | Wrong-account rate | Own wrong links (not E2, G) | New-when-existing | Accuracy on decided |",
+    "| Variant | Removes | τ_link / δ / τ_new / θ_d | Coverage | Wrong-account rate | Own wrong links (not E2, G) | New-when-existing | Accuracy on decided |",
     "|---|---|---|---|---|---|---|---|",
   ];
   for (const row of rows) {
-    const { tauLink, delta, tauNew } = row.params.thresholds;
+    const { tauLink, delta, tauNew, thetaD } = row.params.thresholds;
     const metrics = row.metrics;
     lines.push(
-      `| ${row.label} | ${row.removed === "" ? "nothing" : row.removed} | ${tauLink} / ${delta} / ${tauNew}${row.feasible ? "" : " (limits not met)"} | ${pct(metrics.coverage)} (${of(metrics.decided, metrics.items)}) | ${pct(metrics.wrongAccountRate)} (${of(metrics.wrongLinks, metrics.decided)}) | ${row.ownWrongLinks} | ${pct(metrics.newWhenExistingRate)} (${of(metrics.newWhenExisting, metrics.decided)}) | ${pct(metrics.accuracyOnDecided)} |`,
+      `| ${row.label} | ${row.removed === "" ? "nothing" : row.removed} | ${tauLink} / ${delta} / ${tauNew} / ${thetaD}${row.feasible ? "" : " (limits not met)"} | ${pct(metrics.coverage)} (${of(metrics.decided, metrics.items)}) | ${pct(metrics.wrongAccountRate)} (${of(metrics.wrongLinks, metrics.decided)}) | ${row.ownWrongLinks} | ${pct(metrics.newWhenExistingRate)} (${of(metrics.newWhenExisting, metrics.decided)}) | ${pct(metrics.accuracyOnDecided)} |`,
     );
   }
   return lines.join("\n");

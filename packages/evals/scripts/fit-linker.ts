@@ -4,7 +4,8 @@
 //   pnpm --filter @earshot/evals linker:fit [--check]
 //
 // It writes packages/understanding/src/link/params.v1.json: the feature list, the weights and
-// bias, the candidate sources, the thresholds, the calibration split's SHA-256, and the date.
+// bias, the candidate sources, the thresholds (τ_link, δ, τ_new, and the second witness's θ_d),
+// the calibration split's SHA-256, and the date.
 // Review the diff, then commit it. The fit never reads the test split (src/linking/fit.ts).
 //
 // `--check` refits and compares with the committed file instead of writing it: it exits 1 when
@@ -105,8 +106,10 @@ run(() => {
       candidateRecall: fitted.candidateRecall,
       thresholdSearch: {
         on: `${FOLDS}-fold out-of-fold probabilities, stratified by class`,
+        objective: "most correct decisions within the limits, after the witness",
+        witness:
+          "each mention's unbiased reading, by alignment, scored by the same fold's model and compared at θ_d (spec §4.6); E2 and G included",
         limits: FIT_LIMITS,
-        witnessOnlyClassesAs: "ask",
         points: fitted.outOfFold.points,
         feasiblePoints: fitted.outOfFold.feasiblePoints,
         feasible: fitted.outOfFold.feasible,
@@ -153,9 +156,9 @@ run(() => {
   console.log(
     [
       "Wrote packages/understanding/src/link/params.v1.json. Review the diff, then commit it.",
-      `Fit on ${fitted.items} calibration mentions (${WITNESS_ONLY_CLASSES.join(" and ")} left out), ${fitted.rows} candidate rows, ${fitted.positives} positive; gold among the candidates for ${fitted.candidateRecall.found} of ${fitted.candidateRecall.of}.`,
-      `Thresholds: τ_link ${thresholds.tauLink}, δ ${thresholds.delta}, τ_new ${thresholds.tauNew} (${search.feasiblePoints} of ${search.points} grid points within the limits).`,
-      `Out of fold on calibration: coverage ${pct(search.coverage)} (${search.decided}/${search.items}), wrong-account ${pct(search.wrongAccountRate)} (${search.wrongLinks}), new-when-existing ${pct(search.newWhenExistingRate)} (${search.newWhenExisting}).`,
+      `Fit on ${fitted.items} calibration mentions (${WITNESS_ONLY_CLASSES.join(" and ")} left out of the model), ${fitted.rows} candidate rows, ${fitted.positives} positive; gold among the candidates for ${fitted.candidateRecall.found} of ${fitted.candidateRecall.of}.`,
+      `Thresholds: τ_link ${thresholds.tauLink}, δ ${thresholds.delta}, τ_new ${thresholds.tauNew}, θ_d ${thresholds.thetaD} (${search.feasiblePoints} of ${search.points} grid points within the limits).`,
+      `Out of fold on calibration, after the witness: coverage ${pct(search.coverage)} (${search.decided}/${search.items}), wrong-account ${pct(search.wrongAccountRate)} (${search.wrongLinks}), new-when-existing ${pct(search.newWhenExistingRate)} (${search.newWhenExisting}).`,
     ].join("\n"),
   );
 });

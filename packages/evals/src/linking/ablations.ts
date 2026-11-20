@@ -61,7 +61,12 @@ export function ablationTable(
     }),
   ];
   return variants.map(({ sees, ...variant }) => {
-    const linker = linkerV1(variant.params, { name: variant.name, baseline: null, sees });
+    const linker = linkerV1(variant.params, {
+      name: variant.name,
+      baseline: null,
+      witness: false,
+      sees,
+    });
     const rows = score(items, linker.predict(cases, entities)).filter((row) => keep(row.item));
     return {
       ...variant,

@@ -8,16 +8,19 @@
 // - `--split` defaults to test, the split G1 is judged on. Tune on calibration only.
 // - `--set` defaults to confusable.v1; `mined` is WP6's mined.v1.
 // - `--linker` defaults to v0, Phase 3's matcher. `v1` is WP4's linker with its committed
-//   parameters; its report adds the ablation table (each variant refit on calibration, about a
-//   second). `oracle` is the set's ground truth run as a linker, the ceiling the set allows, for
-//   reference.
+//   parameters and WP5's second witness; its report adds the ablation table (each variant refit
+//   on calibration, a second or two). `oracle` is the set's ground truth run as a linker, the
+//   ceiling the set allows, for reference.
 // - `--summary` appends the report to a file, or to $GITHUB_STEP_SUMMARY when it names none (and
 //   to nothing outside GitHub Actions; the report is printed either way).
-// - `--check` exits 1 on a G1 failure (for a linker the gate applies to, on the test split) or a
-//   regression against the linker's committed baseline: coverage down more than 3 points, or
-//   the wrong-account rate up more than 0.5 point. A baseline taken on another set file fails too.
-// - `--write-baseline` records both splits of confusable.v1 to the linker's baseline file, on
-//   purpose. Review the diff, then commit it.
+// - `--check` exits 1 on a G1 failure (for a linker the gate applies to, on the test split:
+//   wrong-account above 2.0%, coverage below 85%, or new-when-existing above 5%, on the final
+//   decisions) or a regression against the linker's committed baseline: coverage down more than
+//   3 points, or the wrong-account rate up more than 0.5 point. A baseline taken on another set
+//   file fails too. CI's `checks` job runs `--linker v1 --split test --check --summary` (gate G1a).
+// - `--write-baseline` records both splits of confusable.v1 to the linker's baseline file
+//   (baselines/linking.json for the gated linker, linking-v0.json for v0), on purpose. Review the
+//   diff, then commit it.
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import {

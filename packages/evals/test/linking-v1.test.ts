@@ -1,7 +1,10 @@
-// Linker v1 (spec WP4) on the confusable-name set: its committed parameters are a fresh,
-// deterministic fit on the calibration split alone; it scores as its committed baseline; it meets
+// Linker v1 (spec WP4) and its second witness (WP5) on the confusable-name set: its committed
+// parameters are a fresh, deterministic fit on the calibration split alone; it scores as its
+// committed baseline and passes G1a on the test split; the witness reads every unbiased mention
+// right, downgrades only decided targets, and does what the threshold search assumed; it meets
 // the spec's timing target on the demo CRM's 250 records; and its probabilities and asks carry
-// what the harness needs. The unit tests are in @earshot/understanding (test/link.test.ts).
+// what the harness needs. The unit tests are in @earshot/understanding (test/link.test.ts,
+// test/witness.test.ts).
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type {
@@ -13,6 +16,7 @@ import type {
 import {
   buildLinkIndex,
   type EntityKind,
+  finalDecision,
   LINKER_PARAMS_V1,
   link,
   type TargetBasis,
@@ -20,6 +24,7 @@ import {
   type TargetDecision,
 } from "@earshot/understanding/link";
 import { HOMOPHONES as PRODUCT_HOMOPHONES } from "@earshot/understanding/names";
+import { compareWitnesses } from "@earshot/understanding/witness";
 import { describe, expect, it } from "vitest";
 import { HOMOPHONES } from "../src/channel";
 import {
@@ -28,6 +33,9 @@ import {
   asExpected,
   CONFUSABLE_SET_FILE,
   fitLinker,
+  G1,
+  gateFailures,
+  gridItemFor,
   isDecided,
   isWrongLink,
   LINKER_V1,
@@ -42,13 +50,14 @@ import {
   type Sees,
   score,
   splitSummary,
+  unbiasedMention,
   WITNESS_ONLY_CLASSES,
 } from "../src/linking";
 
 const TEXT = readFileSync(new URL(`../${CONFUSABLE_SET_FILE}`, import.meta.url), "utf8");
 const ITEMS = parseConfusableSet(TEXT);
 const BASELINE = LinkingBaseline.parse(
-  JSON.parse(readFileSync(new URL("../baselines/linking-v1.json", import.meta.url), "utf8")),
+  JSON.parse(readFileSync(new URL("../baselines/linking.json", import.meta.url), "utf8")),
 );
 const SCORED = score(ITEMS, LINKER_V1.predict(ITEMS.map(linkingCase), LINKING_ENTITIES));
 const FITTED = fitLinker(ITEMS, LINKING_ENTITIES);
@@ -99,25 +108,32 @@ describe("linker v1's parameters", () => {
 });
 
 describe("linker v1 on confusable.v1", () => {
-  it("scores today exactly as its committed baseline says (baselines/linking-v1.json)", () => {
+  it("scores today exactly as its committed baseline says (baselines/linking.json)", () => {
     expect(BASELINE.setSha256).toBe(createHash("sha256").update(TEXT).digest("hex"));
     expect(BASELINE.linker).toBe("linker.v1");
     for (const split of ["calibration", "test"] as const) {
       const report = linkingReport(
         SCORED.filter((row) => row.item.split === split),
-        { linker: LINKER_V1.name, witness: false, set: BASELINE.set, split },
+        { linker: LINKER_V1.name, witness: true, set: BASELINE.set, split },
       );
       expect(splitSummary(report), split).toEqual(BASELINE.splits[split]);
     }
   });
 
-  it("decides with the biased witness alone until WP5 adds the second", () => {
-    expect(LINKER_V1.witness).toBe(false);
+  it("passes G1a on the test split with the second witness, and fails it without", () => {
+    expect(LINKER_V1.witness).toBe(true);
     expect(LINKER_V1.gate).toBe(true);
-    for (const { prediction } of SCORED) {
-      expect(prediction.final).toEqual(prediction.biased);
-      expect(prediction.flagged).toBe(false);
-    }
+    const report = linkingReport(
+      SCORED.filter((row) => row.item.split === "test"),
+      { linker: LINKER_V1.name, witness: true, set: BASELINE.set, split: "test" },
+    );
+    expect(gateFailures(report.final)).toEqual([]);
+    expect(report.final.coverage).toBeGreaterThanOrEqual(G1.minCoverage);
+    expect(gateFailures(report.biasedOnly)).toEqual([
+      expect.stringMatching(/^G1: wrong-account rate/),
+    ]);
+    // It catches most of what the biased witness alone gets wrong.
+    expect(report.final.divergenceRecall).toBeGreaterThan(0.85);
   });
 
   it("keeps its own wrong links under the fit's 1.5% on both splits", () => {
@@ -198,6 +214,74 @@ describe("linker v1 on confusable.v1", () => {
       cpuMs,
       `${cpuMs.toFixed(0)} ms of CPU, ${(performance.now() - wall).toFixed(0)} ms of wall time`,
     ).toBeLessThan(1000);
+  });
+});
+
+describe("the second witness on confusable.v1", () => {
+  const INDEX = buildLinkIndex(LINKING_ENTITIES);
+
+  it("reads every unbiased mention, and every company said with one, as the set has it", () => {
+    for (const item of ITEMS) {
+      const reading = unbiasedMention(linkingCase(item));
+      expect(reading?.text, item.id).toBe(item.unbiased.mention.text);
+      expect(reading?.companyText ?? null, item.id).toBe(item.unbiased.company?.text ?? null);
+    }
+  });
+
+  it("downgrades only decided targets, to asks with no held-back link, and flags every conflict", () => {
+    let downgrades = 0;
+    for (const { item, prediction } of SCORED) {
+      const { biased, final, flagged } = prediction;
+      if (final.decision === biased.decision) {
+        expect(final.entityId, item.id).toBe(biased.entityId);
+        continue;
+      }
+      downgrades++;
+      expect(isDecided(biased), item.id).toBe(true);
+      expect(final, item.id).toMatchObject({ decision: "ask", entityId: null, wouldLink: null });
+      expect(flagged, item.id).toBe(true);
+    }
+    expect(downgrades).toBeGreaterThan(0);
+    for (const { item, prediction } of SCORED) {
+      if (prediction.final.decision === "ask" && prediction.flagged) {
+        expect(prediction.final.wouldLink ?? null, item.id).toBeNull();
+      }
+    }
+  });
+
+  it("decides each mention as the threshold search scored it", () => {
+    for (const { item, prediction } of SCORED) {
+      const gridItem = gridItemFor(item, INDEX, LINKER_PARAMS_V1);
+      const decision = finalDecision(gridItem, LINKER_PARAMS_V1.thresholds);
+      expect(decision, item.id).toBe(prediction.final.decision);
+      if (decision === "linked") expect(gridItem.ids[0], item.id).toBe(prediction.final.entityId);
+    }
+  });
+
+  it("turns the snapped names and wrong siblings it catches into questions that list the old record first", () => {
+    const caught = SCORED.filter(
+      (row) =>
+        WITNESS_ONLY_CLASSES.includes(row.item.class) &&
+        row.prediction.biased.decision === "linked" &&
+        row.prediction.final.decision === "ask",
+    );
+    expect(caught.length).toBeGreaterThan(20);
+    expect(
+      SCORED.filter((row) => row.item.class === "G").every((row) => row.prediction.flagged),
+    ).toBe(true);
+    for (const { item, prediction } of caught) {
+      const input = linkerInput(linkingCase(item));
+      const ctx = { ...input, index: INDEX, params: LINKER_PARAMS_V1 };
+      const biased = link(input.mention, ctx);
+      const comparison = compareWitnesses(
+        { mention: input.mention, biased, unbiased: unbiasedMention(linkingCase(item)) },
+        ctx,
+      );
+      expect(comparison.downgrade?.candidates[0]?.entityId, item.id).toBe(
+        prediction.biased.entityId,
+      );
+      expect(comparison.flags, item.id).toEqual([{ kind: "witness_conflict", field: "target" }]);
+    }
   });
 });
 

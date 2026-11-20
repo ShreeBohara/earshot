@@ -9,7 +9,9 @@
 //
 // Linker v1 (WP4) is `link` from @earshot/understanding/link with its committed parameters, run
 // on the biased transcript's mention, the company said with it, the open account, and earlier
-// links. It has no witness yet (WP5 adds it), so its final decisions are its biased-only ones.
+// links. Its second witness (WP5) is @earshot/understanding/witness: the unbiased transcript's
+// words for the mention and the company, read by alignment (the set has no word timings), linked
+// the same way and compared; a conflict downgrades a decided target to "ask".
 //
 // The oracle is a reference: the set's ground truth run as a two-witness linker, the ceiling the
 // set allows under the simulator's rules.
@@ -23,6 +25,13 @@ import {
   link,
   type MentionInput,
 } from "@earshot/understanding/link";
+import {
+  compareWitnesses,
+  readUnbiased,
+  type TargetDowngrade,
+  type UnbiasedMention,
+  type WitnessComparison,
+} from "@earshot/understanding/witness";
 import { sameSoundPhrase } from "../channel/sound";
 import { type Observation, type Resolution, resolve } from "./oracle";
 import type { ConfusableItem, Span } from "./schema";
@@ -241,6 +250,58 @@ export function shown(input: LinkerInput, sees: Sees): LinkerInput {
   };
 }
 
+/** The set's transcripts carry no utterance ids; a reading needs one, so every case uses this. */
+const CASE_UTTERANCE_ID = "00000000-0000-7000-8000-000000000000";
+
+/**
+ * The unbiased witness's words for a case's mention, and for the company said with it, as
+ * `readUnbiased` finds them in the unbiased transcript: by alignment, since the set has no word
+ * timings. Null when it has none for the mention.
+ */
+export function unbiasedMention(linkingCase: LinkingCase): UnbiasedMention | null {
+  const { biased, unbiased } = linkingCase;
+  const utterance = {
+    utteranceId: CASE_UTTERANCE_ID,
+    text: unbiased.transcript,
+    startMs: 0,
+    endMs: 0,
+  };
+  const read = (span: Span) =>
+    readUnbiased({ text: biased.transcript, span: [span.start, span.end] }, utterance);
+  const mention = read(biased.mention);
+  if (mention === null) return null;
+  return {
+    text: mention.text,
+    companyText: biased.company === null ? null : (read(biased.company)?.text ?? null),
+  };
+}
+
+/** A downgraded target as the harness scores it: an ask that no lower τ_link would turn into a link. */
+export function downgradedDecision(downgrade: TargetDowngrade): LinkDecision {
+  const records = downgrade.candidates.filter((candidate) => candidate.entityId !== null);
+  return {
+    decision: "ask",
+    entityId: null,
+    p: records.length > 0 ? Math.max(...records.map((candidate) => candidate.p)) : null,
+    wouldLink: null,
+  };
+}
+
+/**
+ * The decision after the witness: the downgrade's ask, or the biased decision. An ask the witness
+ * flagged keeps no held-back link, since the witness disagrees with it.
+ */
+export function witnessedDecision(
+  biased: LinkDecision,
+  comparison: WitnessComparison,
+): LinkDecision {
+  if (comparison.downgrade) return downgradedDecision(comparison.downgrade);
+  if (comparison.outcome === "conflict" && biased.decision === "ask") {
+    return { ...biased, wouldLink: null };
+  }
+  return biased;
+}
+
 /** A `link` result as the harness scores it; an ask carries what the risk–coverage sweep needs. */
 export function asLinkDecision(result: LinkResult, delta: number): LinkDecision {
   if (result.decision === "linked") {
@@ -261,29 +322,46 @@ export function asLinkDecision(result: LinkResult, delta: number): LinkDecision 
 
 /**
  * Linker v1 with a parameter set: the committed one, or an ablation's, with what that ablation
- * hides (`sees`). Its final decisions are its biased-only ones until WP5 adds the witness.
+ * hides (`sees`). With the witness (the default), each case's unbiased reading is compared
+ * with its biased one (spec §4.6) and a conflict downgrades or flags; without it, the final
+ * decisions are the biased-only ones.
  */
 export function linkerV1(
   params: LinkerParams = LINKER_PARAMS_V1,
   options: {
     readonly name?: string;
     readonly baseline?: string | null;
+    readonly witness?: boolean;
     readonly sees?: Sees;
   } = {},
 ): Linker {
+  const witness = options.witness ?? true;
   const sees = options.sees ?? SEES_ALL;
   return {
     name: options.name ?? params.version,
-    witness: false,
+    witness,
     gate: true,
-    baseline: options.baseline === undefined ? "linking-v1.json" : options.baseline,
+    baseline: options.baseline === undefined ? "linking.json" : options.baseline,
     predict(cases, entities) {
       const index = buildLinkIndex(entities);
       return cases.map((linkingCase) => {
         const input = shown(linkerInput(linkingCase), sees);
-        const result = link(input.mention, { ...input, index, params });
-        const decision = asLinkDecision(result, params.thresholds.delta);
-        return { id: linkingCase.id, biased: decision, final: decision, flagged: false };
+        const ctx = { ...input, index, params };
+        const result = link(input.mention, ctx);
+        const biased = asLinkDecision(result, params.thresholds.delta);
+        if (!witness) return { id: linkingCase.id, biased, final: biased, flagged: false };
+        const reading = unbiasedMention(linkingCase);
+        const unbiased = reading && !sees.company ? { ...reading, companyText: null } : reading;
+        const comparison = compareWitnesses(
+          { mention: input.mention, biased: result, unbiased },
+          ctx,
+        );
+        return {
+          id: linkingCase.id,
+          biased,
+          final: witnessedDecision(biased, comparison),
+          flagged: comparison.outcome === "conflict",
+        };
       });
     },
   };
