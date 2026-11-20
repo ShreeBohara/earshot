@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-19). Phase 3 WP6 (the `SessionDO` runtime) and WP7 (the flush) build it together. The first deploy still has to check two things on real accounts: that a scripted session's Durable Object log equals its `session_events` rows (gate G2e), and the open questions under "More information".
+Accepted (2026-11-19). Phase 3 WP6 (the `SessionDO` runtime) and WP7 (the flush) build it together. The first deploy still has to check two things on real accounts: that a scripted session's Durable Object log equals its `session_events` rows (gate G2e), and the open questions under "More information". Amended 2026-11-20 by Phase 5 WP3: the seal, the `review` and `snooze` messages, refusals after the seal, cleanup after a sealed confirmation, audit rows at flush, and `sealSessions` (see "Phase 5: the seal", and ADR-0032).
 
 ## Context and problem
 
@@ -81,6 +81,23 @@ One `createPoolDb` per batch, ended with `waitUntil` (ADR-0018). Without `DATABA
 ### Cleanup and deletion
 
 After `end`, unconfirmed events are sent again at +1 h and +6 h, then daily. A day after Postgres confirms the whole log, an alarm calls `deleteAll()`. A session nobody ended (a closed tab) is ended by the object once it has been idle 30 minutes past both the capture limit and its last event, so it reaches the same cleanup. `purge()` deletes everything at once: it closes the socket with `session_ended`, cancels a running turn, deletes the storage, and leaves a tombstone that refuses connections for five minutes, longer than any ticket issued before the deletion lives; an alarm then deletes the tombstone. The web app reaches it through its `EDGE` service binding, `env.EDGE.purgeSessions(ids)` (at most 500 ids, lowercase UUIDs; a bad argument is answered, not thrown), an RPC method on the edge Worker's default entrypoint that HTTP can't reach.
+
+### Phase 5: the seal (amended 2026-11-20, WP3)
+
+From Phase 5 a session has two writers that never overlap (ADR-0032): `SessionDO` until it seals, then the web Worker in Postgres.
+
+| Message | What `SessionDO` does |
+|---|---|
+| `review` | From `start` until the seal: skips reviews whose `reviewId` the log holds, completes the rest (`by`: the pinned user and the socket ticket's `am` and `sat`, or `auth: null` for a ticket without them; `syncEligibleAt`: its clock plus the undo window), checks them with `checkReviews` against the folded log, and appends `proposal.reviewed` v2, or refuses the message with `bad_message`. Refused with `internal` without a usable audit signing key |
+| `snooze` | The same, with `checkSnooze`, as `proposal.snoozed`; no key needed |
+| everything but `hello` and `ack`, after the seal | Refused with `sealed`, not retryable (a resend of a message answered before the seal gets its first answer) |
+
+- **The seal.** `end` sets `seal_due_ms` 60 s ahead; each client write after it moves it 60 s past that write, capped at 30 minutes after `end`; a session ended for idling gets the same. The alarm appends `session.sealed` in the serial queue and flushes it at once. It's the last event the object writes. An object from before Phase 5 seals at its next alarm.
+- **A flag after an approval** appends a `system` reopen in the witness's own transaction (ADR-0032, decision 15).
+- **Cleanup** waits for Postgres to confirm a log that ends in `session.sealed`, then runs a day later. Re-sends after the end work as before, for whatever Postgres hasn't confirmed.
+- **The flush** records an audit row for each review event an append writes, in the session's user's name, and one checkpoint (`request: "flush"`), in the append's transaction, after the rebuild; none on the "stale, the ids match" path. Without a usable `EARSHOT_AUDIT_SIGNING_KEY` (loaded by `src/config.ts`, development's committed key only under `DEPLOY_ENV=development`), a message carrying reviews is retried until the DLQ, and SessionDO's re-sends try again later.
+- **`sealSessions(ids)`**, a second RPC on the default entrypoint for the web app's `EDGE` binding (at most 500 lowercase UUIDs, answered not thrown, like `purgeSessions`): each object's `sealNow()` answers `live`, `sealing`, `sealed`, or `gone`, for the inbox's repair path.
+- **SQLite** gains `writes`: each review's and snooze's client-made id, with its seq and proposal. `meta` gains `seal_due_ms` and `sealed_seq`.
 
 ### Logs
 

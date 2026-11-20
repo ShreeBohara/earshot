@@ -19,6 +19,17 @@ export const SESSION_LIMITS = Object.freeze({
   witnessWindowMs: 1_000,
 });
 
+/**
+ * The seal (Phase 5 spec §4.3, targets): `SessionDO` keeps taking reviews, snoozes, usage, and
+ * metrics after `end` until it writes `session.sealed`, its last event. That's `graceMs` after
+ * `end`, or after the last write that followed it, whichever is later, and never later than
+ * `maxAfterEndMs` after `end`.
+ */
+export const SEAL_TIMING = Object.freeze({
+  graceMs: 60_000,
+  maxAfterEndMs: 30 * 60_000,
+});
+
 export const FLUSH_TIMING = Object.freeze({
   /** Flush once this many events are waiting... */
   maxPendingEvents: 20,
@@ -29,7 +40,7 @@ export const FLUSH_TIMING = Object.freeze({
   resendEveryMs: 24 * 60 * 60_000,
   /** A re-send that failed to reach the Queue is tried again after this long. */
   resendRetryMs: 5 * 60_000,
-  /** Delete the object's storage this long after Postgres confirms the whole log, end included. */
+  /** Delete the object's storage this long after Postgres confirms the whole log, seal included. */
   cleanupAfterConfirmMs: 24 * 60 * 60_000,
   /**
    * End a session nobody ended: this long after both the capture limit and its last event. A

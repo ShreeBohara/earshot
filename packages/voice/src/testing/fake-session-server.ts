@@ -12,6 +12,10 @@
 // - a turn's `witness` (Phase 4 WP9) is refused for a turn with no `turn_end` and for a second
 //   witness, waits for a held turn, and appends the unbiased utterance, any flags `compare` gives,
 //   and `turn.witnessed`;
+// - `review` and `snooze` (Phase 5 WP3) are checked with the writers' rules against the log's
+//   proposals, idempotent by msgId and by review and snooze id, and filled in with `reviewer`;
+// - `seal()` appends `session.sealed`, after which every message but `hello` and `ack` is refused
+//   with `sealed` (a resend of one answered before gets its first answer);
 // - `ping` gets `pong` (the runtime's auto-response).
 //
 // Faults are switches on the instance: drop a socket after a given event, skip one event once
@@ -26,16 +30,26 @@ import {
   HEARTBEAT_PONG,
   type ProposalCreatedV2,
   type ProposalFlaggedV1,
+  type ProposalReviewedV2,
   parseClientMessage,
+  type Reviewer,
   SESSION_CLOSE_CODES,
   SESSION_PROTOCOL_VERSION,
   SESSION_SUBPROTOCOL,
   type ServerMessage,
   type SessionErrorCode,
   TICKET_SUBPROTOCOL_PREFIX,
+  UNDO_WINDOW_MS,
   type UtteranceFinalV2,
 } from "@earshot/core";
-import { defaultRegistry } from "@earshot/events";
+import {
+  anyFlagTier,
+  checkReviews,
+  checkSnooze,
+  defaultRegistry,
+  proposalsProjection,
+  replay,
+} from "@earshot/events";
 import { PRICE_TABLE_DATE, priceStt } from "../prices";
 import type { SocketFactory } from "../stt/socket";
 import { type FakeServerSocket, FakeSocketServer } from "./fake-socket";
@@ -96,6 +110,8 @@ export interface FakeSessionServerOptions {
     readonly proposals: readonly ProposalCreatedV2[];
     readonly unbiased: UtteranceFinalV2;
   }) => readonly ProposalFlaggedV1[];
+  /** Who the socket's reviews and snoozes are by. Defaults to a user with no recorded sign-in. */
+  readonly reviewer?: Reviewer;
 }
 
 export interface FakeSessionTicket {
@@ -191,11 +207,18 @@ export class FakeSessionServer {
   /** utteranceId → seq, and turnId → its utterances' seqs. */
   readonly #utterances = new Map<string, number>();
   readonly #turns = new Map<string, number[]>();
+  /** Reviews and snoozes by their client-made ids. */
+  readonly #writes = new Map<
+    string,
+    { kind: "review" | "snooze"; seq: number; proposalId: string }
+  >();
+  readonly #reviewer: Reviewer;
   #ticketCount = 0;
   #purged = false;
   #costUsd = 0;
   #startedSeq: number | undefined;
   #endedSeq: number | undefined;
+  #sealedSeq: number | undefined;
 
   constructor(options: FakeSessionServerOptions) {
     this.sessionId = options.sessionId;
@@ -211,6 +234,7 @@ export class FakeSessionServer {
       });
     this.#propose = options.propose;
     this.#compare = options.compare;
+    this.#reviewer = options.reviewer ?? { userId: "fake-user", auth: null };
     this.#rateClock = options.rateClock;
     this.#sockets.onConnection = (socket) => this.#onConnection(socket);
   }
@@ -273,6 +297,26 @@ export class FakeSessionServer {
   /** Runs the turns `holdTurns` kept waiting. */
   completeTurns(): void {
     for (const run of this.#held.splice(0)) run();
+  }
+
+  /**
+   * Seals the session, as SessionDO's alarm does after the grace: `session.sealed`, after which
+   * every message but `hello` and `ack` is refused with `sealed`. Ends it first if it hasn't ended.
+   */
+  seal(): EventEnvelope {
+    if (this.#sealedSeq !== undefined) throw new Error("the session is already sealed");
+    if (this.#endedSeq === undefined) {
+      this.#endedSeq = this.append("session.ended", {
+        endedAt: new Date(this.#now()).toISOString(),
+        costUsd: this.#costUsd,
+      }).seq;
+    }
+    const sealed = this.append("session.sealed", {
+      sealedAt: new Date(this.#now()).toISOString(),
+      by: "session",
+    });
+    this.#sealedSeq = sealed.seq;
+    return sealed;
   }
 
   /** Deletes the session, as account deletion does: every socket closes with 4006. */
@@ -350,6 +394,10 @@ export class FakeSessionServer {
     const message = parsed.message;
     connection.messages.push(message);
     this.received.push(message);
+    if (message.t !== "hello" && message.t !== "ack" && this.#sealedSeq !== undefined) {
+      if (!this.#answered(message.msgId)) this.#refuse(message.msgId, "sealed", false);
+      return;
+    }
     switch (message.t) {
       case "hello":
         this.#hello(connection, message);
@@ -377,6 +425,12 @@ export class FakeSessionServer {
         return;
       case "end":
         this.#end(message);
+        return;
+      case "review":
+        this.#review(message);
+        return;
+      case "snooze":
+        this.#snooze(message);
         return;
     }
   }
@@ -638,6 +692,96 @@ export class FakeSessionServer {
       this.#inflight.add(message.msgId);
       this.#held.push(run);
     } else run();
+  }
+
+  #review(message: ClientMessageOf<"review">): void {
+    if (this.#answered(message.msgId)) return;
+    if (this.#startedSeq === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    const fresh: ProposalReviewedV2[] = [];
+    let resentSeq = -1;
+    for (const input of message.reviews) {
+      const prior = this.#writes.get(input.reviewId);
+      if (prior) {
+        if (prior.kind !== "review" || prior.proposalId !== input.proposalId) {
+          this.#refuse(message.msgId, "bad_message", false);
+          return;
+        }
+        resentSeq = Math.max(resentSeq, prior.seq);
+        continue;
+      }
+      const decides = input.decision === "approved" || input.decision === "edited";
+      fresh.push({
+        ...input,
+        syncEligibleAt: decides ? new Date(this.#now() + UNDO_WINDOW_MS).toISOString() : null,
+        by: this.#reviewer,
+      });
+    }
+    if (fresh.length === 0) {
+      this.#ackExisting(message.msgId, resentSeq);
+      return;
+    }
+    const check = checkReviews(this.#proposals(), fresh, { tierOf: anyFlagTier, from: "client" });
+    if (!check.ok) {
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    const appended = this.#commit(
+      message.msgId,
+      fresh.map((review) => ({ type: "proposal.reviewed", payload: review })),
+    );
+    for (const [index, event] of appended.entries()) {
+      const review = fresh[index];
+      if (review) {
+        this.#writes.set(review.reviewId, {
+          kind: "review",
+          seq: event.seq,
+          proposalId: review.proposalId,
+        });
+      }
+    }
+  }
+
+  #snooze(message: ClientMessageOf<"snooze">): void {
+    if (this.#answered(message.msgId)) return;
+    if (this.#startedSeq === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    const prior = this.#writes.get(message.snoozeId);
+    if (prior) {
+      if (prior.kind !== "snooze" || prior.proposalId !== message.proposalId) {
+        this.#refuse(message.msgId, "bad_message", false);
+      } else {
+        this.#ackExisting(message.msgId, prior.seq);
+      }
+      return;
+    }
+    const snooze = {
+      snoozeId: message.snoozeId,
+      proposalId: message.proposalId,
+      until: message.until,
+      by: this.#reviewer,
+    };
+    if (!checkSnooze(this.#proposals(), snooze).ok) {
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    const [event] = this.#commit(message.msgId, [{ type: "proposal.snoozed", payload: snooze }]);
+    if (event) {
+      this.#writes.set(snooze.snoozeId, {
+        kind: "snooze",
+        seq: event.seq,
+        proposalId: snooze.proposalId,
+      });
+    }
+  }
+
+  /** The log's proposals, folded, as the writers' rules read them. */
+  #proposals() {
+    return replay(this.log, { proposals: proposalsProjection }).proposals;
   }
 
   // ─── Answers and the log ────────────────────────────────────────────────────────────────────

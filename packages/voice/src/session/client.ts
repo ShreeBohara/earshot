@@ -11,6 +11,9 @@
 // - A `ping` heartbeat finds dead sockets. Drops reconnect with backoff and jitter, as each close
 //   code's `reconnect` flag says. `online`, `offline`, and `visibilitychange` steer it, and on
 //   iOS a hidden page stops capture, flushes, and closes cleanly before WebKit freezes it.
+// - The tray's reviews and snoozes (Phase 5 WP3) go over the socket, split to fit its limits, until
+//   SessionDO seals the session; then, or once the client has closed for good, they go to the web
+//   route with the same review ids (`reviewRoute`), so each is written once, by one writer.
 //
 // The connection machine (`@earshot/voice/machines`) decides; this class performs its effects.
 import {
@@ -21,11 +24,13 @@ import {
   type LlmProvider,
   MAX_MESSAGE_BYTES,
   parseServerMessage,
+  type ReviewInput,
   SESSION_PROTOCOL_VERSION,
   SESSION_SUBPROTOCOL,
   type ServerMessage,
   type ServerMessageOf,
   type SessionProviders,
+  type SnoozeInput,
   type TurnMarks,
   type TurnTrigger,
   ticketSubprotocol,
@@ -56,6 +61,13 @@ import {
 import type { UnbiasedUtterance } from "../witness/runner";
 import { browserPageLifecycle, type PageEvent, type PageLifecycle } from "./lifecycle";
 import { Outbox, type OutboxItem, type OutboxMessage } from "./outbox";
+import {
+  type ReviewRoute,
+  ReviewRouteFailure,
+  type ReviewRouteRequestBody,
+  reviewFrameBytes,
+  splitReviews,
+} from "./reviews";
 import { type ConnectionView, type SessionIssue, SessionStore } from "./store";
 import { type SessionTicket, SessionTicketError } from "./ticket";
 
@@ -111,6 +123,11 @@ export interface SessionClientOptions {
   readonly suspendTimeoutMs?: number;
   /** A ticket this close to expiring isn't used for a connect. */
   readonly ticketMarginMs?: number;
+  /**
+   * Where a review or snooze goes once the session is sealed: the web route
+   * (`createReviewRoute`). Without it, one the socket refuses with `sealed` is reported refused.
+   */
+  readonly reviewRoute?: ReviewRoute;
 }
 
 export interface SendStartInput {
@@ -164,6 +181,29 @@ export interface MessageAck {
   /** The last event the message appended, if it appended any. */
   readonly seq: number | undefined;
 }
+
+/**
+ * Where one slice of reviews (one `review` message's worth), or one snooze, was written: by
+ * SessionDO over the socket, or by the web route after the seal; or why neither took it.
+ */
+export type ReviewDelivery =
+  | {
+      readonly ok: true;
+      readonly via: "socket" | "route";
+      /** The `reviewId`s (or the `snoozeId`) written. */
+      readonly ids: readonly string[];
+      /** The last seq the write reached, when the writer said. */
+      readonly seq: number | undefined;
+    }
+  | {
+      readonly ok: false;
+      readonly ids: readonly string[];
+      /**
+       * SessionDO's error code (`bad_message`, `internal`, ...), the route's (`stale`,
+       * `not_sealed`, ...), `too_large` for a review no frame can hold, or `closed`.
+       */
+      readonly code: string;
+    };
 
 /** The connection closed for good before a message was acknowledged. */
 export class SessionClosedError extends Error {
@@ -224,6 +264,7 @@ export class SessionClient {
     suspendTimeoutMs: number;
     ticketMarginMs: number;
   };
+  readonly #reviewRoute: ReviewRoute | undefined;
   readonly #outbox = new Outbox();
   readonly #waiters = new Map<string, Waiter[]>();
   readonly #refusals = new Map<string, number>();
@@ -256,6 +297,7 @@ export class SessionClient {
     this.#createId = options.createId ?? uuidv7;
     this.#page = options.page ?? browserPageLifecycle();
     this.#onSuspend = options.onSuspend;
+    this.#reviewRoute = options.reviewRoute;
     this.#log = options.log ?? SILENT_LOG;
     this.store =
       options.store ??
@@ -391,6 +433,82 @@ export class SessionClient {
   /** One turn's latency marks, on the client's clock; SessionDO records `turn.measured`. */
   sendMetric(turnId: string, marks: TurnMarks): string | null {
     return this.#enqueue({ t: "metric", msgId: this.#createId(), turnId, marks });
+  }
+
+  /**
+   * The tray's reviews: one decision, or an "accept all" of any size, sent in order as as many
+   * `review` messages as the socket's limits need (25 reviews and 64 KiB a message; a batch keeps
+   * its `batchId` across them). Resolves with one delivery per message once each is settled; it
+   * never rejects. A message SessionDO refuses with `sealed`, and every message once the client has
+   * closed for good, goes to the web route instead (`reviewRoute`), with the same review ids.
+   */
+  sendReview(reviews: readonly ReviewInput[]): Promise<ReviewDelivery[]> {
+    const sends = splitReviews(reviews).map((part) => {
+      const ids = part.map((review) => review.reviewId);
+      if (reviewFrameBytes(part) > MAX_MESSAGE_BYTES) {
+        this.#log.debug("message refused here", { t: "review", reason: "too_large" });
+        return Promise.resolve<ReviewDelivery>({ ok: false, ids, code: "too_large" });
+      }
+      return this.#sendWrite(
+        { t: "review", msgId: this.#createId(), reviews: part },
+        { reviews: part, snoozes: [] },
+        ids,
+      );
+    });
+    return Promise.all(sends);
+  }
+
+  /** A snooze, or a wake (`until: null`), under the same rules as `sendReview`. */
+  sendSnooze(snooze: SnoozeInput): Promise<ReviewDelivery> {
+    return this.#sendWrite(
+      { t: "snooze", msgId: this.#createId(), ...snooze },
+      {
+        reviews: [],
+        snoozes: [snooze],
+      },
+      [snooze.snoozeId],
+    );
+  }
+
+  /**
+   * Sends a `review` or `snooze` over the socket and waits for its answer, falling back to the web
+   * route for `sealed`, or when the client has closed for good. The waiter is registered as the
+   * message is queued, so no answer can arrive before it.
+   */
+  #sendWrite(
+    message: Extract<OutboxMessage, { t: "review" } | { t: "snooze" }>,
+    request: ReviewRouteRequestBody,
+    ids: readonly string[],
+  ): Promise<ReviewDelivery> {
+    const toRoute = async (): Promise<ReviewDelivery> => {
+      if (!this.#reviewRoute) return { ok: false, ids, code: "sealed" };
+      try {
+        const answer = await this.#reviewRoute(request);
+        this.#log.debug("written by the route", { t: message.t });
+        return { ok: true, via: "route", ids, seq: answer.lastSeq };
+      } catch (error) {
+        return {
+          ok: false,
+          ids,
+          code: error instanceof ReviewRouteFailure ? error.code : "unavailable",
+        };
+      }
+    };
+    if (this.#connection.state === "closed") return toRoute();
+    const msgId = this.#enqueue(message);
+    if (msgId === null) return Promise.resolve({ ok: false, ids, code: "bad_message" });
+    return this.acked(msgId).then(
+      (ack): ReviewDelivery => ({ ok: true, via: "socket", ids, seq: ack.seq }),
+      (error: unknown): Promise<ReviewDelivery> | ReviewDelivery => {
+        if (error instanceof MessageRefusedError && error.code === "sealed") return toRoute();
+        if (error instanceof SessionClosedError) return toRoute();
+        return {
+          ok: false,
+          ids,
+          code: error instanceof MessageRefusedError ? error.code : "closed",
+        };
+      },
+    );
   }
 
   /** Ends the session. Resolves once SessionDO has acknowledged it. */

@@ -470,7 +470,7 @@ const STRAY_KEY = "stray_key";
  * Refuses anything shaped like a key, anywhere in `value`. For schemas that other writers parse
  * on their own, such as `ReviewInput` in the web route, so the guard goes wherever they do.
  */
-function refuseStrayKeys(value: object, ctx: z.RefinementCtx): void {
+export function refuseStrayKeys(value: object, ctx: z.RefinementCtx): void {
   const path = findStrayKey(value, undefined);
   if (path) {
     ctx.addIssue({

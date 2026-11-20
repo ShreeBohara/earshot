@@ -1,6 +1,7 @@
 import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Logger } from "../log";
+import type { SealSessions } from "../reviews/repair";
 import type { PurgeSessions } from "./server";
 
 /** The part of the edge Worker's RPC surface the web app calls (apps/edge/src/index.ts). */
@@ -8,6 +9,7 @@ interface EdgeRpc {
   purgeSessions(
     sessionIds: string[],
   ): Promise<{ ok: true; purged: number } | { ok: false; reason: string }>;
+  sealSessions: SealSessions;
 }
 
 /** The edge Worker takes at most this many ids per `purgeSessions` call. */
@@ -40,5 +42,20 @@ export function purgeSessionsViaEdge(log: Logger): PurgeSessions {
         sessions: sessionIds.length,
       });
     }
+  };
+}
+
+/**
+ * Asks sessions' Durable Objects to seal now, through the `EDGE` service binding, for the inbox
+ * loader's repair path (lib/reviews/repair.ts). Throws when the binding is missing, as under
+ * `next dev` without the edge Worker; the repair path then skips this load.
+ */
+export function sealSessionsViaEdge(_log: Logger): SealSessions {
+  return async (sessionIds) => {
+    const edge = getCloudflareContext().env.EDGE as unknown as Partial<EdgeRpc> | undefined;
+    if (typeof edge?.sealSessions !== "function") {
+      throw new Error("the EDGE service binding is missing");
+    }
+    return edge.sealSessions(sessionIds);
   };
 }

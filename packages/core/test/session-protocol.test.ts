@@ -12,12 +12,15 @@ import {
   MAX_ENTITY_ID_CHARS,
   MAX_ENTITY_NAME_CHARS,
   MAX_MESSAGE_BYTES,
+  MAX_REVIEW_REQUEST_BYTES,
+  MAX_REVIEW_REQUEST_ITEMS,
   MAX_REVIEWS_PER_MESSAGE,
   MAX_SESSION_ENTITIES,
   MAX_UTTERANCE_TEXT_CHARS,
   parseClientMessage,
   parseServerMessage,
   ReviewInput,
+  ReviewRouteRequest,
   SESSION_CLOSE_CODES,
   SESSION_PROTOCOL_VERSION,
   ServerMessage,
@@ -550,6 +553,32 @@ describe("keys", () => {
     ]);
     expect(JSON.stringify(result.error?.issues)).not.toContain(key);
     expect(ReviewInput.safeParse(item).success).toBe(true);
+  });
+
+  it("guards the review route's body the same way, and caps it at 25 items in all", () => {
+    const [item] = clientMessages().review.reviews;
+    const snooze = {
+      snoozeId: uuidv7(),
+      proposalId: item?.proposalId ?? "",
+      until: "2026-11-21T09:00:00.000Z",
+    };
+    expect(ReviewRouteRequest.safeParse({ reviews: [item], snoozes: [snooze] }).success).toBe(true);
+    expect(ReviewRouteRequest.parse({ snoozes: [snooze] }).reviews).toEqual([]);
+    for (const bad of [
+      {},
+      { reviews: [], snoozes: [] },
+      {
+        reviews: Array.from({ length: 13 }, () => item),
+        snoozes: Array.from({ length: 13 }, () => snooze),
+      },
+      { reviews: [item], extra: 1 },
+      { reviews: [{ ...item, target: { entityId: FAKE_KEYS.groq } }] },
+      { snoozes: [{ ...snooze, [FAKE_KEYS.anthropic]: 1 }] },
+    ]) {
+      expect(ReviewRouteRequest.safeParse(bad).success).toBe(false);
+    }
+    expect(MAX_REVIEW_REQUEST_ITEMS).toBe(MAX_REVIEWS_PER_MESSAGE);
+    expect(MAX_REVIEW_REQUEST_BYTES).toBe(MAX_MESSAGE_BYTES);
   });
 
   it("doesn't mistake ordinary names for keys", () => {

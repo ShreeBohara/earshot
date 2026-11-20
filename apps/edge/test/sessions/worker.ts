@@ -11,6 +11,7 @@ import type { LlmProvider } from "@earshot/core";
 import { evalCassette } from "@earshot/evals/cassettes";
 import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
 import { productionAgent, withFetch } from "../../src/agent";
+import { readAuditSigning } from "../../src/config";
 import { demoCassette } from "../../src/e2e";
 import type { FlushMessage, FlushSink } from "../../src/flush-message";
 import { SessionRuntime } from "../../src/session-do";
@@ -96,6 +97,12 @@ export class SessionDO extends SessionRuntime {
         const frozen = testSetting(ctx.storage.sql, "now");
         return frozen === undefined ? Date.now() : Number(frozen);
       },
+      // A test can take the audit signing key away (`breakAuditKey`), as a deployment without
+      // EARSHOT_AUDIT_SIGNING_KEY has none; otherwise development's key, as wrangler.jsonc says.
+      auditSigning: async (workerEnv) =>
+        testSetting(ctx.storage.sql, "audit") === "missing"
+          ? { status: "missing" }
+          : readAuditSigning(workerEnv),
     });
   }
 }

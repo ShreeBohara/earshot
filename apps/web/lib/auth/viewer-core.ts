@@ -1,3 +1,4 @@
+import { SignInMethod } from "@earshot/core";
 import { ensureWorkspace, resolveWorkspace, schema } from "@earshot/db";
 import { and, eq } from "drizzle-orm";
 import type { AppDb } from "../db/types";
@@ -13,8 +14,12 @@ export type Viewer = {
     image: string | null;
     createdAt: Date;
   };
-  /** The sign-in session, without its token. */
-  session: { id: string; createdAt: Date; expiresAt: Date };
+  /**
+   * The sign-in session, without its token: when it began, and how (`signInMethod`, set when it
+   * was created, docs/adr/0033; `unknown` for sessions from before that was recorded). Every review
+   * records both, and session tickets carry them to SessionDO (`am`, `sat`).
+   */
+  session: { id: string; createdAt: Date; expiresAt: Date; signInMethod: SignInMethod };
   /** Chosen by `resolveWorkspace`: always one the user is a member of. */
   workspaceId: string;
   workspaceName: string;
@@ -64,6 +69,7 @@ export async function loadViewer({
       id: session.id,
       createdAt: new Date(session.createdAt),
       expiresAt: new Date(session.expiresAt),
+      signInMethod: signInMethodOf(session),
     },
     workspaceId,
     workspaceName: membership.name,
@@ -74,4 +80,10 @@ export async function loadViewer({
 /** What to call the viewer in the UI: their name, or the part of their email before the @. */
 export function displayName(user: Pick<Viewer["user"], "name" | "email">): string {
   return user.name.trim() || user.email.split("@")[0] || user.email;
+}
+
+/** The session's recorded sign-in method, or `unknown` if it has none Earshot knows. */
+function signInMethodOf(session: object): SignInMethod {
+  const parsed = SignInMethod.safeParse((session as { signInMethod?: unknown }).signInMethod);
+  return parsed.success ? parsed.data : "unknown";
 }

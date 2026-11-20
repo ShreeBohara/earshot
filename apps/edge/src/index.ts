@@ -4,7 +4,14 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
 import { productionAgent } from "./agent";
 import { createApp } from "./app";
-import { handleFlushQueue, type PurgeResult, purgeSessions, queueSink } from "./queue";
+import {
+  handleFlushQueue,
+  type PurgeResult,
+  purgeSessions,
+  queueSink,
+  type SealResult,
+  sealSessions,
+} from "./queue";
 import { SessionRuntime } from "./session-do";
 
 /** One per capture session, with production dependencies: `@earshot/agent` and the Queue. */
@@ -22,8 +29,9 @@ export class SessionDO extends SessionRuntime {
 const app = createApp();
 
 /**
- * The default entrypoint: HTTP (`fetch`), the flush consumer (`queue`), and one RPC method for the
- * web app's `EDGE` service binding, `purgeSessions`. RPC methods aren't reachable over HTTP.
+ * The default entrypoint: HTTP (`fetch`), the flush consumer (`queue`), and two RPC methods for the
+ * web app's `EDGE` service binding, `purgeSessions` and `sealSessions`. RPC methods aren't
+ * reachable over HTTP.
  */
 export default class EdgeWorker extends WorkerEntrypoint<Env> {
   override fetch(request: Request): Promise<Response> | Response {
@@ -40,5 +48,13 @@ export default class EdgeWorker extends WorkerEntrypoint<Env> {
    */
   async purgeSessions(sessionIds: readonly string[]): Promise<PurgeResult> {
     return purgeSessions(this.env, sessionIds);
+  }
+
+  /**
+   * Seals the sessions' Durable Objects now, for the web app's repair path: each answers `live`,
+   * `sealing`, `sealed`, or `gone` (`env.EDGE.sealSessions(ids)`, at most 500 ids a call).
+   */
+  async sealSessions(sessionIds: readonly string[]): Promise<SealResult> {
+    return sealSessions(this.env, sessionIds);
   }
 }

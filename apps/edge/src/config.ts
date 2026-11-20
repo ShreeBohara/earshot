@@ -2,18 +2,31 @@
 // imports, so tests pass whatever environment they need. As in the web app (docs/adr/0023), a
 // development deploy has a default for everything, and anywhere else a missing or unsafe value
 // fails closed: the socket route answers 500 and the log names the variable, never the value.
+//
+// The audit signing key (Phase 5 WP3, docs/adr/0033) fails closed more narrowly: without a usable
+// EARSHOT_AUDIT_SIGNING_KEY the socket still works, but SessionDO refuses `review` with `internal`
+// and the flush consumer won't store review events, since their audit rows need a signed
+// checkpoint. Development signs with the committed development key, as `loadAuditSigningKey`
+// allows only there.
 import {
   DEV_SESSION_TICKET_SECRET,
   importTicketKey,
   isDevTicketSecret,
   MIN_TICKET_SECRET_BYTES,
 } from "@earshot/core";
+import {
+  type AuditSigner,
+  type AuditSigningState,
+  auditKeySecretValues,
+  loadAuditSigningKey,
+} from "@earshot/keys/server";
 
 /** The variables this module reads. All optional here; `readEdgeConfig` decides what's required. */
 export type EdgeEnv = {
   readonly DEPLOY_ENV?: string | undefined;
   readonly WEB_ORIGIN?: string | undefined;
   readonly EARSHOT_SESSION_TICKET_SECRET?: string | undefined;
+  readonly EARSHOT_AUDIT_SIGNING_KEY?: string | undefined;
 };
 
 /** A configuration problem. The message names the variable and the fix, never a value. */
@@ -137,4 +150,36 @@ export function isAllowedOrigin(origin: string | null, allowed: ReadonlySet<stri
   }
   // `new URL("null").origin` throws, and an opaque origin normalizes to "null": refuse both.
   return normalized !== "null" && normalized === origin && allowed.has(normalized);
+}
+
+// One loaded signing state per isolate and value, like the ticket keys: importing checks the key
+// with a signature, which needn't run on every message.
+const auditStates = new Map<string, Promise<AuditSigningState>>();
+
+/**
+ * The audit signing key's state here (`loadAuditSigningKey`): `configured` or `development` can
+ * sign; `missing` and `invalid` fail closed. `development` is `DEPLOY_ENV=development`, as for the
+ * ticket secret. Never throws, and never returns or logs the key.
+ */
+export function readAuditSigning(env: EdgeEnv): Promise<AuditSigningState> {
+  const development = isDevelopment(env);
+  const cacheKey = JSON.stringify([development, env.EARSHOT_AUDIT_SIGNING_KEY ?? ""]);
+  let state = auditStates.get(cacheKey);
+  if (!state) {
+    state = loadAuditSigningKey(env, { development });
+    auditStates.set(cacheKey, state);
+    state.catch(() => auditStates.delete(cacheKey));
+  }
+  return state;
+}
+
+/** The signer, when the key is usable; null when reviews must fail closed. */
+export async function readAuditSigner(env: EdgeEnv): Promise<AuditSigner | null> {
+  const state = await readAuditSigning(env);
+  return state.status === "configured" || state.status === "development" ? state.signer : null;
+}
+
+/** What a redacting logger must mask for the signing key: the value whole, and its `d`. */
+export function auditSecrets(env: EdgeEnv): string[] {
+  return auditKeySecretValues(env.EARSHOT_AUDIT_SIGNING_KEY);
 }

@@ -6,6 +6,7 @@ export {
   createSessionClient,
   type MessageAck,
   MessageRefusedError,
+  type ReviewDelivery,
   type SendStartInput,
   type SendTurnEndInput,
   type SendUsageInput,
@@ -25,6 +26,15 @@ export {
 } from "./lifecycle";
 export type { OutboxItem, OutboxMessage } from "./outbox";
 export { defaultClassify, RetryDeadlineError, type WithRetryOptions, withRetry } from "./retry";
+export {
+  createReviewRoute,
+  type ReviewRoute,
+  ReviewRouteFailure,
+  type ReviewRouteOptions,
+  type ReviewRouteRequestBody,
+  reviewFrameBytes,
+  splitReviews,
+} from "./reviews";
 export {
   addUsage,
   type ClientIssueCode,

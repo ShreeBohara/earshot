@@ -19,8 +19,18 @@
 //   extraction, in the session's order, for one still running. Each conflict appends
 //   `proposal.flagged` (a flag, and a downgrade to "ask" for a decided target), then
 //   `turn.witnessed` says how the witness ended.
+// - `review` and `snooze` (Phase 5 WP3) are the tray's reviews: checked with `@earshot/events`'
+//   writer rules against the session's folded proposals, filled in with who sent them (the pinned
+//   user, and how and when the ticket's web session signed in) and when an approval may sync, and
+//   appended as `proposal.reviewed` v2 and `proposal.snoozed`. A later witness flag on an approved
+//   or edited proposal reopens it (`mode: "system"`).
+// - The seal (Phase 5 spec §4.3): a minute after `end`, or after the last write that followed it,
+//   capped at 30 minutes, the alarm appends `session.sealed`, the last event this object ever
+//   writes, and flushes it. After it every client message but `hello` and `ack` is refused with
+//   `sealed`, and the web Worker writes the session's reviews in Postgres instead.
 // - The log flushes to Postgres through a Queue (WP7), and the object deletes itself a day after
-//   Postgres confirms the whole session; `purge()` deletes it at once, for account deletion.
+//   Postgres confirms the whole session, seal included; `purge()` deletes it at once, for account
+//   deletion. `sealNow()` seals an ended session at once, for the web Worker's repair path.
 //
 // The entry modules (src/index.ts, src/e2e.ts, the tests' worker) each export a `SessionDO`
 // subclass that picks its dependencies: the agent, the flush sink, and the price table.
@@ -33,21 +43,42 @@ import {
   type EntityRef,
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
+  MAX_TARGET_CANDIDATES,
   type MessageParseFailure,
+  type ProposalFlaggedV1,
+  type ProposalReviewedV2,
+  type ProposalSnoozedV1,
   parseClientMessage,
+  type Reviewer,
+  type ReviewSeen,
   SESSION_PROTOCOL_VERSION,
   type ServerMessage,
   type SessionCloseName,
   type SessionErrorCode,
+  type SignInMethod,
   type TicketClaims,
+  UNDO_WINDOW_MS,
   type UsageRecordedV1,
   type UtteranceFinalV2,
   uuidv7,
 } from "@earshot/core";
-import type { EventEnvelope } from "@earshot/events";
+import {
+  anyFlagTier,
+  checkReview,
+  checkReviews,
+  checkSnooze,
+  type EventEnvelope,
+  type ProposalView,
+  proposalsProjection,
+  replay,
+  type SessionEvent,
+  type TierOf,
+} from "@earshot/events";
+import type { AuditSigningState } from "@earshot/keys/server";
 import { buildLinkIndex, type LinkIndex } from "@earshot/understanding/link";
 import type { PriceResult, SttUsageInput } from "@earshot/voice/prices";
 import type { TurnAgent, TurnResult } from "./agent";
+import { readAuditSigning } from "./config";
 import { type FlushSink, packFlushMessages, type SessionIdentity } from "./flush-message";
 import { createLogger, type Logger } from "./log";
 import { hasUnstorableString, toStorable } from "./session/jsonb";
@@ -57,6 +88,7 @@ import {
   type RateBucket,
   recentTurnStarts,
   resendDueMs,
+  SEAL_TIMING,
   SESSION_LIMITS,
   takeMessage,
 } from "./session/limits";
@@ -83,6 +115,11 @@ export interface SessionDeps {
   readonly priceTableDate: string;
   /** The clock, for tests. Defaults to `Date.now`. */
   readonly now?: () => number;
+  /**
+   * The audit signing key's state, which decides whether `review` is taken (fail closed without
+   * a usable key). Defaults to `readAuditSigning` on the Worker's environment; tests stub it.
+   */
+  readonly auditSigning?: (env: Env) => Promise<AuditSigningState>;
 }
 
 /** The tag on every client socket, for `getWebSockets`. */
@@ -96,11 +133,23 @@ interface Attachment {
   readonly uid: string;
   readonly wid: string;
   readonly jti: string;
+  /**
+   * How and when the web session that minted the socket's ticket signed in (`am`, `sat`), which
+   * each review this socket sends records as `by.auth`. Absent for a ticket without them.
+   */
+  readonly am?: SignInMethod;
+  readonly sat?: number;
   /** Whether the client sent `hello`: only then does it get events as they're appended. */
   helloed: boolean;
   /** The client's cumulative ack. */
   ackedSeq: number;
 }
+
+/** What `sealNow()` found: still capturing, sealed by this call, sealed before, or nothing held. */
+export type SealAnswer = "live" | "sealing" | "sealed" | "gone";
+
+/** The likely-edit tier the writer rules read: any flag marks a proposal until WP4's `tierOf`. */
+const TIER_OF: TierOf = anyFlagTier;
 
 function readAttachment(ws: WebSocket): Attachment | undefined {
   const value = ws.deserializeAttachment() as Partial<Attachment> | null;
@@ -222,6 +271,41 @@ function isOtherProtocolHello(frame: string | ArrayBuffer): boolean {
   }
 }
 
+/**
+ * What a card shows for a proposal, as a review's `seen` records it: for SessionDO's own reviews,
+ * which no card showed, the proposal as the log now has it.
+ */
+function seenOf(proposal: ProposalView): ReviewSeen {
+  const { target } = proposal;
+  return {
+    tier: TIER_OF(proposal).tier,
+    fields: Object.fromEntries(
+      Object.entries(proposal.fields).map(([name, field]) => [name, { proposed: field.value }]),
+    ),
+    target:
+      target.decision === "none"
+        ? null
+        : {
+            entityId: target.entityId,
+            offered: target.candidates
+              .slice(0, MAX_TARGET_CANDIDATES)
+              .map((candidate) => candidate.entityId),
+          },
+    relinked: null,
+    clip: "none",
+  };
+}
+
+/** The proposals as they stand once `event` is folded in: the projection's own step. */
+function foldInto(
+  proposals: readonly ProposalView[],
+  sessionId: string,
+  event: Pick<SessionEvent, "type" | "schemaVersion" | "payload">,
+): readonly ProposalView[] {
+  const envelope = { id: uuidv7(), sessionId, seq: -1, ts: new Date(0).toISOString(), ...event };
+  return proposalsProjection.apply(proposals, envelope as SessionEvent);
+}
+
 export class SessionRuntime extends DurableObject<Env> {
   readonly #deps: SessionDeps;
   readonly #now: () => number;
@@ -294,6 +378,10 @@ export class SessionRuntime extends DurableObject<Env> {
       uid: claims.uid,
       wid: claims.wid,
       jti: claims.jti,
+      // The protocol checked they come together, and that `sat` isn't after the ticket.
+      ...(claims.am !== undefined && claims.sat !== undefined
+        ? { am: claims.am, sat: claims.sat }
+        : {}),
       helloed: false,
       ackedSeq: -1,
     };
@@ -412,6 +500,13 @@ export class SessionRuntime extends DurableObject<Env> {
   }
 
   async #handle(ws: WebSocket, attachment: Attachment, message: ClientMessage): Promise<void> {
+    if (message.t !== "hello" && message.t !== "ack" && this.#isSealed()) {
+      // A resend of a message handled before the seal gets its first answer; anything new is
+      // refused for good, and the tray sends its reviews to the web route instead.
+      if (this.#answered(message.msgId)) return;
+      this.#refuse(message.msgId, "sealed", false);
+      return;
+    }
     switch (message.t) {
       case "hello":
         return this.#hello(ws, attachment, message);
@@ -431,6 +526,10 @@ export class SessionRuntime extends DurableObject<Env> {
         return this.#metric(message);
       case "end":
         return this.#end(message);
+      case "review":
+        return this.#review(attachment, message);
+      case "snooze":
+        return this.#snooze(attachment, message);
     }
   }
 
@@ -832,6 +931,8 @@ export class SessionRuntime extends DurableObject<Env> {
     }
     const record = (flagged: WitnessTurnResult["flagged"]) => {
       const events: NewEvent[] = [];
+      /** The reopens among `events`, by position, for the `writes` table. */
+      const reopens: { readonly index: number; readonly review: ProposalReviewedV2 }[] = [];
       if (message.outcome === "transcribed") {
         events.push({
           type: "utterance.final",
@@ -839,11 +940,41 @@ export class SessionRuntime extends DurableObject<Env> {
           payload: { ...message.utterance },
         });
       }
-      for (const payload of flagged) {
+      const sessionId = store.get("sid") ?? "";
+      let proposals = flagged.length > 0 ? this.#proposals() : [];
+      for (const raw of flagged) {
+        const payload = toStorable(raw) as ProposalFlaggedV1;
         events.push({
           type: "proposal.flagged",
           schemaVersion: 1,
-          payload: toStorable(payload) as unknown as Record<string, unknown>,
+          payload: payload as unknown as Record<string, unknown>,
+        });
+        proposals = foldInto(proposals, sessionId, {
+          type: "proposal.flagged",
+          schemaVersion: 1,
+          payload,
+        });
+        // Decision 15: a flag on an approval or an edit reopens it, right after the flag.
+        const flaggedProposal = proposals.find((p) => p.proposalId === payload.proposalId);
+        if (flaggedProposal?.status !== "approved" && flaggedProposal?.status !== "edited") {
+          continue;
+        }
+        const reopen = this.#systemReopen(flaggedProposal);
+        const check = checkReview(proposals, reopen, { tierOf: TIER_OF, from: "session" });
+        if (!check.ok) {
+          this.#log.error("reopen not recorded", { reason: check.reason });
+          continue;
+        }
+        reopens.push({ index: events.length, review: reopen });
+        events.push({
+          type: "proposal.reviewed",
+          schemaVersion: 2,
+          payload: reopen as unknown as Record<string, unknown>,
+        });
+        proposals = foldInto(proposals, sessionId, {
+          type: "proposal.reviewed",
+          schemaVersion: 2,
+          payload: reopen,
         });
       }
       events.push({
@@ -865,12 +996,23 @@ export class SessionRuntime extends DurableObject<Env> {
           if (message.outcome === "transcribed" && appended[0]) {
             store.addUtterance(message.utterance.utteranceId, message.turnId, appended[0].seq);
           }
+          for (const { index, review } of reopens) {
+            const event = appended[index];
+            if (!event) continue;
+            store.addWrite(review.reviewId, {
+              kind: "review",
+              seq: event.seq,
+              proposalId: review.proposalId,
+            });
+          }
           store.markWitnessed(message.turnId, message.msgId);
         },
       });
+      return reopens.length;
     };
+    let reopened = 0;
     try {
-      record(result.flagged);
+      reopened = record(result.flagged);
     } catch (error) {
       // A flag the registry refused: a bug in the comparison. Keep the witness without its flags.
       this.#log.error("witness flags not recorded", { cause: errorName(error) });
@@ -891,6 +1033,7 @@ export class SessionRuntime extends DurableObject<Env> {
       unavailable: result.unavailable,
       conflicts: result.flagged.length,
       downgrades: result.flagged.filter((flagged) => flagged.target !== null).length,
+      reopened,
     });
   }
 
@@ -917,6 +1060,198 @@ export class SessionRuntime extends DurableObject<Env> {
         },
       },
     ]);
+  }
+
+  /**
+   * The tray's reviews (Phase 5 spec §4.2): one decision, or one slice of an "accept all", taken
+   * from `start` until the seal. Each review is filled in with who sent it (the pinned user, and
+   * how and when the socket's ticket says its web session signed in) and, for an approval or an
+   * edit, when it may sync (this object's clock plus the undo window). Reviews whose `reviewId` the
+   * log holds are skipped, so a review sent again under a new msgId gets the first one's seq; the
+   * rest are checked together with the writers' rules (`checkReviews`) against the session's
+   * proposals as the log folds them, and appended as `proposal.reviewed` v2 in one transaction, or
+   * refused together with `bad_message`. Without a usable audit signing key, refused with
+   * `internal`: the flush couldn't store them with their audit rows (fail closed).
+   */
+  async #review(attachment: Attachment, message: ClientMessageOf<"review">): Promise<void> {
+    // Before any check: loading the key can yield, and everything after it runs in one go.
+    const auditReady = await this.#auditReady();
+    if (this.#answered(message.msgId)) return;
+    if (this.#isSealed()) {
+      this.#refuse(message.msgId, "sealed", false);
+      return;
+    }
+    const store = this.#store;
+    if (store.getNumber("started_seq") === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    if (!auditReady) {
+      this.#log.error("review refused", { reason: "audit_unavailable" });
+      this.#refuse(message.msgId, "internal", false);
+      return;
+    }
+    const now = this.#now();
+    const by = this.#reviewer(attachment);
+    const fresh: ProposalReviewedV2[] = [];
+    let resentSeq = -1;
+    for (const input of message.reviews) {
+      const prior = store.recordedWrite(input.reviewId);
+      if (prior) {
+        if (prior.kind !== "review" || prior.proposalId !== input.proposalId) {
+          this.#log.warn("review refused", { reason: "id_reused" });
+          this.#refuse(message.msgId, "bad_message", false);
+          return;
+        }
+        resentSeq = Math.max(resentSeq, prior.seq);
+        continue;
+      }
+      const decides = input.decision === "approved" || input.decision === "edited";
+      fresh.push({
+        ...input,
+        syncEligibleAt: decides ? new Date(now + UNDO_WINDOW_MS).toISOString() : null,
+        by,
+      });
+    }
+    if (fresh.length === 0) {
+      this.#ackExisting(message.msgId, resentSeq);
+      return;
+    }
+    const check = checkReviews(this.#proposals(), fresh, { tierOf: TIER_OF, from: "client" });
+    if (!check.ok) {
+      // A fixed code and a position: never an id or a value.
+      this.#log.warn("review refused", { reason: check.reason, index: check.index });
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    this.#commit(
+      message.msgId,
+      fresh.map((review) => ({
+        type: "proposal.reviewed",
+        schemaVersion: 2,
+        payload: review as unknown as Record<string, unknown>,
+      })),
+      {
+        during: (appended) => {
+          for (const [index, event] of appended.entries()) {
+            const review = fresh[index];
+            if (!review) continue;
+            store.addWrite(review.reviewId, {
+              kind: "review",
+              seq: event.seq,
+              proposalId: review.proposalId,
+            });
+          }
+        },
+      },
+    );
+    this.#log.info("reviews recorded", {
+      reviews: fresh.length,
+      resent: message.reviews.length - fresh.length,
+    });
+  }
+
+  /**
+   * A snooze, or a wake (`until: null`), under the rules `review` follows, as
+   * `proposal.snoozed`. It approves nothing, so it needs no audit key.
+   */
+  #snooze(attachment: Attachment, message: ClientMessageOf<"snooze">): void {
+    if (this.#answered(message.msgId)) return;
+    const store = this.#store;
+    if (store.getNumber("started_seq") === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    const prior = store.recordedWrite(message.snoozeId);
+    if (prior) {
+      if (prior.kind !== "snooze" || prior.proposalId !== message.proposalId) {
+        this.#log.warn("snooze refused", { reason: "id_reused" });
+        this.#refuse(message.msgId, "bad_message", false);
+        return;
+      }
+      this.#ackExisting(message.msgId, prior.seq);
+      return;
+    }
+    const snooze: ProposalSnoozedV1 = {
+      snoozeId: message.snoozeId,
+      proposalId: message.proposalId,
+      until: message.until,
+      by: this.#reviewer(attachment),
+    };
+    const check = checkSnooze(this.#proposals(), snooze);
+    if (!check.ok) {
+      this.#log.warn("snooze refused", { reason: check.reason });
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    this.#commit(
+      message.msgId,
+      [{ type: "proposal.snoozed", schemaVersion: 1, payload: { ...snooze } }],
+      {
+        during: ([event]) => {
+          if (event) {
+            store.addWrite(snooze.snoozeId, {
+              kind: "snooze",
+              seq: event.seq,
+              proposalId: snooze.proposalId,
+            });
+          }
+        },
+      },
+    );
+  }
+
+  /**
+   * Who made a review or a snooze over this socket: the session's pinned user, and how and when
+   * the web session that minted the socket's ticket signed in. A ticket without the sign-in claims
+   * (one minted before Phase 5's web app, during a deploy) records `auth: null`: unknown, not
+   * unauthenticated, since the ticket itself proves the web app signed the user in.
+   */
+  #reviewer(attachment: Attachment): Reviewer {
+    const userId = this.#store.get("uid") ?? attachment.uid;
+    if (attachment.am === undefined || attachment.sat === undefined) return { userId, auth: null };
+    return {
+      userId,
+      auth: { method: attachment.am, signedInAt: new Date(attachment.sat * 1000).toISOString() },
+    };
+  }
+
+  /** The session's proposals, folded from its log, as the writers' rules read them. */
+  #proposals(): readonly ProposalView[] {
+    const sessionId = this.#store.get("sid") ?? "";
+    return replay([...this.#store.events(sessionId, 0)], { proposals: proposalsProjection })
+      .proposals;
+  }
+
+  /** Whether reviews' audit checkpoints can be signed: a usable key, or development's. */
+  async #auditReady(): Promise<boolean> {
+    const state = await (this.#deps.auditSigning ?? readAuditSigning)(this.env);
+    return state.status === "configured" || state.status === "development";
+  }
+
+  /**
+   * A reopen of an approval or an edit that a later flag put in doubt (spec decision 15): written
+   * by this object (`mode: "system"`), with no sign-in, input, or time, naming the review it
+   * reverses, and what the proposal looks like after the flag as `seen`.
+   */
+  #systemReopen(proposal: ProposalView): ProposalReviewedV2 {
+    return {
+      reviewId: uuidv7(),
+      proposalId: proposal.proposalId,
+      decision: "reopened",
+      target: null,
+      mode: "system",
+      batchId: null,
+      policy: null,
+      undoes: proposal.review?.reviewId ?? null,
+      reason: "flagged",
+      seen: seenOf(proposal),
+      timing: { decisionMs: 0, handlingMs: 0 },
+      input: "none",
+      surface: "session",
+      syncEligibleAt: null,
+      by: { userId: this.#store.get("uid") ?? "", auth: null },
+    };
   }
 
   /** `session.ended`, after any turn still running, then an immediate flush. */
@@ -954,11 +1289,13 @@ export class SessionRuntime extends DurableObject<Env> {
           store.set("ended_ms", now);
           store.set("resend_count", 0);
           store.set("resend_due_ms", resendDueMs(now, 0));
+          // The seal's grace starts now, whoever ended the session, the idle alarm included.
+          store.set("seal_due_ms", now + SEAL_TIMING.graceMs);
         },
       },
     );
     this.#log.info("session ended", { events: store.lastSeq + 1, by: msgId ? "client" : "idle" });
-    this.ctx.waitUntil(this.#flush());
+    this.ctx.waitUntil(this.#flushNow());
   }
 
   // ─── Answers ─────────────────────────────────────────────────────────────────────────────────
@@ -1035,6 +1372,14 @@ export class SessionRuntime extends DurableObject<Env> {
       options.during?.(appended, now);
       if (!pendingBefore && appended.length > 0) store.set("unflushed_since_ms", now);
       if (msgId !== null) store.markDone(msgId, { seq: appended.at(-1)?.seq ?? null, error }, now);
+      // A client's write after `end` restarts the seal's grace, up to its cap.
+      if (msgId !== null && appended.length > 0 && this.#awaitingSeal()) {
+        const endedMs = store.getNumber("ended_ms", now);
+        store.set(
+          "seal_due_ms",
+          Math.min(endedMs + SEAL_TIMING.maxAfterEndMs, now + SEAL_TIMING.graceMs),
+        );
+      }
       return appended;
     });
     for (const event of appended) this.#broadcast({ t: "event", event });
@@ -1087,6 +1432,15 @@ export class SessionRuntime extends DurableObject<Env> {
     ) {
       this.ctx.waitUntil(this.#flush());
     }
+  }
+
+  /**
+   * Flushes now, after any flush already under way: `end` and the seal don't wait for the window,
+   * and an event appended while another flush was sending goes in a flush of its own.
+   */
+  async #flushNow(): Promise<void> {
+    await this.#flush();
+    await this.#flush();
   }
 
   /**
@@ -1163,6 +1517,7 @@ export class SessionRuntime extends DurableObject<Env> {
       dues.push(store.getNumber("unflushed_since_ms", now) + FLUSH_TIMING.maxPendingMs);
     }
     if (store.get("ended_seq") !== undefined) {
+      if (this.#awaitingSeal()) dues.push(this.#sealDueMs());
       const cleanup = store.getNumber("cleanup_due_ms");
       const resend = store.getNumber("resend_due_ms");
       if (cleanup !== undefined) dues.push(cleanup);
@@ -1177,6 +1532,52 @@ export class SessionRuntime extends DurableObject<Env> {
       dues.push(this.#idleEndDue());
     }
     return dues.length > 0 ? Math.min(...dues) : null;
+  }
+
+  /**
+   * When the seal is due: the grace after `end` or after the last client write that followed it
+   * (`seal_due_ms`), and never later than the cap after `end`. An object that ended before the
+   * seal existed has no `seal_due_ms`, so its grace runs from `end`, long over: it seals at once.
+   */
+  #sealDueMs(): number {
+    const store = this.#store;
+    const endedMs = store.getNumber("ended_ms", this.#now());
+    const due = store.getNumber("seal_due_ms") ?? endedMs + SEAL_TIMING.graceMs;
+    return Math.min(endedMs + SEAL_TIMING.maxAfterEndMs, due);
+  }
+
+  /**
+   * Appends `session.sealed`, the last event the object ever writes, and flushes it at once. Runs
+   * in the session's serial queue, so after any turn, witness, or `end` queued before it.
+   */
+  #writeSeal(): void {
+    const store = this.#store;
+    const now = this.#now();
+    this.#commit(
+      null,
+      [
+        {
+          type: "session.sealed",
+          schemaVersion: 1,
+          payload: { sealedAt: new Date(now).toISOString(), by: "session" },
+        },
+      ],
+      {
+        during: ([sealed]) => {
+          store.set("sealed_seq", sealed?.seq ?? store.lastSeq);
+          store.delete("seal_due_ms");
+        },
+      },
+    );
+    this.#log.info("session sealed", { events: store.lastSeq + 1 });
+    this.ctx.waitUntil(this.#flushNow());
+  }
+
+  /** The alarm's seal: only once the grace is over, since a write while it waited restarts it. */
+  #sealIfDue(): void {
+    if (this.#isPurged() || !this.#awaitingSeal()) return;
+    if (this.#now() < this.#sealDueMs()) return;
+    this.#writeSeal();
   }
 
   /** When an abandoned session is ended: after both the capture limit and its last event. */
@@ -1206,9 +1607,10 @@ export class SessionRuntime extends DurableObject<Env> {
   }
 
   /**
-   * The flush window's end, re-sends after the end, the cleanup a day after Postgres confirms the
-   * whole log, ending an abandoned session, and deleting a purge's tombstone. Idempotent: it acts
-   * only on what is due, so a retried or early alarm does no harm.
+   * The flush window's end, the seal once its grace is over, re-sends after the end, the cleanup a
+   * day after Postgres confirms the whole log ending in `session.sealed`, ending an abandoned
+   * session, and deleting a purge's tombstone. Idempotent: it acts only on what is due, so a
+   * retried or early alarm does no harm.
    */
   override async alarm(): Promise<void> {
     this.#alarmAt = null;
@@ -1226,9 +1628,13 @@ export class SessionRuntime extends DurableObject<Env> {
 
     if (store.lastSeq > store.getNumber("enqueued_seq", -1)) await this.#flush();
     if (store.get("ended_seq") !== undefined) {
+      if (this.#awaitingSeal() && now >= this.#sealDueMs()) {
+        await this.#serially(async () => this.#sealIfDue());
+      }
       const lastSeq = store.lastSeq;
       const cleanupDue = store.getNumber("cleanup_due_ms");
-      if (store.getNumber("flushed_seq", -1) >= lastSeq) {
+      if (this.#isSealed() && store.getNumber("flushed_seq", -1) >= lastSeq) {
+        // Postgres holds the whole log, seal included: nothing more will ever be written here.
         if (cleanupDue === undefined) {
           store.transaction(() =>
             store.set("cleanup_due_ms", now + FLUSH_TIMING.cleanupAfterConfirmMs),
@@ -1239,10 +1645,11 @@ export class SessionRuntime extends DurableObject<Env> {
           return;
         }
       } else {
-        // Events arrived after Postgres confirmed the end: they must be confirmed first.
+        // Not sealed yet, or events since Postgres's last confirmation: they come first.
         if (cleanupDue !== undefined) store.transaction(() => store.delete("cleanup_due_ms"));
         const resendDue = store.getNumber("resend_due_ms");
         if (
+          store.getNumber("flushed_seq", -1) < lastSeq &&
           store.getNumber("enqueued_seq", -1) >= lastSeq &&
           resendDue !== undefined &&
           now >= resendDue
@@ -1282,8 +1689,9 @@ export class SessionRuntime extends DurableObject<Env> {
   }
 
   /**
-   * Postgres holds every event up to `seq`. Once that covers the whole log after the end, the
-   * cleanup alarm is set for a day later.
+   * Postgres holds every event up to `seq`. Once that covers the whole log and the log ends in
+   * `session.sealed`, the cleanup alarm is set for a day later: before the seal, more events may
+   * still come (Phase 5 spec §4.3).
    */
   async confirmFlushed(seq: number): Promise<void> {
     const store = this.#store;
@@ -1294,7 +1702,7 @@ export class SessionRuntime extends DurableObject<Env> {
     store.transaction(() => {
       store.set("flushed_seq", confirmed);
       if (
-        store.get("ended_seq") !== undefined &&
+        this.#isSealed() &&
         confirmed >= store.lastSeq &&
         store.get("cleanup_due_ms") === undefined
       ) {
@@ -1302,6 +1710,28 @@ export class SessionRuntime extends DurableObject<Env> {
       }
     });
     await this.#schedule();
+  }
+
+  /**
+   * Seals an ended session at once, for the web Worker's repair path (`sealSessions`): `sealing`
+   * when this call wrote the seal (Postgres has it once its flush lands), `sealed` when it was
+   * sealed before, `live` while the session is still capturing (not ended: left alone), and `gone`
+   * when the object holds no log (never started, cleaned up, or purged), so the web Worker may seal
+   * Postgres's copy itself.
+   */
+  async sealNow(): Promise<SealAnswer> {
+    const store = this.#store;
+    if (this.#isPurged() || store.get("sid") === undefined) return "gone";
+    if (store.get("started_seq") === undefined) return "gone";
+    if (this.#isSealed()) return "sealed";
+    if (store.get("ended_seq") === undefined) return "live";
+    return this.#serially(async (): Promise<SealAnswer> => {
+      if (this.#isPurged()) return "gone";
+      if (this.#isSealed()) return "sealed";
+      this.#writeSeal();
+      this.#log.info("session sealed early", { by: "repair" });
+      return "sealing";
+    });
   }
 
   /**
@@ -1341,5 +1771,15 @@ export class SessionRuntime extends DurableObject<Env> {
 
   #isPurged(): boolean {
     return this.#purged || this.#store.get("purged_ms") !== undefined;
+  }
+
+  /** Whether `session.sealed` is in the log: then nothing more ever is. */
+  #isSealed(): boolean {
+    return this.#store.get("sealed_seq") !== undefined;
+  }
+
+  /** Ended, and not sealed yet: the grace in which the tray's writes are still taken. */
+  #awaitingSeal(): boolean {
+    return this.#store.get("ended_seq") !== undefined && !this.#isSealed();
   }
 }

@@ -118,11 +118,12 @@ const ENTITY_KINDS: readonly EntityKind[] = ["company", "contact", "deal"];
  * `POST /api/sessions`: starts a debrief. In order: same-site only (403), the session
  * configuration must be usable (500 otherwise, with the reason in the log), the body must be
  * `{ mode: "debrief", engine: "cascaded", providers, selectedAccountId? }` (400), and the user
- * must be under 20 new sessions in 10 minutes (429). Then, in one tenant transaction, it inserts
- * the session's row, reads the workspace's CRM rows, ranks them (lib/voice/keyterms.ts), and
- * signs the first ticket. Answers 201 with `CreateSessionResponse`: the selected account, if it's
- * a company among the session's entities, is its `focusEntityId`, and each contact and deal
- * carries its company's id as `parentId` (Phase 4 WP8).
+ * must be under 20 new sessions in 10 minutes (429). Then, in one tenant transaction, it reads the
+ * workspace's CRM rows, ranks them (lib/voice/keyterms.ts), inserts the session's row with its
+ * focus account (Phase 5 WP3), and signs the first ticket, which carries how and when the viewer
+ * signed in. Answers 201 with `CreateSessionResponse`: the selected account, if it's a company
+ * among the session's entities, is its `focusEntityId`, and each contact and deal carries its
+ * company's id as `parentId` (Phase 4 WP8).
  */
 export async function createSessionRoute(
   viewer: Viewer,
@@ -148,6 +149,13 @@ export async function createSessionRoute(
 
     const created = await deps.withViewerTenant(async (tx) => {
       const { sessions } = schema;
+      const rows = await loadCrmEntities(tx, viewer.workspaceId, body.selectedAccountId);
+      const ranked = rankEntities(rows, body.selectedAccountId);
+      const entities = sessionEntities(ranked.all, startEntityBudget(body.providers));
+      const account = ranked.account;
+      // `start` refuses a focus outside its entities, so the account counts only if it's there.
+      const focusEntityId =
+        account && entities.some((entity) => entity.id === account.id) ? account.id : null;
       const [row] = await tx
         .insert(sessions)
         .values({
@@ -156,28 +164,24 @@ export async function createSessionRoute(
           mode: "debrief",
           engine: "cascaded",
           providers: body.providers,
+          focusEntityId,
         })
         .returning({ id: sessions.id });
       if (!row) throw new Error("the session row wasn't written");
-      const rows = await loadCrmEntities(tx, viewer.workspaceId, body.selectedAccountId);
-      const ranked = rankEntities(rows, body.selectedAccountId);
       // Signed inside the transaction, so a failure here leaves no session behind.
       const ticket = await issueTicket(config.ticketSecret, {
         sessionId: row.id,
         userId: viewer.user.id,
         workspaceId: viewer.workspaceId,
         now: deps.now(),
+        signIn: signInOf(viewer),
       });
       log.addSecret(ticket.ticket);
-      const entities = sessionEntities(ranked.all, startEntityBudget(body.providers));
-      const account = ranked.account;
       return {
         sessionId: row.id,
         ticket,
         entities,
-        // `start` refuses a focus outside its entities, so the account counts only if it's there.
-        focusEntityId:
-          account && entities.some((entity) => entity.id === account.id) ? account.id : null,
+        focusEntityId,
         keyterms: sessionKeyterms(ranked.keytermSources, accountFamilyCount(ranked)),
       };
     }, viewer);
@@ -204,10 +208,12 @@ export async function createSessionRoute(
 }
 
 /**
- * `POST /api/sessions/:id/ticket`: a fresh ticket for reconnecting to an open session, since each
- * ticket opens one socket. Same-site only (403); configuration as above (500); at most 120
- * tickets per user in 10 minutes (429). The session must be the viewer's own (404 otherwise, and
- * the same 404 for one that doesn't exist) and must not have ended (409 `session_ended`).
+ * `POST /api/sessions/:id/ticket`: a fresh ticket for reconnecting to a session, since each ticket
+ * opens one socket. Same-site only (403); configuration as above (500); at most 120 tickets per
+ * user in 10 minutes (429). The session must be the viewer's own (404 otherwise, and the same 404
+ * for one that doesn't exist) and must not be sealed (409 `session_ended`). An ended session that
+ * isn't sealed still gets one (Phase 5 WP3): SessionDO takes the tray's reviews until it seals, so
+ * a socket that drops after `end` can come back for them.
  */
 export async function sessionTicketRoute(
   viewer: Viewer,
@@ -234,12 +240,13 @@ export async function sessionTicketRoute(
 
     const state = await deps.withViewerTenant((tx) => sessionState(tx, viewer, id), viewer);
     if (state === "missing") return notFound();
-    if (state === "ended") return sessionEnded();
+    if (state === "sealed") return sessionEnded();
     const ticket = await issueTicket(config.ticketSecret, {
       sessionId: id,
       userId: viewer.user.id,
       workspaceId: viewer.workspaceId,
       now: deps.now(),
+      signIn: signInOf(viewer),
     });
     log.addSecret(ticket.ticket);
     log.info("session ticket issued");
@@ -338,7 +345,8 @@ export async function voiceTokenRoute(
 
     const state = await deps.withViewerTenant((tx) => sessionState(tx, viewer, sessionId), viewer);
     if (state === "missing") return notFound();
-    if (state === "ended") return sessionEnded();
+    // No new speech after the end: a credential is for capture, and capture is over.
+    if (state !== "open") return sessionEnded();
 
     const minted = await mintCredential(provider, key, { fetch: deps.fetch, now: deps.now });
     if (!minted.ok) {
@@ -447,22 +455,29 @@ async function readTokenBody(request: Request): Promise<string | Response> {
 }
 
 /**
- * Whether the session is the viewer's, open or ended. Another member's session in the same
- * workspace is as missing as another workspace's, which row-level security already hides.
+ * Whether the session is the viewer's, and open, ended (not sealed yet), or sealed. Another
+ * member's session in the same workspace is as missing as another workspace's, which row-level
+ * security already hides.
  */
 async function sessionState(
   tx: TenantTx,
   viewer: Viewer,
   sessionId: string,
-): Promise<"open" | "ended" | "missing"> {
+): Promise<"open" | "ended" | "sealed" | "missing"> {
   const { sessions } = schema;
   const [row] = await tx
-    .select({ userId: sessions.userId, endedAt: sessions.endedAt })
+    .select({ userId: sessions.userId, endedAt: sessions.endedAt, sealedAt: sessions.sealedAt })
     .from(sessions)
     .where(and(eq(sessions.workspaceId, viewer.workspaceId), eq(sessions.id, sessionId)))
     .limit(1);
   if (!row || row.userId !== viewer.user.id) return "missing";
+  if (row.sealedAt !== null) return "sealed";
   return row.endedAt === null ? "open" : "ended";
+}
+
+/** How and when the viewer's web session signed in, for the ticket's `am` and `sat` claims. */
+function signInOf(viewer: Viewer): { method: Viewer["session"]["signInMethod"]; at: Date } {
+  return { method: viewer.session.signInMethod, at: viewer.session.createdAt };
 }
 
 /**

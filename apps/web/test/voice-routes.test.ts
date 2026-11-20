@@ -356,9 +356,12 @@ describe("POST /api/sessions", () => {
       endedAt: null,
     });
 
-    // The ticket verifies with core's verifyTicket and names this session, user, and workspace.
+    // The ticket verifies with core's verifyTicket and names this session, user, and workspace,
+    // and how and when the viewer signed in (Phase 5): by magic link, at the sign-in session's
+    // start, here after the test's clock, so claimed at the ticket's own time.
     const ticket = result.body.ticket as string;
     const verified = await verifyTicket(TICKET_SECRET, ticket, new Date(clock));
+    expect(viewer.session.signInMethod).toBe("magic_link");
     expect(verified).toEqual({
       ok: true,
       claims: {
@@ -369,6 +372,8 @@ describe("POST /api/sessions", () => {
         jti: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-/),
         iat: START / 1000,
         exp: START / 1000 + 60,
+        am: "magic_link",
+        sat: Math.min(Math.floor(viewer.session.createdAt.getTime() / 1000), START / 1000),
       },
     });
     expect(result.body.ticketExpiresAt).toBe(new Date(START + 60_000).toISOString());
@@ -452,6 +457,9 @@ describe("POST /api/sessions", () => {
     });
     // The selected account is the session's open account, and its family names it as parent.
     expect(result.body.focusEntityId).toBe(accountId);
+    // The session's row keeps it too (migration 0014).
+    const [created] = await sessionRows();
+    expect(created?.focusEntityId).toBe(accountId);
     const related = entities.slice(1, 1 + contactNames.length + dealNames.length);
     expect(related.map((entity) => [entity.kind, entity.name])).toEqual([
       ...contactNames.map((name) => ["contact", name]),
@@ -785,12 +793,25 @@ describe("POST /api/sessions/:id/ticket", () => {
     expect(tickets).toHaveLength(1); // only Ana's own, from creating the session
   });
 
-  it("answers 409 once the session has ended", async () => {
-    await signIn("ana@acme.example");
+  it("still answers once the session has ended, until it's sealed, then 409", async () => {
+    const viewer = await signIn("ana@acme.example");
     const sessionId = await newSession();
     await db
       .update(sessions)
       .set({ endedAt: new Date(clock) })
+      .where(eq(sessions.id, sessionId));
+    // SessionDO takes the tray's reviews until it seals, so a dropped socket may come back.
+    const ended = await freshTicket(sessionId);
+    expect(ended.status).toBe(200);
+    expect(
+      await verifyTicket(TICKET_SECRET, ended.body.ticket as string, new Date(clock)),
+    ).toMatchObject({
+      ok: true,
+      claims: { sid: sessionId, am: viewer.session.signInMethod },
+    });
+    await db
+      .update(sessions)
+      .set({ sealedAt: new Date(clock) })
       .where(eq(sessions.id, sessionId));
     expect(await freshTicket(sessionId)).toMatchObject({
       status: 409,
@@ -1079,9 +1100,11 @@ describe("the gate: keys, credentials, and tickets go only where they belong", (
     await createSession({ body: { ...SESSION_BODY, key: DG_KEY } });
     await freshTicket(sessionId);
     await mint(sessionId, { provider: "deepgram", key: DG_KEY });
+    // Over for good: ended and sealed, so both routes refuse (an ended session that isn't sealed
+    // still gets tickets, for the tray's reviews).
     await db
       .update(sessions)
-      .set({ endedAt: new Date(clock) })
+      .set({ endedAt: new Date(clock), sealedAt: new Date(clock) })
       .where(eq(sessions.id, sessionId));
     await mint(sessionId);
     await freshTicket(sessionId);

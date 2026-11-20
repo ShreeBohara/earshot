@@ -11,6 +11,14 @@ interface EdgeSecrets {
    */
   EARSHOT_SESSION_TICKET_SECRET?: string;
   /**
+   * Signs the audit chain's checkpoints for the review events the flush consumer stores
+   * (docs/adr/0033): a private Ed25519 JWK, the same secret as the web Worker's. Required for
+   * reviews outside development: without a usable one SessionDO refuses `review` with `internal`
+   * and the flush retries messages carrying reviews instead of storing them without audit rows.
+   * `wrangler dev` signs with the committed development key, which is refused anywhere else.
+   */
+  EARSHOT_AUDIT_SIGNING_KEY?: string;
+  /**
    * Neon's pooled connection string, for the Queue consumer that flushes sessions to Postgres.
    * Without it the consumer acks each batch and logs "flush skipped": the events stay in each
    * session's Durable Object.

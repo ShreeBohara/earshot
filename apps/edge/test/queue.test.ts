@@ -138,6 +138,32 @@ describe("queue()", () => {
     expect(await getQueueResult(batch, ctx)).toMatchObject({ ackAll: true, retryMessages: [] });
   });
 
+  it("hands the store development's signer in development, and none without a usable key elsewhere", async () => {
+    const signers: unknown[] = [];
+    const run = async (overrides: Record<string, unknown>) => {
+      const batch = createMessageBatch("earshot-flush", []);
+      const ctx = createExecutionContext();
+      const testEnv = {
+        ...env,
+        DATABASE_URL: "postgresql://user:pass@db.example/neondb",
+        ...overrides,
+      } as unknown as Env;
+      await handleFlushQueue(batch, testEnv, ctx, {
+        store: (_url, signer) => {
+          signers.push(signer);
+          return { store: fakePostgres([]).flushStore, close: async () => undefined };
+        },
+        session: fakeSessions({}).rpc,
+      });
+      await getQueueResult(batch, ctx);
+    };
+    await run({ DEPLOY_ENV: "development" });
+    await run({ DEPLOY_ENV: "production", EARSHOT_AUDIT_SIGNING_KEY: undefined });
+    await run({ DEPLOY_ENV: "production", EARSHOT_AUDIT_SIGNING_KEY: "{not a key" });
+    expect(signers[0]).toMatchObject({ kid: "audit-development", development: true });
+    expect(signers.slice(1)).toEqual([null, null]);
+  });
+
   it("acks each message it applied, and confirms the range to the session", async () => {
     const sid = uuidv7();
     const events = sessionEvents(5);

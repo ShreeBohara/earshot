@@ -2,13 +2,14 @@ import { demoCrmStatus } from "@earshot/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DemoCrmSettings } from "@/components/demo-crm-controls";
+import { SampleDebriefs } from "@/components/sample-debriefs";
 import { SettingsSection } from "@/components/settings-section";
 import { requireViewer, withViewerTenant } from "@/lib/auth/viewer";
 import { describeDemoCrm } from "@/lib/demo-crm";
 
 export const metadata: Metadata = { title: "Data · Settings · Earshot" };
 
-/** What's in the workspace besides your own captures: for now, the demo CRM. */
+/** What's in the workspace besides your own captures: the demo CRM, and sample debriefs. */
 export default async function DataSettingsPage() {
   const viewer = await requireViewer("/settings/data");
   const { loaded, total, counts } = await withViewerTenant((tx) => demoCrmStatus(tx), viewer);
@@ -35,6 +36,14 @@ export default async function DataSettingsPage() {
         description={`${describeDemoCrm(counts)}. It gives Earshot a CRM to match names against before you connect a real one. Removing it deletes only the demo records.`}
       >
         <DemoCrmSettings loaded={loaded} total={total} />
+      </SettingsSection>
+
+      <SettingsSection
+        id="sample-debriefs"
+        title="Sample debriefs"
+        description="Finished debriefs to review in the inbox before you record your own. They're added as your sessions; loading them again adds nothing."
+      >
+        <SampleDebriefs />
       </SettingsSection>
     </div>
   );
