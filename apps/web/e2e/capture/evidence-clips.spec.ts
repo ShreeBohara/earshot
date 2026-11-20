@@ -139,6 +139,23 @@ test("a turn's audio stays on this device: the tray plays it, nothing uploads it
   ).toEqual(["Playing what you said."]);
   await expect(play).toBeFocused();
 
+  // By keyboard: Enter plays it again, said once more; Space does too, and starts no turn, since
+  // push-to-talk leaves Space to a focused button.
+  for (const [key, times] of [
+    ["Enter", 2],
+    ["Space", 3],
+  ] as const) {
+    await page.keyboard.press(key);
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { __clipStatus: string[] }).__clipStatus.length),
+      )
+      .toBe(times);
+    await expect(status).toHaveText("", { timeout: 10_000 });
+  }
+  await expect(page.locator("[data-slot=capture-status]")).toHaveText("Ready: hold to talk");
+  await expect(proposalCards(page)).toHaveCount(1);
+
   // Nothing the page sent could hold the audio: every body is under a second of it, let alone
   // the turn's, and no write goes to anything named for clips.
   expect(sent.length).toBeGreaterThan(0);
@@ -152,4 +169,76 @@ test("a turn's audio stays on this device: the tray plays it, nothing uploads it
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/$/, { timeout: 30_000 });
   expect(await evidenceStore(page)).toEqual({ clips: [], keys: [] });
+});
+
+test("turning clips off in Settings → Capture deletes the clip kept, and the card says clips are off", async ({
+  page,
+}) => {
+  const start = await openFakeCapture(page);
+  await start.click();
+  await waitUntilReady(page);
+  await sayWithSpace(page);
+  const card = proposalCards(page).first();
+  await expect(card.getByRole("button", { name: /^Play what you said/ }).first()).toBeVisible({
+    timeout: 20_000,
+  });
+  expect((await evidenceStore(page))?.clips).toHaveLength(1);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("heading", { name: "Debrief ended" })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // To Settings → Capture by the app's own links, so the ended debrief's tray is still there after.
+  await page.getByRole("button", { name: /^Account menu for / }).click();
+  await page.getByRole("menuitem", { name: "Settings" }).click();
+  // next dev compiles each settings page on its first visit.
+  const settings = page.getByRole("navigation", { name: "Settings" });
+  await expect(page.getByRole("heading", { level: 1, name: "Account" })).toBeVisible({
+    timeout: 60_000,
+  });
+  await settings.getByRole("link", { name: "Capture" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Capture" })).toBeVisible({
+    timeout: 60_000,
+  });
+  const clips = page.getByRole("switch", { name: "Evidence clips" });
+  await expect(clips).toBeChecked();
+  await expect(clips).toHaveAccessibleDescription(
+    /Keeps what you say on this device for 24 hours so you can replay it while reviewing\. Never uploaded\./,
+  );
+  expect(await seriousViolations(page)).toEqual([]);
+
+  // Off: nothing more is kept, and what was kept is deleted, with its key.
+  await clips.click();
+  await expect(clips).not.toBeChecked();
+  await expect(
+    page.getByText("Saved on this device: evidence clips off, and the clips here deleted."),
+  ).toBeVisible();
+  expect(await evidenceStore(page)).toEqual({ clips: [], keys: [] });
+
+  // The tray's card says why it has no audio now, and links to the switch.
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: "Capture" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Debrief ended" })).toBeVisible({
+    timeout: 60_000,
+  });
+  const line = proposalCards(page).first().locator("[data-slot=no-audio]");
+  await expect(line).toHaveText("Evidence clips are off. Turn them on in Settings → Capture.");
+  await expect(line.getByRole("link", { name: "Settings → Capture" })).toHaveAttribute(
+    "href",
+    "/settings/capture",
+  );
+  await expect(
+    proposalCards(page).getByRole("button", { name: /^Play what you said/ }),
+  ).toHaveCount(0);
+
+  // On again: the browser is asked once to keep the site's storage, through WP3b's flag.
+  await line.getByRole("link", { name: "Settings → Capture" }).click();
+  await expect(clips).not.toBeChecked();
+  await clips.click();
+  await expect(clips).toBeChecked();
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("earshot.persist.v1")))
+    .not.toBeNull();
 });
