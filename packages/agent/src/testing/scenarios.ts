@@ -278,14 +278,19 @@ export interface ScriptedResponse {
   readonly body: unknown;
 }
 
-interface Tokens {
+export interface Tokens {
   readonly input: number;
   readonly output: number;
   readonly reasoning?: number;
 }
 
-/** An Anthropic Messages API response with one `submit_proposals` call. */
-export function anthropicToolUse(input: unknown, tokens: Tokens, id = "01"): ScriptedResponse {
+/** An Anthropic Messages API response with one tool call: `submit_proposals` unless named. */
+export function anthropicToolUse(
+  input: unknown,
+  tokens: Tokens,
+  id = "01",
+  name = "submit_proposals",
+): ScriptedResponse {
   return {
     status: 200,
     headers: { "content-type": "application/json" },
@@ -294,7 +299,7 @@ export function anthropicToolUse(input: unknown, tokens: Tokens, id = "01"): Scr
       type: "message",
       role: "assistant",
       model: LLM_MODELS.anthropic,
-      content: [{ type: "tool_use", id: `toolu_earshot_${id}`, name: "submit_proposals", input }],
+      content: [{ type: "tool_use", id: `toolu_earshot_${id}`, name, input }],
       stop_reason: "tool_use",
       stop_sequence: null,
       usage: {
@@ -320,18 +325,29 @@ export function anthropicError(
   };
 }
 
-/** A Groq chat completion with one `submit_proposals` call; `args` is sent as given if a string. */
-export function groqToolCall(args: unknown, tokens: Tokens, id = "01"): ScriptedResponse {
+/**
+ * A Groq chat completion with one tool call, `submit_proposals` unless named; `args` is sent as
+ * given if a string.
+ */
+export function groqToolCall(
+  args: unknown,
+  tokens: Tokens,
+  id = "01",
+  name = "submit_proposals",
+): ScriptedResponse {
   return groqCompletion(
     {
       role: "assistant",
-      reasoning: "The rep listed CRM changes; submitting them with quotes.",
+      reasoning:
+        name === "submit_proposals"
+          ? "The rep listed CRM changes; submitting them with quotes."
+          : "Writing the recap from the rep's own words, with quotes.",
       tool_calls: [
         {
           id: `fc_earshot_${id}`,
           type: "function",
           function: {
-            name: "submit_proposals",
+            name,
             arguments: typeof args === "string" ? args : JSON.stringify(args),
           },
         },

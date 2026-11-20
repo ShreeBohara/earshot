@@ -1,0 +1,26 @@
+{
+  "id": "bant",
+  "label": "BANT",
+  "fields": [
+    {
+      "id": "budget",
+      "label": "Budget",
+      "describe": "Money set aside for this, or what the customer said they can spend."
+    },
+    {
+      "id": "authority",
+      "label": "Authority",
+      "describe": "Who makes the decision, or signs off on it."
+    },
+    {
+      "id": "need",
+      "label": "Need",
+      "describe": "The problem or goal the purchase answers."
+    },
+    {
+      "id": "timeline",
+      "label": "Timeline",
+      "describe": "When the customer wants to decide, buy, or go live."
+    }
+  ]
+}

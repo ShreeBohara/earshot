@@ -1,0 +1,31 @@
+{
+  "id": "spiced",
+  "label": "SPICED",
+  "fields": [
+    {
+      "id": "situation",
+      "label": "Situation",
+      "describe": "The customer's circumstances: their team, their tools, how they work today."
+    },
+    {
+      "id": "pain",
+      "label": "Pain",
+      "describe": "The problem the customer has, in their words."
+    },
+    {
+      "id": "impact",
+      "label": "Impact",
+      "describe": "What solving the problem would change for them: time, money, or risk."
+    },
+    {
+      "id": "critical_event",
+      "label": "Critical event",
+      "describe": "A date or event that forces a decision by then."
+    },
+    {
+      "id": "decision",
+      "label": "Decision",
+      "describe": "How and by whom the decision will be made."
+    }
+  ]
+}

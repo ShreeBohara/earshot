@@ -1,0 +1,36 @@
+{
+  "id": "meddic",
+  "label": "MEDDIC",
+  "fields": [
+    {
+      "id": "metrics",
+      "label": "Metrics",
+      "describe": "The measurable result the customer wants: a number, a saving, or a target."
+    },
+    {
+      "id": "economic_buyer",
+      "label": "Economic buyer",
+      "describe": "Who holds the budget and can approve the purchase."
+    },
+    {
+      "id": "decision_criteria",
+      "label": "Decision criteria",
+      "describe": "What the customer will judge the options on."
+    },
+    {
+      "id": "decision_process",
+      "label": "Decision process",
+      "describe": "The steps, people, and dates between now and a signed deal."
+    },
+    {
+      "id": "identified_pain",
+      "label": "Identified pain",
+      "describe": "The problem the customer needs solved, and what it costs them."
+    },
+    {
+      "id": "champion",
+      "label": "Champion",
+      "describe": "Someone at the customer who argues for the deal when the rep isn't there."
+    }
+  ]
+}

@@ -24,6 +24,17 @@ export {
 } from "./cassette";
 export { generateCassetteFiles, recordScenario } from "./generate";
 export {
+  type RecapScenario,
+  type RecapScenarioInput,
+  recapResponse,
+  recordRecap,
+  type ScriptedRecapFetch,
+  type ScriptedRecapMode,
+  type ScriptedRecapOptions,
+  scriptedRecapFetch,
+  scriptedRecapInput,
+} from "./recap";
+export {
   createRecordingFetch,
   RECORD_FLAG,
   RECORD_KEY_VARIABLES,
@@ -52,6 +63,7 @@ export {
   type ScenarioTurn,
   type ScriptedResponse,
   scenario,
+  type Tokens,
 } from "./scenarios";
 
 /** The committed hand-made cassettes, per provider (cassettes/<provider>.json). */

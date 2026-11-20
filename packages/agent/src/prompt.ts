@@ -71,9 +71,9 @@ function describeTranscript(utterances: readonly UtteranceFinalV2[]): string {
 /**
  * Text on one line: each run of line breaks, with the spaces around it, becomes one space, and
  * the rest of its spacing stays. Split and trimmed rather than matched with `\s*[\r\n]+\s*`,
- * which backtracks quadratically on a long run of spaces.
+ * which backtracks quadratically on a long run of spaces. The recap's prompt uses it too.
  */
-function joinLines(text: string): string {
+export function joinLines(text: string): string {
   const parts = text.split(/[\r\n]+/u);
   if (parts.length === 1) return text;
   return parts
