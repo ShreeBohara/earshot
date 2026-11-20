@@ -1,26 +1,34 @@
 // A fixed-size ring of PCM16 samples, addressed by absolute sample index: sample `i` is the
 // `i`th sample ever written, so callers can ask for "everything from sample 48,000 on" without
-// tracking where the ring wrapped. Old samples drop off the front once it's full.
+// tracking where the ring wrapped. Old samples drop off the front once it's full. A ring can
+// number its first sample later than 0, to carry on from where an earlier ring's indices ended.
 
 export class PcmRingBuffer {
   readonly capacity: number;
   readonly #samples: Int16Array;
-  #end = 0;
+  /** The index of the first sample written: nothing before it was ever held. */
+  readonly #origin: number;
+  #end: number;
 
-  constructor(capacity: number) {
+  constructor(capacity: number, startIndex = 0) {
     if (!Number.isInteger(capacity) || capacity < 1) {
       throw new RangeError("capacity must be a positive integer");
     }
+    if (!Number.isSafeInteger(startIndex) || startIndex < 0) {
+      throw new RangeError("startIndex must be a non-negative integer");
+    }
     this.capacity = capacity;
     this.#samples = new Int16Array(capacity);
+    this.#origin = startIndex;
+    this.#end = startIndex;
   }
 
   /** The index of the oldest sample still held. */
   get start(): number {
-    return Math.max(0, this.#end - this.capacity);
+    return Math.max(this.#origin, this.#end - this.capacity);
   }
 
-  /** The index one past the newest sample: the number of samples ever written. */
+  /** The index one past the newest sample: the start index plus the samples ever written. */
   get end(): number {
     return this.#end;
   }
