@@ -17,15 +17,18 @@
     "./understanding": "./src/understanding/index.ts"
   },
   "scripts": {
+    "baseline:smoke": "tsx scripts/baseline-smoke.ts",
     "baseline:update": "tsx scripts/update-baseline.ts",
     "cassettes:gen": "tsx scripts/gen-cassettes.ts",
     "debriefs:gen": "tsx scripts/gen-debriefs.ts",
     "eval:budget": "tsx scripts/eval-live-budget.ts",
     "eval:linking": "tsx scripts/eval-linking.ts",
     "eval:report": "tsx scripts/eval-report.ts",
+    "eval:smoke": "tsx scripts/eval-smoke.ts",
     "eval:understanding": "tsx scripts/eval-understanding.ts",
     "linker:fit": "tsx scripts/fit-linker.ts",
     "linking:gen": "tsx scripts/gen-confusable.ts",
+    "smoke:select": "tsx scripts/select-smoke.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
   },
