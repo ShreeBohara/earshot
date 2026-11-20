@@ -2,8 +2,9 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { signInAsNewUser } from "../support/sign-in";
 
 /**
- * The sample debriefs' proposals (packages/events/fixtures/samples), as the inbox names them once
- * the demo CRM is loaded: Pier Logistics (newest) first, then Acme Dynamics.
+ * The test debriefs' proposals (packages/events/fixtures/samples, which Settings → Data loads under
+ * next dev), as the inbox names them once the demo CRM is loaded: Pier Logistics (newest) first,
+ * then Acme Dynamics.
  */
 export const CARDS = {
   /** A question: Dana Li (48%), Dana Lee (41%), or a new record. Loud. */
@@ -78,8 +79,10 @@ export async function openEmptyInbox(page: Page): Promise<void> {
 }
 
 /**
- * Signs up a new user, loads the demo CRM (onboarding) and the sample debriefs (Settings → Data),
- * optionally the development-only finishing debrief too, and opens the inbox.
+ * Signs up a new user, loads the demo CRM (onboarding) and the test debriefs (Settings → Data's
+ * development-only control: WP3's two, seven cards with one in every tier), optionally the
+ * development-only finishing debrief too, and opens the inbox. "Load sample debriefs" itself loads
+ * pilot.v1, which e2e/pilot/ checks.
  */
 export async function openInboxWithSamples(
   page: Page,
@@ -97,10 +100,10 @@ export async function openInboxWithSamples(
     cold,
   );
   await page.goto("/settings/data");
-  await page.getByRole("button", { name: "Load sample debriefs" }).click();
-  await expect(
-    page.getByText(/Loaded 2 sample debriefs, with 7 proposals to review\./),
-  ).toBeVisible(cold);
+  await page.getByRole("button", { name: "Load the test debriefs (development)" }).click();
+  await expect(page.getByText(/Loaded 2 test debriefs, with 7 proposals to review\./)).toBeVisible(
+    cold,
+  );
   if (options.finishing) {
     await page.getByRole("button", { name: "Load a finishing debrief (development)" }).click();
     await expect(page.getByText(/Loaded a debrief that's still finishing/)).toBeVisible(cold);
