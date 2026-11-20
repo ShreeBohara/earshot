@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "catalog:",
+    "@earshot/evals": "workspace:*",
     "@earshot/tsconfig": "workspace:*",
     "@electric-sql/pglite": "catalog:",
     "@electric-sql/pglite-pgvector": "catalog:",

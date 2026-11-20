@@ -344,6 +344,9 @@ importers:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
         version: 1.8.1(@types/node@26.6.6)(vitest@4.1.12)
+      '@earshot/evals':
+        specifier: workspace:*
+        version: link:../../packages/evals
       '@earshot/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -423,6 +426,9 @@ importers:
       '@axe-core/playwright':
         specifier: 'catalog:'
         version: 4.14.0(playwright-core@1.65.0)
+      '@earshot/evals':
+        specifier: workspace:*
+        version: link:../../packages/evals
       '@earshot/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -626,6 +632,9 @@ importers:
       '@earshot/demo-crm':
         specifier: workspace:*
         version: link:../demo-crm
+      '@earshot/voice':
+        specifier: workspace:*
+        version: link:../voice
       zod:
         specifier: 'catalog:'
         version: 4.6.7

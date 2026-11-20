@@ -9,15 +9,27 @@ import { defineConfig, devices } from "@playwright/test";
 // microphone, the fake speech-to-text adapter, and the edge Worker's e2e entry, whose cassettes
 // answer every turn (CONTRIBUTING.md). No keys, no provider calls. Playwright starts that Worker
 // on port 8787 too, accepting sockets from this server's origin.
+//
+// e2e/eval/ is the fake-microphone eval (spec WP11; docs/adr/0026): the 30 debrief WAVs through
+// the same fake mode, one browser per WAV, so it launches its own browsers. `capture-smoke` runs
+// first and `capture-eval` only if it passes. The WAVs come from lab/scripts/render_debriefs.py
+// (EARSHOT_EVAL_WAVS; CONTRIBUTING.md). EARSHOT_EVAL_MODE=live runs the eval on real providers:
+// the production edge entry instead of the e2e one, and keys from the environment (e2e/eval/live.ts).
 const LOCAL_PORT = 3100;
 const LOCAL_ORIGIN = `http://localhost:${LOCAL_PORT}`;
 const EDGE_PORT = 8787;
 const remote = process.env.BASE_URL;
+const live = process.env.EARSHOT_EVAL_MODE === "live";
 
 export default defineConfig({
   testDir: "./e2e",
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [["github"], ["list"]] : "list",
+  // The eval reporter writes the eval's results as one report, and does nothing in other runs.
+  reporter: [
+    ...(process.env.CI ? ([["github"]] as const) : []),
+    ["list"],
+    ["./e2e/eval/reporter.ts"],
+  ],
   // One baseline per platform; e2e/capture/reduced-motion.spec.ts skips its pixel check where
   // there's none yet.
   snapshotPathTemplate: "{testDir}/__screenshots__/{testFilePath}/{arg}-{platform}{ext}",
@@ -29,7 +41,7 @@ export default defineConfig({
     // Matched on e2e/capture/ itself: the checkout's own path may contain "capture" too.
     {
       name: "smoke",
-      testIgnore: /[\\/]e2e[\\/]capture[\\/]/,
+      testIgnore: /[\\/]e2e[\\/](?:capture|eval)[\\/]/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -43,6 +55,21 @@ export default defineConfig({
           args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
         },
       },
+    },
+    // The eval's tests launch a browser each, with their own WAV; these projects only pick the
+    // files. One test per script, sharded test by test (fullyParallel); run them with --workers=1
+    // so the WAVs play one at a time and latency isn't measured on a contended machine.
+    {
+      name: "capture-smoke",
+      testMatch: /[\\/]e2e[\\/]eval[\\/]capture-smoke\.spec\.ts$/,
+    },
+    {
+      name: "capture-eval",
+      testMatch: /[\\/]e2e[\\/]eval[\\/]capture-eval\.spec\.ts$/,
+      fullyParallel: true,
+      // Live runs have no e2e Worker for the smoke test's fake mode; their results carry the
+      // same audio probes.
+      dependencies: live ? [] : ["capture-smoke"],
     },
   ],
   ...(remote
@@ -69,9 +96,9 @@ export default defineConfig({
           },
           {
             // The edge Worker with cassette extraction (apps/edge/src/e2e.ts), which only answers
-            // the e2e scenario route the fake mode checks for.
-            command: `pnpm --dir ../edge exec wrangler dev src/e2e.ts --port ${EDGE_PORT} --var WEB_ORIGIN:${LOCAL_ORIGIN}`,
-            url: `http://localhost:${EDGE_PORT}/v1/e2e/scenario`,
+            // the e2e scenario route the fake mode checks for; the production entry for live runs.
+            command: `pnpm --dir ../edge exec wrangler dev ${live ? "src/index.ts" : "src/e2e.ts"} --port ${EDGE_PORT} --var WEB_ORIGIN:${LOCAL_ORIGIN}`,
+            url: `http://localhost:${EDGE_PORT}${live ? "/health" : "/v1/e2e/scenario"}`,
             reuseExistingServer: !process.env.CI,
             timeout: 180_000,
           },

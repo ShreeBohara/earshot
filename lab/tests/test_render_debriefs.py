@@ -13,6 +13,7 @@ import os
 import struct
 import wave
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pytest
@@ -448,3 +449,71 @@ def test_missing_tts_packages_say_how_to_install_them() -> None:
 
 def test_prune_cannot_go_with_a_subset() -> None:
     assert rd.main(["--only", "d001", "--prune"]) == 2
+
+
+# --- --stub (NOT FOR EVALUATION) -----------------------------------------------------------------
+
+
+def write_sample_script(directory: Path) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "d000.json").write_text(
+        json.dumps(
+            {
+                "id": SAMPLE.id,
+                "voice": SAMPLE.voice,
+                "turns": [
+                    {"text": turn.text, "pauseBeforeMs": turn.pause_before_ms}
+                    for turn in SAMPLE.turns
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return directory
+
+
+def rms(samples: NDArray[np.int16]) -> float:
+    return float(np.sqrt(np.mean(samples.astype(np.float64) ** 2)))
+
+
+def test_stub_renders_a_tone_per_word_where_timing_puts_it(tmp_path: Path) -> None:
+    debriefs = write_sample_script(tmp_path / "debriefs")
+    out = tmp_path / "stub"
+    assert rd.main(["--stub", "--debriefs", str(debriefs), "--out", str(out)]) == 0
+
+    manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["model"] == {rd.STUB_MODEL_NAME: rd.STUB_SHA256}
+    assert rd.is_stub_manifest(manifest)
+    assert set(manifest["packages"]) == set(rd.STUB_PACKAGES)
+    entry = manifest["scripts"]["d000"]
+    pcm = read_pcm(out / entry["wav"])
+    timing = json.loads((out / entry["timing"]).read_text(encoding="utf-8"))
+    per_ms = rd.TARGET_RATE // 1000
+
+    turns = cast(list[dict[str, Any]], timing["turns"])
+    for turn in turns:
+        # 60 ms per character, a space after each word counted.
+        text = cast(str, turn["text"])
+        span = cast(int, turn["endMs"]) - cast(int, turn["startMs"])
+        assert span == sum(len(w) + 1 for w in text.split()) * 60
+        spans = [(cast(int, w["startMs"]), cast(int, w["endMs"])) for w in turn["words"]]
+        for (start, end), (next_start, _) in itertools.pairwise([*spans, (-1, -1)]):
+            assert rms(pcm[(start + 10) * per_ms : (end - 10) * per_ms]) > 3_000, (start, end)
+            if next_start >= 0:
+                gap = next_start - end
+                quiet = pcm[(end + gap // 4) * per_ms : (next_start - gap // 4) * per_ms]
+                assert rms(quiet) < 50, (end, next_start)
+    # The renderer's own silence is untouched: the lead-in and the tail.
+    assert not pcm[: cast(int, turns[0]["startMs"]) * per_ms - 5 * per_ms].any()
+    assert not pcm[-rd.TAIL_MS * per_ms + 5 * per_ms :].any()
+
+
+def test_stub_renders_never_pass_for_kokoro_ones(tmp_path: Path) -> None:
+    stub_hash = rd.render_hash(
+        SAMPLE,
+        model_sha256={rd.STUB_MODEL_NAME: rd.STUB_SHA256},
+        packages={"numpy": "2.5.5", "scipy": "1.18.1"},
+    )
+    assert stub_hash != sample_hash()
+    # Never into Kokoro's directory, where CI's cache would keep them.
+    assert rd.main(["--stub", "--out", str(rd.WAVS)]) == 2

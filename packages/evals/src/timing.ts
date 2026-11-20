@@ -11,6 +11,12 @@ import { z } from "zod";
 import { KokoroVoice } from "./schema";
 
 export const RENDER_SAMPLE_RATE = 48_000;
+/**
+ * The pseudo model file a `render_debriefs.py --stub` manifest names (its `STUB_MODEL_NAME`):
+ * tones instead of speech, for checking the e2e plumbing without the model. CI's eval refuses
+ * such a manifest, and no baseline is ever taken from one.
+ */
+export const STUB_RENDER_MODEL = "STUB-TONES-NOT-FOR-EVALUATION";
 /** Digital silence after the last turn, so the fake microphone's last buffer is all zeros. */
 export const RENDER_TAIL_MS = 1_000;
 
@@ -69,3 +75,8 @@ export const RenderManifest = z.strictObject({
   ),
 });
 export type RenderManifest = z.infer<typeof RenderManifest>;
+
+/** Whether the render is `--stub` tones rather than Kokoro speech. */
+export function isStubRender(manifest: RenderManifest): boolean {
+  return Object.hasOwn(manifest.model, STUB_RENDER_MODEL);
+}

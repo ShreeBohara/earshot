@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { matchEntity, TARGET_KINDS } from "@earshot/agent";
+import { DEMO_CALL_TIME } from "@earshot/agent/testing";
 import { ProposalType } from "@earshot/core";
 import { contacts } from "@earshot/demo-crm";
 import { describe, expect, it } from "vitest";
@@ -11,6 +12,7 @@ import {
   DEBRIEFS,
   DEMO_SESSION_ENTITIES,
   DebriefScript,
+  debriefAt,
   demoEntity,
   ExpectedProposal,
   expectedFields,
@@ -42,6 +44,21 @@ describe("the debrief files", () => {
     expect(files).toEqual(EXPECTED_IDS);
     expect([...DEBRIEF_FILES].sort()).toEqual(EXPECTED_IDS);
     expect(DEBRIEFS.map((script) => script.id)).toEqual(EXPECTED_IDS);
+  });
+
+  it("each have their own call time, which the e2e edge Worker picks a script's cassette by", () => {
+    const times = DEBRIEFS.map((script) => Date.parse(script.callTime));
+    expect(new Set(times).size).toBe(DEBRIEFS.length);
+    // Not the demo session's either, whose cassettes answer when no script matches.
+    expect(times).not.toContain(Date.parse(DEMO_CALL_TIME));
+    for (const script of DEBRIEFS) expect(debriefAt(script.callTime)?.id).toBe(script.id);
+    const first = DEBRIEFS[0] as DebriefScript;
+    // The same instant written another way is the same call.
+    expect(debriefAt(new Date(first.callTime).toISOString().replace("Z", "+00:00"))?.id).toBe(
+      first.id,
+    );
+    expect(debriefAt(DEMO_CALL_TIME)).toBeUndefined();
+    expect(debriefAt("not a time")).toBeUndefined();
   });
 
   it.each(EXPECTED_IDS)("%s.json is a valid script as it sits on disk", (id) => {

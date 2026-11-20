@@ -98,3 +98,14 @@ export function debrief(id: string): DebriefScript {
   if (!found) throw new RangeError(`no debrief script ${id}`);
   return found;
 }
+
+/**
+ * The script whose call time this is, if any. Every script has its own call time (a test checks
+ * it), and the call time is part of every cassette key, so the e2e edge Worker picks a session's
+ * eval cassette by the call time its `start` carried.
+ */
+export function debriefAt(callTime: string): DebriefScript | undefined {
+  const at = Date.parse(callTime);
+  if (Number.isNaN(at)) return undefined;
+  return DEBRIEFS.find((script) => Date.parse(script.callTime) === at);
+}

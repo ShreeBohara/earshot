@@ -1,0 +1,164 @@
+name: eval
+
+# The fake-microphone eval, all 30 debriefs (Phase 3 spec, WP11 step 6; gate G3; ADR-0026):
+# Kokoro WAVs through Chrome's fake microphone into the capture screen, on the fake
+# speech-to-text adapter and the e2e edge Worker's cassettes. No secrets and no provider calls, so
+# it costs $0. It runs on pull requests that touch the voice, agent, edge, capture, or eval code
+# (the `changes` job decides, so a required `eval` check passes when it's skipped), nightly on
+# main, and by hand. ci's required `ui` job runs the smoke test and 5 of the debriefs on every PR.
+#
+# Four shards play the debriefs in real time, one at a time each; the `eval` job merges their
+# reports into the job summary and the `eval-report` artifact, which is what
+# `pnpm --filter @earshot/evals baseline:update` takes to record packages/evals/baselines/ci.json.
+
+on:
+  pull_request:
+  schedule:
+    - cron: "41 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  UV_FROZEN: 1
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      eval: ${{ steps.paths.outputs.eval }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # What the pipeline runs on: the voice runtime, the agent, the contracts, the edge Worker,
+      # the capture screen and its routes, the eval itself and its WAVs, and the dependencies
+      # (a Chromium, Next, or wrangler bump can break a fake microphone as surely as code can).
+      - id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "eval=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pattern='^(packages/(voice|agent|core|evals)/|apps/edge/|apps/web/(lib/(capture|voice)/|components/capture/|app/\(app\)/capture/|app/api/(sessions|voice)/|e2e/(capture|eval)/|playwright\.config\.ts|package\.json)|lab/(scripts/(render_debriefs\.py|kokoro_files\.json)|uv\.lock|pyproject\.toml)|\.github/(workflows/eval\.yml|actions/eval-wavs/)|pnpm-lock\.yaml)'
+          if git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE "$pattern"; then
+            echo "eval=true" >> "$GITHUB_OUTPUT"
+            echo "This PR touches code the eval runs on."
+          else
+            echo "eval=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing the eval runs on changed; skipping it."
+          fi
+
+  shard:
+    name: eval shard ${{ matrix.shard }} of 4
+    needs: changes
+    if: needs.changes.outputs.eval == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Read the Playwright version
+        id: playwright
+        working-directory: apps/web
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Install Playwright Chromium (the browser is cached; its system libraries aren't)
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Eval WAVs (Kokoro, from the cache, or rendered on a miss)
+        uses: ./.github/actions/eval-wavs
+      # Each shard runs the smoke test first (capture-eval depends on it), then its quarter of
+      # the debriefs, one at a time, so latency isn't measured on a contended runner.
+      - name: Fake-mic eval, shard ${{ matrix.shard }} of 4
+        working-directory: apps/web
+        env:
+          EARSHOT_EVAL_REPORT: ${{ runner.temp }}/eval/report-${{ matrix.shard }}.json
+          SHARD: ${{ matrix.shard }}
+        run: pnpm exec playwright test --project=capture-eval --workers=1 --shard="$SHARD/4"
+      - name: Upload the shard's report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/eval
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Upload traces of failed runs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-shard-${{ matrix.shard }}-traces
+          path: apps/web/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  eval:
+    needs: [changes, shard]
+    if: ${{ !cancelled() && needs.changes.outputs.eval == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: eval-shard-?
+          path: ${{ runner.temp }}/eval
+          merge-multiple: true
+      # Fails unless all 30 debriefs ran and went as scripted, so a shard that ran nothing, or
+      # crashed before writing its report, can't pass.
+      - name: Merge the shards' reports into the summary
+        env:
+          DIR: ${{ runner.temp }}/eval
+        run: |
+          pnpm --filter @earshot/evals eval:report "$DIR"/report-*.json --out "$RUNNER_TEMP/eval-report.json" \
+            --title "Fake-mic eval" --baseline packages/evals/baselines/ci.json \
+            --expect all --check --summary "$GITHUB_STEP_SUMMARY"
+      - name: Upload the eval report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-report
+          path: ${{ runner.temp }}/eval-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+      - name: Every shard passed
+        if: needs.shard.result != 'success'
+        env:
+          RESULT: ${{ needs.shard.result }}
+        run: |
+          echo "::error::A shard ended as ${RESULT}."
+          exit 1

@@ -61,7 +61,9 @@ jobs:
 
   ui:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The fake-mic eval's subset plays five debriefs in real time, and a cold WAV cache renders
+    # all thirty with Kokoro first (spec WP11 step 6).
+    timeout-minutes: 30
     env:
       # A boolean only; the token itself goes to the Chromatic step alone. Secrets are empty on
       # fork PRs, so Chromatic is skipped there.
@@ -95,6 +97,36 @@ jobs:
       - name: Sign-in, the /demo replay at 8×, Settings → Keys, the demo CRM, and the capture screen (next dev with in-process PGlite, the e2e edge Worker's cassettes, Chrome's fake microphone; no secrets, no providers)
         working-directory: apps/web
         run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/demo.spec.ts e2e/keys.spec.ts e2e/capture
+      # The fake-mic eval's subset (spec WP11 step 6; gate G3): its smoke test, then five of the
+      # thirty debriefs. All thirty run in the eval workflow. No secrets, no providers.
+      - name: Eval WAVs (Kokoro, from the cache, or rendered on a miss)
+        uses: ./.github/actions/eval-wavs
+      - name: Fake-mic smoke test and 5 eval debriefs (Kokoro WAVs through Chrome's fake microphone into the capture screen; the fake speech-to-text adapter and cassettes)
+        id: eval
+        working-directory: apps/web
+        env:
+          EARSHOT_EVAL_SCRIPTS: d001,d010,d016,d025,d030
+          EARSHOT_EVAL_REPORT: ${{ runner.temp }}/eval/ui-report.json
+        run: pnpm exec playwright test --project=capture-eval --workers=1
+      - name: Eval report
+        if: ${{ !cancelled() && steps.eval.outcome != 'skipped' }}
+        env:
+          REPORT: ${{ runner.temp }}/eval/ui-report.json
+        run: |
+          if [ -f "$REPORT" ]; then
+            pnpm --filter @earshot/evals eval:report "$REPORT" --title "Fake-mic eval (the ui job's 5 debriefs)" \
+              --baseline packages/evals/baselines/ci.json --summary "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No eval report: the eval stopped before any debrief ran (see the smoke test)." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload the eval report
+        if: ${{ !cancelled() && steps.eval.outcome != 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-ui-report
+          path: ${{ runner.temp }}/eval
+          retention-days: 14
+          if-no-files-found: ignore
       - name: Publish to Chromatic
         if: env.HAS_CHROMATIC == 'true'
         uses: chromaui/action@5d18868345f53a8f61258ad393396c7e169100fd # v18.14.4
