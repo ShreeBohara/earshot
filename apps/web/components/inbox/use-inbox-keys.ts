@@ -25,6 +25,7 @@ export interface InboxKeyHandlers {
  * - with the shortcuts off;
  * - from outside the element's own DOM (React passes keys up from portals, such as a card's menu);
  * - from a text field, or anywhere in an open editor, which keeps Enter and Esc for itself;
+ * - from "accept all"'s checkpoint, whose buttons take Enter and Space, and Esc closes;
  * - in an open correction panel, but for the digits that choose there (Esc closes it itself).
  */
 export function useInboxKeys({ enabled, onAction }: InboxKeyHandlers) {
@@ -33,7 +34,7 @@ export function useInboxKeys({ enabled, onAction }: InboxKeyHandlers) {
     const container = event.currentTarget;
     const target = event.target;
     if (!(target instanceof Element) || !container.contains(target)) return;
-    if (target.closest("[data-inbox-editor]")) return;
+    if (target.closest("[data-inbox-editor], [data-inbox-checkpoint]")) return;
     const action = inboxKeyAction({
       key: event.key,
       metaKey: event.metaKey,

@@ -17,6 +17,11 @@ export interface RovingFocus {
   readonly focus: (target: FocusTarget) => void;
   /** Focus arrived in a card some other way (Tab, a click): it's the active card now. */
   readonly arrived: (proposalId: string) => void;
+  /**
+   * Moves focus to a card only if focus has fallen to <body> by the next render: a refusal brought
+   * cards back, and the "All caught up" heading that held focus went with the empty list.
+   */
+  readonly rescue: (target: FocusTarget) => void;
 }
 
 /**
@@ -30,15 +35,22 @@ export function useRovingFocus(order: readonly (readonly string[])[]): RovingFoc
   const elements = useRef(new Map<string, HTMLElement>());
   const caughtUp = useRef<HTMLElement | null>(null);
   const pending = useRef<FocusTarget | null>(null);
+  const rescuing = useRef<FocusTarget | null>(null);
 
   const flat = order.flat();
   const activeId = chosen !== null && flat.includes(chosen) ? chosen : (flat[0] ?? null);
 
   // Runs for each focus request.
   useLayoutEffect(() => {
-    const target = pending.current;
-    if (!target) return;
+    const target = pending.current ?? rescuing.current;
+    const rescue = pending.current === null;
     pending.current = null;
+    rescuing.current = null;
+    if (!target) return;
+    if (rescue) {
+      const active = document.activeElement;
+      if (active !== null && active !== document.body && active.isConnected) return;
+    }
     const element = target.kind === "card" ? elements.current.get(target.id) : caughtUp.current;
     // A card that didn't render (a refusal took it back) leaves focus where it is.
     element?.focus();
@@ -61,5 +73,10 @@ export function useRovingFocus(order: readonly (readonly string[])[]): RovingFoc
 
   const arrived = useCallback((proposalId: string) => setChosen(proposalId), []);
 
-  return { activeId, register, registerCaughtUp, focus, arrived };
+  const rescue = useCallback((target: FocusTarget) => {
+    rescuing.current = target;
+    setRequest((count) => count + 1);
+  }, []);
+
+  return { activeId, register, registerCaughtUp, focus, arrived, rescue };
 }

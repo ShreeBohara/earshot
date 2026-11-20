@@ -2,7 +2,7 @@ import { Toaster } from "@earshot/ui/components/toast";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, userEvent, waitFor, within } from "storybook/test";
 import type { ReviewSink } from "@/lib/inbox/sinks";
-import { EMPTY_INBOX, INBOX, QUESTION, UPDATE } from "./fixtures";
+import { EMPTY_INBOX, INBOX, PLAIN, QUESTION, UPDATE } from "./fixtures";
 import { InboxView } from "./inbox-view";
 
 /** A sink that records what the inbox sends and answers yes. */
@@ -173,4 +173,68 @@ export const ShortcutsDialogDark: Story = {
   ...ShortcutsDialog,
   name: "Shortcuts dialog (dark)",
   globals: { theme: "dark" },
+};
+
+/**
+ * "Accept all from this call" (spec WP6): the debrief's header says "Accept 2 unmarked", and the
+ * checkpoint opens inline, under it: what will be accepted, what stays for review and why, and
+ * focus on its confirm button, which its summary describes. axe runs on it open.
+ */
+export const AcceptAll: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Accept 2 unmarked" }));
+    const checkpoint = canvas.getByRole("group", { name: "Accept all from this call" });
+    const confirm = within(checkpoint).getByRole("button", { name: "Accept 2" });
+    await expect(confirm).toHaveFocus();
+    await expect(confirm).toHaveAccessibleDescription("2 will be accepted. 2 stay for review.");
+    const accepts = within(checkpoint).getByRole("list", { name: "Will be accepted (2)" });
+    await expect(within(accepts).getAllByRole("listitem")).toHaveLength(2);
+    const stays = within(checkpoint).getByRole("list", { name: "Stays for review (2)" });
+    await expect(stays).toHaveTextContent(/Needs a check: I'm not sure who you meant\./);
+    await expect(stays).toHaveTextContent(/Has a note: Open account assumed/);
+  },
+};
+
+export const AcceptAllDark: Story = {
+  ...AcceptAll,
+  name: "Accept all (dark)",
+  globals: { theme: "dark" },
+};
+
+/**
+ * Confirming: the two leave as one batch (one request, one batch id), focus goes to the first card
+ * left in the group, one polite message says so, and one u brings both back, focused on the first.
+ */
+export const AcceptAllConfirmed: Story = {
+  play: async ({ canvas }) => {
+    sent.length = 0;
+    await userEvent.click(canvas.getByRole("button", { name: "Accept 2 unmarked" }));
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(sent).toHaveLength(1));
+    const [, request] = sent[0] ?? [];
+    await expect(request?.reviews.map((review) => review.proposalId)).toEqual([
+      UPDATE.proposalId,
+      PLAIN.proposalId,
+    ]);
+    await expect(new Set(request?.reviews.map((review) => review.batchId)).size).toBe(1);
+    await expect(request?.reviews[0]).toMatchObject({ mode: "batch", input: "keyboard" });
+    await expect(
+      await screen.findByText("Accepted 2. 2 stay for review. Press U to undo."),
+    ).toBeVisible();
+    await expect(canvas.getByRole("article", { name: /^Contact · Ask/ })).toHaveFocus();
+    await expect(
+      canvas.getByRole("button", { name: "Undo: accepted together, 2 proposals" }),
+    ).toBeVisible();
+    await userEvent.keyboard("u");
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("article", { name: "Deal update · Acme Corp - Platform" }),
+      ).toHaveFocus(),
+    );
+    await waitFor(() => expect(sent).toHaveLength(2));
+    await expect(sent[1]?.[1].reviews.map((review) => review.decision)).toEqual([
+      "reopened",
+      "reopened",
+    ]);
+  },
 };

@@ -59,8 +59,11 @@ export interface ProposalCardProps {
   proposal: InboxProposal;
   model: CardModel;
   quotes: Readonly<Record<string, string>>;
-  /** The card's heading level: under a debrief's heading (4), or an account's (5). */
-  headingLevel: 4 | 5;
+  /**
+   * The card's heading level: under an inbox debrief's heading (4), or an account's (5); under the
+   * capture screen's "Proposals" (3), in the tray.
+   */
+  headingLevel: 3 | 4 | 5;
   /** The card holding roving focus: the only one in the tab order. */
   active: boolean;
   /** Whether the single-key shortcuts are on (Settings → Review): then the keys show. */
@@ -87,7 +90,8 @@ function ActionKey({ shortcuts, children }: { shortcuts: boolean; children: stri
 }
 
 /**
- * A proposal in the inbox (spec WP5 step 3), an `<article>` in its group's list: a focus stop of
+ * A proposal in the inbox (spec WP5 step 3), and in the capture screen's tray (WP6), an
+ * `<article>` in its group's list: a focus stop of
  * the list's roving focus, named by its heading and, when loud, described by its first-person line.
  * Inside: the record, the loud marker and line, the fields as diff rows with the words they were
  * heard as, the quiet notes, the chooser, the correction panel or the editor when open, and the
@@ -115,7 +119,7 @@ export function ProposalCard({
   const hintId = `${id}-hint`;
   const { proposalId } = proposal;
   const loud = model.tier.tier === "loud";
-  const Heading = headingLevel === 4 ? "h4" : "h5";
+  const Heading = headingLevel === 3 ? "h3" : headingLevel === 4 ? "h4" : "h5";
   const keys = (key: string) => (shortcuts ? key : undefined);
   const [now] = useState(() => new Date());
   const correctionRef = useRef<HTMLFieldSetElement | null>(null);

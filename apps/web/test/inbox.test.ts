@@ -32,6 +32,7 @@ import {
   type ReviewSink,
   routeSink,
   type SinkResult,
+  singleChange,
   stateOf,
   withLocal,
 } from "@/lib/inbox/sinks";
@@ -729,26 +730,28 @@ function heldSink() {
 }
 
 function change(open: InboxProposal, status: InboxProposal["status"], reviewId: string): Change {
-  return {
-    sessionId: "s1",
-    proposalId: open.proposalId,
-    previous: stateOf(open),
-    next: {
-      status,
-      snoozedUntil: null,
-      review: {
-        reviewId,
-        decision: status === "proposed" ? "reopened" : (status as "approved"),
-        target: null,
-        mode: "single",
-        batchId: null,
-        undoes: null,
-        syncEligibleAt: null,
-        ts: "2026-11-20T15:00:00.000Z",
+  return singleChange(
+    "s1",
+    open.proposalId,
+    {
+      previous: stateOf(open),
+      next: {
+        status,
+        snoozedUntil: null,
+        review: {
+          reviewId,
+          decision: status === "proposed" ? "reopened" : (status as "approved"),
+          target: null,
+          mode: "single",
+          batchId: null,
+          undoes: null,
+          syncEligibleAt: null,
+          ts: "2026-11-20T15:00:00.000Z",
+        },
       },
     },
-    request: { reviews: [], snoozes: [] },
-  };
+    { reviews: [], snoozes: [] },
+  );
 }
 
 describe("the sink's rollback", () => {
@@ -796,8 +799,96 @@ describe("the sink's rollback", () => {
     await store.apply(applied);
     store.reconcile([{ ...a, status: "proposed" }]);
     expect(store.overlay().has(a.proposalId)).toBe(true);
-    store.reconcile([{ ...a, ...applied.next }]);
+    store.reconcile([{ ...a, ...applied.items[0]?.next }]);
     expect(store.overlay().has(a.proposalId)).toBe(false);
+  });
+
+  // Codex's review of #59: SessionDO reopens a just-approved card after a late flag. If that reopen
+  // overtakes the approval before the tray reconciles (a deferred list can skip the approved state
+  // between them), the page's approval mustn't keep hiding the reopened card.
+  it("forgets its own state when a later review reverses it, even if the approval never showed", async () => {
+    const store = new OptimisticReviews({ send: async () => ({ ok: true }) });
+    const a = proposal();
+    await store.apply(change(a, "approved", "r1"));
+    const reopened: InboxProposal = {
+      ...a,
+      status: "proposed",
+      review: {
+        reviewId: "sys1",
+        decision: "reopened",
+        target: null,
+        mode: "system",
+        batchId: null,
+        undoes: "r1",
+        syncEligibleAt: null,
+        ts: "2026-11-20T15:00:05.000Z",
+      },
+    };
+    store.reconcile([reopened]);
+    expect(store.overlay().has(a.proposalId)).toBe(false);
+    expect(withLocal(reopened, store.overlay()).status).toBe("proposed");
+  });
+
+  it("forgets its own state once the session's events reach the seq its write reached, not before", async () => {
+    const store = new OptimisticReviews({ send: async () => ({ ok: true, seq: 12 }) });
+    const a = proposal();
+    const written = decisionReview({
+      proposal: a,
+      entities: {},
+      decision: "approved",
+      timing: { decisionMs: 800, handlingMs: 800 },
+      input: "keyboard",
+      reviewId: "r1",
+    });
+    // The write lands at seq 12, for the card its request names.
+    await store.apply({
+      ...change(a, "approved", "r1"),
+      request: { reviews: [written], snoozes: [] },
+    });
+    const review = (reviewId: string, seq: number): InboxProposal["review"] => ({
+      reviewId,
+      decision: "approved",
+      target: null,
+      mode: "single",
+      batchId: null,
+      undoes: null,
+      syncEligibleAt: null,
+      ts: "2026-11-20T15:00:00.000Z",
+      seq,
+    });
+    // An older review, from before the write: the page's state stands.
+    store.reconcile([{ ...a, status: "approved", review: review("r0", 7) }]);
+    expect(store.overlay().has(a.proposalId)).toBe(true);
+    // A review at or past the write's seq, whatever it is: the events hold the write and more.
+    store.reconcile([{ ...a, status: "approved", review: review("r9", 15) }]);
+    expect(store.overlay().has(a.proposalId)).toBe(false);
+  });
+
+  it("keeps its state while the write is still on its way, whatever the events say", async () => {
+    const { sink, sent } = heldSink();
+    const store = new OptimisticReviews(sink);
+    const a = proposal();
+    const landed = store.apply(change(a, "approved", "r1"));
+    await vi.waitFor(() => expect(sent).toHaveLength(1));
+    store.reconcile([
+      {
+        ...a,
+        review: {
+          reviewId: "sys1",
+          decision: "reopened",
+          target: null,
+          mode: "system",
+          batchId: null,
+          undoes: "r1",
+          syncEligibleAt: null,
+          ts: "2026-11-20T15:00:05.000Z",
+          seq: 99,
+        },
+      },
+    ]);
+    expect(store.overlay().has(a.proposalId)).toBe(true);
+    sent[0]?.answer({ ok: true, seq: 12 });
+    await expect(landed).resolves.toEqual({ ok: true });
   });
 
   it("posts to the review route and reads its refusals", async () => {
@@ -816,7 +907,8 @@ describe("the sink's rollback", () => {
       return answer;
     });
     const request = { reviews: [], snoozes: [snoozeOf("p1", null, "s9")] };
-    expect(await sink.send("s1", request)).toEqual({ ok: true });
+    // The seq the write reached, for reconciling against the session's events.
+    expect(await sink.send("s1", request)).toEqual({ ok: true, seq: 9 });
     expect(calls[0]?.url).toBe("/api/sessions/s1/reviews");
     expect(calls[0]?.init?.method).toBe("POST");
     expect(JSON.parse(String(calls[0]?.init?.body))).toEqual(request);

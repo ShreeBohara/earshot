@@ -6,9 +6,10 @@ import type { SessionState } from "@earshot/voice/session";
 import { useMemo, useState } from "react";
 import { type ActivityRow, deriveActivity } from "@/lib/capture/activity";
 import { evidenceSpans } from "@/lib/capture/mentions";
+import type { ReviewWriter } from "@/lib/inbox/sinks";
 import { ActivityFeed } from "./activity-feed";
 import { LiveTranscript } from "./live-transcript";
-import { ProposalsTray } from "./proposals-tray";
+import { ProposalsTray, type TrayReview } from "./proposals-tray";
 
 export interface SessionPanelsProps {
   /** A session store's state: live from SessionClient, or a replay's (`/demo`). */
@@ -20,6 +21,11 @@ export interface SessionPanelsProps {
   activity?: readonly ActivityRow[];
   /** Replays show review status. */
   showReview?: boolean;
+  /**
+   * The live session's writer (the capture screen's session client): then the tray reviews over
+   * the socket, and the web route after the seal (Phase 5 WP6).
+   */
+  reviews?: ReviewWriter | null;
   onPainted?: (proposalId: string, at: number) => void;
   transcriptEmptyText?: string;
   className?: string;
@@ -38,11 +44,22 @@ export function SessionPanels({
   partial = null,
   activity = NO_ROWS,
   showReview = false,
+  reviews = null,
   onPainted,
   transcriptEmptyText,
   className,
 }: SessionPanelsProps) {
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const session = state?.projections.session ?? null;
+  const review: TrayReview | undefined =
+    reviews && session
+      ? {
+          writer: reviews,
+          startedAt: session.startedAt,
+          endedAt: session.endedAt,
+          sealedAt: session.sealedAt,
+        }
+      : undefined;
   const utterances = state?.projections.utterances;
   const proposals = state?.projections.proposals;
   // The transcript is the biased stream's: the second witness's words show only where the two
@@ -82,6 +99,7 @@ export function SessionPanels({
         entities={entities}
         quotes={quotes}
         showReview={showReview}
+        {...(review ? { review } : {})}
         highlightedId={highlighted}
         onHighlight={setHighlighted}
         {...(onPainted ? { onPainted } : {})}

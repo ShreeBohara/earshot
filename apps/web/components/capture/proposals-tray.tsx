@@ -1,14 +1,23 @@
 "use client";
 
 import "./capture.css";
-import type { EntityRef, FieldValue } from "@earshot/core";
+import { type EntityRef, type FieldValue, UNDO_WINDOW_MS } from "@earshot/core";
 import type { ProposalView } from "@earshot/events";
 import { Badge } from "@earshot/ui/components/badge";
 import { StatePill } from "@earshot/ui/components/state-pill";
 import { cn } from "@earshot/ui/lib/utils";
 import { tierOf } from "@earshot/understanding/tiers";
 import { CheckIcon, PencilIcon, ReplaceIcon, TriangleAlertIcon, XIcon } from "lucide-react";
-import { useDeferredValue, useId, useLayoutEffect, ViewTransition } from "react";
+import {
+  type FocusEvent,
+  useDeferredValue,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  ViewTransition,
+} from "react";
 import {
   askCandidates,
   CONFLICT_COPY,
@@ -19,6 +28,27 @@ import {
   targetHeading,
 } from "@/lib/capture/copy";
 import { afterNextPaint } from "@/lib/capture/feedback";
+import { CAUGHT_UP_COPY } from "@/lib/inbox/copy";
+import { type ReviewWriter, socketSink } from "@/lib/inbox/sinks";
+import type { InboxEntity, InboxSession } from "@/lib/inbox/types";
+import { ReviewedSection, SnoozedSection } from "../inbox/inbox-sections";
+import { ProposalCard as ReviewCard } from "../inbox/proposal-card";
+import { InboxShortcutsDialog } from "../inbox/shortcuts-dialog";
+import { useReviewList } from "../inbox/use-review-list";
+import { CaptureLink } from "./link";
+
+/** The live session, for the tray's reviews (Phase 5 WP6). */
+export interface TrayReview {
+  /**
+   * The session client: reviews go over the socket until SessionDO seals the session, then to the
+   * web route under the same ids.
+   */
+  readonly writer: ReviewWriter;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  /** Set once SessionDO's `session.sealed` arrives: the tray hands over to the inbox. */
+  readonly sealedAt: string | null;
+}
 
 export interface ProposalsTrayProps {
   proposals: readonly ProposalView[];
@@ -28,6 +58,11 @@ export interface ProposalsTrayProps {
   quotes?: ReadonlyMap<string, string>;
   /** Replays show each proposal's review status; the live screen shows them all as proposed. */
   showReview?: boolean;
+  /**
+   * The live screen's session: then the cards are the inbox's, reviewed here over the socket.
+   * Without it the tray only shows (a replay, a story).
+   */
+  review?: TrayReview;
   /** Hovering or focusing a card marks its quoted words in the transcript. */
   onHighlight?: (proposalId: string | null) => void;
   highlightedId?: string | null;
@@ -157,7 +192,7 @@ function ConflictDetails({ conflicts }: { conflicts: ProposalView["conflicts"] }
   );
 }
 
-function ProposalCard({
+function ReadOnlyCard({
   proposal,
   entities,
   quotes,
@@ -269,17 +304,220 @@ function ProposalCard({
   );
 }
 
+/** Marks a card's first paint, the turn's last latency mark, once per card it renders beside. */
+function PaintMark({
+  proposalId,
+  onPainted,
+}: {
+  proposalId: string;
+  onPainted: ((proposalId: string, at: number) => void) | undefined;
+}) {
+  useLayoutEffect(() => {
+    if (onPainted) afterNextPaint((at) => onPainted(proposalId, at));
+  }, [proposalId]);
+  return null;
+}
+
+/** The session's records as the inbox's card reads them: each with its account, no CRM values. */
+function trayEntities(entities: readonly EntityRef[]): Record<string, InboxEntity> {
+  const out: Record<string, InboxEntity> = {};
+  for (const entity of entities) {
+    out[entity.id] = {
+      id: entity.id,
+      kind: entity.kind,
+      name: entity.name,
+      accountId: entity.kind === "company" ? entity.id : (entity.parentId ?? null),
+      values: {},
+    };
+  }
+  return out;
+}
+
+/** The tray reviews its own debrief whether or not it's sealed: the socket, then the route. */
+const ALWAYS = () => true;
+
+/**
+ * The live tray (Phase 5 WP6): the inbox's card in tray mode, through the review engine the inbox
+ * uses, with the socket as its sink (`socketSink` on the session client). The same keys, focus
+ * rules, messages, undo, Reviewed, and Snoozed as the inbox, scoped to this list (the capture
+ * screen's own shortcuts ignore keys from it). After `end` it keeps working until the seal; then
+ * it says the debrief is done, links to the inbox, and its reviews go to the web route.
+ */
+function LiveTray({
+  proposals,
+  entities,
+  quotes,
+  review,
+  onHighlight,
+  highlightedId,
+  onPainted,
+  className,
+}: ProposalsTrayProps & { review: TrayReview }) {
+  const headingId = useId();
+  const [sink] = useState(() => socketSink(review.writer));
+  const [loadedAt] = useState(() => new Date().toISOString());
+  // New cards render in a transition, which is what lets <ViewTransition> animate them.
+  const shown = useDeferredValue(proposals);
+  const records = useMemo(() => trayEntities(entities), [entities]);
+  const words = useMemo(() => Object.fromEntries(quotes ?? []), [quotes]);
+  const sessions = useMemo<InboxSession[]>(
+    () => [
+      {
+        sessionId: review.writer.sessionId,
+        startedAt: review.startedAt,
+        endedAt: review.endedAt,
+        sealedAt: review.sealedAt,
+        focusEntityId: null,
+        proposals: shown,
+      },
+    ],
+    [review.writer.sessionId, review.startedAt, review.endedAt, review.sealedAt, shown],
+  );
+  const list = useReviewList({
+    sessions,
+    entities: records,
+    quotes: words,
+    sink,
+    surface: "tray",
+    reviewable: ALWAYS,
+    loadedAt,
+  });
+  const { store, sections, sending } = list;
+
+  // The session's own events catch up with the page's reviews: forget the page's state for them,
+  // so a later event (a reopen after a flag) shows through. Against what the list renders (the
+  // deferred proposals), so a card never drops out for the moment the two disagree.
+  useEffect(() => {
+    store.reconcile(shown);
+  }, [store, shown, sending]);
+
+  const open = sections.review.flatMap((group) =>
+    group.accounts.flatMap((account) => account.proposals),
+  );
+  const highlight = (proposalId: string) => ({
+    onPointerEnter: () => onHighlight?.(proposalId),
+    onPointerLeave: () => onHighlight?.(null),
+    onFocus: () => onHighlight?.(proposalId),
+    onBlur: (event: FocusEvent<HTMLLIElement>) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onHighlight?.(null);
+    },
+  });
+
+  return (
+    <section aria-labelledby={headingId} className={cn("flex flex-col gap-3", className)}>
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 id={headingId} className="font-medium text-sm">
+          Proposals
+        </h2>
+        <p className="text-muted-foreground text-xs">
+          <span className="font-mono tabular-nums">{proposals.length}</span>{" "}
+          {proposals.length === 1 ? "proposal" : "proposals"}
+        </p>
+      </div>
+      {review.sealedAt !== null ? (
+        <p
+          className="rounded-xl border bg-muted/40 p-3 text-pretty text-sm"
+          data-slot="handed-over"
+        >
+          This debrief is done. Review what&apos;s left in the{" "}
+          <CaptureLink
+            href="/inbox"
+            className="rounded-sm font-medium underline underline-offset-4 outline-none focus-visible:focus-ring"
+          >
+            inbox
+          </CaptureLink>
+          .
+        </p>
+      ) : review.endedAt !== null && proposals.length > 0 ? (
+        <p className="text-pretty text-muted-foreground text-xs" data-slot="finishing">
+          Keep reviewing here: Earshot saves this debrief about a minute after your last review, and
+          the inbox has the rest after that.
+        </p>
+      ) : null}
+      {shown.length === 0 ? (
+        <p className="rounded-xl border border-dashed p-4 text-muted-foreground text-sm">
+          Proposed CRM changes appear here, each with the words it came from.
+        </p>
+      ) : (
+        // biome-ignore lint/a11y/noStaticElementInteractions: the list's single-key shortcuts, scoped to it (WCAG 2.1.4)
+        <div className="flex flex-col gap-3" onKeyDown={list.onKeyDown} data-review-list="">
+          {open.length > 0 ? (
+            <ol aria-labelledby={headingId} className="flex flex-col gap-3">
+              {open.map((proposal) => {
+                const card = list.card(proposal.proposalId);
+                if (!card) return null;
+                return (
+                  <ViewTransition key={proposal.proposalId} enter="proposal-enter" default="none">
+                    <li
+                      {...highlight(proposal.proposalId)}
+                      data-highlighted={highlightedId === proposal.proposalId ? "" : undefined}
+                    >
+                      <PaintMark proposalId={proposal.proposalId} onPainted={onPainted} />
+                      <ReviewCard {...card} headingLevel={3} />
+                    </li>
+                  </ViewTransition>
+                );
+              })}
+            </ol>
+          ) : (
+            <div className="flex flex-col gap-1 rounded-xl border border-dashed p-4 text-center">
+              <h3
+                ref={list.roving.registerCaughtUp}
+                tabIndex={-1}
+                className="rounded-sm font-medium text-sm outline-none focus-visible:focus-ring"
+                data-slot="caught-up"
+              >
+                {CAUGHT_UP_COPY.done}
+              </h3>
+              <p className="text-pretty text-muted-foreground text-xs">
+                Every proposal from this debrief has a decision.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      <ReviewedSection
+        items={sections.reviewed}
+        entities={records}
+        undoWindowMs={UNDO_WINDOW_MS}
+        onReopen={list.reopen}
+        onUndoBatch={list.batch.undo}
+        headingLevel={3}
+      />
+      <SnoozedSection
+        items={sections.snoozed}
+        entities={records}
+        now={list.now}
+        onWake={list.wake}
+        headingLevel={3}
+      />
+      <InboxShortcutsDialog
+        open={list.helpOpen}
+        onOpenChange={list.setHelpOpen}
+        shortcuts={list.shortcuts}
+      />
+    </section>
+  );
+}
+
 /**
  * The proposals as they arrive: each card slides in over 200 ms with a View Transition (none
- * with reduced motion: capture.css), shows its type, the linker's decision on its record (the
- * record's name, with "matched by sound" or "matched in context" beside a link that wasn't by
- * the exact name; "Ask: Acme Dynamics or Akme Dynamics?" with the candidates and their odds;
- * "New"; "No record"), the words that named it, a conflict pill where the second witness heard
- * them differently, its fields with the words they came from, and its risk badges, in the
- * proposed state's blue. Read-only: Phase 5 answers the questions. Replays show review status
- * instead.
+ * with reduced motion: capture.css). On the live screen (`review`) the cards are the inbox's, and
+ * the rep reviews them here (Phase 5 WP6). Without it the tray only shows: each card's type, the
+ * linker's decision on its record (the record's name, with "matched by sound" or "matched in
+ * context" beside a link that wasn't by the exact name; "Ask: Acme Dynamics or Akme Dynamics?"
+ * with the candidates and their odds; "New"; "No record"), the words that named it, a conflict
+ * pill where the second witness heard them differently, its fields with the words they came from,
+ * and its risk badges, in the proposed state's blue. Replays show review status instead.
  */
-export function ProposalsTray({
+export function ProposalsTray(props: ProposalsTrayProps) {
+  if (props.review && !props.showReview) {
+    return <LiveTray key={props.review.writer.sessionId} {...props} review={props.review} />;
+  }
+  return <ReadOnlyTray {...props} />;
+}
+
+function ReadOnlyTray({
   proposals,
   entities,
   quotes,
@@ -312,7 +550,7 @@ export function ProposalsTray({
           {shown.map((proposal) => (
             <ViewTransition key={proposal.proposalId} enter="proposal-enter" default="none">
               <li>
-                <ProposalCard
+                <ReadOnlyCard
                   proposal={proposal}
                   entities={entities}
                   quotes={quotes}

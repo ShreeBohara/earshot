@@ -9,6 +9,7 @@ import {
   openEmptyInbox,
   openInboxWithSamples,
   reviewsSent,
+  settled,
 } from "./support";
 
 // axe (WCAG 2.2 AA tags, serious and critical) in every state the inbox has (Phase 5 spec WP5,
@@ -21,6 +22,7 @@ test.setTimeout(240_000);
 async function expectNoViolations(page: Page, state: string): Promise<void> {
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
+    await settled(page);
     expect(await seriousViolations(page), `${state} (${colorScheme})`).toEqual([]);
   }
   await page.emulateMedia({ colorScheme: "light" });

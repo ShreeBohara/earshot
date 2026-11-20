@@ -8,7 +8,8 @@
 // 4. the last card of the group before, when only earlier groups have cards left (the spec's
 //    order stops at 3 and then "All caught up", which would claim nothing's left while cards are);
 // 5. the "All caught up" heading.
-// Focus never falls to <body>: every answer names something focusable.
+// Focus never falls to <body>: every answer names something focusable. When "accept all" takes
+// several cards at once, `focusAfterBatch` applies the same rules to the group as a whole.
 
 export type FocusTarget =
   | { readonly kind: "card"; readonly id: string }
@@ -42,6 +43,39 @@ export function focusAfterRemoval(
   }
   for (const earlier of groups.slice(0, groupIndex).reverse()) {
     const last = earlier.at(-1);
+    if (last !== undefined) return card(last);
+  }
+  return CAUGHT_UP;
+}
+
+/**
+ * Where focus goes when several cards leave at once ("accept all", spec WP6): §4.8's rules for the
+ * group as one removal. A batch is confirmed from its debrief's header, above the cards, so the
+ * group is read again from its start:
+ * 1. the first card the batch left in its group (what stays for review, top first);
+ * 2. the first card of the next group;
+ * 3. the last card of a group before it;
+ * 4. the "All caught up" heading.
+ * Never <body>, however many leave together.
+ */
+export function focusAfterBatch(
+  groups: readonly (readonly string[])[],
+  removed: ReadonlySet<string>,
+): FocusTarget {
+  const groupIndex = groups.findIndex((group) => group.some((id) => removed.has(id)));
+  const stays = (group: readonly string[]) => group.filter((id) => !removed.has(id));
+  if (groupIndex < 0) {
+    const first = groups.map(stays).find((group) => group.length > 0)?.[0];
+    return first === undefined ? CAUGHT_UP : card(first);
+  }
+  const left = stays(groups[groupIndex] ?? [])[0];
+  if (left !== undefined) return card(left);
+  for (const later of groups.slice(groupIndex + 1)) {
+    const first = stays(later)[0];
+    if (first !== undefined) return card(first);
+  }
+  for (const earlier of groups.slice(0, groupIndex).reverse()) {
+    const last = stays(earlier).at(-1);
     if (last !== undefined) return card(last);
   }
   return CAUGHT_UP;

@@ -8,7 +8,8 @@ import { signInAsNewUser } from "../support/sign-in";
 export const CARDS = {
   /** A question: Dana Li (48%), Dana Lee (41%), or a new record. Loud. */
   dana: "Contact · Ask: Dana Li, Dana Lee, or a new record?",
-  pierAmount: "Deal update · Pier Logistics - Expansion",
+  /** Linked in context, below 0.97: quiet, with the name note beside the record. */
+  pierAmount: "Deal update · Pier Logistics - Expansion, matched in context",
   pierTask: "Task · Pier Logistics",
   danaLee: "Contact · Dana Lee",
   acmeStage: "Deal update · Acme Dynamics - Expansion",
@@ -44,6 +45,23 @@ export async function focused(page: Page): Promise<string> {
 /** Fails if focus is on <body> (spec §4.8: it never falls there). */
 export async function expectFocusOffBody(page: Page): Promise<void> {
   expect(await focused(page)).not.toBe("<body>");
+}
+
+/**
+ * Waits until no finite animation or transition is running, before axe reads the page. A dialog
+ * or toast caught mid-fade has text at partial opacity, which axe reads as low contrast; endless
+ * animations (a spinner) don't count.
+ */
+export async function settled(page: Page): Promise<void> {
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (animation) =>
+          animation.playState !== "running" ||
+          animation.effect?.getTiming().iterations === Number.POSITIVE_INFINITY,
+      ),
+  );
 }
 
 /** Signs up a new user with an empty workspace and opens the inbox. */

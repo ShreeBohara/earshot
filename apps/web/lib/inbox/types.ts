@@ -11,7 +11,14 @@ import type { ProposalView, ReviewView } from "@earshot/events";
 export type InboxReview = Pick<
   ReviewView,
   "reviewId" | "decision" | "target" | "mode" | "batchId" | "undoes" | "syncEligibleAt" | "ts"
->;
+> & {
+  /**
+   * The review event's seq in the session's log, when known. The tray's cards come from the
+   * session's own events, which carry it. The `proposals` row doesn't keep it, and the page's own
+   * optimistic review has none. `OptimisticReviews.reconcile` reads it.
+   */
+  readonly seq?: number;
+};
 
 /** A proposal as the inbox holds it: the projection's view, with a trimmed latest review. */
 export type InboxProposal = Omit<ProposalView, "review"> & { review: InboxReview | null };

@@ -164,18 +164,28 @@ function cardGroup(
   };
 }
 
-/** The inbox's sections, from the debriefs as they stand at `now` (ms since the epoch). */
+/** Whether a debrief's cards can be reviewed: in the inbox, once it's sealed in Postgres. */
+export function isSealed(session: Pick<InboxSession, "sealedAt">): boolean {
+  return session.sealedAt !== null;
+}
+
+/**
+ * The inbox's sections, from the debriefs as they stand at `now` (ms since the epoch).
+ * `reviewable` says which debriefs' cards can be reviewed now: the inbox's are sealed ones (the
+ * rest are "Finishing"); the capture screen's tray reviews its live debrief over the socket.
+ */
 export function inboxSections(
   sessions: readonly InboxSession[],
   entities: Entities,
   now: number,
+  reviewable: (session: InboxSession) => boolean = isSealed,
 ): InboxSections {
   const review: CardGroup[] = [];
   const finishing: FinishingGroup[] = [];
   const reviewed: SessionItem[] = [];
   const snoozed: SessionItem[] = [];
   for (const session of sessions) {
-    if (session.sealedAt === null) {
+    if (!reviewable(session)) {
       finishing.push({
         sessionId: session.sessionId,
         startedAt: session.startedAt,

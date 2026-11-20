@@ -1,7 +1,19 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { getReviewCount } from "@/lib/inbox/count";
+import { InboxNavLink } from "./inbox-nav-link";
 import { UserMenu } from "./user-menu";
 
-/** The signed-in header: the wordmark, the current workspace, and the account menu. */
+/**
+ * "Inbox" with its count, from one count query (lib/inbox/count.ts). It streams in behind the
+ * header, so the query never holds up the page: until it lands, the link says "Inbox" alone.
+ */
+async function InboxNavCount() {
+  const count = await getReviewCount();
+  return <InboxNavLink count={count} renderedAt={new Date().toISOString()} />;
+}
+
+/** The signed-in header: the wordmark, the current workspace, the pages, and the account menu. */
 export function AppHeader({
   workspaceName,
   name,
@@ -34,6 +46,9 @@ export function AppHeader({
           >
             Home
           </Link>
+          <Suspense fallback={<InboxNavLink count={null} renderedAt="" />}>
+            <InboxNavCount />
+          </Suspense>
           <Link
             href="/capture"
             className="rounded-md px-2 py-1.5 text-muted-foreground text-sm outline-none hover:bg-muted hover:text-foreground focus-visible:focus-ring"

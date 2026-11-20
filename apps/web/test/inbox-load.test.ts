@@ -19,6 +19,7 @@ import {
   readFixture,
   reviewV2,
   sealed,
+  snoozed,
   started,
   utterance,
 } from "@earshot/events/testing";
@@ -67,6 +68,7 @@ vi.mock("@/lib/reviews/deps", () => ({ sealRepairDeps: () => scope.repair }));
 
 const inboxRoute = await import("@/app/api/inbox/route");
 const { withViewerTenant } = await import("@/lib/auth/viewer");
+const { countForReview, readReviewCount } = await import("@/lib/inbox/count");
 
 const { crmEntities, sessions } = schema;
 const ORIGIN = "http://localhost:3000";
@@ -329,5 +331,57 @@ describe("GET /api/inbox", () => {
     expect(data.sessions).toHaveLength(1);
     expect(data.sessions[0]?.sealedAt).toBeNull();
     expect(await db.select().from(crmEntities)).toHaveLength(0);
+  });
+});
+
+describe("the inbox's count (Phase 5 WP6)", () => {
+  it("counts what the inbox shows for review, in one query: the viewer's sealed debriefs' open cards", async () => {
+    const viewer = await signIn("dana@earshot.example");
+    const sealedOpen = await sessionWithLog(viewer, debrief(1, "2026-11-19T10:00:00.000Z"));
+    // Decided, finishing, snoozed ahead: none of them waits for review.
+    await sessionWithLog(
+      viewer,
+      debrief(2, "2026-11-19T11:00:00.000Z", { after: [draft(6, reviewV2(1, "approved"))] }),
+    );
+    await sessionWithLog(viewer, debrief(3, "2026-11-19T12:00:00.000Z", { seal: false }));
+    await sessionWithLog(
+      viewer,
+      debrief(4, "2026-11-19T13:00:00.000Z", {
+        after: [draft(6, snoozed(1, "2099-01-01T09:00:00.000Z"))],
+      }),
+    );
+    // A snooze that has woken is back for review.
+    const woken = await sessionWithLog(
+      viewer,
+      debrief(5, "2026-11-19T14:00:00.000Z", {
+        after: [draft(6, snoozed(1, "2020-01-01T09:00:00.000Z"))],
+      }),
+    );
+    const count = await withTenant(db, tenantOf(viewer), (tx) =>
+      countForReview(tx, { userId: viewer.user.id, workspaceId: viewer.workspaceId }, NOW),
+    );
+    expect(count).toBe(2);
+
+    // The same cards the inbox would show for review.
+    const data = await load(viewer);
+    const sections = inboxSections(data.sessions, data.entities, NOW.getTime());
+    expect(sections.openCount).toBe(count);
+    expect(sections.review.map((group) => group.sessionId).sort()).toEqual(
+      [sealedOpen, woken].sort(),
+    );
+
+    // Another member's debriefs aren't the viewer's to review, nor counted.
+    const other = await signIn("sam@earshot.example");
+    await sessionWithLog(other, debrief(6, "2026-11-20T11:00:00.000Z"));
+    expect(await readReviewCount(viewer)).toBe(2);
+    expect(await readReviewCount(other)).toBe(1);
+  });
+
+  it("is null, not an error, when it can't be read", async () => {
+    const viewer = await signIn("dana@earshot.example");
+    await db.$client.close();
+    expect(await readReviewCount(viewer)).toBeNull();
+    // A fresh database for afterEach to close.
+    db = await cloneDb(template);
   });
 });

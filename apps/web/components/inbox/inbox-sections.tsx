@@ -3,7 +3,10 @@
 import { Button } from "@earshot/ui/components/button";
 import { LoaderCircleIcon } from "lucide-react";
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { reviewedRows } from "@/lib/inbox/batch";
 import {
+  BATCH_COPY,
+  batchRowWords,
   cardWords,
   decisionWords,
   FINISHING_COPY,
@@ -118,30 +121,72 @@ export function undoDeadline(item: SessionItem, undoWindowMs: number): number {
 /**
  * "Reviewed" (spec decision 7, WP5 step 7): every decision stays here with Undo until its sync
  * window closes (`syncEligibleAt`), then Reopen, which does the same: the card comes back and
- * takes focus. Undo never lives only in a toast.
+ * takes focus. Undo never lives only in a toast. A batch's cards share one row, and its one Undo
+ * reverses the batch (spec WP6).
  */
 export function ReviewedSection({
   items,
   entities,
   undoWindowMs,
   onReopen,
+  onUndoBatch,
+  headingLevel = 2,
 }: {
   items: readonly SessionItem[];
   entities: Readonly<Record<string, InboxEntity>>;
   undoWindowMs: number;
   onReopen: (proposalId: string, event: InputEventLike) => void;
+  onUndoBatch: (batchId: string, event: InputEventLike) => void;
+  /** 2 in the inbox, 3 in the capture screen's tray. */
+  headingLevel?: 2 | 3;
 }) {
   const now = useWindowClock(items.map((item) => undoDeadline(item, undoWindowMs)));
   const headingId = useId();
   if (items.length === 0) return null;
   const nameOf = nameFinder(entities);
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="font-medium text-base">
+      <Heading
+        id={headingId}
+        className={headingLevel === 2 ? "font-medium text-base" : "font-medium text-sm"}
+      >
         {SECTION_TITLES.reviewed}
-      </h2>
+      </Heading>
       <ul className="flex flex-col divide-y rounded-xl border">
-        {items.map((item) => {
+        {reviewedRows(items).map((row) => {
+          if (row.kind === "batch") {
+            const [first] = row.items;
+            const label = first && undoDeadline(first, undoWindowMs) > now ? "Undo" : "Reopen";
+            const words = batchRowWords(
+              row.items.map((item) =>
+                cardWords(item.proposal, nameOf, item.proposal.review?.target),
+              ),
+            );
+            const count = row.items.length;
+            return (
+              <li
+                key={`batch:${row.batchId}`}
+                className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5"
+                data-slot="reviewed"
+                data-batch-id={row.batchId}
+              >
+                <p className="min-w-0 text-sm">
+                  <span className="font-medium">{BATCH_COPY.decided}</span>
+                  <span className="text-muted-foreground">: {words}</span>
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`${label}: ${BATCH_COPY.decided.toLowerCase()}, ${count} ${count === 1 ? "proposal" : "proposals"}`}
+                  onClick={(event) => onUndoBatch(row.batchId, event)}
+                >
+                  {label}
+                </Button>
+              </li>
+            );
+          }
+          const { item } = row;
           const { proposal } = item;
           const what = cardWords(proposal, nameOf, proposal.review?.target);
           const decision = decisionWords(proposal);
@@ -182,20 +227,27 @@ export function SnoozedSection({
   entities,
   now,
   onWake,
+  headingLevel = 2,
 }: {
   items: readonly SessionItem[];
   entities: Readonly<Record<string, InboxEntity>>;
   now: number;
   onWake: (proposalId: string, event: InputEventLike) => void;
+  /** 2 in the inbox, 3 in the capture screen's tray. */
+  headingLevel?: 2 | 3;
 }) {
   const headingId = useId();
   if (items.length === 0) return null;
   const nameOf = nameFinder(entities);
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="font-medium text-base">
+      <Heading
+        id={headingId}
+        className={headingLevel === 2 ? "font-medium text-base" : "font-medium text-sm"}
+      >
         {SECTION_TITLES.snoozed}
-      </h2>
+      </Heading>
       <ul className="flex flex-col divide-y rounded-xl border">
         {items.map((item) => {
           const { proposal } = item;
