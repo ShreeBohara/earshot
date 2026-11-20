@@ -1,7 +1,21 @@
 // @earshot/evals/pilot: the pilot kit's pure parts (Phase 5 spec WP7; ADR-0039): the set's name,
-// seed, manifest, and results-file shapes, and the participants' orders. The builder (build.ts)
-// runs the 200 debriefs through the agent, so it isn't exported here: scripts/gen-pilot.ts and the
-// tests import it directly.
+// seed, manifest, and results-file shapes, the participants' orders, the statistics, and the
+// pre-registered analysis. The builder (build.ts) runs the 200 debriefs through the agent, so it
+// isn't exported here: scripts/gen-pilot.ts and the tests import it directly.
+export {
+  analyzeParticipant,
+  analyzePilot,
+  CATCH_THRESHOLD,
+  type Catch,
+  MEDIAN_THRESHOLD_MS,
+  MIN_DECISIONS,
+  type ParticipantAnalysis,
+  type PilotAnalysis,
+  POOLED_QUANTILE,
+  pilotAnalysisMarkdown,
+  type ResultsFile,
+  readResultsFile,
+} from "./analyze";
 export { pilotSetMarkdown, recordWords } from "./describe";
 export { balancedLatinRectangle, williamsRow } from "./latin";
 export {
@@ -33,3 +47,4 @@ export {
   sha256Hex,
   TierCounts,
 } from "./set";
+export { clopperPearson, median, nearestRank } from "./stats";

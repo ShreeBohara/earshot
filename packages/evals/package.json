@@ -30,6 +30,7 @@
     "eval:understanding": "tsx scripts/eval-understanding.ts",
     "linker:fit": "tsx scripts/fit-linker.ts",
     "linking:gen": "tsx scripts/gen-confusable.ts",
+    "pilot:analyze": "tsx scripts/pilot-analyze.ts",
     "pilot:gen": "tsx scripts/gen-pilot.ts",
     "smoke:select": "tsx scripts/select-smoke.ts",
     "test": "vitest run",
