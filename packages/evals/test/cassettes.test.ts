@@ -2,7 +2,7 @@ import { LLM_MODELS } from "@earshot/agent";
 import { CASSETTE_VERSION, SCENARIO_API_KEY } from "@earshot/agent/testing";
 import { containsKeyShape } from "@earshot/core";
 import { describe, expect, it } from "vitest";
-import { DEBRIEFS, expectedFields, turnTranscript } from "../src";
+import { DEBRIEFS, expectedDecision, expectedFields, turnTranscript } from "../src";
 import { EVAL_CASSETTES, evalCassette } from "../src/cassettes";
 import { EVAL_PROVIDERS, generateEvalCassettes, replayScript } from "../src/generate";
 
@@ -61,8 +61,19 @@ describe.each(EVAL_PROVIDERS)("replaying the %s cassettes through the real adapt
         expect(result?.proposals, where).toHaveLength(turn.expect.length);
         turn.expect.forEach((expected, n) => {
           const actual = result?.proposals[n];
-          expect(actual?.type, `${where} #${n + 1}`).toBe(expected.type);
-          expect(actual?.targetEntityId, `${where} #${n + 1}`).toBe(expected.target);
+          const label = `${where} #${n + 1}`;
+          expect(actual?.type, label).toBe(expected.type);
+          // The linker's decision, from the words the cassette quotes (ADR-0027).
+          const decision = expectedDecision(expected);
+          expect(actual?.target.decision, label).toBe(decision);
+          if (decision === "linked") expect(actual?.target.entityId, label).toBe(expected.target);
+          if (decision === "ask") {
+            expect(
+              actual?.target.candidates.map((candidate) => candidate.entityId),
+              label,
+            ).toContain(expected.target);
+          }
+          expect(actual?.linker, label).toBe("linker.v1");
           const values = Object.fromEntries(
             Object.entries(actual?.fields ?? {}).map(([name, field]) => [name, field.value]),
           );
@@ -75,13 +86,11 @@ describe.each(EVAL_PROVIDERS)("replaying the %s cassettes through the real adapt
             actual?.riskFlags.map((flag) => flag.kind),
             `${where} #${n + 1}`,
           ).not.toContain("unsupported");
-          if (expected.type === "contact") {
-            const isNew = expected.target === null;
-            expect(
-              actual?.riskFlags.some((flag) => flag.kind === "new_entity"),
-              `${where} #${n + 1}`,
-            ).toBe(isNew);
-          }
+          // A new record is flagged as one, and nothing else is.
+          expect(
+            actual?.riskFlags.some((flag) => flag.kind === "new_entity"),
+            label,
+          ).toBe(decision === "new");
         });
       });
     },

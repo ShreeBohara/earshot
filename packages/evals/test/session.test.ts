@@ -71,8 +71,20 @@ describe("DEMO_SESSION_ENTITIES", () => {
       kind: "contact",
       name: "Dana Lee",
       aliases: [],
+      parentId: "co_011",
     });
     expect(demoEntity("deal_028").name).toBe("Acme Dynamics - Expansion");
+  });
+
+  it("gives every contact and deal its company as parentId, as POST /api/sessions does", () => {
+    for (const entity of DEMO_SESSION_ENTITIES) {
+      if (entity.kind === "company") {
+        expect(entity).not.toHaveProperty("parentId");
+      } else {
+        expect(entity.parentId, entity.id).toBe(demoCompanyOf(entity.id));
+        expect(demoEntity(entity.parentId ?? "").kind).toBe("company");
+      }
+    }
   });
 });
 
@@ -87,13 +99,23 @@ describe("demoEntity and demoCompanyOf", () => {
 });
 
 describe("sessionContext", () => {
-  it("is the demo CRM plus the script's call time and zone", () => {
+  it("is the demo CRM plus the script's open account, call time, and zone", () => {
     for (const script of DEBRIEFS) {
       expect(sessionContext(script)).toEqual({
         entities: DEMO_SESSION_ENTITIES,
+        focusEntityId: script.focusEntityId ?? null,
         callTime: script.callTime,
         timeZone: script.timeZone,
       });
+    }
+  });
+
+  it("opens an account in most scripts, and leaves some sessions without one", () => {
+    const open = DEBRIEFS.filter((script) => script.focusEntityId !== undefined);
+    expect(open.length).toBeGreaterThan(20);
+    expect(open.length).toBeLessThan(DEBRIEFS.length);
+    for (const script of open) {
+      expect(demoEntity(script.focusEntityId ?? "").kind, script.id).toBe("company");
     }
   });
 });

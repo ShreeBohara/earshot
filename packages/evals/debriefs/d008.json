@@ -5,6 +5,7 @@
   "voice": "am_eric",
   "callTime": "2026-11-30T16:50:00.000Z",
   "timeZone": "America/Denver",
+  "focusEntityId": "co_037",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_037",
+          "named": {
+            "quote": "Blue Harbor Analytics"
+          },
           "fields": {
             "body": {
               "value": "Kathryn Moore says they'll sign the site rollout if we can start in January.",
@@ -29,6 +33,11 @@
         {
           "type": "deal_update",
           "target": "deal_010",
+          "named": {
+            "quote": "Blue Harbor site rollout",
+            "company": "Blue Harbor"
+          },
+          "decision": "ask",
           "fields": {
             "stage": {
               "value": "decision maker bought in",
@@ -49,6 +58,9 @@
         {
           "type": "task",
           "target": "ct_111",
+          "named": {
+            "quote": "Zoe Park"
+          },
           "fields": {
             "title": {
               "value": "Loop Zoe Park in on the kickoff invite",

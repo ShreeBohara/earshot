@@ -5,6 +5,7 @@
   "voice": "bm_daniel",
   "callTime": "2026-12-02T18:20:00.000Z",
   "timeZone": "America/Denver",
+  "focusEntityId": "co_053",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_053",
+          "named": {
+            "quote": "Lantern Hospitality"
+          },
           "fields": {
             "body": {
               "value": "They want to roll out guest messaging to six more hotels.",
@@ -29,6 +33,9 @@
         {
           "type": "task",
           "target": "ct_078",
+          "named": {
+            "quote": "Katherine Moore"
+          },
           "fields": {
             "title": {
               "value": "Send Katherine Moore references from two hotel groups",
@@ -70,6 +77,9 @@
         {
           "type": "commitment",
           "target": "co_053",
+          "named": {
+            "quote": "Lantern"
+          },
           "fields": {
             "text": {
               "value": "Run a pricing workshop with Lantern Hospitality in January",

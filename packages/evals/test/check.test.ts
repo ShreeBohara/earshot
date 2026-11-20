@@ -6,6 +6,8 @@ import {
   type DebriefTurn,
   datasetIdsFor,
   debrief,
+  type ExpectedProposal,
+  expectedDecision,
   turnProblems,
   turnsFromEvents,
   turnTranscript,
@@ -39,9 +41,20 @@ describe("turnsFromEvents", () => {
       event("proposal.created", {
         proposalId: uuid(201),
         type: "deal_update",
-        targetEntityId: "deal_028",
+        target: {
+          decision: "linked",
+          entityId: "deal_028",
+          kind: "deal",
+          basis: "exact",
+          p: 0.99,
+          mention: null,
+          company: null,
+          candidates: [{ entityId: "deal_028", p: 0.99 }],
+        },
         fields: { amount: { value: 42000 } },
         riskFlags: [],
+        supersedes: null,
+        linker: "linker.v1",
       }),
       event("turn.completed", {
         turnId: turn1,
@@ -73,7 +86,13 @@ describe("turnsFromEvents", () => {
         transcript: "Bump the deal to forty-two.",
         outcome: "proposals",
         proposals: [
-          { type: "deal_update", targetEntityId: "deal_028", fields: { amount: { value: 42000 } } },
+          {
+            type: "deal_update",
+            targetEntityId: "deal_028",
+            decision: "linked",
+            candidates: ["deal_028"],
+            fields: { amount: { value: 42000 } },
+          },
         ],
         latency: {
           totalMs: 436,
@@ -89,6 +108,35 @@ describe("turnsFromEvents", () => {
         proposals: [],
         latency: null,
       },
+    ]);
+  });
+
+  it("reads a v1 proposal as its upcast: a target is linked, none is new or none", () => {
+    seq = 0;
+    const turn = uuid(903);
+    const v1 = (id: number, targetEntityId: string | null, flags: { kind: string }[]) =>
+      event("proposal.created", {
+        proposalId: uuid(id),
+        type: "contact",
+        targetEntityId,
+        fields: {},
+        riskFlags: flags,
+      });
+    const [proposals] = turnsFromEvents([
+      v1(301, "ct_045", []),
+      v1(302, null, [{ kind: "new_entity" }]),
+      v1(303, null, []),
+      event("turn.completed", {
+        turnId: turn,
+        utteranceIds: [],
+        outcome: "proposals",
+        proposalIds: [uuid(301), uuid(302), uuid(303)],
+      }),
+    ]).map((result) => result.proposals);
+    expect(proposals?.map((proposal) => [proposal.decision, proposal.targetEntityId])).toEqual([
+      ["linked", "ct_045"],
+      ["new", null],
+      ["none", null],
     ]);
   });
 
@@ -113,7 +161,9 @@ describe("turnProblems", () => {
       outcome: turn.expect.length > 0 ? "proposals" : "nothing_to_propose",
       proposals: turn.expect.map((expected) => ({
         type: expected.type,
-        targetEntityId: expected.target,
+        targetEntityId: expectedDecision(expected) === "linked" ? expected.target : null,
+        decision: expectedDecision(expected),
+        candidates: expected.target === null ? [] : [expected.target],
         fields: Object.fromEntries(
           Object.entries(expected.fields).map(([name, field]) => [name, { value: field?.value }]),
         ),
@@ -139,6 +189,9 @@ describe("turnProblems", () => {
         ...proposal,
         targetEntityId:
           proposal.targetEntityId === null ? null : (toLive.get(proposal.targetEntityId) ?? null),
+        candidates: proposal.candidates.map((id) =>
+          id === null ? null : (toLive.get(id) ?? null),
+        ),
       })),
     };
     const live_ = { exactTranscript: false };
@@ -151,6 +204,24 @@ describe("turnProblems", () => {
   it("finds nothing wrong with a turn that went as scripted, quiet turns included", () => {
     for (const turn of script.turns)
       expect(turnProblems(turn, asScripted(turn), exact)).toEqual([]);
+  });
+
+  it("wants a scripted question to offer the scripted record", () => {
+    // d008's second turn names "Blue Harbor site rollout", a deal linker v1 asks about.
+    const scripted = debrief("d008").turns[1];
+    if (!scripted) throw new Error("d008 changed shape");
+    expect(expectedDecision(scripted.expect[0] as ExpectedProposal)).toBe("ask");
+    const actual = asScripted(scripted);
+    expect(turnProblems(scripted, actual, exact)).toEqual([]);
+    const proposal = actual.proposals[0];
+    if (!proposal) throw new Error("d008 turn 2 expects a deal update");
+    expect(
+      turnProblems(
+        scripted,
+        { ...actual, proposals: [{ ...proposal, candidates: ["deal_027"] }] },
+        exact,
+      ),
+    ).toEqual(["proposal 1 asks without offering deal_010"]);
   });
 
   it("compares key fields exactly, and free text not at all", () => {
@@ -185,6 +256,15 @@ describe("turnProblems", () => {
     expect(
       turnProblems(first, { ...actual, proposals: [{ ...note, targetEntityId: "co_012" }] }, exact),
     ).toEqual(["proposal 1 targets co_012, not co_011"]);
+    // The linker's decision counts: a question or a new record isn't the scripted link.
+    const asked = { ...note, decision: "ask" as const, targetEntityId: null };
+    expect(turnProblems(first, { ...actual, proposals: [asked] }, exact)).toEqual([
+      "proposal 1 targets a question, not co_011",
+    ]);
+    const created = { ...note, decision: "new" as const, targetEntityId: null };
+    expect(turnProblems(first, { ...actual, proposals: [created] }, exact)).toEqual([
+      "proposal 1 targets a new record, not co_011",
+    ]);
     expect(turnProblems(quiet, { ...asScripted(quiet), outcome: "invalid_output" }, exact)).toEqual(
       ["ended as invalid_output, not nothing_to_propose"],
     );

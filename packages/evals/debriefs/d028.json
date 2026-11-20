@@ -5,6 +5,7 @@
   "voice": "af_heart",
   "callTime": "2026-12-07T15:05:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_047",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,10 @@
         {
           "type": "deal_update",
           "target": "deal_034",
+          "named": {
+            "quote": "Ironbridge Textiles renewal",
+            "company": "Ironbridge Textiles"
+          },
           "fields": {
             "amount": {
               "value": 31500,
@@ -29,6 +34,10 @@
         {
           "type": "deal_update",
           "target": "deal_034",
+          "named": {
+            "quote": "Ironbridge renewal",
+            "company": "Ironbridge"
+          },
           "fields": {
             "stage": {
               "value": "contract sent",

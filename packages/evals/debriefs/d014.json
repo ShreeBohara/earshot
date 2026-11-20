@@ -6,6 +6,7 @@
   "speed": 0.95,
   "callTime": "2026-12-08T17:10:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_012",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -14,6 +15,9 @@
         {
           "type": "note",
           "target": "co_012",
+          "named": {
+            "quote": "Nite Security Group"
+          },
           "fields": {
             "body": {
               "value": "Sarah Cohen wants to pilot badge analytics at two sites.",
@@ -30,6 +34,9 @@
         {
           "type": "task",
           "target": "ct_149",
+          "named": {
+            "quote": "Sarah Cohen"
+          },
           "fields": {
             "title": {
               "value": "Send Sarah Cohen a pilot quote for $15,000",
@@ -56,6 +63,9 @@
         {
           "type": "task",
           "target": "co_012",
+          "named": {
+            "quote": "Nite Security"
+          },
           "fields": {
             "title": {
               "value": "Complete the security questionnaire",

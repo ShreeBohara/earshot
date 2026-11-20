@@ -11,9 +11,11 @@
 // Production code must not import this module: it pulls in the AI SDK through the adapters.
 import {
   createProposalExtractor,
+  type LinkSession,
   LLM_MODELS,
   runTurn,
   type ToolProposal,
+  type ToolTarget,
   type TurnResult,
 } from "@earshot/agent";
 import {
@@ -29,9 +31,10 @@ import {
   type ScriptedResponse,
 } from "@earshot/agent/testing";
 import type { LlmProvider, UtteranceFinalV2 } from "@earshot/core";
+import { buildLinkIndex, type LinkIndex } from "@earshot/understanding/link";
 import { DEBRIEFS } from "./debriefs";
-import type { DebriefScript, ExpectedField, ExpectedProposal } from "./schema";
-import { demoEntity, sessionContext, turnTranscript } from "./session";
+import { type DebriefScript, type ExpectedField, type ExpectedProposal, namedOf } from "./schema";
+import { DEMO_SESSION_ENTITIES, demoEntity, sessionContext, turnTranscript } from "./session";
 
 export const EVAL_PROVIDERS: readonly LlmProvider[] = ["anthropic", "groq"];
 
@@ -79,12 +82,41 @@ function amountOrNull(value: ExpectedField | undefined): { value: number; quote:
   return { value: value.value, quote: value.quote };
 }
 
+/** The demo CRM's link index, which every eval session shares: built once, on first use. */
+let evalIndex: LinkIndex | undefined;
+function demoIndex(): LinkIndex {
+  evalIndex ??= buildLinkIndex(DEMO_SESSION_ENTITIES);
+  return evalIndex;
+}
+
+/** A script's session as the linker sees it at its start: the demo CRM, its account, no links. */
+export function evalSession(script: DebriefScript): LinkSession {
+  return { index: demoIndex(), focusEntityId: script.focusEntityId ?? null, recent: [] };
+}
+
 /**
- * The proposal as the model would draft it: the target by its exact name in the session's
- * entities, and every field of the type present, `null` when the rep didn't mention it.
+ * The target as tool schema v2 drafts it: the words the rep named the record with, exactly as
+ * said, their kind, and the company said with them; null when the turn names no record.
+ */
+function toolTarget(expected: ExpectedProposal): ToolTarget | null {
+  const named = namedOf(expected);
+  if (named === null) return null;
+  const kind = named.kind ?? (expected.target === null ? null : demoEntity(expected.target).kind);
+  if (kind === null) throw new TypeError("a named record that isn't in the CRM needs a kind");
+  return {
+    quote: named.quote,
+    kind,
+    company: named.company === undefined ? null : { quote: named.company },
+  };
+}
+
+/**
+ * The proposal as the model would draft it with tool schema v2: the words that named its record
+ * (a contact's record is its `name`), and every field of the type present, `null` when the rep
+ * didn't mention it.
  */
 export function toolProposal(expected: ExpectedProposal): ToolProposal {
-  const target = expected.target === null ? null : demoEntity(expected.target).name;
+  const target = toolTarget(expected);
   switch (expected.type) {
     case "note":
       return { type: "note", target, fields: { body: text(expected.fields.body) } };
@@ -100,7 +132,6 @@ export function toolProposal(expected: ExpectedProposal): ToolProposal {
     case "contact":
       return {
         type: "contact",
-        target,
         fields: {
           name: text(expected.fields.name),
           title: textOrNull(expected.fields.title),
@@ -133,13 +164,14 @@ export function toolProposal(expected: ExpectedProposal): ToolProposal {
 }
 
 /**
- * Plausible token counts, not measurements: the system prompt with all 250 demo entities and the
- * tool schema is about 3,600 tokens, plus the transcript; the answer grows with its proposals.
+ * Plausible token counts, not measurements: prompt v2 and the tool schema are about 2,000 tokens,
+ * the 250-record list Phase 3 sent (about 1,600) gone, plus the transcript; the answer grows with
+ * its proposals.
  */
 function tokens(script: DebriefScript, turnIndex: number, proposals: number) {
   const transcript = script.turns[turnIndex]?.text ?? "";
   return {
-    input: 3_600 + Math.ceil(transcript.length / 4),
+    input: 2_000 + Math.ceil(transcript.length / 4),
     output: 24 + 64 * proposals,
     reasoning: 36 + 12 * proposals,
   };
@@ -183,7 +215,7 @@ export function evalScenario(
     turn: {
       turnId: evalTurnId(script, turnIndex),
       utterances: [evalUtterance(script, turnIndex)],
-      entities: context.entities,
+      session: evalSession(script),
       callTime: context.callTime,
       timeZone: context.timeZone,
     },
@@ -225,8 +257,9 @@ export async function generateEvalCassettes(
 
 /**
  * Replays a script's cassette through the real adapter and `runTurn`, turn by turn, as
- * `SessionDO` will in an e2e run, and returns each turn's result plus whatever the cassette
- * couldn't answer. The tests use it to check the cassettes yield the scripts' proposals.
+ * `SessionDO` does in an e2e run, each turn seeing the links the turns before it made, and returns
+ * each turn's result plus whatever the cassette couldn't answer. The tests use it to check the
+ * cassettes yield the scripts' proposals.
  */
 export async function replayScript(
   provider: LlmProvider,
@@ -238,22 +271,23 @@ export async function replayScript(
   const context = sessionContext(script);
   const results: TurnResult[] = [];
   let ids = 0;
+  let session = evalSession(script);
   for (let index = 0; index < script.turns.length; index++) {
-    results.push(
-      await runTurn({
-        extractor,
-        turnId: evalTurnId(script, index),
-        utterances: [evalUtterance(script, index)],
-        entities: context.entities,
-        callTime: context.callTime,
-        timeZone: context.timeZone,
-        apiKey: SCENARIO_API_KEY,
-        signal: new AbortController().signal,
-        sleep: async () => {},
-        newId: () => `01a1c6e6-0000-7000-8000-${(++ids).toString(16).padStart(12, "0")}`,
-        random: () => 0.5,
-      }),
-    );
+    const result = await runTurn({
+      extractor,
+      turnId: evalTurnId(script, index),
+      utterances: [evalUtterance(script, index)],
+      session,
+      callTime: context.callTime,
+      timeZone: context.timeZone,
+      apiKey: SCENARIO_API_KEY,
+      signal: new AbortController().signal,
+      sleep: async () => {},
+      newId: () => `01a1c6e6-0000-7000-8000-${(++ids).toString(16).padStart(12, "0")}`,
+      random: () => 0.5,
+    });
+    results.push(result);
+    session = { ...session, recent: result.recent };
   }
   return { results, misses: fetch.misses.length, unplayed: fetch.remaining() };
 }

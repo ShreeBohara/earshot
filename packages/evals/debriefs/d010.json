@@ -5,6 +5,7 @@
   "voice": "bm_george",
   "callTime": "2026-12-02T16:40:00.000Z",
   "timeZone": "Europe/London",
+  "focusEntityId": "co_046",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -14,6 +15,10 @@
         {
           "type": "deal_update",
           "target": "deal_005",
+          "named": {
+            "quote": "Harborview Marine renewal",
+            "company": "Harborview Marine"
+          },
           "fields": {
             "amount": {
               "value": 185000,
@@ -30,6 +35,10 @@
         {
           "type": "deal_update",
           "target": "deal_005",
+          "named": {
+            "quote": "Harborview Marine renewal",
+            "company": "Harborview Marine"
+          },
           "fields": {
             "closeDate": {
               "value": "2027-01-20",
@@ -52,6 +61,9 @@
         {
           "type": "task",
           "target": "ct_143",
+          "named": {
+            "quote": "Muhammad Hassan"
+          },
           "fields": {
             "title": {
               "value": "Send Muhammad Hassan the updated terms",

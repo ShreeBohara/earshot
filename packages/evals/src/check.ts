@@ -3,18 +3,33 @@
 // folds them into one result per push-to-talk press, and checks each against the script:
 //
 // - the outcome: `proposals`, or `nothing_to_propose` for a turn that expects none;
-// - each proposal, in order: its type, its demo CRM target id, and its `KEY_FIELDS`, exactly.
+// - each proposal, in order: its type, its target, and its `KEY_FIELDS`, exactly.
+//
+// The target is the linker's decision (Phase 4, WP8): linked to the script's demo CRM record,
+// asked about with that record among the candidates, a new record, or none, as `expectedDecision`
+// reads the script. `proposal.created` v1 events read as their upcast would (ADR-0027).
 //
 // Free text (a note's body, a task's title) isn't compared: CI's cassettes reproduce it word for
 // word, a live model won't, and Phase 4 scores it.
-import type { EntityRef, EventEnvelope, ProposalType, TurnOutcome } from "@earshot/core";
-import { type DebriefTurn, type ExpectedField, KEY_FIELDS } from "./schema";
+import type {
+  EntityRef,
+  EventEnvelope,
+  ProposalTypeV2,
+  TargetDecision,
+  TurnOutcome,
+} from "@earshot/core";
+import { type DebriefTurn, type ExpectedField, expectedDecision, KEY_FIELDS } from "./schema";
 import { DEMO_SESSION_ENTITIES, turnTranscript } from "./session";
 
 /** The parts of a `proposal.created` payload an eval compares. */
 export interface ActualProposal {
-  readonly type: ProposalType;
+  readonly type: ProposalTypeV2;
+  /** The linked record (`target.entityId`), or null. */
   readonly targetEntityId: string | null;
+  /** What the linker decided. */
+  readonly decision: TargetDecision;
+  /** The records an "ask" offers, most likely first; null is "new". */
+  readonly candidates: readonly (string | null)[];
   readonly fields: Readonly<Record<string, { readonly value: unknown }>>;
 }
 
@@ -68,13 +83,7 @@ export function turnsFromEvents(events: Iterable<EventEnvelope>): ActualTurn[] {
       }
       case "proposal.created": {
         const id = asString(payload.proposalId);
-        if (id) {
-          proposals.set(id, {
-            type: payload.type as ProposalType,
-            targetEntityId: asString(payload.targetEntityId) ?? null,
-            fields: (payload.fields ?? {}) as ActualProposal["fields"],
-          });
-        }
+        if (id) proposals.set(id, actualProposal(payload));
         break;
       }
       case "turn.measured": {
@@ -111,8 +120,56 @@ export function turnsFromEvents(events: Iterable<EventEnvelope>): ActualTurn[] {
   });
 }
 
+const DECISIONS: readonly TargetDecision[] = ["linked", "ask", "new", "none"];
+
+/**
+ * A `proposal.created` payload, v2 or v1, as an eval compares it. A v1 payload reads as the
+ * upcaster has it: a `targetEntityId` is linked; none is new when flagged `new_entity`, else none.
+ */
+function actualProposal(payload: Payload): ActualProposal {
+  const fields = (payload.fields ?? {}) as ActualProposal["fields"];
+  const type = payload.type as ProposalTypeV2;
+  const target = payload.target as Payload | null | undefined;
+  if (target && typeof target === "object") {
+    const decision = DECISIONS.find((candidate) => candidate === target.decision) ?? "none";
+    const candidates = Array.isArray(target.candidates)
+      ? target.candidates.map((candidate) => asString((candidate as Payload)?.entityId) ?? null)
+      : [];
+    return {
+      type,
+      targetEntityId: asString(target.entityId) ?? null,
+      decision,
+      candidates,
+      fields,
+    };
+  }
+  const targetEntityId = asString(payload.targetEntityId) ?? null;
+  const flags = Array.isArray(payload.riskFlags) ? (payload.riskFlags as Payload[]) : [];
+  const decision: TargetDecision =
+    targetEntityId !== null
+      ? "linked"
+      : flags.some((flag) => flag?.kind === "new_entity")
+        ? "new"
+        : "none";
+  return { type, targetEntityId, decision, candidates: [], fields };
+}
+
 function show(value: unknown): string {
   return value === undefined ? "missing" : JSON.stringify(value);
+}
+
+/** A target in words: the record's id, or what the linker did instead. */
+function describeTarget(decision: TargetDecision, entityId: string | null): string {
+  switch (decision) {
+    case "linked":
+      return entityId ?? "no record";
+    case "ask":
+      return "a question";
+    case "new":
+      return "a new record";
+    case "none":
+      return "no record";
+  }
 }
 
 export interface TurnCheckOptions {
@@ -174,14 +231,20 @@ export function turnProblems(
       problems.push(`${where} is a ${got.type}, not a ${expected.type}`);
       return;
     }
-    const target =
-      got.targetEntityId === null
-        ? null
-        : (options.targetIds?.get(got.targetEntityId) ?? got.targetEntityId);
-    if (target !== expected.target) {
+    const toDataset = (id: string | null) =>
+      id === null ? null : (options.targetIds?.get(id) ?? id);
+    const decision = expectedDecision(expected);
+    const target = toDataset(got.targetEntityId);
+    if (got.decision !== decision || (decision === "linked" && target !== expected.target)) {
       problems.push(
-        `${where} targets ${target ?? "a new record"}, not ${expected.target ?? "a new record"}`,
+        `${where} targets ${describeTarget(got.decision, target)}, not ${describeTarget(decision, expected.target)}`,
       );
+    } else if (
+      decision === "ask" &&
+      expected.target !== null &&
+      !got.candidates.map(toDataset).includes(expected.target)
+    ) {
+      problems.push(`${where} asks without offering ${expected.target}`);
     }
     const fields = expected.fields as Readonly<Record<string, ExpectedField | undefined>>;
     for (const name of KEY_FIELDS[expected.type]) {

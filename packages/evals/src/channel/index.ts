@@ -27,7 +27,7 @@ export {
   type HearOptions,
   hearBiased,
   hearUnbiased,
-  keytermList,
+  keytermListV1,
   mishear,
   type NearSnap,
   snapToKeyterms,

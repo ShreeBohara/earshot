@@ -57,13 +57,20 @@ function spoken(term: string): string {
 }
 
 /**
- * The session's keyterms, as `apps/web/lib/voice/keyterms.ts` builds them for AssemblyAI: the
- * open account, its contacts, its deals, then the other companies (by name, since every demo
- * row has the same `updated_at`); each source's name and then its aliases, without repeats
- * ignoring case, at least 2 and at most 50 characters, the first `maxTerms`. With no account
- * open that's the companies alone, and the last ones alphabetically don't make the cut.
+ * The session's keyterms under the v1 policy: frozen as `apps/web/lib/voice/keyterms.ts` built
+ * them for AssemblyAI when `confusable.v1` was generated (Phase 4 WP3). The open account, its
+ * contacts, its deals, then the other companies (by name, since every demo row has the same
+ * `updated_at`); each source's name and then its aliases, without repeats ignoring case, at least
+ * 2 and at most 50 characters, the first `maxTerms`. With no account open that's the companies
+ * alone, and the last ones alphabetically don't make the cut.
+ *
+ * The web app's policy has moved on (Phase 4 WP8, ADR-0028): every source's name now comes before
+ * any alias, so with no account open every company is boosted. This copy deliberately doesn't
+ * follow, because `confusable.v1` and `baselines/linking.json` were built with it and a test holds
+ * the set to its committed bytes. A set built on the new policy is `confusable.v2`, with its own
+ * baseline; it is never an edit to v1.
  */
-export function keytermList(
+export function keytermListV1(
   entities: readonly EntityRef[],
   focusEntityId: string | null,
   maxTerms: number = CHANNEL_PARAMS.biased.maxKeyterms,

@@ -5,6 +5,7 @@
   "voice": "af_kore",
   "callTime": "2026-12-11T20:15:00.000Z",
   "timeZone": "America/Phoenix",
+  "focusEntityId": "co_033",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_033",
+          "named": {
+            "quote": "Marsh Medical"
+          },
           "fields": {
             "body": {
               "value": "Mary Allen wants a cold storage monitoring pilot.",
@@ -29,6 +33,9 @@
         {
           "type": "note",
           "target": "co_033",
+          "named": {
+            "quote": "Marsh"
+          },
           "fields": {
             "body": {
               "value": "The pilot would cover eight clinics for ninety days at $9,600.",
@@ -45,6 +52,9 @@
         {
           "type": "commitment",
           "target": "ct_135",
+          "named": {
+            "quote": "Mary Allen"
+          },
           "fields": {
             "text": {
               "value": "Send Mary Allen the pilot agreement",

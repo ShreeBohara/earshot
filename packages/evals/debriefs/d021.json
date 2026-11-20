@@ -6,6 +6,7 @@
   "speed": 1.1,
   "callTime": "2026-11-19T17:00:00.000Z",
   "timeZone": "America/Chicago",
+  "focusEntityId": "co_020",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -14,6 +15,9 @@
         {
           "type": "note",
           "target": "co_020",
+          "named": {
+            "quote": "Quarry Lane Media"
+          },
           "fields": {
             "body": {
               "value": "Priya Nair wants the analytics add-on live before their spring campaign.",
@@ -31,6 +35,10 @@
         {
           "type": "deal_update",
           "target": "deal_012",
+          "named": {
+            "quote": "Quarry Lane analytics add-on",
+            "company": "Quarry Lane"
+          },
           "fields": {
             "stage": {
               "value": "qualified to buy",
@@ -51,6 +59,9 @@
         {
           "type": "task",
           "target": "ct_072",
+          "named": {
+            "quote": "Shawn Murphy"
+          },
           "fields": {
             "title": {
               "value": "Send Shawn Murphy the order form",
