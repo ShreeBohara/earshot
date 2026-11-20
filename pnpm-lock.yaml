@@ -293,6 +293,9 @@ catalogs:
     wrangler:
       specifier: ^4.148.0
       version: 4.161.0
+    yaml:
+      specifier: ^2.9.1
+      version: 2.9.1
     zod:
       specifier: ^4.6.0
       version: 4.6.7
@@ -666,6 +669,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@26.6.6)(@vitest/browser-playwright@4.1.12)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.1
 
   packages/events:
     dependencies:
