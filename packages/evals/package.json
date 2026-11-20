@@ -22,6 +22,7 @@
     "eval:budget": "tsx scripts/eval-live-budget.ts",
     "eval:linking": "tsx scripts/eval-linking.ts",
     "eval:report": "tsx scripts/eval-report.ts",
+    "eval:understanding": "tsx scripts/eval-understanding.ts",
     "linker:fit": "tsx scripts/fit-linker.ts",
     "linking:gen": "tsx scripts/gen-confusable.ts",
     "test": "vitest run",
