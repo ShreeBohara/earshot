@@ -1,9 +1,9 @@
 // One turn's extraction, as SessionDO runs it on `turn_end` (spec WP6 step 4): extract with
-// retries inside the turn's deadline, then hand back the events to append, in order:
-// `proposal.created` for each proposal, `usage.recorded`, and `turn.completed`.
+// retries inside the turn's deadline, understand the drafts (Phase 4 spec §4.3: evidence, the
+// linker, the normalizers, the faithfulness check), then hand back the events to append, in
+// order: `proposal.created` v2 for each proposal, `usage.recorded`, and `turn.completed`.
 import {
-  type EntityRef,
-  type ProposalCreatedV1,
+  type ProposalCreatedV2,
   type SessionErrorCode,
   type TurnCompletedV1,
   type TurnOutcome,
@@ -15,6 +15,7 @@ import { ExtractionError, type ExtractionFailure } from "./errors";
 import type { ProposalExtractor } from "./extractor";
 import { roundUsd } from "./prices";
 import { DEFAULT_RETRY_POLICY, nextRetryDelay, type RetryPolicy } from "./retry";
+import { type LinkSession, understandTurn } from "./understand";
 import { addUsage, hasTokens, type TokenUsage, ZERO_USAGE } from "./usage";
 
 /** What the client sees while a turn runs: SessionDO's `working` message, never logged. */
@@ -26,9 +27,13 @@ export interface RunTurnInput {
   readonly extractor: ProposalExtractor;
   /** From `turn_end`. */
   readonly turnId: string;
-  /** The turn's utterances, in order. None means nothing to propose, with no call made. */
+  /**
+   * The turn's utterances, in order. Only the biased witness's are read: an unbiased utterance
+   * (the second witness's) never reaches extraction. None means nothing to propose, with no call.
+   */
   readonly utterances: readonly UtteranceFinalV2[];
-  readonly entities: readonly EntityRef[];
+  /** The session's records, open account, and earlier links, for the linker. */
+  readonly session: LinkSession;
   readonly callTime: string;
   readonly timeZone: string;
   /** From `turn_end.key`: passed to the extractor and referenced nowhere else. */
@@ -46,8 +51,13 @@ export interface RunTurnInput {
 
 export interface TurnResult {
   readonly outcome: TurnOutcome;
-  /** `proposal.created` payloads, to append in order before the others. */
-  readonly proposals: readonly ProposalCreatedV1[];
+  /** `proposal.created` v2 payloads, to append in order before the others. */
+  readonly proposals: readonly ProposalCreatedV2[];
+  /**
+   * The session's earlier links once this turn's are added, most recent first, at most 20: what
+   * SessionDO keeps as `link_recent`. The input's, unchanged, when the turn proposed nothing.
+   */
+  readonly recent: readonly string[];
   /** `usage.recorded`, when any call reported tokens; null when nothing was billed. */
   readonly usage: UsageRecordedV1 | null;
   /** `turn.completed`, to append last. */
@@ -116,7 +126,14 @@ export async function runTurn(input: RunTurnInput): Promise<TurnResult> {
   const sleep = input.sleep ?? abortableSleep;
   const newId = input.newId ?? uuidv7;
   const random = input.random ?? Math.random;
-  const utteranceIds = input.utterances.map((utterance) => utterance.utteranceId);
+  // Extraction never reads the second witness's words (spec §4.2).
+  const utterances = input.utterances.filter((utterance) => utterance.witness !== "unbiased");
+  const utteranceIds = utterances.map((utterance) => utterance.utteranceId);
+  const { session } = input;
+  const openAccount =
+    session.focusEntityId === null
+      ? null
+      : (session.index.byId.get(session.focusEntityId)?.entity.name ?? null);
 
   let attempts = 0;
   let llmMs = 0;
@@ -124,11 +141,13 @@ export async function runTurn(input: RunTurnInput): Promise<TurnResult> {
   let costUsd = 0;
   const settle = (
     outcome: TurnOutcome,
-    proposals: readonly ProposalCreatedV1[],
+    proposals: readonly ProposalCreatedV2[],
     failure: ExtractionError | null,
+    recent: readonly string[] = session.recent,
   ): TurnResult => ({
     outcome,
     proposals,
+    recent,
     usage: hasTokens(usage)
       ? {
           usageId: newId(),
@@ -154,7 +173,7 @@ export async function runTurn(input: RunTurnInput): Promise<TurnResult> {
     failure: failure ? { code: failure.code, detail: failure.detail } : null,
   });
 
-  if (input.utterances.length === 0) return settle("nothing_to_propose", [], null);
+  if (utterances.length === 0) return settle("nothing_to_propose", [], null);
   if (input.signal.aborted) {
     return settle("cancelled", [], cancelledError());
   }
@@ -174,10 +193,10 @@ export async function runTurn(input: RunTurnInput): Promise<TurnResult> {
     for (let attempt = 1; ; attempt++) {
       try {
         const result = await extractor.extract({
-          utterances: input.utterances,
-          entities: input.entities,
+          utterances,
           callTime: input.callTime,
           timeZone: input.timeZone,
+          openAccount,
           apiKey: input.apiKey,
           signal: controller.signal,
         });
@@ -185,8 +204,19 @@ export async function runTurn(input: RunTurnInput): Promise<TurnResult> {
         llmMs += result.latencyMs;
         usage = addUsage(usage, result.usage);
         costUsd += result.costUsd;
-        const proposals = result.drafts.map((draft) => ({ proposalId: newId(), ...draft }));
-        return settle(proposals.length > 0 ? "proposals" : "nothing_to_propose", proposals, null);
+        const understood = understandTurn(result.drafts, {
+          utterances,
+          session,
+          callTime: input.callTime,
+          timeZone: input.timeZone,
+        });
+        const proposals = understood.proposals.map((draft) => ({ proposalId: newId(), ...draft }));
+        return settle(
+          proposals.length > 0 ? "proposals" : "nothing_to_propose",
+          proposals,
+          null,
+          understood.recent,
+        );
       } catch (error) {
         if (!(error instanceof ExtractionError)) throw error;
         attempts += error.attempts;

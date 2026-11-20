@@ -9,7 +9,7 @@
       "description": "Demo session, turn 1: \"Just got out of the meeting with Acme Corp. Met Dana Lee, their new VP of Operations.\"",
       "interactions": [
         {
-          "key": "899f209cee0ed55d6bdb802201bb04c5145c768b25e7ab867b478c19339c3fcc",
+          "key": "6ea61638eb1f9c9fcae8db5a8d3e11965a0bf8f4cd474cd690960c562dbd6022",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -53,7 +53,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": null,
                         "fields": {
                           "name": {
                             "value": "Dana Lee",
@@ -93,7 +92,7 @@
       "description": "Demo session, turn 2: \"She's taking over the evaluation, so she's our main contact now.\"",
       "interactions": [
         {
-          "key": "93a441783d9a51e2653ca2741781c522e54b59e2b7e967610f158937e6d165da",
+          "key": "3b1bb99c5598832d395c13bc532a4f0ec317fe5ffb6bc2472e57c4481af016a4",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -156,7 +155,7 @@
       "description": "Demo session, turn 3: \"They want a revised proposal with the security add-on, so move the deal to the proposal stage.\"",
       "interactions": [
         {
-          "key": "04b8e7666c6b4bc413afb7141cd772d063038bdf00f26e184f4e263eca6068dc",
+          "key": "ff35570b6337509cf290da783ec54b906ca8ffeca9fab7865253db5b3825b1de",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -200,7 +199,7 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Acme Corp - Security Platform",
+                        "target": null,
                         "fields": {
                           "stage": {
                             "value": "proposal",
@@ -232,7 +231,7 @@
       "description": "Demo session, turn 4: \"I need to send Dana the pricing breakdown by Thursday.\"",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -276,7 +275,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Acme Corp",
+                        "target": {
+                          "quote": "Dana",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Dana the pricing breakdown",
@@ -310,7 +313,7 @@
       "description": "Demo session, turn 5: \"Overall the pilot's going well. Their main concern is how long SSO setup takes.\"",
       "interactions": [
         {
-          "key": "4c94373d1c1af33f50959d90fbd9213ffafcbdf66c703f6dc9636b0d0587cb0e",
+          "key": "485f59430946d960efc1c963a1c4bb01660b35ba68a081a5abc7237f225430a1",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -354,7 +357,7 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Acme Corp",
+                        "target": null,
                         "fields": {
                           "body": {
                             "value": "The pilot is going well; their main concern is how long SSO setup takes.",
@@ -384,7 +387,7 @@
       "description": "Demo session, turn 6: \"Maybe we could run a security workshop with their IT team next month.\"",
       "interactions": [
         {
-          "key": "f62410abb60147663f096076e83044723e584be130023ebbed9283c5a2e8f7ba",
+          "key": "4f6d34a5a31cf55ab9dacd34448dea556ef7459c2c2ab96f00ec44651ff1a548",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -428,14 +431,14 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Acme Corp",
+                        "target": null,
                         "fields": {
                           "text": {
                             "value": "Run a security workshop with Acme Corp's IT team",
                             "quote": "run a security workshop with their IT team"
                           },
                           "counterpart": {
-                            "value": "Acme Corp's IT team",
+                            "value": "their IT team",
                             "quote": "their IT team"
                           },
                           "dueDate": null
@@ -463,7 +466,7 @@
       "description": "Demo session, turn 7: \"That's it.\"",
       "interactions": [
         {
-          "key": "6980be5ededb1fcb301e0189be6a43c22314c937714e71045e0e2f8e948ae80c",
+          "key": "c2d54a0ce08aa30a45ca66f9360096c3a77cf914bc2526f918488707d19ab786",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -526,7 +529,7 @@
       "description": "The first answer's due date is a weekday, not YYYY-MM-DD; the retry, told so, is valid.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -570,7 +573,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Acme Corp",
+                        "target": {
+                          "quote": "Dana",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Dana the pricing breakdown",
@@ -598,7 +605,7 @@
           }
         },
         {
-          "key": "7c40c964fd1f74e241a8fa1bed1fbdfce84b083476f8ad5d7b5e24133eff65f9",
+          "key": "002b2d1021c1255b24d59e634fc0c78d7bfc26f0e17dc7cf3facaec5a068f1a5",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -642,7 +649,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Acme Corp",
+                        "target": {
+                          "quote": "Dana",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Dana the pricing breakdown",
@@ -676,7 +687,7 @@
       "description": "Both answers give the due date as a weekday: invalid output.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -720,7 +731,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Acme Corp",
+                        "target": {
+                          "quote": "Dana",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Dana the pricing breakdown",
@@ -748,7 +763,7 @@
           }
         },
         {
-          "key": "7c40c964fd1f74e241a8fa1bed1fbdfce84b083476f8ad5d7b5e24133eff65f9",
+          "key": "002b2d1021c1255b24d59e634fc0c78d7bfc26f0e17dc7cf3facaec5a068f1a5",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -792,7 +807,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Acme Corp",
+                        "target": {
+                          "quote": "Dana",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Dana the pricing breakdown",
@@ -826,7 +845,7 @@
       "description": "A 429 with retry-after: 1, then a valid answer.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -867,7 +886,7 @@
           }
         },
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -911,7 +930,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Acme Corp",
+                        "target": {
+                          "quote": "Dana",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Dana the pricing breakdown",
@@ -945,7 +968,7 @@
       "description": "429 on all three attempts: the turn ends rate limited.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -986,7 +1009,7 @@
           }
         },
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1027,7 +1050,7 @@
           }
         },
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1074,7 +1097,7 @@
       "description": "529 overloaded on all three attempts: a provider error.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1114,7 +1137,7 @@
           }
         },
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1154,7 +1177,7 @@
           }
         },
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1200,7 +1223,7 @@
       "description": "401: the key is refused, and there's no retry.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1246,7 +1269,7 @@
       "description": "400 invalid_request_error: a provider error, not retried.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1292,7 +1315,7 @@
       "description": "stop_reason refusal with no tool call: the model declined, which isn't retried.",
       "interactions": [
         {
-          "key": "ece329259615caf3b424a6f2a0ff3430dc4f9ac511c277d6fb3410e7501b79db",
+          "key": "1b45e5238c5d518d17409459704abf8db0e0e92fb0d3eb0135a13fb9791c7536",
           "request": {
             "method": "POST",
             "path": "/v1/messages",

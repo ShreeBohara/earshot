@@ -9,7 +9,7 @@
       "description": "Demo session, turn 1: \"Just got out of the meeting with Acme Corp. Met Dana Lee, their new VP of Operations.\"",
       "interactions": [
         {
-          "key": "13b9fe11a4b60651832f944052b95fb51fd5db787e6f57021830e9942d201415",
+          "key": "b5832f25c03c0aed38dddfdee943bb0e66b9467e3a8c374e8e0c446b166399ee",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -53,7 +53,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":null,\"fields\":{\"name\":{\"value\":\"Dana Lee\",\"quote\":\"Dana Lee\"},\"title\":{\"value\":\"VP of Operations\",\"quote\":\"vp of operations\"},\"company\":{\"value\":\"Acme Corp\",\"quote\":\"Acme Corp\"},\"email\":null,\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Dana Lee\",\"quote\":\"Dana Lee\"},\"title\":{\"value\":\"VP of Operations\",\"quote\":\"vp of operations\"},\"company\":{\"value\":\"Acme Corp\",\"quote\":\"Acme Corp\"},\"email\":null,\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -79,7 +79,7 @@
       "description": "Demo session, turn 2: \"She's taking over the evaluation, so she's our main contact now.\"",
       "interactions": [
         {
-          "key": "58a0295317f076b36ad903d00b8b1629e50f4d32b63c80549c8cf84ff2dd6d4e",
+          "key": "0908a1ecb32339ea94b9307ef285252d7ce2a74b1fd8727a67cc064db1c2264d",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -149,7 +149,7 @@
       "description": "Demo session, turn 3: \"They want a revised proposal with the security add-on, so move the deal to the proposal stage.\"",
       "interactions": [
         {
-          "key": "fb80e95815b54d377077a54fb1fa3203b8a04df273acd4167ffc5c0c9790ae8c",
+          "key": "ca78ac9343676e7859794fb737b4659bc114197c666e4febab0665dee8da6b91",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -193,7 +193,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Acme Corp - Security Platform\",\"fields\":{\"stage\":{\"value\":\"proposal\",\"quote\":\"move the deal to the proposal stage\"},\"amount\":null,\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":null,\"fields\":{\"stage\":{\"value\":\"proposal\",\"quote\":\"move the deal to the proposal stage\"},\"amount\":null,\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -219,7 +219,7 @@
       "description": "Demo session, turn 4: \"I need to send Dana the pricing breakdown by Thursday.\"",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -263,7 +263,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -289,7 +289,7 @@
       "description": "Demo session, turn 5: \"Overall the pilot's going well. Their main concern is how long SSO setup takes.\"",
       "interactions": [
         {
-          "key": "fce86dd0d66c6853b22856142b0ed0ac8239e3bf091577e5101c818494c20a16",
+          "key": "340b6651b10b402a63ba083c58db129c5b4b121c872d9efadc5deff58f740344",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -333,7 +333,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Acme Corp\",\"fields\":{\"body\":{\"value\":\"The pilot is going well; their main concern is how long SSO setup takes.\",\"quote\":\"Overall, the pilot's going well. Their main concern is how long SSO setup takes\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":null,\"fields\":{\"body\":{\"value\":\"The pilot is going well; their main concern is how long SSO setup takes.\",\"quote\":\"Overall, the pilot's going well. Their main concern is how long SSO setup takes\"}}}]}"
                         }
                       }
                     ]
@@ -359,7 +359,7 @@
       "description": "Demo session, turn 6: \"Maybe we could run a security workshop with their IT team next month.\"",
       "interactions": [
         {
-          "key": "a288992c5aca81576849aafb53755a6d1410fc5662ca2cb686b59a63ccb7c9ad",
+          "key": "52a8f95979227913bf0df297039b50a14d2cfd1ff49a8f58624018a5b38e9089",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -403,7 +403,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Acme Corp\",\"fields\":{\"text\":{\"value\":\"Run a security workshop with Acme Corp's IT team\",\"quote\":\"run a security workshop with their IT team\"},\"counterpart\":{\"value\":\"Acme Corp's IT team\",\"quote\":\"their IT team\"},\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":null,\"fields\":{\"text\":{\"value\":\"Run a security workshop with Acme Corp's IT team\",\"quote\":\"run a security workshop with their IT team\"},\"counterpart\":{\"value\":\"their IT team\",\"quote\":\"their IT team\"},\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -429,7 +429,7 @@
       "description": "Demo session, turn 7: \"That's it.\"",
       "interactions": [
         {
-          "key": "4f13b52db7cdfb3a88d9a393357f7cdc066bd05da337cffefc6160b332442c58",
+          "key": "260336c8e97f3e172a8867b4206fd263eb6a37fcb97fc77276124f953f272c1f",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -499,7 +499,7 @@
       "description": "The first call leaves out a quote; the retry, told so, is valid.",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -543,7 +543,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\"},\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\"},\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -563,7 +563,7 @@
           }
         },
         {
-          "key": "f133a44a3c4f1a3e493c4c8972d41430a005c83494a7aef54220d98894f8e08b",
+          "key": "b207949b07c35d066dde419ac4bc1826069714297bf3b1b8393842962947371a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -607,7 +607,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -633,7 +633,7 @@
       "description": "Groq refuses the call itself (400 tool_use_failed, a weekday as the due date); the retry is valid.",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -665,13 +665,13 @@
                 "message": "Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.",
                 "type": "invalid_request_error",
                 "code": "tool_use_failed",
-                "failed_generation": "{\"name\":\"submit_proposals\",\"arguments\":{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"Thursday\",\"quote\":\"by Thursday\"}}}]}}"
+                "failed_generation": "{\"name\":\"submit_proposals\",\"arguments\":{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"Thursday\",\"quote\":\"by Thursday\"}}}]}}"
               }
             }
           }
         },
         {
-          "key": "e529edeacefe8c016f826e39f5d57b9f31f9c5c742e3b4550061abd3130d127d",
+          "key": "2da7782236d53d3f1e836b45ef0a587922a071d57a403604d6e3c66f58ba736b",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -715,7 +715,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -741,7 +741,7 @@
       "description": "The first answer is text with no tool call; the retry calls the tool.",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -795,7 +795,7 @@
           }
         },
         {
-          "key": "85d5b455a486cd41df90271b289a7c05f079edc41e74c9f021e0de6336639deb",
+          "key": "7944a8be21b28f6946c4ddfe29a499525a2ae816dc5767f22f99f675a1d9ef7a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -839,7 +839,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -865,7 +865,7 @@
       "description": "A missing quote, then a 400 tool_use_failed: invalid output.",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -909,7 +909,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\"},\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\"},\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -929,7 +929,7 @@
           }
         },
         {
-          "key": "f133a44a3c4f1a3e493c4c8972d41430a005c83494a7aef54220d98894f8e08b",
+          "key": "b207949b07c35d066dde419ac4bc1826069714297bf3b1b8393842962947371a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -961,7 +961,7 @@
                 "message": "Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.",
                 "type": "invalid_request_error",
                 "code": "tool_use_failed",
-                "failed_generation": "{\"name\":\"submit_proposals\",\"arguments\":{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"Thursday\",\"quote\":\"by Thursday\"}}}]}}"
+                "failed_generation": "{\"name\":\"submit_proposals\",\"arguments\":{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"Thursday\",\"quote\":\"by Thursday\"}}}]}}"
               }
             }
           }
@@ -973,7 +973,7 @@
       "description": "A 429 with retry-after: 1, then a valid answer.",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1011,7 +1011,7 @@
           }
         },
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1055,7 +1055,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -1081,7 +1081,7 @@
       "description": "A 503, then a valid answer after a backoff.",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1117,7 +1117,7 @@
           }
         },
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1161,7 +1161,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Acme Corp\",\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana the pricing breakdown\",\"quote\":\"send Dana the pricing breakdown\"},\"dueDate\":{\"value\":\"2026-11-12\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -1187,7 +1187,7 @@
       "description": "401 invalid_api_key: the key is refused, and there's no retry.",
       "interactions": [
         {
-          "key": "b1ee5dfc20c6f9dca3e4a16f30272c48e8c23a03911767b48f20a3bf080c5f22",
+          "key": "302b517fe2b2bdb4715ee0709e40e175689d21e1f694d8a09206e4b2eac0ed11",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",

@@ -3,6 +3,7 @@ import type { LlmProvider } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import { createProposalExtractor } from "../src/extractor";
 import { SCENARIO_API_KEY, scenario } from "../src/testing";
+import { runTurn } from "../src/turn";
 
 interface Seen {
   readonly url: string;
@@ -52,6 +53,23 @@ describe("the Anthropic request", () => {
     // Haiku 5.5 refuses non-default sampling, and skips thinking on a forced tool call.
     expect(body).not.toHaveProperty("temperature");
     expect(body).not.toHaveProperty("thinking");
+  });
+});
+
+describe("prompt v2 on the wire", () => {
+  it("sends the open account, never the CRM list, through runTurn", async () => {
+    const { seen, fetch, turn } = capturing("anthropic");
+    await runTurn({
+      extractor: createProposalExtractor({ provider: "anthropic", fetch }),
+      ...turn,
+      apiKey: SCENARIO_API_KEY,
+      signal: new AbortController().signal,
+    });
+    const system = JSON.stringify(seen[0]?.body.system);
+    expect(system).toContain("Open account: Acme Corp");
+    for (const name of ["Akme Dynamics", "Acmi Dynamics", "Donna Lee", "Dana Li"]) {
+      expect(system).not.toContain(name);
+    }
   });
 });
 

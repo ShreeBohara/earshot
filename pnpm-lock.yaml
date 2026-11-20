@@ -328,6 +328,9 @@ importers:
       '@earshot/keys':
         specifier: workspace:*
         version: link:../../packages/keys
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../../packages/understanding
       '@earshot/voice':
         specifier: workspace:*
         version: link:../../packages/voice
@@ -493,6 +496,9 @@ importers:
       '@earshot/core':
         specifier: workspace:*
         version: link:../core
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../understanding
       ai:
         specifier: 'catalog:'
         version: 7.0.171(zod@4.6.7)

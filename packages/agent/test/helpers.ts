@@ -1,6 +1,6 @@
 import {
   type LlmProvider,
-  ProposalCreatedV1,
+  ProposalCreatedV2,
   TurnCompletedV1,
   UsageRecordedV1,
 } from "@earshot/core";
@@ -45,7 +45,7 @@ export async function replay(
 
 /** Checks every payload against its `@earshot/core` contract, as the event registry will. */
 export function expectValidPayloads(result: TurnResult): void {
-  for (const proposal of result.proposals) ProposalCreatedV1.parse(proposal);
+  for (const proposal of result.proposals) ProposalCreatedV2.parse(proposal);
   if (result.usage) UsageRecordedV1.parse(result.usage);
   TurnCompletedV1.parse(result.completed);
 }

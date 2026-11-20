@@ -1,21 +1,31 @@
 // The workerd smoke test (spec WP5 step 8): the extractor, both AI SDK 7 adapters, and runTurn,
 // inside workerd with the edge Worker's compatibility date and flags (see vitest.config.ts),
 // answering from cassettes. Vercel doesn't say AI SDK 7 runs in Workers; this is the evidence.
-import { ProposalCreatedV1, TurnCompletedV1, UsageRecordedV1 } from "@earshot/core";
+// From Phase 4 (WP8) runTurn also runs the understanding step, so the turn below loads and runs
+// chrono-node (the due date's reading) and double-metaphone (the linker's codes) in workerd.
+import { ProposalCreatedV2, TurnCompletedV1, UsageRecordedV1 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import { createProposalExtractor } from "../../src/extractor";
-import {
-  cassette,
-  createCassetteFetch,
-  DEMO_COMPANY_ID,
-  SCENARIO_API_KEY,
-  scenario,
-} from "../../src/testing";
+import { cassette, createCassetteFetch, SCENARIO_API_KEY, scenario } from "../../src/testing";
 import { runTurn } from "../../src/turn";
 
 describe("in workerd", () => {
   it("is really running in workerd", () => {
     expect(navigator.userAgent).toBe("Cloudflare-Workers");
+  });
+
+  it("runs chrono-node and double-metaphone through the understanding step", async () => {
+    const { resolveDate } = await import("@earshot/understanding/normalize");
+    const { sameSound, wordCodes } = await import("@earshot/understanding/names");
+    // A wrong due date is replaced by the reading chrono-node gives "by Thursday".
+    expect(
+      resolveDate("by Thursday", "2026-11-10T19:15:00.000Z", "America/Los_Angeles"),
+    ).toMatchObject({
+      readings: ["2026-11-12"],
+      certain: true,
+    });
+    expect(sameSound(wordCodes("Knight"), wordCodes("Nite"))).toBe(true);
+    expect(sameSound(wordCodes("Atmas"), wordCodes("Atlas"))).toBe(false);
   });
 
   for (const provider of ["anthropic", "groq"] as const) {
@@ -32,7 +42,8 @@ describe("in workerd", () => {
       const [proposal] = result.proposals;
       expect(proposal).toMatchObject({
         type: "task",
-        targetEntityId: DEMO_COMPANY_ID,
+        // "Dana" sounds like Donna Lee and Dana Li: double-metaphone's codes, in workerd.
+        target: { decision: "ask", kind: "contact", mention: { quote: "Dana" } },
         fields: {
           title: {
             value: "Send Dana the pricing breakdown",
@@ -40,9 +51,10 @@ describe("in workerd", () => {
           },
           dueDate: { value: "2026-11-12" },
         },
-        riskFlags: [{ kind: "date", field: "dueDate" }],
+        riskFlags: [{ kind: "ambiguous_target", field: "target" }],
+        linker: "linker.v1",
       });
-      ProposalCreatedV1.parse(proposal);
+      ProposalCreatedV2.parse(proposal);
       UsageRecordedV1.parse(result.usage);
       TurnCompletedV1.parse(result.completed);
     });

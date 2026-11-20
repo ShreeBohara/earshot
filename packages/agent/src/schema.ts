@@ -1,15 +1,22 @@
 // The one tool the model calls each turn, `submit_proposals`, and how its input is validated.
 //
+// Tool schema v2 (Phase 4 spec, WP8 step 1). The model no longer sees the CRM list, so it can't
+// name a record by id or copy a name from a list. Instead each proposal's `target` holds the words
+// that named the record, exactly as transcribed, what kind of record they name, and the company
+// said in the same breath; the entity linker in SessionDO resolves them (`understand`, ADR-0027).
+// A contact proposal has no `target`: its record is the person in its `name` field, with its
+// `company` field as context (spec §4.3). v2 adds the `meeting` type.
+//
 // The JSON Schema sent to both providers is generated from the Zod schema below and has to pass
 // two sets of rules (Phase 3 spec, WP5 step 4):
 // - Anthropic's strict tool use, which rejects numeric, string-length, pattern, and array-size
 //   keywords and takes `anyOf` but not `oneOf`;
 // - Groq's strict rules, so the same schema could move to strict mode later: every property
 //   required, `additionalProperties: false`, and optional fields as a union with `null`.
-// So the wire schema carries types, literals, and nullability only. Everything else (date
-// format, lengths, limits) is checked by `submitProposalsInput`'s refinement, which runs on
-// every attempt and drives the Groq retry.
-import type { EntityKind, ProposalType } from "@earshot/core";
+// So the wire schema carries types, literals, enums, and nullability only. Everything else (date
+// and time formats, lengths, limits) is checked by `submitProposalsInput`'s refinement, which runs
+// on every attempt and drives the retry.
+import type { EntityKind, ProposalTypeV2 } from "@earshot/core";
 import { z } from "zod";
 
 /** The tool's name, as the prompt and the forced tool choice spell it. */
@@ -19,7 +26,7 @@ export const SUBMIT_PROPOSALS = "submit_proposals";
 export const MAX_PROPOSALS_PER_TURN = 20;
 /** The longest field value or quote, in UTF-16 code units: one utterance's cap on the socket. */
 export const MAX_FIELD_CHARS = 4_000;
-/** The longest target name: the socket's cap on an entity name. */
+/** The longest quote that names a record, or its company: the socket's cap on an entity name. */
 export const MAX_TARGET_CHARS = 200;
 
 const QUOTE_DESCRIPTION =
@@ -34,30 +41,57 @@ function quoted<V extends z.ZodString | z.ZodNumber>(value: V, description: stri
 
 const text = (description: string) => quoted(z.string(), description);
 const date = (description: string) => quoted(z.string(), `${description} As YYYY-MM-DD.`);
+const time = (description: string) =>
+  quoted(z.string(), `${description} As HH:MM on a 24-hour clock.`);
 const usd = (description: string) => quoted(z.number(), `${description} In US dollars.`);
 
-const target = (description: string) => z.string().nullable().describe(description);
-const ANY_TARGET =
-  "The exact name of the listed CRM record this belongs to, copied from the list, or null if none fits.";
+/** The record kinds a target can name: `@earshot/core`'s `EntityKind`. */
+const TargetKind = z.enum(["company", "contact", "deal"]);
+
+/** A target: the words that named a record, as transcribed, never corrected. */
+const Target = z
+  .strictObject({
+    quote: z
+      .string()
+      .describe(
+        "The exact words of the transcript that named the record, copied character for character. Never correct a spelling.",
+      ),
+    kind: TargetKind.describe(
+      "What those words name: a company, a contact (a person), or a deal (an opportunity).",
+    ),
+    company: z
+      .strictObject({
+        quote: z
+          .string()
+          .describe("The company's name as the transcript has it, character for character."),
+      })
+      .nullable()
+      .describe(
+        "The company said with a contact or a deal, even inside the deal's name (“Dana Lee at Acme”, “the Acme renewal”), or null.",
+      ),
+  })
+  .nullable()
+  .describe(
+    "The CRM record the change belongs to, as the rep named it in this turn, or null if they didn't name one.",
+  );
 
 const Contact = z
   .strictObject({
     type: z.literal("contact"),
-    target: target("The listed contact this updates, by exact name, or null for a new contact."),
     fields: z.strictObject({
-      name: text("The person's full name."),
+      name: text("The person's full name, as said."),
       title: text("Their job title.").nullable(),
-      company: text("Their company.").nullable(),
+      company: text("Their company, as said.").nullable(),
       email: text("Their email address.").nullable(),
       phone: text("Their phone number.").nullable(),
     }),
   })
-  .describe("A new person, or new details about a listed contact.");
+  .describe("A new person, or new details about a person; the record is the person named.");
 
 const Task = z
   .strictObject({
     type: z.literal("task"),
-    target: target(ANY_TARGET),
+    target: Target,
     fields: z.strictObject({
       title: text("What the rep has to do, as a short imperative."),
       dueDate: date("When it's due.").nullable(),
@@ -68,7 +102,7 @@ const Task = z
 const Note = z
   .strictObject({
     type: z.literal("note"),
-    target: target(ANY_TARGET),
+    target: Target,
     fields: z.strictObject({
       body: text("What to record, in a sentence or two."),
     }),
@@ -78,7 +112,7 @@ const Note = z
 const DealUpdate = z
   .strictObject({
     type: z.literal("deal_update"),
-    target: target("The listed deal this changes, by exact name, or null if it isn't listed."),
+    target: Target,
     fields: z.strictObject({
       stage: text("The stage the deal moves to, as the rep named it.").nullable(),
       amount: usd("The deal's new amount.").nullable(),
@@ -90,24 +124,41 @@ const DealUpdate = z
 const Commitment = z
   .strictObject({
     type: z.literal("commitment"),
-    target: target(ANY_TARGET),
+    target: Target,
     fields: z.strictObject({
       text: text("The promise, as a short sentence."),
-      counterpart: text("Who it was made to, or who made it.").nullable(),
+      counterpart: text("Who it was made to, or who made it, as said.").nullable(),
       dueDate: date("When it's due.").nullable(),
     }),
   })
   .describe("A promise the rep or the customer made.");
 
-/** One proposal as the model drafts it: a type, a target name, and quoted fields. */
+const Meeting = z
+  .strictObject({
+    type: z.literal("meeting"),
+    target: Target,
+    fields: z.strictObject({
+      title: text("What the meeting is, in a few words."),
+      date: date("The day it's on.").nullable(),
+      time: time("When it starts.").nullable(),
+      attendees: text("Who will be there, as said.").nullable(),
+    }),
+  })
+  .describe("A meeting the rep set up or agreed to.");
+
+/** One proposal as the model drafts it: a type, the words that named its record, quoted fields. */
 const ToolProposalSchema = z.discriminatedUnion("type", [
   Note,
   Task,
   Contact,
   DealUpdate,
   Commitment,
+  Meeting,
 ]);
 export type ToolProposal = z.infer<typeof ToolProposalSchema>;
+
+/** A target as the model drafts it: the quote, the kind, and the company said with it. */
+export type ToolTarget = NonNullable<z.infer<typeof Target>>;
 
 /** A field as the model drafts it: the value, and the words it came from. */
 export type ToolField = { value: string | number; quote: string };
@@ -120,21 +171,31 @@ const SubmitProposalsWire = z.strictObject({
 export type SubmitProposalsInput = z.infer<typeof SubmitProposalsWire>;
 
 /** Fields whose value is a calendar date, `YYYY-MM-DD`. */
-export const DATE_FIELDS: ReadonlySet<string> = new Set(["dueDate", "closeDate"]);
+export const DATE_FIELDS: ReadonlySet<string> = new Set(["dueDate", "closeDate", "date"]);
+/** Fields whose value is a time of day, `HH:MM` on a 24-hour clock. */
+export const TIME_FIELDS: ReadonlySet<string> = new Set(["time"]);
 
 /**
  * The record kinds each proposal type can target. A contact proposal updates a contact and a deal
- * update changes a deal; notes, tasks, and commitments can hang off any record.
+ * update changes a deal; notes, tasks, commitments, and meetings can hang off any record.
  */
-export const TARGET_KINDS: Readonly<Record<ProposalType, readonly EntityKind[]>> = {
+export const TARGET_KINDS: Readonly<Record<ProposalTypeV2, readonly EntityKind[]>> = {
   note: ["company", "contact", "deal"],
   task: ["company", "contact", "deal"],
   contact: ["contact"],
   deal_update: ["deal"],
   commitment: ["company", "contact", "deal"],
+  meeting: ["company", "contact", "deal"],
 };
 
+/** A proposal's target, or null: contact proposals have none (their record is the `name`). */
+export function toolTarget(proposal: ToolProposal): ToolTarget | null {
+  return "target" in proposal ? proposal.target : null;
+}
+
 const IsoDate = z.iso.date();
+/** `HH:MM`, 00:00 to 23:59. Anchored at both ends, so it runs in linear time. */
+const CLOCK_TIME = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
 /**
  * The tool's input with every check: the wire schema's structure, plus the rules that its JSON
@@ -151,8 +212,22 @@ export const submitProposalsInput = SubmitProposalsWire.superRefine((input, ctx)
   }
   input.proposals.forEach((proposal, index) => {
     const at = ["proposals", index];
-    if (proposal.target !== null && proposal.target.length > MAX_TARGET_CHARS) {
-      ctx.addIssue({ code: "custom", path: [...at, "target"], message: "target is too long" });
+    const target = toolTarget(proposal);
+    if (target !== null) {
+      if (target.quote.length > MAX_TARGET_CHARS) {
+        ctx.addIssue({
+          code: "custom",
+          path: [...at, "target", "quote"],
+          message: "quote is too long",
+        });
+      }
+      if (target.company !== null && target.company.quote.length > MAX_TARGET_CHARS) {
+        ctx.addIssue({
+          code: "custom",
+          path: [...at, "target", "company", "quote"],
+          message: "quote is too long",
+        });
+      }
     }
     for (const [name, field] of Object.entries(proposal.fields) as [string, ToolField | null][]) {
       if (field === null) continue;
@@ -170,17 +245,22 @@ export const submitProposalsInput = SubmitProposalsWire.superRefine((input, ctx)
           message: "expected a non-negative number",
         });
       }
-      if (
-        DATE_FIELDS.has(name) &&
-        typeof field.value === "string" &&
-        field.value.trim() !== "" &&
-        !IsoDate.safeParse(field.value).success
-      ) {
-        ctx.addIssue({
-          code: "custom",
-          path: [...path, "value"],
-          message: "expected a calendar date as YYYY-MM-DD",
-        });
+      // An empty value counts as not said, like null (`understand`).
+      if (typeof field.value === "string" && field.value.trim() !== "") {
+        if (DATE_FIELDS.has(name) && !IsoDate.safeParse(field.value).success) {
+          ctx.addIssue({
+            code: "custom",
+            path: [...path, "value"],
+            message: "expected a calendar date as YYYY-MM-DD",
+          });
+        }
+        if (TIME_FIELDS.has(name) && !CLOCK_TIME.test(field.value)) {
+          ctx.addIssue({
+            code: "custom",
+            path: [...path, "value"],
+            message: "expected a time as HH:MM on a 24-hour clock",
+          });
+        }
       }
     }
   });
