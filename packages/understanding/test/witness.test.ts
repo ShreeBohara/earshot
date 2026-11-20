@@ -135,6 +135,20 @@ describe("the unbiased reading", () => {
       { text: "more", start: 58, end: 62 },
     ]);
     expect(transcriptTokens(" ... - ")).toEqual([]);
+    // Code points, not UTF-16 units: an emoji at an edge goes, a letter outside the BMP stays.
+    expect(transcriptTokens("\u{1F600}Acme\u{1F600} \u{1D49C}cme,")).toEqual([
+      { text: "Acme", start: 2, end: 6 },
+      { text: "\u{1D49C}cme", start: 9, end: 14 },
+    ]);
+  });
+
+  it("trims edges in linear time, however long the punctuation run (CodeQL js/polynomial-redos)", () => {
+    // An end-anchored regex retried from each '%' and took seconds here.
+    const run = "%".repeat(200_000);
+    const started = performance.now();
+    const tokens = transcriptTokens(`a${run}b ${run}c${run}`);
+    expect(performance.now() - started).toBeLessThan(500);
+    expect(tokens.map((token) => token.text)).toEqual([`a${run}b`, "c"]);
   });
 
   it("reads by alignment without timings, and keeps what the biased stream dropped at the quote's edge", () => {

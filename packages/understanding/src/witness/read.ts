@@ -90,8 +90,38 @@ export interface TranscriptToken {
   readonly end: number;
 }
 
-const LEADING = /^[^\p{L}\p{M}\p{N}&]+/u;
-const TRAILING = /[^\p{L}\p{M}\p{N}&]+$/u;
+const WORD_CHAR = /^[\p{L}\p{M}\p{N}&]$/u;
+
+/**
+ * Where `raw`'s word starts and ends once the punctuation at either edge is off, in UTF-16 units:
+ * `[start, end)`, empty when `raw` is all punctuation. A scan, one code point at a time from each
+ * end: a regex anchored at the end (`/[^…]+$/`) retries from every position of a long punctuation
+ * run, which takes quadratic time on input such as "%%%%…a" (CodeQL's js/polynomial-redos).
+ */
+function wordBounds(raw: string): readonly [number, number] {
+  let start = 0;
+  while (start < raw.length) {
+    const char = String.fromCodePoint(raw.codePointAt(start) ?? 0);
+    if (WORD_CHAR.test(char)) break;
+    start += char.length;
+  }
+  let end = raw.length;
+  while (end > start) {
+    // One code point back: a surrogate pair is two units.
+    const low = raw.charCodeAt(end - 1);
+    const high = end - 2 >= start ? raw.charCodeAt(end - 2) : 0;
+    const width = low >= 0xdc00 && low <= 0xdfff && high >= 0xd800 && high <= 0xdbff ? 2 : 1;
+    if (WORD_CHAR.test(raw.slice(end - width, end))) break;
+    end -= width;
+  }
+  return [start, end];
+}
+
+/** `raw` without the punctuation at its edges. */
+function trimEdges(raw: string): string {
+  const [start, end] = wordBounds(raw);
+  return raw.slice(start, end);
+}
 
 /**
  * A transcript's words: runs of non-space characters, without the punctuation at either end
@@ -102,11 +132,10 @@ export function transcriptTokens(text: string): TranscriptToken[] {
   const tokens: TranscriptToken[] = [];
   for (const match of text.matchAll(/\S+/gu)) {
     const raw = match[0];
-    const lead = LEADING.exec(raw)?.[0].length ?? 0;
-    const word = raw.slice(lead).replace(TRAILING, "");
-    if (word === "") continue;
+    const [lead, tail] = wordBounds(raw);
+    if (tail <= lead) continue;
     const start = match.index + lead;
-    tokens.push({ text: word, start, end: start + word.length });
+    tokens.push({ text: raw.slice(lead, tail), start, end: match.index + tail });
   }
   return tokens;
 }
@@ -185,7 +214,7 @@ function readByTime(
   if (quoted === null) return null;
   const [t0, t1] = window;
   const words = (unbiased.words ?? [])
-    .map((word) => ({ word, text: word.w.replace(LEADING, "").replace(TRAILING, "") }))
+    .map((word) => ({ word, text: trimEdges(word.w) }))
     .filter((entry) => entry.text !== "")
     .sort((a, b) => a.word.startMs - b.word.startMs || a.word.endMs - b.word.endMs);
   if (!words.some(({ word }) => during(word, t0, t1))) return null;
