@@ -6,13 +6,13 @@ Earshot records architectural decisions as short MADR files, one per decision. S
 |---|---|---|
 | [0000](0000-record-architecture-decisions.md) | Record decisions as MADR files in `docs/adr` | Accepted (2026-11-15) |
 | [0001](0001-two-voice-engines-cascaded-by-default.md) | Two voice engines, cascaded by default | Accepted (2026-11-15) |
-| [0002](0002-browser-connects-to-providers-directly.md) | The browser connects to providers directly, using short-lived tokens | Accepted (2026-11-15) |
+| [0002](0002-browser-connects-to-providers-directly.md) | The browser connects to providers directly, using short-lived tokens | Accepted (2026-11-15); amended for Phase 4 by ADR-0029: a second provider, browser-direct, on a long-lived key |
 | [0003](0003-durable-object-per-session.md) | One Durable Object per session, in a Worker separate from the web app | Accepted (2026-11-15) |
 | [0004](0004-event-sourcing-for-sessions.md) | Event sourcing for sessions | Accepted (2026-11-15) |
 | [0005](0005-neon-postgres-and-drizzle.md) | Neon Postgres and Drizzle, with RLS, pgvector, and pg_trgm | Accepted (2026-11-15) |
 | [0006](0006-better-auth.md) | Better Auth | Accepted (2026-11-15) |
 | [0007](0007-crm-writes-only-through-approved-proposals.md) | CRM writes happen only through approved proposals | Accepted (2026-11-15) |
-| [0008](0008-crm-reads-from-a-local-mirror.md) | CRM reads come from a local mirror, with optional read-only MCP | Accepted (2026-11-15) |
+| [0008](0008-crm-reads-from-a-local-mirror.md) | CRM reads come from a local mirror, with optional read-only MCP | Accepted (2026-11-15); amended for Phase 4: phonetic keys filled, the linker runs in `SessionDO`, embeddings cut to Phase 6 |
 | [0009](0009-ai-keys-stay-on-the-device.md) | AI keys stay on the device by default; an envelope-encrypted vault is optional | Accepted (2026-11-15) |
 | [0010](0010-everything-on-cloudflare.md) | Everything on Cloudflare: OpenNext for the web app, with vinext watched and Vercel for the web app as the fallback | Accepted (2026-11-15); revisit if the OpenNext deploy spike fails or when vinext leaves beta |
 | [0011](0011-typescript-product-python-lab.md) | TypeScript for the product, Python for the lab, JSON Schema contracts between them | Accepted (2026-11-15) |
@@ -25,14 +25,14 @@ Earshot records architectural decisions as short MADR files, one per decision. S
 | [0018](0018-database-access-from-workers.md) | Database access from Workers: a `neon-serverless` pool for tenant transactions, `neon-http` for one-shot reads | Accepted (2026-11-15) |
 | [0019](0019-tenant-isolation-with-row-level-security.md) | Tenant isolation with row-level security, proven by pgTAP in PGlite | Accepted (2026-11-15) |
 | [0020](0020-event-store.md) | Event store: an append-only log per session, upcasting on read, pure projections, and JSONL files | Accepted (2026-11-15) |
-| [0021](0021-key-handling.md) | Key handling: on-device storage, per-request use, an optional envelope-encrypted vault | Accepted (2026-11-15) |
+| [0021](0021-key-handling.md) | Key handling: on-device storage, per-request use, an optional envelope-encrypted vault | Accepted (2026-11-15); amended for Phase 4: the Groq key is used from the page for the second witness |
 | [0022](0022-voice-engine-and-thin-stt-clients.md) | The voice engine interface, and thin hand-written speech-to-text clients | Accepted (2026-11-15); WP1 confirms the provider details |
 | [0023](0023-minted-credentials-and-session-tickets.md) | Provider credentials minted from per-request keys, and signed single-use session tickets for the edge socket | Accepted (2026-11-15) |
 | [0024](0024-session-runtime.md) | The session runtime: a SQLite-first SessionDO, acknowledged resume, and a Queue flush to Postgres | Accepted (2026-11-19) |
 | [0025](0025-llm-adapters-on-ai-sdk-7.md) | LLM adapters on AI SDK 7: providers built per call, per-turn keys, one batch tool, evidence by quotation, AI Gateway optional | Accepted (2026-11-15); amended by Phase 4 WP8: no CRM list, tool schema v2 |
-| [0026](0026-eval-harness-v0.md) | Eval harness v0: synthetic debrief scripts, Kokoro rendered in CI, Chrome's fake microphone, cassettes, and $0 CI | Proposed (2026-11-19); WP11's second half completes it |
+| [0026](0026-eval-harness-v0.md) | Eval harness v0: synthetic debrief scripts, Kokoro rendered in CI, Chrome's fake microphone, cassettes, and $0 CI | Accepted (2026-11-19); extended for Phase 4 by ADR-0031, harness v1 |
 | [0027](0027-contracts-and-the-understanding-pipeline.md) | Contracts and the understanding pipeline: proposals name the record, a deterministic linker resolves it, and the second witness can downgrade it | Accepted (2026-11-20); WP1 built the contracts, WP8 the pipeline |
-| [0028](0028-entity-linking.md) | Entity linking: a fixed confusable-name set and its metrics first, then a calibrated linker that links, asks, or proposes a new record | Proposed (2026-11-19); WP4 wrote linker v1, WP5 added the witness and passed G1a, WP8 froze the simulator's keyterms as v1 |
-| [0029](0029-the-second-witness-in-the-browser.md) | The second witness in the browser: each turn's audio to Groq Whisper on the user's key, compared in SessionDO in the session's order | Proposed (2026-11-20); Phase 4 WP9; the live check waits for the user's approval |
-| [0030](0030-normalizers-and-faithfulness.md) | Normalizers and the faithfulness check: chrono with Intl's offset and Earshot's weekday rules, a hand-written amount parser, NegEx-style negation, correction markers, and replacing a value only when its reading is unique | Proposed (2026-11-20); Phase 4 WP7; WP8 wired it into `SessionDO` and retired the risk patterns |
+| [0028](0028-entity-linking.md) | Entity linking: a fixed confusable-name set and its metrics first, then a calibrated linker that links, asks, or proposes a new record | Accepted (2026-11-20); WP4 wrote linker v1, WP5 added the witness and passed G1a, WP8 froze the simulator's keyterms as v1; WP6's mined set (G1b) is still to run |
+| [0029](0029-the-second-witness-in-the-browser.md) | The second witness in the browser: each turn's audio to Groq Whisper on the user's key, compared in SessionDO in the session's order | Accepted (2026-11-20); Phase 4 WP9; the live check waits for the user's approval |
+| [0030](0030-normalizers-and-faithfulness.md) | Normalizers and the faithfulness check: chrono with Intl's offset and Earshot's weekday rules, a hand-written amount parser, NegEx-style negation, correction markers, and replacing a value only when its reading is unique | Accepted (2026-11-20); Phase 4 WP7; WP8 wired it into `SessionDO` and retired the risk patterns |
 | [0031](0031-eval-harness-v1.md) | Eval harness v1 and the $0 gates: 200 debriefs from a seeded grammar, offline cassettes with seeded model-like errors, and the understanding gate in `checks` | Proposed (2026-11-20); Phase 4 WP10 drafted it; WP11 adds the smoke tier |
