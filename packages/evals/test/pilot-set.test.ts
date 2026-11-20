@@ -1,15 +1,17 @@
 // The pilot set, pilot.v1 (Phase 5 spec WP7 step 1; ADR-0039): the builder reproduces the
 // committed files byte for byte, the set holds exactly 4 flagged and 4 silent wrong accounts as the
-// spec writes them (each silent error's right record among its candidates, second), `tierOf` makes
-// every flagged one loud and gives every silent one the name note and nothing louder, the logs are
-// what SessionDO writes and replay, the manifest's hashes hold, and the orders are a balanced
-// Latin rectangle.
+// spec writes them (each silent error's right record among its candidates, second), no silent error
+// touches its session's open account on either side, the silent errors spread over as many
+// confusable groups as the eligible sessions allow, `tierOf` makes every flagged one loud and gives
+// every silent one the name note and nothing louder, the logs are what SessionDO writes and replay,
+// the manifest's hashes hold, and the orders are a balanced Latin rectangle.
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import type { EventEnvelope } from "@earshot/core";
+import { contacts, deals } from "@earshot/demo-crm";
 import { defaultProjections, fromJsonl, type ProposalView, replay } from "@earshot/events";
 import { tierOf } from "@earshot/understanding/tiers";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   cassetteFileUrl,
   errorsSha256,
@@ -30,7 +32,7 @@ import {
   setSha256,
   williamsRow,
 } from "../src/pilot";
-import { buildPilotSet } from "../src/pilot/build";
+import { bestSpread, buildPilotSet, inOpenAccount, type PilotSet } from "../src/pilot/build";
 import { ALL_DEBRIEFS } from "../src/understanding";
 
 const DIR = new URL("../pilot/pilot.v1/", import.meta.url);
@@ -70,9 +72,12 @@ function utteranceText(proposalId: string, utteranceId: string): string {
   throw new Error(`no utterance ${utteranceId}`);
 }
 
+const silentErrors = manifest.seeded.flatMap((error) => (error.kind === "silent" ? [error] : []));
+
 describe("the pilot set's builder", () => {
-  it("reproduces the committed pilot/pilot.v1 byte for byte (run `pnpm --filter @earshot/evals pilot:gen` after changing it, and never once the pilot has begun)", async () => {
-    const built = await buildPilotSet({
+  let built: PilotSet;
+  beforeAll(async () => {
+    built = await buildPilotSet({
       scripts: ALL_DEBRIEFS,
       cassettes: readUnderstandingCassettes().anthropic,
       labels: readErrorLabels(),
@@ -84,9 +89,67 @@ describe("the pilot set's builder", () => {
           .digest("hex"),
       },
     });
+  }, 120_000); // a second or two here; CI's runners under turbo are far slower
+
+  it("reproduces the committed pilot/pilot.v1 byte for byte (run `pnpm --filter @earshot/evals pilot:gen` after changing it, and never once the pilot has begun)", () => {
     expect([...built.files.keys()].sort()).toEqual(readdirSync(DIR).sort());
     for (const [name, text] of built.files) expect(text, name).toBe(read(name));
-  }, 120_000); // a second or two here; CI's runners under turbo are far slower
+  });
+
+  it("spreads the silent errors over as many confusable groups as the eligible sessions allow", () => {
+    const pool = built.silentPool;
+    // The widest spread is worked out again from the pool: 4 of its sessions, each taking one of
+    // its own groups.
+    expect(
+      bestSpread(
+        pool.sessions.map((session) => session.groups),
+        PILOT_SILENT,
+      )?.distinct,
+    ).toBe(pool.widest);
+    const groups = silentErrors.map((error) => error.group);
+    expect(new Set(groups).size).toBe(pool.widest);
+    // Each carrier is in the pool, and its error's group is one its session offers.
+    for (const error of silentErrors) {
+      const session = pool.sessions.find((candidate) => candidate.script === error.script);
+      expect(session?.groups, error.script).toContain(error.group);
+    }
+  });
+});
+
+describe("the silent recipe's rules", () => {
+  it("knows a session's open account and everything in it: the account, its contacts, its deals", () => {
+    const contact = contacts[0];
+    const deal = deals[0];
+    if (!contact || !deal) throw new Error("the demo CRM is empty");
+    expect(inOpenAccount(contact.companyId, contact.companyId)).toBe(true);
+    expect(inOpenAccount(contact.id, contact.companyId)).toBe(true);
+    expect(inOpenAccount(deal.id, deal.companyId)).toBe(true);
+    const other = contacts.find((row) => row.companyId !== contact.companyId);
+    expect(other && inOpenAccount(other.id, contact.companyId)).toBe(false);
+    expect(inOpenAccount(contact.id, null)).toBe(false);
+  });
+
+  it("spreads choices over distinct groups when it can, as few repeats as it must, ties to the given order", () => {
+    // Four sessions, four groups: all of them.
+    expect(bestSpread([["a"], ["b"], ["c"], ["d"]], 4)).toEqual({
+      picks: [0, 1, 2, 3],
+      groups: ["a", "b", "c", "d"],
+      distinct: 4,
+    });
+    // A second session in a group is passed over when another group is there to take.
+    expect(bestSpread([["a"], ["a"], ["b"], ["c"], ["d"]], 4)?.picks).toEqual([0, 2, 3, 4]);
+    // Only three groups among them: one repeat, the earliest choice that has just one.
+    expect(bestSpread([["a"], ["a"], ["a"], ["b"], ["c"]], 4)).toEqual({
+      picks: [0, 1, 3, 4],
+      groups: ["a", "a", "b", "c"],
+      distinct: 3,
+    });
+    // A session with candidates in two groups takes the one that spreads.
+    expect(bestSpread([["a"], ["a", "b"], ["c"], ["d"]], 4)?.groups).toEqual(["a", "b", "c", "d"]);
+    // Equally spread choices: the earliest in the order given, which the seed sets.
+    expect(bestSpread([["a"], ["b"], ["a"], ["b"], ["c"], ["d"]], 4)?.picks).toEqual([0, 1, 4, 5]);
+    expect(bestSpread([["a"], ["b"]], 4)).toBeNull();
+  });
 });
 
 describe("pilot.v1", () => {
@@ -188,6 +251,22 @@ describe("pilot.v1", () => {
       }
       const tier = tierOf(view);
       expect(tier).toEqual({ tier: "quiet", reasons: [], nameNote: "sound" });
+    }
+  });
+
+  it("keeps every silent error off its session's open account, on both sides: the record named and the record shown", () => {
+    const companyOf = new Map<string, string>([
+      ...contacts.map((row) => [row.id, row.companyId] as const),
+      ...deals.map((row) => [row.id, row.companyId] as const),
+    ]);
+    const inAccount = (id: string, open: string | null) =>
+      open !== null && (id === open || companyOf.get(id) === open);
+    expect(silentErrors).toHaveLength(PILOT_SILENT);
+    for (const error of silentErrors) {
+      const open = manifest.sessions.find((session) => session.id === error.session)?.focusEntityId;
+      expect(open, error.session).not.toBeUndefined();
+      expect(inAccount(error.right.entityId, open ?? null), `${error.session} named`).toBe(false);
+      expect(inAccount(error.shown, open ?? null), `${error.session} shown`).toBe(false);
     }
   });
 

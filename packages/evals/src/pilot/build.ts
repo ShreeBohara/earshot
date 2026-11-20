@@ -16,7 +16,9 @@
 // - **Silent (4):** a correct, unmarked link to a company or contact in a sound-alike confusable
 //   group (phonetic or spelling), swapped to a sibling: `basis: "sound"`, p drawn from 0.88–0.93,
 //   the right record second, and only `link_uncertain:target`. The quote stays what the rep said.
-//   Caught means the right record, or a rejection.
+//   Neither the record named nor the sibling shown may be the session's open account or belong to
+//   it (a contact or deal of it): linker v1's open-account and family priors decide such a link by
+//   context, never by sound. Caught means the right record, or a rejection.
 // - **What else is chosen, and how.** A seeded draw of 4 snapped-name scripts and 6 others whose
 //   proposals total 40, with a silent candidate in at least 4 of the 6; one seeded error per
 //   session at most. The 32 other proposals keep the 200's natural mix, cassette errors included,
@@ -39,7 +41,7 @@ import type {
   TargetV2,
   UtteranceFinalV2,
 } from "@earshot/core";
-import { confusables } from "@earshot/demo-crm";
+import { confusables, contacts, deals } from "@earshot/demo-crm";
 import { defaultProjections, fromJsonl, replay, toJsonl } from "@earshot/events";
 import { LINKER_PARAMS_V1 } from "@earshot/understanding/link";
 import { type Tier, tierOf } from "@earshot/understanding/tiers";
@@ -110,6 +112,15 @@ export interface PilotSet {
   /** File name → text: `s01.jsonl` to `s10.jsonl`, `practice.jsonl`, and `manifest.json`. */
   readonly files: ReadonlyMap<string, string>;
   readonly manifest: PilotManifest;
+  /**
+   * The sessions that could carry a silent error (the draw's eligible pool), each with the
+   * confusable groups its candidates are in, and the most distinct groups 4 of them allow: what the
+   * silent errors' spread is held to. For the tests; not part of the set's files.
+   */
+  readonly silentPool: {
+    readonly sessions: readonly { readonly script: string; readonly groups: readonly string[] }[];
+    readonly widest: number;
+  };
 }
 
 /** A proposal in a run, where it sits, and the ground truth it answers to. */
@@ -214,25 +225,54 @@ const GROUP_OF: ReadonlyMap<string, (typeof confusables)[number]> = new Map(
   confusables.flatMap((group) => group.memberIds.map((id) => [id, group] as const)),
 );
 
+/** Each contact's and deal's company, in the demo CRM. */
+const ACCOUNT_OF: ReadonlyMap<string, string> = new Map([
+  ...contacts.map((row) => [row.id, row.companyId] as const),
+  ...deals.map((row) => [row.id, row.companyId] as const),
+]);
+
+/**
+ * Whether a record is the session's open account or belongs to it: the account itself, or a
+ * contact or deal whose company it is. Linker v1's open-account and family priors decide a link
+ * there by context, never by sound, so a silent error touches neither side of one: the record the
+ * rep named, or the sibling the card shows.
+ */
+export function inOpenAccount(entityId: string, openAccount: string | null): boolean {
+  if (openAccount === null) return false;
+  return entityId === openAccount || ACCOUNT_OF.get(entityId) === openAccount;
+}
+
+/** The siblings a silent error may show: the group's other members outside the open account. */
+function siblingsOf(right: string, openAccount: string | null): string[] {
+  const group = GROUP_OF.get(right);
+  if (!group) return [];
+  return group.memberIds.filter((id) => id !== right && !inOpenAccount(id, openAccount)).sort();
+}
+
 /**
  * A silent error's source: a correct link to a company or contact in a sound-alike group, with no
  * flag at all (so the swap leaves only `link_uncertain`), no company named with it (the swap would
- * contradict it), and no cassette error.
+ * contradict it), and no cassette error; and neither it nor the sibling it would show is the
+ * session's open account or belongs to it (`inOpenAccount`).
  */
-function isSilentCandidate(script: string, slot: Slot, labels: ErrorLabels): boolean {
+function isSilentCandidate(script: DebriefScript, slot: Slot, labels: ErrorLabels): boolean {
   const { target, riskFlags } = slot.final;
   const group = target.entityId === null ? undefined : GROUP_OF.get(target.entityId);
+  const openAccount = script.focusEntityId ?? null;
   return (
     slot.expected !== null &&
     slot.expected.target.decision === "linked" &&
     target.decision === "linked" &&
+    target.entityId !== null &&
     target.entityId === slot.expected.target.id &&
     (target.kind === "company" || target.kind === "contact") &&
     group !== undefined &&
     SOUND_ALIKE.has(group.confusion) &&
     riskFlags.length === 0 &&
     target.company === null &&
-    !hasLabel(labels, script, slot)
+    !hasLabel(labels, script.id, slot) &&
+    !inOpenAccount(target.entityId, openAccount) &&
+    siblingsOf(target.entityId, openAccount).length > 0
   );
 }
 
@@ -254,44 +294,115 @@ function analyze(run: ScriptRun, labels: ErrorLabels): Analyzed {
     slots,
     snapped: script.turns.some((turn) => turn.expect.some(expectsConflict)),
     flagged: slots.filter((slot) => isFlaggedCandidate(script.id, slot, labels)),
-    silent: slots.filter((slot) => isSilentCandidate(script.id, slot, labels)),
+    silent: slots.filter((slot) => isSilentCandidate(script, slot, labels)),
     wrongAccount: slots.some(isWrongAccount),
     labelled: labels.errors.some((error) => error.script === script.id),
   };
 }
 
 /** The draw: 4 snapped-name scripts and 6 others, 40 proposals, room for 4 silent errors. */
+/** The confusable groups a session's silent candidates are in, each once, in order. */
+function groupsOf(item: Analyzed): string[] {
+  const groups = item.silent.map(
+    (slot) => GROUP_OF.get(slot.final.target.entityId ?? "")?.id ?? "",
+  );
+  return [...new Set(groups)].sort();
+}
+
+/** A choice of sessions for the silent errors: their positions, and the group each one takes. */
+export interface Spread {
+  readonly picks: readonly number[];
+  readonly groups: readonly string[];
+  readonly distinct: number;
+}
+
+/**
+ * The silent errors' carriers, spread over confusable groups (spec WP7 step 1, as tightened): of
+ * `count` sessions, each taking one of its own groups, the choice with the most distinct groups, so
+ * no two errors share a group when the sessions allow it and as few do as possible when they
+ * don't. Among equally spread choices, the earliest in the given order (sessions by position, then
+ * groups in each one's order): the order is the seed's, so the seed breaks ties, never anything
+ * else. Null when fewer than `count` sessions are given.
+ */
+export function bestSpread(options: readonly (readonly string[])[], count: number): Spread | null {
+  if (count < 1 || options.length < count) return null;
+  let best: Spread | null = null;
+  const choose = (start: number, picks: number[]) => {
+    if (picks.length === count) {
+      const assign = (index: number, groups: string[]) => {
+        if (index === picks.length) {
+          const distinct = new Set(groups).size;
+          if (best === null || distinct > best.distinct) {
+            best = { picks: [...picks], groups: [...groups], distinct };
+          }
+          return;
+        }
+        for (const group of options[picks[index] as number] ?? []) {
+          assign(index + 1, [...groups, group]);
+        }
+      };
+      assign(0, []);
+      return;
+    }
+    for (let next = start; next < options.length; next++) choose(next + 1, [...picks, next]);
+  };
+  choose(0, []);
+  return best;
+}
+
+/**
+ * The draw (spec WP7 step 1, as tightened): 4 snapped-name scripts, then the silent errors'
+ * carriers first, 4 of the sessions that can carry one, then the other sessions filled from the
+ * rest of the pool, accepted when the 10 hold 40 proposals and their carriers can spread over as
+ * many confusable groups as the whole eligible pool allows. Few sessions can carry a silent error
+ * once the open account is out on both sides, so a draw of all six at once would almost never hold
+ * four of them; drawing the carriers first loosens no rule.
+ */
 function drawSessions(
   flaggedPool: readonly Analyzed[],
   restPool: readonly Analyzed[],
+  widest: Spread,
 ): { flagged: Analyzed[]; rest: Analyzed[] } {
   const rng = createRng(subSeed(PILOT_SEED, "sessions"));
   const restCount = PILOT_SESSION_COUNT - PILOT_FLAGGED;
+  const eligible = restPool.filter((item) => item.silent.length > 0);
   for (let draw = 0; draw < MAX_DRAWS; draw++) {
     const flagged = rng.shuffle(flaggedPool).slice(0, PILOT_FLAGGED);
-    const rest = rng.shuffle(restPool).slice(0, restCount);
+    const carriers = rng.shuffle(eligible).slice(0, PILOT_SILENT);
+    const fill = rng
+      .shuffle(restPool.filter((item) => !carriers.includes(item)))
+      .slice(0, restCount - PILOT_SILENT);
+    const rest = [...carriers, ...fill];
     const total = [...flagged, ...rest].reduce((sum, item) => sum + item.slots.length, 0);
     if (total !== PILOT_PROPOSAL_COUNT) continue;
-    if (rest.filter((item) => item.silent.length > 0).length < PILOT_SILENT) continue;
+    const spread = bestSpread(
+      rest.filter((item) => item.silent.length > 0).map(groupsOf),
+      PILOT_SILENT,
+    );
+    if (spread === null || spread.distinct < widest.distinct) continue;
     return { flagged, rest };
   }
   throw new Error(
-    `no draw of ${PILOT_FLAGGED} snapped-name scripts and ${restCount} others holds ${PILOT_PROPOSAL_COUNT} proposals with room for ${PILOT_SILENT} silent errors`,
+    `no draw of ${PILOT_FLAGGED} snapped-name scripts and ${restCount} others holds ${PILOT_PROPOSAL_COUNT} proposals with room for ${PILOT_SILENT} silent errors in ${widest.distinct} groups`,
   );
 }
 
 /**
- * A silent error for one carrier: a seeded pick of its candidates, a sibling from its group, p
- * from 0.88–0.93, the right record second at a lower p, then any of the link's own candidates
- * that stay below it.
+ * A silent error for one carrier, in the confusable group its spread gave it (`groupId`): a seeded
+ * pick of its candidates in that group, a sibling from the group outside the session's open
+ * account, p from 0.88–0.93, the right record second at a lower p, then any of the link's own
+ * candidates that stay below it.
  */
-function silentSwap(item: Analyzed, rng: ReturnType<typeof createRng>): Swap {
-  const slot = rng.pick(item.silent);
+function silentSwap(item: Analyzed, rng: ReturnType<typeof createRng>, groupId: string): Swap {
+  const slot = rng.pick(
+    item.silent.filter(
+      (candidate) => GROUP_OF.get(candidate.final.target.entityId ?? "")?.id === groupId,
+    ),
+  );
   const right = slot.final.target.entityId as string;
   const group = GROUP_OF.get(right);
   if (!group) throw new Error(`${item.script.id}: no confusable group for ${right}`);
-  const siblings = group.memberIds.filter((id) => id !== right).sort();
-  const shown = rng.pick(siblings);
+  const shown = rng.pick(siblingsOf(right, item.script.focusEntityId ?? null));
   const [low, high] = SILENT_P_RANGE;
   const p = round(low + (high - low) * rng.next());
   const p2 = round((1 - p) * (0.5 + 0.4 * rng.next()));
@@ -611,22 +722,34 @@ export async function buildPilotSet(inputs: PilotInputs): Promise<PilotSet> {
       `only ${flaggedPool.length} snapped-name scripts carry a flagged error as written; ${PILOT_FLAGGED} are needed`,
     );
   }
-  const { flagged, rest } = drawSessions(flaggedPool, restPool);
+  // The sessions that can carry a silent error, and the most confusable groups 4 of them allow.
+  const eligible = restPool.filter((item) => item.silent.length > 0);
+  const widest = bestSpread(eligible.map(groupsOf), PILOT_SILENT);
+  if (widest === null) {
+    throw new Error(
+      `only ${eligible.length} sessions can carry a silent error as written; ${PILOT_SILENT} are needed`,
+    );
+  }
+  const { flagged, rest } = drawSessions(flaggedPool, restPool, widest);
 
-  // The silent errors: one each in 4 of the 6 other sessions that can carry one.
+  // The silent errors: one each in 4 of the 6 other sessions that can carry one, in a seeded order,
+  // spread over as many confusable groups as they allow (`bestSpread`).
   const silentRng = createRng(subSeed(PILOT_SEED, "silent"));
-  const carriers = silentRng
-    .shuffle(
-      rest
-        .filter((item) => item.silent.length > 0)
-        .sort((a, b) => a.script.id.localeCompare(b.script.id)),
-    )
-    .slice(0, PILOT_SILENT);
+  const ordered = silentRng.shuffle(
+    rest
+      .filter((item) => item.silent.length > 0)
+      .sort((a, b) => a.script.id.localeCompare(b.script.id)),
+  );
+  const spread = bestSpread(ordered.map(groupsOf), PILOT_SILENT);
+  if (spread === null || spread.distinct < widest.distinct) {
+    throw new Error("the draw left the silent errors fewer groups than the pool allows");
+  }
   // Keyed by script and proposal: the runner numbers each script's proposals from 1.
   const key = (item: Analyzed, slot: Slot) => `${item.script.id}:${slot.final.proposalId}`;
   const swaps = new Map(
-    carriers.map((item) => {
-      const swap = silentSwap(item, silentRng);
+    spread.picks.map((position, index) => {
+      const item = ordered[position] as Analyzed;
+      const swap = silentSwap(item, silentRng, spread.groups[index] as string);
       return [key(item, swap.slot), swap] as const;
     }),
   );
@@ -707,7 +830,10 @@ export async function buildPilotSet(inputs: PilotInputs): Promise<PilotSet> {
   }
 
   const proposals = built.flatMap((session) => session.tiers);
-  checkSet(proposals, practiceBuilt.tiers, seeded);
+  const openAccounts = new Map(
+    built.map((session) => [session.entry.id, session.entry.focusEntityId]),
+  );
+  checkSet(proposals, practiceBuilt.tiers, seeded, openAccounts);
 
   const rows = balancedLatinRectangle(
     sessionIds,
@@ -748,17 +874,26 @@ export async function buildPilotSet(inputs: PilotInputs): Promise<PilotSet> {
   for (const session of built) files.set(session.entry.file, session.text);
   files.set(practiceBuilt.entry.file, practiceBuilt.text);
   files.set("manifest.json", manifestText(manifest));
-  return { files, manifest };
+  return {
+    files,
+    manifest,
+    silentPool: {
+      sessions: eligible.map((item) => ({ script: item.script.id, groups: groupsOf(item) })),
+      widest: widest.distinct,
+    },
+  };
 }
 
 /**
  * The set as the spec writes it, or an error: 40 proposals, 4 flagged errors that `tierOf` makes
- * loud, 4 silent ones with the name note and nothing louder, and a practice with none.
+ * loud, 4 silent ones with the name note and nothing louder, neither of whose records (the one
+ * named, the one shown) is its session's open account or belongs to it, and a practice with none.
  */
 function checkSet(
   proposals: readonly ProposalTier[],
   practice: readonly ProposalTier[],
   seeded: readonly SeededError[],
+  openAccounts: ReadonlyMap<string, string | null>,
 ): void {
   const problems: string[] = [];
   if (proposals.length !== PILOT_PROPOSAL_COUNT) {
@@ -785,6 +920,15 @@ function checkSet(
     }
     if (error.kind === "silent" && error.candidates[1]?.entityId !== error.right.entityId) {
       problems.push(`silent ${error.proposalId}'s right record isn't second`);
+    }
+    if (error.kind === "silent") {
+      const openAccount = openAccounts.get(error.session) ?? null;
+      if (
+        inOpenAccount(error.shown, openAccount) ||
+        inOpenAccount(error.right.entityId, openAccount)
+      ) {
+        problems.push(`silent ${error.proposalId} touches its session's open account`);
+      }
     }
   }
   if (problems.length > 0)
