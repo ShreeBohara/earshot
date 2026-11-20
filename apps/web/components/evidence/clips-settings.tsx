@@ -47,8 +47,13 @@ export function ClipsSettings({ labelledBy }: { labelledBy: string }) {
     }
     save("off");
     setSaved("Saved on this device: evidence clips off.");
-    await browserEvidence().clear();
-    setSaved("Saved on this device: evidence clips off, and the clips here deleted.");
+    // Says the clips are gone only when they are.
+    const cleared = await browserEvidence().clear();
+    setSaved(
+      cleared
+        ? "Saved on this device: evidence clips off, and the clips here deleted."
+        : "Saved on this device: evidence clips off. The clips here couldn't be deleted just now: none plays while clips are off, and each is deleted within 24 hours.",
+    );
   };
 
   return (

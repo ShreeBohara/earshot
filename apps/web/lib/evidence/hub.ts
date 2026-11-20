@@ -244,19 +244,21 @@ export class EvidenceHub {
   }
 
   /**
-   * Deletes every clip and the store's key: sign-out, or clips turned off. Resolves once the store
-   * holds nothing, or at once where it never opened. A press still reading its clip is cancelled
-   * first, so nothing read before the clear plays after it (Codex's review of #62).
+   * Deletes every clip and the store's key: sign-out, clips turned off, or another user's clips
+   * found as the app opens. A press still reading its clip is cancelled first, so nothing read
+   * before the clear plays after it (Codex's review of #62). Resolves to whether the store is known
+   * to hold nothing now: false when it wouldn't open or the delete failed, so a caller that must
+   * not go on over another user's clips can tell (the security review of #62).
    */
-  async clear(): Promise<void> {
+  async clear(): Promise<boolean> {
     this.stop();
-    let store: ClipStore;
     try {
-      store = await this.store();
+      const store = await this.store();
+      await store.clear();
+      return true;
     } catch {
-      return;
+      return false;
     }
-    await store.clear();
   }
 
   async #load(session: EvidenceSession): Promise<void> {

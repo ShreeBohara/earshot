@@ -77,17 +77,19 @@ const CLEAR_WAIT_MS = 5_000;
 
 /**
  * Deletes every clip on this device and the key they're kept under: sign-out, account deletion,
- * and clips turned off. Waits at most a few seconds, so a stuck IndexedDB can't hold a sign-out.
+ * and another user's clips found as the app opens. Waits at most a few seconds, so a stuck
+ * IndexedDB can't hold a sign-out. Resolves to whether the store was emptied in that time, which
+ * claiming the store for a new user needs to know (lib/evidence/owner.ts).
  */
-export function clearBrowserClips(waitMs: number = CLEAR_WAIT_MS): Promise<void> {
-  return new Promise<void>((resolve) => {
-    const timer = setTimeout(resolve, waitMs);
+export function clearBrowserClips(waitMs: number = CLEAR_WAIT_MS): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => resolve(false), waitMs);
     void browserEvidence()
       .clear()
-      .catch(() => {})
-      .then(() => {
+      .catch(() => false)
+      .then((cleared) => {
         clearTimeout(timer);
-        resolve();
+        resolve(cleared);
       });
   });
 }
@@ -100,7 +102,8 @@ export function clearBrowserClips(waitMs: number = CLEAR_WAIT_MS): Promise<void>
  */
 export async function signOutClearingClips(steps: {
   readonly stopCapture: () => void;
-  readonly clearClips: () => Promise<void>;
+  /** Its result, whether the store was emptied, doesn't stop the sign-out. */
+  readonly clearClips: () => Promise<unknown>;
   readonly forgetOwner: () => void;
   readonly signOut: () => Promise<void>;
 }): Promise<void> {

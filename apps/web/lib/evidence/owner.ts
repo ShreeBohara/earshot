@@ -47,15 +47,28 @@ export function forgetClipsOwner(storage: OwnerStorage | undefined): void {
 
 /**
  * Binds the device's clips to `userId` as the app opens. A store recorded for another user, or for
- * no one, is cleared first, since nothing says the clips in it are this user's. Resolves to what
- * happened.
+ * no one, is cleared first, since nothing says the clips in it are this user's.
+ *
+ * The owner is recorded only once the clear has succeeded. If it fails or times out, the store
+ * stays unclaimed: `mayKeepClips` keeps nothing for anyone, and the next open tries again
+ * (the security review of #62). Resolves to what happened.
  */
 export async function claimClips(
   userId: string,
-  deps: { readonly storage: OwnerStorage | undefined; readonly clear: () => Promise<void> },
-): Promise<"kept" | "cleared"> {
+  deps: { readonly storage: OwnerStorage | undefined; readonly clear: () => Promise<boolean> },
+): Promise<"kept" | "cleared" | "failed"> {
   if (clipsOwner(deps.storage) === userId) return "kept";
-  await deps.clear();
+  let cleared = false;
+  try {
+    cleared = await deps.clear();
+  } catch {
+    cleared = false;
+  }
+  if (!cleared) {
+    // Don't leave the last user's name on a store whose clips may still be there either.
+    forgetClipsOwner(deps.storage);
+    return "failed";
+  }
   setClipsOwner(deps.storage, userId);
   return "cleared";
 }

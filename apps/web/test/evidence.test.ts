@@ -530,7 +530,7 @@ describe("the page's evidence hub", () => {
     });
     hub.watch(SESSION);
     await settle();
-    await hub.clear();
+    await expect(hub.clear()).resolves.toBe(true);
     await settle();
     expect(hub.index(SESSION_ID)).toEqual({ status: "ready", clips: [] });
     expect(await store.list(SESSION_ID)).toEqual([]);
@@ -549,7 +549,8 @@ describe("the page's evidence hub", () => {
     expect(hub.index("another-session")).toEqual({ status: "unavailable" });
     expect(await hub.play(SPAN)).toBe("failed");
     expect(fake.played).toEqual([]);
-    await expect(hub.clear()).resolves.toBeUndefined();
+    // It couldn't empty a store it can't open: claiming the store must not go on over it.
+    await expect(hub.clear()).resolves.toBe(false);
   });
 });
 
@@ -633,14 +634,14 @@ describe("whose clips these are", () => {
 
   it("keeps the store when it's already this user's", async () => {
     const owned = storage({ [CLIPS_OWNER_KEY]: ALICE });
-    const clear = vi.fn(async () => {});
+    const clear = vi.fn(async () => true);
     await expect(claimClips(ALICE, { storage: owned, clear })).resolves.toBe("kept");
     expect(clear).not.toHaveBeenCalled();
   });
 
   it("clears another user's clips before claiming the store, however their session ended", async () => {
     const owned = storage({ [CLIPS_OWNER_KEY]: ALICE });
-    const clear = vi.fn(async () => {});
+    const clear = vi.fn(async () => true);
     await expect(claimClips(BOB, { storage: owned, clear })).resolves.toBe("cleared");
     expect(clear).toHaveBeenCalledOnce();
     expect(clipsOwner(owned)).toBe(BOB);
@@ -648,10 +649,31 @@ describe("whose clips these are", () => {
 
   it("clears a store no one is recorded as owning", async () => {
     const empty = storage();
-    const clear = vi.fn(async () => {});
+    const clear = vi.fn(async () => true);
     await expect(claimClips(ALICE, { storage: empty, clear })).resolves.toBe("cleared");
     expect(clear).toHaveBeenCalledOnce();
     expect(clipsOwner(empty)).toBe(ALICE);
+  });
+
+  it("leaves the store unclaimed when the clear fails, and tries again at the next open", async () => {
+    // The security review of #62: no owner recorded over clips that may still be there.
+    for (const failing of [
+      vi.fn(async () => false),
+      vi.fn(async (): Promise<boolean> => {
+        throw new Error("IndexedDB is stuck");
+      }),
+    ]) {
+      const owned = storage({ [CLIPS_OWNER_KEY]: ALICE });
+      await expect(claimClips(BOB, { storage: owned, clear: failing })).resolves.toBe("failed");
+      expect(clipsOwner(owned)).toBeNull();
+      expect(mayKeepClips(BOB, owned)).toBe(false);
+      expect(mayKeepClips(ALICE, owned)).toBe(false);
+      // The next open clears, and only then claims.
+      const clear = vi.fn(async () => true);
+      await expect(claimClips(BOB, { storage: owned, clear })).resolves.toBe("cleared");
+      expect(clear).toHaveBeenCalledOnce();
+      expect(mayKeepClips(BOB, owned)).toBe(true);
+    }
   });
 
   it("keeps a clip only for the viewer who owns the store", () => {
@@ -675,7 +697,7 @@ describe("whose clips these are", () => {
         throw new DOMException("blocked", "SecurityError");
       },
     };
-    const clear = vi.fn(async () => {});
+    const clear = vi.fn(async () => true);
     await expect(claimClips(ALICE, { storage: blocked, clear })).resolves.toBe("cleared");
     expect(mayKeepClips(ALICE, blocked)).toBe(false);
     expect(() => forgetClipsOwner(blocked)).not.toThrow();
