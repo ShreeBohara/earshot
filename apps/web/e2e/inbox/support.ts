@@ -54,7 +54,9 @@ export async function openEmptyInbox(page: Page): Promise<void> {
   );
   await signInAsNewUser(page);
   await page.goto("/inbox");
-  await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeVisible({
+    timeout: 60_000,
+  });
 }
 
 /**
@@ -70,20 +72,24 @@ export async function openInboxWithSamples(
     "Signs in with the local dev server's printed magic link.",
   );
   await signInAsNewUser(page);
+  // next dev compiles each page and server action on first use: allow for a cold server.
+  const cold = { timeout: 60_000 };
   await page.getByRole("button", { name: "Load the demo CRM" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Loaded the demo CRM" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Loaded the demo CRM" })).toBeVisible(
+    cold,
+  );
   await page.goto("/settings/data");
   await page.getByRole("button", { name: "Load sample debriefs" }).click();
   await expect(
     page.getByText(/Loaded 2 sample debriefs, with 7 proposals to review\./),
-  ).toBeVisible();
+  ).toBeVisible(cold);
   if (options.finishing) {
     await page.getByRole("button", { name: "Load a finishing debrief (development)" }).click();
-    await expect(page.getByText(/Loaded a debrief that's still finishing/)).toBeVisible();
+    await expect(page.getByText(/Loaded a debrief that's still finishing/)).toBeVisible(cold);
   }
   await page.goto("/inbox");
-  await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeVisible();
-  await expect(cards(page)).toHaveCount(7);
+  await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeVisible(cold);
+  await expect(cards(page)).toHaveCount(7, cold);
 }
 
 /** Puts focus on a card the way a keyboard user would land on it: clicking its heading's card. */
