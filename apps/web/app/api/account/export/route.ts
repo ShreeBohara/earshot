@@ -14,8 +14,10 @@ export const dynamic = "force-dynamic";
  * each workspace's audit log as `account.exported`.
  *
  * Each workspace's audit chain comes with its canonical texts and checkpoints, and the file carries
- * the public signing keys, so `db:audit-verify` checks it offline (docs/adr/0033). A broken key
- * configuration never blocks an export: it carries whatever public keys there are.
+ * the public signing keys, so `db:audit-verify` checks it offline (docs/adr/0033). With a signing
+ * key, each exported head is signed as an `export` checkpoint, so the export verifies through its
+ * last entry. A missing or broken key never blocks an export: it carries whatever public keys
+ * there are, and its newest entries check as unsigned.
  */
 export const GET = withViewer(async (viewer, request) => {
   // Another site could still make the browser fetch this (it can't read the answer). Refuse, so
@@ -34,6 +36,7 @@ export const GET = withViewer(async (viewer, request) => {
       : [];
   const exported = await buildAccountExport(await getDb(), viewer.user.id, new Date(), {
     auditKeys,
+    ...("signer" in audit.signing ? { signer: audit.signing.signer } : {}),
   });
   const day = exported.exportedAt.slice(0, 10);
   return new Response(`${JSON.stringify(exported, null, 2)}\n`, {

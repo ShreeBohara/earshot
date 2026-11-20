@@ -267,14 +267,41 @@ describe("GET /api/account/export", { timeout: 120_000 }, () => {
       ],
     });
     expect(exported.workspaces[0]?.tables.audit_log).toHaveLength(2); // the review, account.exported
-    expect(exported.workspaces[0]?.tables.audit_checkpoints).toHaveLength(1);
+    // The review request's checkpoint, and the export's own over the head it exports.
+    expect(exported.workspaces[0]?.tables.audit_checkpoints).toEqual([
+      expect.objectContaining({ request: "review", chainSeq: 1, kid: active.kid }),
+      expect.objectContaining({ request: "export", chainSeq: 2, kid: active.kid }),
+    ]);
 
     const verified = await verifyAuditExport(exported);
     expect(verified.problems).toEqual([]);
-    expect(verified.workspaces[0]?.signedThrough).toBe(1);
+    expect(verified).toMatchObject({ ok: true, intact: true, unsignedEntries: 0 });
+    expect(verified.workspaces[0]).toMatchObject({ signedThrough: 2, unsignedTail: 0 });
 
     expectNoPrivateKey(text, active.d);
     expectNoPrivateKey(scope.lines.join("\n") + consoleOutput(console), active.d);
+  });
+
+  it("still downloads without a signing key, and its unsigned entries show when checked", async () => {
+    scope.env = {};
+    const { cookie } = await signInByMagicLink(auth, outbox, "ana@acme.example");
+    scope.cookie = cookie;
+
+    const response = await exportRoute.GET(
+      new Request("http://localhost:3000/api/account/export"),
+      undefined,
+    );
+
+    expect(response.status).toBe(200);
+    const exported = (await response.json()) as {
+      audit: { keys: unknown[] };
+      workspaces: { tables: { audit_log: unknown[]; audit_checkpoints: unknown[] } }[];
+    };
+    expect(exported.audit.keys).toEqual([]);
+    expect(exported.workspaces[0]?.tables.audit_checkpoints).toEqual([]);
+    const verified = await verifyAuditExport(exported);
+    expect(verified).toMatchObject({ ok: false, intact: true, unsignedEntries: 1 });
+    expect(verified.problems.map((problem) => problem.kind)).toEqual(["unsigned_tail"]);
   });
 });
 
