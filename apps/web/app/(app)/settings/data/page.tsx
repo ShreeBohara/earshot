@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DemoCrmSettings } from "@/components/demo-crm-controls";
 import { SampleDebriefs } from "@/components/sample-debriefs";
 import { SettingsSection } from "@/components/settings-section";
+import { MODE } from "@/lib/auth/config";
 import { requireViewer, withViewerTenant } from "@/lib/auth/viewer";
 import { describeDemoCrm } from "@/lib/demo-crm";
 
@@ -43,7 +44,7 @@ export default async function DataSettingsPage() {
         title="Sample debriefs"
         description="Finished debriefs to review in the inbox before you record your own. They're added as your sessions; loading them again adds nothing."
       >
-        <SampleDebriefs />
+        <SampleDebriefs development={MODE === "development"} />
       </SettingsSection>
     </div>
   );

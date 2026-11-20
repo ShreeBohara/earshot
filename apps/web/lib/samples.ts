@@ -4,8 +4,19 @@
 // switches the list to the pilot set.
 import acmeDynamics from "@earshot/events/fixtures/samples/acme-dynamics.jsonl";
 import pierLogistics from "@earshot/events/fixtures/samples/pier-logistics.jsonl";
+import zenythFinishing from "@earshot/events/fixtures/samples/zenyth-finishing.jsonl";
 
 export const SAMPLE_DEBRIEFS: readonly { readonly name: string; readonly jsonl: string }[] = [
   { name: "Acme Dynamics", jsonl: acmeDynamics },
   { name: "Pier Logistics", jsonl: pierLogistics },
 ];
+
+/**
+ * Development only (WP5): a debrief that ended but never sealed, loaded unsealed, so the inbox
+ * shows "Finishing" without a flush, which zero-setup development doesn't run. The repair path
+ * seals it once it's been finishing for 10 minutes and its Durable Object holds nothing.
+ */
+export const FINISHING_SAMPLE: { readonly name: string; readonly jsonl: string } = {
+  name: "Zenyth Packaging",
+  jsonl: zenythFinishing,
+};
