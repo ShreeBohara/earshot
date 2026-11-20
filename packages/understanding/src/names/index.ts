@@ -11,6 +11,7 @@ export {
   wordCost,
 } from "./align";
 export { editDistance, normalizedEditDistance } from "./edit-distance";
+export { areHomophones, commonSpelling, HOMOPHONES, homophoneSet } from "./homophones";
 export { initials, isInitialsOf, joinSpelledLetters } from "./initials";
 export { jaro, jaroWinkler } from "./jaro-winkler";
 export { foldName, isLegalSuffix, LEGAL_SUFFIXES, nameTokens, normalizeName } from "./normalize";
