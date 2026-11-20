@@ -63,7 +63,6 @@ import {
   uuidv7,
 } from "@earshot/core";
 import {
-  anyFlagTier,
   checkReview,
   checkReviews,
   checkSnooze,
@@ -76,6 +75,7 @@ import {
 } from "@earshot/events";
 import type { AuditSigningState } from "@earshot/keys/server";
 import { buildLinkIndex, type LinkIndex } from "@earshot/understanding/link";
+import { tierOf } from "@earshot/understanding/tiers";
 import type { PriceResult, SttUsageInput } from "@earshot/voice/prices";
 import type { TurnAgent, TurnResult } from "./agent";
 import { readAuditSigning } from "./config";
@@ -148,8 +148,11 @@ interface Attachment {
 /** What `sealNow()` found: still capturing, sealed by this call, sealed before, or nothing held. */
 export type SealAnswer = "live" | "sealing" | "sealed" | "gone";
 
-/** The likely-edit tier the writer rules read: any flag marks a proposal until WP4's `tierOf`. */
-const TIER_OF: TierOf = anyFlagTier;
+/**
+ * The likely-edit tier (Phase 5 spec §4.4): what the writer rules read for "accept all" and
+ * policies, and what SessionDO's own reviews record as seen. One function decides everywhere.
+ */
+const TIER_OF: TierOf = tierOf;
 
 function readAttachment(ws: WebSocket): Attachment | undefined {
   const value = ws.deserializeAttachment() as Partial<Attachment> | null;
