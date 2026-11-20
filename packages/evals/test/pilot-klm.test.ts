@@ -1,7 +1,8 @@
 // The scripted reviewer's pure parts (Phase 5 spec WP8, gates G1a and G2a; ADR-0039): words as
 // `countWords` reads them, the KLM estimate and how the fake clock spends it, the gate against the
 // baseline (10% a card, and the median's target or, while the set misses it, its baseline), the
-// oracle from the manifest, the key budgets, the flag-follower bound, and the report.
+// committed baseline itself, the oracle from the manifest, the key budgets, the flag-follower
+// bound, and the report.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -28,6 +29,9 @@ import {
 
 const manifest = PilotManifest.parse(
   JSON.parse(readFileSync(new URL("../pilot/pilot.v1/manifest.json", import.meta.url), "utf8")),
+);
+const committed = KlmBaseline.parse(
+  JSON.parse(readFileSync(new URL("../baselines/pilot-klm.json", import.meta.url), "utf8")),
 );
 const tiers = new Map(manifest.tiers.proposals.map((tier) => [tier.proposalId, tier]));
 
@@ -200,6 +204,29 @@ describe("the KLM gate (spec WP8, G1a)", () => {
   });
 });
 
+describe("the committed baseline, baselines/pilot-klm.json", () => {
+  it("was recorded on pilot.v1 with today's model, and holds each of the 40 cards once", () => {
+    expect(committed.setSha256).toBe(manifest.sha256);
+    expect(committed.model).toEqual(KLM);
+    expect(committed.cards.map((card) => card.proposalId).sort()).toEqual(
+      manifest.sessions.flatMap((session) => session.proposals).sort(),
+    );
+  });
+
+  it("agrees with itself and the manifest: each estimate from its words and keys, each tier and seeded error as built", () => {
+    for (const card of committed.cards) {
+      const tier = tiers.get(card.proposalId);
+      expect(card.tier).toBe(tier?.tier);
+      expect(card.seeded).toBe(tier?.seeded);
+      expect(card.ms).toBe(
+        klmMs({ loud: card.tier === "loud", words: card.words, keys: card.keys.length }),
+      );
+    }
+    expect(committed.medianMs).toBe(klmMedianMs(committed.cards));
+    expect(checkKlm(committed.cards, committed, manifest).problems).toEqual([]);
+  });
+});
+
 describe("the oracle, from the manifest", () => {
   const oracle = pilotOracle(manifest);
 
@@ -280,6 +307,7 @@ describe("keys per decision (spec WP8, G1a)", () => {
 describe("the flag-follower bound (spec WP8 step 3)", () => {
   it("is the seeded errors on loud cards: 4 of pilot.v1's 8", () => {
     expect(flagFollowerBound(cards(() => 20))).toEqual({ caught: 4, of: 8 });
+    expect(flagFollowerBound(committed.cards)).toEqual({ caught: 4, of: 8 });
   });
 });
 
