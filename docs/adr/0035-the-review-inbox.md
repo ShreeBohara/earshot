@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 5 WP4 drafted the likely-edit tiers and first-person uncertainty (below): `tierOf`, the tiers' $0 budgets in `checks`, the copy, and `tierOf` in place of WP1's stand-in in every writer. WP5 adds the inbox's structure (the list, roving focus, the shortcuts, messages, focus), WP6 the "accept all" checkpoint and the tray on the inbox's card, and WP12 diff cards. Amends ADR-0031 (its "Phase 5: the likely-edit tiers").
+Proposed (2026-11-20). Phase 5 WP4 drafted the likely-edit tiers and first-person uncertainty (below): `tierOf`, the tiers' $0 budgets in `checks`, the copy, and `tierOf` in place of WP1's stand-in in every writer. WP5 built the inbox's structure (below): `/inbox`, its loader, the list of cards with roving focus, the focus-scoped single-key shortcuts and Settings → Review's switch, one message per action, the focus rules, the review clock, and Reviewed, Snoozed, and Finishing. WP6 adds the "accept all" checkpoint and the tray on the inbox's card, and WP12 diff cards. Amends ADR-0031 (its "Phase 5: the likely-edit tiers").
 
 ## Context and problem
 
@@ -14,12 +14,18 @@ Phase 4 writes flags on proposals: fourteen kinds, from the linker, the normaliz
 
 So the cards need marks that are rare where they're loud, still present where an error would otherwise hide, and computed the same way by every part of Earshot that decides what a reviewer sees or what "accept all" takes.
 
+The inbox around them has to be fast from the keyboard (a 4 s median per proposal is the gate, and a keystroke saves about a second against the mouse), and usable with a screen reader and by speech input. Single-key shortcuts are what make review fast, and what WCAG 2.2 SC 2.1.4 constrains: they must be possible to turn off, or act only on focus. Screen readers in browse mode take letters and digits for themselves (NVDA: k, a, e, r, u, 1–6). The capture screen already binds Space to push-to-talk while a debrief is docked. Reviews are written by the web route after the seal (ADR-0032), so the page must survive a refusal, and the pilot needs each review's time (spec §4.8).
+
 ## Considered options
 
 - **What decides a mark:** **two tiers from Phase 4's flags and decisions, by one rule table (chosen)**; one confidence threshold (raw confidence didn't help); a learned likely-edit model (Phase 8, from approve, edit, and reject signals); token-level marks (they raised agreement with the AI in Villavicencio et al., FAccT 2026).
 - **`link_uncertain`** (ADR-0031's options): **option 2, a note beside the record's name, now (chosen)**; option 1, moving its bar for context links to p below 0.90, after Phase 4's mined set measures its real precision; leaving it a badge.
 - **The loud budget, when display rules can't meet it:** **gate an interim ceiling at the measured floor plus 2 points, and fix the false conflicts later (chosen; the orchestrator's decision under spec §9)**; changing the witness threshold now; leaving loud ungated until the floor falls.
 - **The first-person line:** **templates on loud cards only (chosen)**; hedges written by the model; the general phrasing ("It's not clear…"), whose effects were weaker and not significant.
+- **The inbox's structure (WP5):** **an `<ol>` of `<article>` cards with native buttons and roving focus (chosen)**; `feed` (for reading in browse mode, with Page Up and Down); `listbox` (an option can't hold buttons); `grid` (verbose, and two dimensions the inbox doesn't need yet).
+- **Single-key shortcuts:** **on by default, active only while focus is in the list and not in a text field, with a per-device switch (chosen)**; off by default, as Gmail's are (it hides the fastest path from everyone); global, as Gmail's are once on.
+- **Announcing actions:** **one polite toast per action through Base UI's toaster, urgent for a failure, and no other live region (chosen)**; a status region of the inbox's own beside the toaster (two announcements per action).
+- **Undo's home:** **the toast, u, and a Reviewed section that keeps Undo until the sync window closes, then Reopen (chosen)**; the toast alone (gone in 5 s, so it fails WCAG 2.2.1 for anyone slower).
 
 ## Decision
 
@@ -95,9 +101,48 @@ Two lines depart from the spec's examples, for the data's sake: an unsupported t
 
 The quiet notes sit beside `RISK_LABELS` (`apps/web/lib/capture/copy.ts`): "Open account assumed", "Corrected from March 6" (the value a reading replaced), "Said in a negation: “…”" (the words), "Creates a record", and the rest; the name notes are "matched by sound" and "matched in context". The capture tray already shows the name note in the card's heading and no longer shows `link_uncertain` as a badge; WP5 and WP6 put the rest on the inbox's card.
 
-### The inbox (WP5), "accept all" (WP6), and diff cards (WP12)
+### The inbox (WP5)
 
-To be written by those packages: the list, roving focus, focus-scoped single-key shortcuts and their switch, one message per action, focus after a card leaves, the batch checkpoint (which takes only what `tierOf` leaves unmarked), the tray on the inbox's card, and before → after and 3-way cards.
+**Where it is.** `/inbox` (`apps/web/app/(app)/inbox/page.tsx`) reads the inbox on the server and hands it to one client view, `InboxView` (`components/inbox/inbox-view.tsx`). `GET /api/inbox` (same-site, `no-store`) reads it again, for polling and "Load older". Both run `readInbox` (`lib/inbox/read.ts`): the repair path first (`repairUnsealedSessions`, ADR-0032, with `sealSessions` given at most 3 s so an unreachable edge Worker can't hold the page), then the loader.
+
+**The loader** (`lib/inbox/load.ts`, in the viewer's `withTenant` transaction): the viewer's own latest 20 debriefs that have proposals (target), newest first, with a cursor for "Load older" (start time and id). For each: its `proposals` rows, which `rebuildProjections` writes one `ProposalView` each, read back as views with only the parts of the latest review the page needs (id, decision, record, mode, batch, what it undoes, `syncEligibleAt`, time); the utterances their quotes come from; and every record the cards name (targets, candidates, the company said with a target, the focus account), each with its account (a contact's or deal's company, found as the session routes find parents) and the values an update compares against (a deal's stage, amount, and close date; a contact's title, email, and phone). One query per kind of thing, never one per session.
+
+**The sections and groups** (`lib/inbox/groups.ts`, pure, rerun on every render so the page's own reviews move cards at once):
+
+| Section | What's in it |
+|---|---|
+| Needs review | A sealed debrief's proposals still `proposed` and not snoozed: one group per debrief, headed "Acme Corp · today, 2:14 pm" by its focus account, else the account its proposals name most, else "Debrief"; a sub-heading per account when its cards name more than one (a question's account is the one company all its records belong to, else none) |
+| Finishing | A debrief that isn't sealed yet: "Finishing, usually under a minute" once ended, "Still being recorded" before; polled every 10 s (target) while the page is visible, each poll running the repair path |
+| Reviewed | Every decided proposal, newest first, with Undo until its `syncEligibleAt` (a rejection: 30 s after it), then Reopen; both reopen the proposal |
+| Snoozed | Proposals snoozed into the future, soonest first, with "Review now" (a snooze with no time) |
+
+The time is the reviewer's own: the server renders it in UTC, saying so, and the page swaps in "today, 2:14 pm" as it hydrates (`useSyncExternalStore`), so the two never disagree mid-hydration.
+
+**The list.** Each group's cards are an `<ol>` labelled by its heading (with the account's sub-heading when there is one), so a screen reader announces "list, Acme Corp · today, 2:14 pm, 4 items". Each card is a `<li><article tabindex aria-labelledby aria-describedby>` (`components/inbox/proposal-card.tsx`): the heading names the type and the record ("Task · Acme Corp", with the name note beside a near link); a loud card adds the amber marker ("Needs a check") and its first-person line, which is also its description ("Task, Acme Corp, needs a check: I'm not sure I caught the company."); quiet notes are short muted lines, on their field or the card; unmarked cards are plain. Fields are diff rows: the CRM's value, an arrow, the proposed value for an update ("Appointment scheduled → proposal"), and "Heard: …" under every field. The actions are a Base UI Toolbar of native buttons (Accept, Edit, Reject, and More: three snoozes and Correct), each with `aria-keyshortcuts` while the shortcuts are on.
+
+**Choices, and why a digit never changes a record.** A card's numbered choices (`lib/inbox/card.ts`, a Base UI Radio Group, 1–3, and 4 when the linker offered three records and "New") appear only where its first loud reason has something to choose: a question's records with their odds, a new record's sound-alikes and "New", a field's two readings when the witnesses disagree, or an ambiguous value's readings. Picking one with the pointer or the arrow keys only selects it; a digit, or Accept, decides. A linked card shows no records at all: its other candidates appear only in the correction panel (c, or More → Correct), where a digit chooses one and approves with it (`target` set). Accept on a question with nothing picked says "Choose a record first" and moves focus to the choices; a card with no record can't be accepted and says why.
+
+**Roving focus** (`use-roving-focus.ts`): one card is in the tab order (`tabIndex` 0), the rest -1. j and k move across groups and don't wrap; Tab goes into the active card's toolbar (one stop, arrows inside); focus arriving in a card any other way makes it the active one. Every move lands on a card or the "All caught up" heading, never `<body>`.
+
+**Focus after a card leaves** (`lib/inbox/focus.ts`, pure): the next card in its group; the previous, if it was the last; the next group's first card; then, departing from the spec's list, the last card of the group before when only earlier groups have cards left (going straight to "All caught up" would say nothing's left while something is); then the "All caught up" heading, which takes focus. Undo brings the card back and focuses it. Focus moves in the same render the card leaves in, before paint (within the 100 ms target). A card's menu would return focus to its trigger as it closes; the page tells it not to when the action moved focus on (`finalFocus`).
+
+**The shortcuts** (`lib/inbox/keys.ts`, `use-inbox-keys.ts`): j and k move; a accepts; e edits; r rejects; s snoozes until tomorrow at 9:00 local time (More offers three hours or next Monday at 9:00); c opens the correction panel (on a question, its choices); u undoes the latest thing done here that still stands; 1–4 choose and accept; ? opens the help, which carries the NVDA+Space advice. No Space, no ⌘↵, no modifiers. One handler sits on the element holding the lists and the "All caught up" heading, so a key acts only while focus is inside it. It ignores keys from text fields and anything editable, from inside an open editor (which keeps Enter and Esc), from portals React bubbles up (a card's menu), and, inside the correction panel, everything but its digits. Settings → Review (`app/(app)/settings/review/page.tsx`) turns them off per device (`earshot.inbox.shortcuts` in localStorage, read through `useSyncExternalStore`); off, no single key acts, the keys leave the buttons, and so does `aria-keyshortcuts`.
+
+**Editing** (`edit-form.tsx`, `lib/inbox/edit.ts`): the fields become labelled inputs (dates and times the browser's own controls, an ambiguous value's readings as radio choices, long text a textarea). Each error is tied to its field (`aria-invalid`, `aria-describedby`): a number that isn't one, a day that doesn't exist, a time that isn't `HH:MM`, or an edit that changes nothing. Enter saves as `edited` with the changed fields as `editDiff`; Esc cancels; focus returns to the card either way.
+
+**Messages.** Each action says one polite thing through Base UI's toaster (priority `low`), replacing the last: "Accepted: task for Acme Corp. 4 left. Press U to undo." (the key only while the shortcuts are on), with an Undo button. A refusal says one urgent thing (priority `high`). The inbox has no live region of its own: the e2e checks `main` holds none. A focused card keeps clear of the toast and the header as it scrolls in (`scroll-margin`).
+
+**Sinks, and optimism** (`lib/inbox/sinks.ts`): every action goes through a `ReviewSink`, here `routeSink`, `POST /api/sessions/:id/reviews`; WP6's tray passes the socket, WP7's pilot a local sink. `OptimisticReviews` applies each change to the page at once, sends the changes one at a time in order (so an undo never overtakes the review it reverses), and on a refusal brings the card back as it was, drops anything queued after it for the same proposal, and reports it once. The page asks before the tab closes while anything is still on its way. A fresh load reconciles what it already holds.
+
+**What each review records** (`lib/inbox/review.ts`): a UUIDv7 `reviewId` from the page; `mode: "single"`; the record chosen, if any; `seen` (the card's tier, each field's proposed value with the CRM's value as `base` for an update, since there's no history yet to tell it from `current` (WP12), the record shown and the records offered, and `clip: "none"` until WP9); `timing` from the review clock; `input` from the event that made it (a key, a click with no pointer type for Enter or Space on a button, a pointer, or touch); `surface: "inbox"`. Undo and Reopen send a reopen naming the latest review, `reason: "undo"`, with zero timing, since no card is on screen to time. The route adds `by` and `syncEligibleAt`.
+
+**The review clock** (`lib/inbox/clock.ts`, pure on an injected clock; `use-review-clock.ts` feeds it). It runs for the active card (the first on load) while it's at least half visible (an IntersectionObserver), the page is visible, and the reviewer has given a key, pointer, wheel, scroll, or touch input in the last 30 s (target); the 30 s before a pause count, the gap after doesn't. Each card keeps its own time across moves. `decisionMs` is its time at the first decision key or click (a, e, r, s, c, a digit, or their buttons); `handlingMs` at the commit: the same moment for a, r, s, and digits, the save for e, the choice for c. A commit hands both over and starts the card at zero. It arms nothing until the page mounts, so it renders on the server.
+
+**Development's "Finishing".** Zero-setup development runs no flush, so nothing ever finishes there. Under `next dev` only, Settings → Data offers "Load a finishing debrief", which imports a third sample unsealed (`importSessionLog`'s `seal: false`, ending it now), so the state can be seen and tested; the repair path seals it after 10 minutes.
+
+### "Accept all" (WP6) and diff cards (WP12)
+
+To be written by those packages: the batch checkpoint (which takes only what `tierOf` leaves unmarked), the tray on the inbox's card, and before → after with history and 3-way cards.
 
 ## Consequences
 
@@ -108,6 +153,11 @@ To be written by those packages: the list, roving focus, focus-scoped single-key
 - Loud marks are precise on the synthetic set (65.5%), and every seeded error carries a marker.
 - The badge share falls from 45.8% to 30.1% without changing a decision, since `link_uncertain` moved beside the name.
 - Doubt is phrased in the first person only where Earshot has something to settle, and the copy is testable.
+- The inbox works by key, pointer, and screen reader alike: every action is a native button, the keys are only a faster way to them, and they act only where focus says they should.
+- A stray digit can't relink a record: only a card that asks offers numbered records, and a linked card's others live behind c.
+- One region speaks, once per action; failures interrupt, nothing else does.
+- Each review carries what the pilot and Phase 6 need (`seen`, `timing`, `input`, `surface`), from one clock with fake-clock tests.
+- The page's own reviews show at once and survive refusals: the card comes back with a message, and nothing queued behind it is sent.
 
 **Bad**
 
@@ -117,6 +167,12 @@ To be written by those packages: the list, roving focus, focus-scoped single-key
 - Linker asks are imprecise here (37.5%): linker v1 asks where the scripts' context rule links. They stay loud, since an ask can't be accepted as it stands.
 - An unsupported target's line can't quote the model's words, which the proposal doesn't keep.
 - The name note makes 118 proposals (15.7%) ineligible for "accept all" though only one of them was wrong: recall for wrong accounts, bought with review time.
+- Keys need focus in the list: arriving on the page, a keyboard user tabs to the first card (or clicks one) before j and a do anything. That's SC 2.1.4's price for keys that are on by default.
+- NVDA's browse mode keeps several of the letters and the digits; its users press NVDA+Space or Tab to the buttons. Whether NVDA and JAWS stay in focus mode as j and k move between non-widget cards is WP16's to find out (spec Appendix B, #3).
+- Base UI 1.9 announces an urgent toast through its own visually hidden `role="alert"` copy and hides the visible toast with `aria-hidden` until focus enters the region, though it stays focusable; axe flags that (`aria-hidden-focus`). No state the gate lists shows a failure, and the one story that does turns that rule off, with the reason. Upstream, or a toast that leaves the tab order while hidden, would fix it.
+- `seen.fields[].base` is the CRM's value when the card was shown, not when the proposal was made, until WP12's history can tell them apart.
+- An undo or a reopen records zero timing.
+- Optimism means a review can be lost if the tab closes in the instant it's sent; the page asks first while anything is on its way.
 
 ## More information
 
@@ -125,3 +181,4 @@ To be written by those packages: the list, roving focus, focus-scoped single-key
 - The metrics and gates: `packages/evals/src/understanding/{tiers,metrics,gate,report}.ts`, tested in `packages/evals/test/{tiers,understanding}.test.ts`; the baseline in `packages/evals/baselines/understanding.json`. Run `pnpm --filter @earshot/evals eval:understanding`.
 - The writers: `TIER_OF` in `apps/edge/src/session-do.ts`, `writeSessionReviews` in `packages/db/src/reviews.ts`, `apps/web/lib/reviews/routes.ts`, and `packages/voice/src/testing/fake-session-server.ts`.
 - The copy: `apps/web/lib/inbox/voice.ts` and `apps/web/lib/capture/copy.ts`, tested in `apps/web/test/inbox-voice.test.ts`; the tray in `apps/web/components/capture/proposals-tray.tsx`.
+- The inbox (WP5): spec decision 7, §4.8, and WP5; research sections 3 and 4. `apps/web/app/(app)/inbox/page.tsx`, `apps/web/app/api/inbox/route.ts`, `apps/web/components/inbox/`, and `apps/web/lib/inbox/{load,read,groups,card,focus,keys,clock,sinks,review,edit,time,copy}.ts`; Settings → Review in `apps/web/app/(app)/settings/review/page.tsx`. Tested in `apps/web/test/inbox.test.ts` (grouping, focus, keys, the card, the sink's rollback, the clock on a fake clock) and `apps/web/test/inbox-load.test.ts` (the loader and `GET /api/inbox` on PGlite); stories with axe in `apps/web/components/inbox/*.stories.tsx`; and the Playwright `inbox` project (`apps/web/e2e/inbox/`, in CI's `ui` job): keyboard and pointer review, the shortcuts' scope and switch, focus never on `<body>`, and axe (WCAG 2.2 AA, serious and critical) in light and dark in every state.

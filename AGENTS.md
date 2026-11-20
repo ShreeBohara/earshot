@@ -4,7 +4,7 @@ Earshot v2 is a pnpm + Turborepo monorepo with a Python lab. Read `ROADMAP.md` a
 
 ## Map
 
-- `apps/web`: Next.js 16 on Cloudflare Workers via OpenNext
+- `apps/web`: Next.js 16 on Cloudflare Workers via OpenNext; also the review inbox at `/inbox` (`components/inbox/`, `lib/inbox/`: the loader, cards in lists with roving focus, focus-scoped single-key shortcuts that Settings → Review turns off, the review clock, and reviews through the web route; ADR-0035), tested by the Playwright `inbox` project
 - `apps/edge`: Hono Worker that owns the Durable Objects: the session socket, `SessionDO` (the SQLite-first event log, resume, turns, the second witness's comparison, the cost meter, the tray's reviews and snoozes, and the seal after `end`, its last event), the Queue consumer that flushes sessions to Postgres with audit rows for their reviews, and the `purgeSessions` and `sealSessions` RPCs (docs/adr/0024, 0029, 0032)
 - `packages/agent`: the turn pipeline for `SessionDO`: the proposal extractor (tool schema v2 and a prompt with no CRM list: the model quotes the words that named each record), Anthropic and Groq adapters on AI SDK 7 (with an opt-in prompt cache, which the live smoke eval uses), `understand()` (evidence by quotation, entity linker v1, the normalizers, and the faithfulness check; ADR-0027), the second witness's comparison for a turn (`witnessTurn`, with the link context `runTurn` hands back; ADR-0029), and fetch-level cassettes (`@earshot/agent/testing`)
 - `packages/core`: Zod contracts, their JSON Schema exports (`schemas/`), and shared fixtures; also the session socket protocol, session tickets, and `uuidv7()`
