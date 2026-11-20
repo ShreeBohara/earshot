@@ -57,9 +57,12 @@ class TimerClock extends ManualClock {
   }
 }
 
-/** Waits, in real time, until `condition` holds: the request's promises settle on their own. */
+/**
+ * Waits, in real time, until `condition` holds: the request's promises settle on their own. Up to
+ * about 10 s, for CI's slower runners.
+ */
 async function until(condition: () => boolean): Promise<void> {
-  for (let i = 0; i < 1_000; i++) {
+  for (let i = 0; i < 10_000; i++) {
     if (condition()) return;
     await new Promise((resolve) => setTimeout(resolve, 1));
   }
