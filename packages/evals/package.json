@@ -13,6 +13,8 @@
     "./fixtures/*": "./fixtures/*",
     "./linking": "./src/linking/index.ts",
     "./linking/*": "./linking/*",
+    "./pilot": "./src/pilot/index.ts",
+    "./pilot/*": "./pilot/*",
     "./smoke": "./src/smoke/index.ts",
     "./understanding": "./src/understanding/index.ts"
   },
@@ -28,6 +30,7 @@
     "eval:understanding": "tsx scripts/eval-understanding.ts",
     "linker:fit": "tsx scripts/fit-linker.ts",
     "linking:gen": "tsx scripts/gen-confusable.ts",
+    "pilot:gen": "tsx scripts/gen-pilot.ts",
     "smoke:select": "tsx scripts/select-smoke.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
@@ -36,6 +39,7 @@
     "@earshot/agent": "workspace:*",
     "@earshot/core": "workspace:*",
     "@earshot/demo-crm": "workspace:*",
+    "@earshot/events": "workspace:*",
     "@earshot/understanding": "workspace:*",
     "@earshot/voice": "workspace:*",
     "zod": "catalog:"

@@ -1,0 +1,935 @@
+{
+  "format": 1,
+  "set": "pilot.v1",
+  "sha256": "fb1ab8247ac781689f8924d902bc54a701f41da402f937f747c24430dc24b5ed",
+  "seed": 1541459225,
+  "source": {
+    "provider": "anthropic",
+    "linker": "linker.v1",
+    "scriptsSha256": "3d2888f6147e715293ed7bef772027fbe007bd89278f550b866105e57d1fa020",
+    "errorsSha256": "3a69b1cd2a5ec2649da88731f4969167349452db38ff61412f0b5da345a9f31a",
+    "cassetteSha256": "3d1622fbe6f8179966a68beb1a93ed77582bc2fbb2ce334b0615f87ad54c9583"
+  },
+  "sessions": [
+    {
+      "id": "s01",
+      "script": "d002",
+      "file": "s01.jsonl",
+      "sha256": "e0f20981d69b46c11161e26314c0e6157992a1c1710469d07e9db6ba0eb27668",
+      "sessionId": "01a1c6e9-0001-7000-8000-000000000000",
+      "focusEntityId": "co_044",
+      "callTime": "2026-11-18T16:45:00.000Z",
+      "timeZone": "America/Chicago",
+      "proposals": [
+        "01a1c6e9-0001-7000-8000-000000000005",
+        "01a1c6e9-0001-7000-8000-000000000010",
+        "01a1c6e9-0001-7000-8000-00000000001b",
+        "01a1c6e9-0001-7000-8000-000000000026"
+      ]
+    },
+    {
+      "id": "s02",
+      "script": "d023",
+      "file": "s02.jsonl",
+      "sha256": "0d6b833c15f1a1367da21e47895b248ec7a03356ed71b688f990c94ebd5853cc",
+      "sessionId": "01a1c6e9-0002-7000-8000-000000000000",
+      "focusEntityId": "co_041",
+      "callTime": "2026-11-23T19:10:00.000Z",
+      "timeZone": "America/New_York",
+      "proposals": [
+        "01a1c6e9-0002-7000-8000-000000000005",
+        "01a1c6e9-0002-7000-8000-000000000010",
+        "01a1c6e9-0002-7000-8000-00000000001b"
+      ]
+    },
+    {
+      "id": "s03",
+      "script": "d030",
+      "file": "s03.jsonl",
+      "sha256": "65153f046aef61505b735d841ec83b3963ea158b233706b50cc8d197aa4a6384",
+      "sessionId": "01a1c6e9-0003-7000-8000-000000000000",
+      "focusEntityId": "co_005",
+      "callTime": "2026-12-10T00:30:00.000Z",
+      "timeZone": "America/Denver",
+      "proposals": [
+        "01a1c6e9-0003-7000-8000-000000000005",
+        "01a1c6e9-0003-7000-8000-000000000010",
+        "01a1c6e9-0003-7000-8000-00000000001b",
+        "01a1c6e9-0003-7000-8000-000000000026"
+      ]
+    },
+    {
+      "id": "s04",
+      "script": "d056",
+      "file": "s04.jsonl",
+      "sha256": "af9811264464016601c0fe4c97a17b8ad1b46132c7ded197c99f9b01cf3b41bc",
+      "sessionId": "01a1c6e9-0004-7000-8000-000000000000",
+      "focusEntityId": "co_012",
+      "callTime": "2027-02-10T17:50:00.000Z",
+      "timeZone": "America/Chicago",
+      "proposals": [
+        "01a1c6e9-0004-7000-8000-000000000005",
+        "01a1c6e9-0004-7000-8000-000000000010",
+        "01a1c6e9-0004-7000-8000-00000000001b",
+        "01a1c6e9-0004-7000-8000-000000000026"
+      ]
+    },
+    {
+      "id": "s05",
+      "script": "d057",
+      "file": "s05.jsonl",
+      "sha256": "65ca7e78741cdbf7044339001e7f73689a249d29fc1709b48b803ad80dbfa1bc",
+      "sessionId": "01a1c6e9-0005-7000-8000-000000000000",
+      "focusEntityId": "co_056",
+      "callTime": "2026-11-06T15:10:00.000Z",
+      "timeZone": "America/Chicago",
+      "proposals": [
+        "01a1c6e9-0005-7000-8000-000000000005",
+        "01a1c6e9-0005-7000-8000-000000000010",
+        "01a1c6e9-0005-7000-8000-00000000001c",
+        "01a1c6e9-0005-7000-8000-000000000027",
+        "01a1c6e9-0005-7000-8000-000000000033"
+      ]
+    },
+    {
+      "id": "s06",
+      "script": "d061",
+      "file": "s06.jsonl",
+      "sha256": "515046b1f5d90fe6ef98191d056e78a28eb49ff8776b94df2da1ce86e4c9c75d",
+      "sessionId": "01a1c6e9-0006-7000-8000-000000000000",
+      "focusEntityId": "co_029",
+      "callTime": "2027-01-21T15:50:00.000Z",
+      "timeZone": "America/Chicago",
+      "proposals": [
+        "01a1c6e9-0006-7000-8000-000000000005",
+        "01a1c6e9-0006-7000-8000-000000000010",
+        "01a1c6e9-0006-7000-8000-00000000001c",
+        "01a1c6e9-0006-7000-8000-000000000027"
+      ]
+    },
+    {
+      "id": "s07",
+      "script": "d065",
+      "file": "s07.jsonl",
+      "sha256": "9ce2d135f4e12627b775e443dbc9c1e63925eb848142262d3c2dcc8b657a1a08",
+      "sessionId": "01a1c6e9-0007-7000-8000-000000000000",
+      "focusEntityId": "co_001",
+      "callTime": "2026-12-18T17:00:00.000Z",
+      "timeZone": "America/Los_Angeles",
+      "proposals": [
+        "01a1c6e9-0007-7000-8000-000000000005",
+        "01a1c6e9-0007-7000-8000-000000000010",
+        "01a1c6e9-0007-7000-8000-00000000001c",
+        "01a1c6e9-0007-7000-8000-000000000027",
+        "01a1c6e9-0007-7000-8000-000000000032"
+      ]
+    },
+    {
+      "id": "s08",
+      "script": "d080",
+      "file": "s08.jsonl",
+      "sha256": "d87dfd4a2371b43dff5da64bb332ba6a4a8688bdeebf89d6937b36d85e854877",
+      "sessionId": "01a1c6e9-0008-7000-8000-000000000000",
+      "focusEntityId": null,
+      "callTime": "2026-12-22T19:10:00.000Z",
+      "timeZone": "America/Los_Angeles",
+      "proposals": [
+        "01a1c6e9-0008-7000-8000-000000000005",
+        "01a1c6e9-0008-7000-8000-000000000010",
+        "01a1c6e9-0008-7000-8000-00000000001c"
+      ]
+    },
+    {
+      "id": "s09",
+      "script": "d086",
+      "file": "s09.jsonl",
+      "sha256": "14ac51251f402c8e5c71f793f71e2d2c36526f98267670e6b0e4811f9805dcee",
+      "sessionId": "01a1c6e9-0009-7000-8000-000000000000",
+      "focusEntityId": null,
+      "callTime": "2027-01-07T21:10:00.000Z",
+      "timeZone": "America/Chicago",
+      "proposals": [
+        "01a1c6e9-0009-7000-8000-000000000005",
+        "01a1c6e9-0009-7000-8000-000000000010",
+        "01a1c6e9-0009-7000-8000-00000000001b",
+        "01a1c6e9-0009-7000-8000-000000000027"
+      ]
+    },
+    {
+      "id": "s10",
+      "script": "d097",
+      "file": "s10.jsonl",
+      "sha256": "3ff861f70ec72335761ac1868672790b010ab0919ea36c8ea9a982a83b645978",
+      "sessionId": "01a1c6e9-000a-7000-8000-000000000000",
+      "focusEntityId": "co_003",
+      "callTime": "2027-02-26T20:30:00.000Z",
+      "timeZone": "America/Chicago",
+      "proposals": [
+        "01a1c6e9-000a-7000-8000-000000000005",
+        "01a1c6e9-000a-7000-8000-000000000010",
+        "01a1c6e9-000a-7000-8000-00000000001b",
+        "01a1c6e9-000a-7000-8000-000000000027"
+      ]
+    }
+  ],
+  "practice": {
+    "id": "practice",
+    "script": "d010",
+    "file": "practice.jsonl",
+    "sha256": "2001432ae0458dcc6fa9ceca8dabbb4365bafdc746d588ef37212c73b8445500",
+    "sessionId": "01a1c6e9-000b-7000-8000-000000000000",
+    "focusEntityId": "co_046",
+    "callTime": "2026-12-02T16:40:00.000Z",
+    "timeZone": "Europe/London",
+    "proposals": [
+      "01a1c6e9-000b-7000-8000-000000000005",
+      "01a1c6e9-000b-7000-8000-000000000010",
+      "01a1c6e9-000b-7000-8000-000000000024"
+    ]
+  },
+  "seeded": [
+    {
+      "kind": "silent",
+      "session": "s01",
+      "proposalId": "01a1c6e9-0001-7000-8000-000000000026",
+      "script": "d002",
+      "turn": 3,
+      "index": 0,
+      "shown": "ct_112",
+      "p": 0.908128,
+      "group": "cg_19",
+      "candidates": [
+        {
+          "entityId": "ct_112",
+          "p": 0.908128
+        },
+        {
+          "entityId": "ct_145",
+          "p": 0.06067
+        },
+        {
+          "entityId": "ct_045",
+          "p": 0.0071189335225175345
+        }
+      ],
+      "right": {
+        "entityId": "ct_145"
+      }
+    },
+    {
+      "kind": "silent",
+      "session": "s03",
+      "proposalId": "01a1c6e9-0003-7000-8000-000000000005",
+      "script": "d030",
+      "turn": 0,
+      "index": 0,
+      "shown": "co_009",
+      "p": 0.901447,
+      "group": "cg_02",
+      "candidates": [
+        {
+          "entityId": "co_009",
+          "p": 0.901447
+        },
+        {
+          "entityId": "co_005",
+          "p": 0.056502
+        },
+        {
+          "entityId": "co_028",
+          "p": 0.00009454200481531932
+        }
+      ],
+      "right": {
+        "entityId": "co_005"
+      }
+    },
+    {
+      "kind": "silent",
+      "session": "s04",
+      "proposalId": "01a1c6e9-0004-7000-8000-000000000010",
+      "script": "d056",
+      "turn": 1,
+      "index": 0,
+      "shown": "co_028",
+      "p": 0.885392,
+      "group": "cg_15",
+      "candidates": [
+        {
+          "entityId": "co_028",
+          "p": 0.885392
+        },
+        {
+          "entityId": "co_012",
+          "p": 0.079236
+        },
+        {
+          "entityId": "co_014",
+          "p": 0.00011334889511066107
+        }
+      ],
+      "right": {
+        "entityId": "co_012"
+      }
+    },
+    {
+      "kind": "flagged",
+      "session": "s05",
+      "proposalId": "01a1c6e9-0005-7000-8000-000000000027",
+      "script": "d057",
+      "turn": 3,
+      "index": 0,
+      "snapped": "co_038",
+      "candidates": [
+        {
+          "entityId": "co_038",
+          "p": 0.9680370160644026
+        },
+        {
+          "entityId": null,
+          "p": 0.34812737210369205
+        },
+        {
+          "entityId": "ct_085",
+          "p": 1.5132987339996593e-8
+        },
+        {
+          "entityId": "ct_080",
+          "p": 1.5132987339996593e-8
+        }
+      ],
+      "right": {
+        "entityId": null
+      }
+    },
+    {
+      "kind": "flagged",
+      "session": "s06",
+      "proposalId": "01a1c6e9-0006-7000-8000-000000000010",
+      "script": "d061",
+      "turn": 1,
+      "index": 0,
+      "snapped": "co_013",
+      "candidates": [
+        {
+          "entityId": "co_013",
+          "p": 0.9680370160644026
+        },
+        {
+          "entityId": null,
+          "p": 0.9871086828623068
+        }
+      ],
+      "right": {
+        "entityId": null
+      }
+    },
+    {
+      "kind": "flagged",
+      "session": "s07",
+      "proposalId": "01a1c6e9-0007-7000-8000-000000000010",
+      "script": "d065",
+      "turn": 1,
+      "index": 0,
+      "snapped": "ct_020",
+      "candidates": [
+        {
+          "entityId": "ct_020",
+          "p": 0.9922962390025243
+        },
+        {
+          "entityId": null,
+          "p": 0.44633966063454944
+        },
+        {
+          "entityId": "ct_082",
+          "p": 0.008734927040702103
+        },
+        {
+          "entityId": "ct_069",
+          "p": 0.0034792659864105887
+        }
+      ],
+      "right": {
+        "entityId": null
+      }
+    },
+    {
+      "kind": "silent",
+      "session": "s09",
+      "proposalId": "01a1c6e9-0009-7000-8000-000000000027",
+      "script": "d086",
+      "turn": 3,
+      "index": 0,
+      "shown": "co_015",
+      "p": 0.906254,
+      "group": "cg_03",
+      "candidates": [
+        {
+          "entityId": "co_015",
+          "p": 0.906254
+        },
+        {
+          "entityId": "co_022",
+          "p": 0.051384
+        },
+        {
+          "entityId": "deal_009",
+          "p": 0.01506460990993507
+        }
+      ],
+      "right": {
+        "entityId": "co_022"
+      }
+    },
+    {
+      "kind": "flagged",
+      "session": "s10",
+      "proposalId": "01a1c6e9-000a-7000-8000-00000000001b",
+      "script": "d097",
+      "turn": 2,
+      "index": 0,
+      "snapped": "co_058",
+      "candidates": [
+        {
+          "entityId": "co_058",
+          "p": 0.9612492423446973
+        },
+        {
+          "entityId": null,
+          "p": 0.9910537244326106
+        },
+        {
+          "entityId": "co_033",
+          "p": 0.03830789306144602
+        },
+        {
+          "entityId": "co_045",
+          "p": 0.0017795676798961046
+        }
+      ],
+      "right": {
+        "entityId": null
+      }
+    }
+  ],
+  "orders": {
+    "1": [
+      "s04",
+      "s10",
+      "s09",
+      "s07",
+      "s06",
+      "s03",
+      "s08",
+      "s05",
+      "s01",
+      "s02"
+    ],
+    "2": [
+      "s09",
+      "s04",
+      "s06",
+      "s10",
+      "s08",
+      "s07",
+      "s01",
+      "s03",
+      "s02",
+      "s05"
+    ],
+    "3": [
+      "s07",
+      "s03",
+      "s10",
+      "s05",
+      "s04",
+      "s02",
+      "s09",
+      "s01",
+      "s06",
+      "s08"
+    ],
+    "4": [
+      "s02",
+      "s01",
+      "s05",
+      "s08",
+      "s03",
+      "s06",
+      "s07",
+      "s09",
+      "s10",
+      "s04"
+    ],
+    "5": [
+      "s08",
+      "s06",
+      "s01",
+      "s09",
+      "s02",
+      "s04",
+      "s05",
+      "s10",
+      "s03",
+      "s07"
+    ],
+    "ci": [
+      "s01",
+      "s02",
+      "s03",
+      "s04",
+      "s05",
+      "s06",
+      "s07",
+      "s08",
+      "s09",
+      "s10"
+    ]
+  },
+  "tiers": {
+    "all": {
+      "proposals": 40,
+      "loud": 8,
+      "quiet": 5,
+      "nameNote": 11,
+      "none": 16
+    },
+    "seeded": {
+      "proposals": 8,
+      "loud": 4,
+      "quiet": 0,
+      "nameNote": 4,
+      "none": 0
+    },
+    "other": {
+      "proposals": 32,
+      "loud": 4,
+      "quiet": 5,
+      "nameNote": 7,
+      "none": 16
+    },
+    "practice": {
+      "proposals": 3,
+      "loud": 0,
+      "quiet": 0,
+      "nameNote": 2,
+      "none": 1
+    },
+    "proposals": [
+      {
+        "session": "s01",
+        "proposalId": "01a1c6e9-0001-7000-8000-000000000005",
+        "type": "note",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "s01",
+        "proposalId": "01a1c6e9-0001-7000-8000-000000000010",
+        "type": "task",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "s01",
+        "proposalId": "01a1c6e9-0001-7000-8000-00000000001b",
+        "type": "contact",
+        "tier": "quiet",
+        "reasons": [
+          "quiet:new_entity@target"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s01",
+        "proposalId": "01a1c6e9-0001-7000-8000-000000000026",
+        "type": "commitment",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "sound",
+        "seeded": "silent"
+      },
+      {
+        "session": "s02",
+        "proposalId": "01a1c6e9-0002-7000-8000-000000000005",
+        "type": "note",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s02",
+        "proposalId": "01a1c6e9-0002-7000-8000-000000000010",
+        "type": "deal_update",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s02",
+        "proposalId": "01a1c6e9-0002-7000-8000-00000000001b",
+        "type": "commitment",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "s03",
+        "proposalId": "01a1c6e9-0003-7000-8000-000000000005",
+        "type": "note",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "sound",
+        "seeded": "silent"
+      },
+      {
+        "session": "s03",
+        "proposalId": "01a1c6e9-0003-7000-8000-000000000010",
+        "type": "deal_update",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s03",
+        "proposalId": "01a1c6e9-0003-7000-8000-00000000001b",
+        "type": "task",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s03",
+        "proposalId": "01a1c6e9-0003-7000-8000-000000000026",
+        "type": "commitment",
+        "tier": "quiet",
+        "reasons": [
+          "quiet:negation@text"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s04",
+        "proposalId": "01a1c6e9-0004-7000-8000-000000000005",
+        "type": "note",
+        "tier": "quiet",
+        "reasons": [
+          "quiet:negation@body"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s04",
+        "proposalId": "01a1c6e9-0004-7000-8000-000000000010",
+        "type": "note",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "sound",
+        "seeded": "silent"
+      },
+      {
+        "session": "s04",
+        "proposalId": "01a1c6e9-0004-7000-8000-00000000001b",
+        "type": "contact",
+        "tier": "quiet",
+        "reasons": [
+          "quiet:new_entity@target"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s04",
+        "proposalId": "01a1c6e9-0004-7000-8000-000000000026",
+        "type": "task",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s05",
+        "proposalId": "01a1c6e9-0005-7000-8000-000000000005",
+        "type": "note",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "s05",
+        "proposalId": "01a1c6e9-0005-7000-8000-000000000010",
+        "type": "deal_update",
+        "tier": "loud",
+        "reasons": [
+          "loud:witness_conflict@target"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s05",
+        "proposalId": "01a1c6e9-0005-7000-8000-00000000001c",
+        "type": "commitment",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s05",
+        "proposalId": "01a1c6e9-0005-7000-8000-000000000027",
+        "type": "task",
+        "tier": "loud",
+        "reasons": [
+          "loud:witness_conflict@target"
+        ],
+        "nameNote": null,
+        "seeded": "flagged"
+      },
+      {
+        "session": "s05",
+        "proposalId": "01a1c6e9-0005-7000-8000-000000000033",
+        "type": "task",
+        "tier": "loud",
+        "reasons": [
+          "loud:ask@target"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s06",
+        "proposalId": "01a1c6e9-0006-7000-8000-000000000005",
+        "type": "meeting",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "s06",
+        "proposalId": "01a1c6e9-0006-7000-8000-000000000010",
+        "type": "task",
+        "tier": "loud",
+        "reasons": [
+          "loud:witness_conflict@target"
+        ],
+        "nameNote": null,
+        "seeded": "flagged"
+      },
+      {
+        "session": "s06",
+        "proposalId": "01a1c6e9-0006-7000-8000-00000000001c",
+        "type": "contact",
+        "tier": "quiet",
+        "reasons": [
+          "quiet:new_entity@target"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s06",
+        "proposalId": "01a1c6e9-0006-7000-8000-000000000027",
+        "type": "deal_update",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s07",
+        "proposalId": "01a1c6e9-0007-7000-8000-000000000005",
+        "type": "note",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s07",
+        "proposalId": "01a1c6e9-0007-7000-8000-000000000010",
+        "type": "contact",
+        "tier": "loud",
+        "reasons": [
+          "loud:witness_conflict@target"
+        ],
+        "nameNote": null,
+        "seeded": "flagged"
+      },
+      {
+        "session": "s07",
+        "proposalId": "01a1c6e9-0007-7000-8000-00000000001c",
+        "type": "contact",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s07",
+        "proposalId": "01a1c6e9-0007-7000-8000-000000000027",
+        "type": "task",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s07",
+        "proposalId": "01a1c6e9-0007-7000-8000-000000000032",
+        "type": "deal_update",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "s08",
+        "proposalId": "01a1c6e9-0008-7000-8000-000000000005",
+        "type": "note",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "s08",
+        "proposalId": "01a1c6e9-0008-7000-8000-000000000010",
+        "type": "meeting",
+        "tier": "loud",
+        "reasons": [
+          "loud:witness_conflict@target"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s08",
+        "proposalId": "01a1c6e9-0008-7000-8000-00000000001c",
+        "type": "deal_update",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s09",
+        "proposalId": "01a1c6e9-0009-7000-8000-000000000005",
+        "type": "note",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s09",
+        "proposalId": "01a1c6e9-0009-7000-8000-000000000010",
+        "type": "task",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s09",
+        "proposalId": "01a1c6e9-0009-7000-8000-00000000001b",
+        "type": "meeting",
+        "tier": "loud",
+        "reasons": [
+          "loud:witness_conflict@target"
+        ],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s09",
+        "proposalId": "01a1c6e9-0009-7000-8000-000000000027",
+        "type": "task",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "sound",
+        "seeded": "silent"
+      },
+      {
+        "session": "s10",
+        "proposalId": "01a1c6e9-000a-7000-8000-000000000005",
+        "type": "deal_update",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s10",
+        "proposalId": "01a1c6e9-000a-7000-8000-000000000010",
+        "type": "deal_update",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "s10",
+        "proposalId": "01a1c6e9-000a-7000-8000-00000000001b",
+        "type": "note",
+        "tier": "loud",
+        "reasons": [
+          "loud:witness_conflict@target"
+        ],
+        "nameNote": null,
+        "seeded": "flagged"
+      },
+      {
+        "session": "s10",
+        "proposalId": "01a1c6e9-000a-7000-8000-000000000027",
+        "type": "meeting",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "practice",
+        "proposalId": "01a1c6e9-000b-7000-8000-000000000005",
+        "type": "deal_update",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      },
+      {
+        "session": "practice",
+        "proposalId": "01a1c6e9-000b-7000-8000-000000000010",
+        "type": "deal_update",
+        "tier": "none",
+        "reasons": [],
+        "nameNote": null,
+        "seeded": null
+      },
+      {
+        "session": "practice",
+        "proposalId": "01a1c6e9-000b-7000-8000-000000000024",
+        "type": "task",
+        "tier": "quiet",
+        "reasons": [],
+        "nameNote": "context",
+        "seeded": null
+      }
+    ]
+  }
+}
