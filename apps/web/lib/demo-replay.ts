@@ -5,7 +5,7 @@
 // with word timings arrive word by word first, as the live partial does; the others appear whole.
 // The orb's microphone level is synthesized from the words' timing. The clock is injected, so
 // tests drive the replay by hand. Nothing here touches a key, the edge Worker, or a provider.
-import type { EntityRef, EventEnvelope, ProposalType } from "@earshot/core";
+import type { EntityRef, EventEnvelope, ProposalTypeV2 } from "@earshot/core";
 import { defaultRegistry } from "@earshot/events";
 import type { Clock } from "@earshot/voice";
 import { type SessionState, SessionStore } from "@earshot/voice/session";
@@ -458,7 +458,7 @@ const REVIEW_TEXT = {
  */
 export function replayActivity(state: SessionState): ActivityRow[] {
   const turns = state.events.some((event) => event.type === "turn.completed");
-  const types = new Map<string, ProposalType>();
+  const types = new Map<string, ProposalTypeV2>();
   const rows: ActivityRow[] = [];
   state.events.forEach((event, index) => {
     const at = state.receivedAt[index] ?? 0;

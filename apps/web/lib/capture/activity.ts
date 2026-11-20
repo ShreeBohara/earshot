@@ -2,7 +2,7 @@
 // and connection changes, as distinct row types rather than JSON. Rows come from the session's
 // events and issues, from the screen's own log, and from SessionDO's ephemeral `working` messages,
 // of which only the newest shows: "Working…" rows replace each other instead of piling up.
-import type { ProposalType } from "@earshot/core";
+import type { ProposalTypeV2 } from "@earshot/core";
 import type { SessionState } from "@earshot/voice/session";
 import { SESSION_ISSUE_COPY, turnOutcomeText } from "./copy";
 
@@ -38,7 +38,7 @@ export function workingRow(state: SessionState): ActivityRow | null {
 /** Rows from the session's folded events and the issues the socket reported. */
 export function sessionRows(state: SessionState): ActivityRow[] {
   const rows: ActivityRow[] = [];
-  const types = new Map<string, ProposalType>(
+  const types = new Map<string, ProposalTypeV2>(
     state.projections.proposals.map((proposal) => [proposal.proposalId, proposal.type]),
   );
   state.events.forEach((event, index) => {
