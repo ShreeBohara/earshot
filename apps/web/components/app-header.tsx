@@ -29,6 +29,18 @@ export function AppHeader({
         </p>
         <nav aria-label="Main" className="ms-auto flex items-center gap-1">
           <Link
+            href="/home"
+            className="hidden rounded-md px-2 py-1.5 text-muted-foreground text-sm outline-none hover:bg-muted hover:text-foreground focus-visible:focus-ring sm:inline-flex"
+          >
+            Home
+          </Link>
+          <Link
+            href="/capture"
+            className="rounded-md px-2 py-1.5 text-muted-foreground text-sm outline-none hover:bg-muted hover:text-foreground focus-visible:focus-ring"
+          >
+            Capture
+          </Link>
+          <Link
             href="/demo"
             className="hidden rounded-md px-2 py-1.5 text-muted-foreground text-sm outline-none hover:bg-muted hover:text-foreground focus-visible:focus-ring sm:inline-flex"
           >

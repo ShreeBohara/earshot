@@ -48,7 +48,20 @@ To use real services, copy `apps/web/.dev.vars.example` to `apps/web/.dev.vars` 
 
 `pnpm --filter @earshot/web preview` runs the production Worker build in workerd. It has no zero-setup mode, so it needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL=http://localhost:8787` in `.dev.vars`. Starting a session there also needs `EARSHOT_SESSION_TICKET_SECRET` and `EDGE_PUBLIC_URL`, with the edge Worker on another port (`wrangler dev --port 8788`).
 
-End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts`. `e2e/keys.spec.ts` signs up a new user with the magic link the server prints, which it reads from `apps/web/.data/e2e/dev-server.log`, so it needs zero-setup mode: with a `.dev.vars` file present, wrangler ignores the port the tests set for `BETTER_AUTH_URL`. Move the file aside while it runs. The health check in `e2e/smoke.spec.ts` needs a deployed stack, so it runs only against previews (set `BASE_URL`).
+### A debrief with no keys (fake voice)
+
+Under `next dev`, a whole debrief can run with no keys and no provider calls. Your microphone still records, but the fake speech-to-text adapter ignores the audio: each press "hears" the next line of the scripted demo session. The edge Worker's e2e entry (`apps/edge/src/e2e.ts`) answers every turn from `@earshot/agent`'s committed cassettes.
+
+1. Start the e2e edge Worker instead of the usual one: `pnpm --filter @earshot/edge dev:e2e`. It listens on port 8787 and accepts sockets from `http://localhost:3000`.
+2. Start the web app: `pnpm --filter @earshot/web dev`. Its `dev` script first writes the voice assets (the capture worklet and the VAD files) into `apps/web/public/`. If you start `next dev` some other way, run `pnpm --filter @earshot/web exec earshot-voice-assets public` first.
+3. Sign in, open `http://localhost:3000/capture?voice=fake`, and click **Start debrief**. To get fake mode on every visit, start the web app with `EARSHOT_FAKE_VOICE=1`.
+4. Hold Space (or the button) for about 1.6 seconds per line. The banner shows the next line. Seven presses give five proposals. `Esc` ends the debrief and shows what it cost: the cassettes' token counts priced at the real rates, and nothing was billed.
+
+Fake mode sends `start` with the scenario's entities, call time, and time zone instead of your CRM's, because each cassette is keyed by the whole LLM request. The scenario comes from the e2e Worker's `GET /v1/e2e/scenario`. That route also proves the e2e Worker is the one listening: if it doesn't answer, the screen refuses to start, since the production edge Worker would send the turn to a real provider. Production builds compile fake mode out, and `build:worker`'s bundle check fails if the fake adapter or the scenario route reach a bundle.
+
+### End-to-end tests
+
+End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts`. The capture tests (`e2e/capture/`) also start the e2e edge Worker on port 8787, and give Chrome a fake microphone. They cover a keyboard-only debrief, the live region, reduced motion, the docked session across pages, and press-to-feedback under 200 ms: `pnpm --filter @earshot/web exec playwright test e2e/capture`. The reduced-motion test compares pixels only against a baseline for your platform. Where there's none (CI's Linux has none yet), it runs its motion checks and skips the pixels. Record a baseline with `--update-snapshots`. `e2e/keys.spec.ts` signs up a new user with the magic link the server prints, which it reads from `apps/web/.data/e2e/dev-server.log`, so it needs zero-setup mode: with a `.dev.vars` file present, wrangler ignores the port the tests set for `BETTER_AUTH_URL`. Move the file aside while it runs. The health check in `e2e/smoke.spec.ts` needs a deployed stack, so it runs only against previews (set `BASE_URL`).
 
 ## Commands
 
@@ -58,7 +71,8 @@ End-to-end tests start their own zero-setup dev server on port 3100: run `pnpm -
 | Lint and format | `pnpm check` or `pnpm check:fix` |
 | Typecheck | `pnpm typecheck` |
 | Test | `pnpm test` |
-| End-to-end tests (Playwright and axe) | `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts` |
+| End-to-end tests (Playwright and axe) | `pnpm --filter @earshot/web exec playwright test e2e/sign-in.spec.ts e2e/keys.spec.ts e2e/capture` |
+| A debrief with no keys | `pnpm --filter @earshot/edge dev:e2e` and `pnpm --filter @earshot/web dev`, then `/capture?voice=fake` |
 | Build | `pnpm build` |
 | Regenerate contracts | `pnpm contracts:gen` |
 | Storybook (`@earshot/ui`, plus the web app's stories) | `pnpm --filter @earshot/ui storybook` |

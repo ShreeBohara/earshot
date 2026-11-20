@@ -1,0 +1,35 @@
+/*
+ * Proposal cards slide in with a View Transition: 200 ms, inside the spec's 150–250 ms. React's
+ * <ViewTransition enter="proposal-enter"> gives entering cards this class. The page itself doesn't
+ * crossfade (its old snapshot is dropped), so only the new card moves. With reduced motion,
+ * nothing animates: cards appear in place.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-new(.proposal-enter):only-child {
+    animation: proposal-enter 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
+@keyframes proposal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+::view-transition-old(root) {
+  display: none;
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Author styles beat the browser's default crossfade without !important. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
