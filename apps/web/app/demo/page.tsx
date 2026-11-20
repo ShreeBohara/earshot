@@ -1,3 +1,4 @@
+import type { RiskKindV2 } from "@earshot/core";
 import { fromJsonl } from "@earshot/events";
 import demoLog from "@earshot/events/fixtures/demo-session.jsonl";
 import { Badge } from "@earshot/ui/components/badge";
@@ -8,6 +9,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DemoReplay } from "@/components/demo/demo-replay";
 import { linkButton } from "@/components/link-button";
+import { RISK_LABELS } from "@/lib/capture/copy";
 import { buildDemo, clock, type Demo, type DemoField, type DemoProposal } from "@/lib/demo";
 
 export const metadata: Metadata = {
@@ -29,15 +31,10 @@ const TYPE_LABELS: Record<string, string> = {
   commitment: "Commitment",
 };
 
-const RISK_LABELS: Record<string, string> = {
-  date: "Check the date",
-  number: "Check the number",
-  negation: "Check the negation",
-  low_confidence: "Low confidence",
-  unsupported: "No supporting words",
-  new_entity: "Creates a new record",
-  witness_conflict: "Transcripts disagree",
-};
+/** The tray's copy for a risk kind (lib/capture/copy.ts), so the two pages say the same. */
+function riskText(kind: string): string {
+  return RISK_LABELS[kind as RiskKindV2] ?? kind;
+}
 
 function fieldLabel(name: string): string {
   const words = name.replace(/([A-Z])/g, " $1").toLowerCase();
@@ -95,7 +92,7 @@ function ProposalCard({ proposal }: { proposal: DemoProposal }) {
           <div className="col-span-2 flex flex-wrap gap-1.5 pt-1">
             {wholeProposalRisks.map((flag) => (
               <Badge key={flag.kind} variant="conflict">
-                {RISK_LABELS[flag.kind] ?? flag.kind}
+                {riskText(flag.kind)}
               </Badge>
             ))}
           </div>
@@ -111,7 +108,7 @@ function ProposalCard({ proposal }: { proposal: DemoProposal }) {
                   <span className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
                     {fieldLabel(field.name)}
                   </span>
-                  {risk && <Badge variant="conflict">{RISK_LABELS[risk.kind] ?? risk.kind}</Badge>}
+                  {risk && <Badge variant="conflict">{riskText(risk.kind)}</Badge>}
                 </dt>
                 <dd className="flex flex-col gap-1.5">
                   {field.editedTo === undefined ? (
