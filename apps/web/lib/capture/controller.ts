@@ -21,6 +21,7 @@ import type { EntityRef, LlmProvider, SessionProviders } from "@earshot/core";
 import type { ProviderId, StoredKeyMeta } from "@earshot/keys";
 import {
   type CaptureMode,
+  type DebriefEngine,
   type DebriefEngineOptions,
   type EngineState,
   isVoiceError,
@@ -112,6 +113,9 @@ export interface CaptureUiState {
   readonly fake: { readonly holdMs: number; readonly nextLine: string | null } | null;
 }
 
+/** A voice engine that says where its audio clock ended, so its replacement can carry it on. */
+export type CaptureEngine = VoiceEngine & Pick<DebriefEngine, "audioClockMs">;
+
 /** Everything the controller touches outside itself, so tests can swap any of it. */
 export interface CaptureDeps {
   readonly fetch: typeof fetch;
@@ -119,7 +123,7 @@ export interface CaptureDeps {
   readonly openMicrophone: () => Promise<Microphone>;
   /** Called inside the click or key press that starts capture, so the context may start. */
   readonly createAudioContext: () => AudioContext | undefined;
-  readonly createEngine: (options: DebriefEngineOptions) => VoiceEngine;
+  readonly createEngine: (options: DebriefEngineOptions) => CaptureEngine;
   readonly createClient: (options: SessionClientOptions) => SessionClient;
   readonly createAdapter: (option: SttOption) => SttAdapter;
   /** The page's monotonic clock (`performance.now()`), for marks and feed rows. */
@@ -170,6 +174,11 @@ interface LiveSession {
   readonly plan: SessionPlan;
   readonly keyterms: readonly string[];
   readonly marks: TurnMarksRecorder;
+  /**
+   * The session's latest engine. The one that replaces it (after `H`, a resume, or a microphone
+   * retry) starts its audio clock where this one's ended, so utterance times never repeat.
+   */
+  engine: CaptureEngine | null;
   unsubscribe: () => void;
   /** This session's LLM key, until it ends. */
   turnKey: string | undefined;
@@ -459,6 +468,7 @@ export class CaptureController {
         plan,
         keyterms: plan.keyterms(created),
         marks: new TurnMarksRecorder((turnId, marks) => client.sendMetric(turnId, marks)),
+        engine: null,
         unsubscribe: () => {},
         turnKey: plan.turnKey,
         seen: 0,
@@ -544,12 +554,30 @@ export class CaptureController {
     audioContext: AudioContext | undefined,
     generation: number,
   ): Promise<void> {
+    // A replacement carries on the session's audio clock from the engine before it, read once
+    // that one has stopped: until then its last turn can still add audio.
+    const previous = live.engine;
+    if (previous) {
+      try {
+        await previous.stop(); // already called; a second call waits on the same stop
+      } catch {
+        // It stopped as far as it could; its clock is final either way.
+      }
+      if (generation !== this.#generation || this.#mic !== mic) {
+        if (this.#mic === mic) this.#mic = null;
+        mic.close();
+        void audioContext?.close().catch(() => {});
+        return;
+      }
+    }
     const engine = this.#deps.createEngine({
       adapter: live.plan.createAdapter(this.#state.turnsSent),
       getCredential: live.plan.getCredential(live.sessionId),
       mode: this.#state.mode,
+      audioClockStartMs: previous?.audioClockMs ?? 0,
       ...this.#deps.engineOptions,
     });
+    live.engine = engine;
     this.#engine = engine;
     this.#engineState = "idle";
     this.#detachEngine = engine.on((event) => this.#onEngineEvent(live, engine, event));
@@ -682,7 +710,8 @@ export class CaptureController {
 
   /**
    * `H`: switches between push-to-talk and hands-free. The engine's mode is fixed when it starts,
-   * so a running engine is replaced on the same microphone. Call it from the key press itself.
+   * so a running engine is replaced on the same microphone, and the new one carries on its audio
+   * clock. Call it from the key press itself.
    */
   toggleHandsFree(): void {
     if (this.#state.pressed) this.release();

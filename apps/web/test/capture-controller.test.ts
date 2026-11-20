@@ -60,7 +60,8 @@ function setup(
           riskFlags: [{ kind: "new_entity" as const }],
         })),
   });
-  const capture = new FakeCaptureSource();
+  /** One per engine, as each engine starts its own capture graph and closes it when it stops. */
+  const captures: FakeCaptureSource[] = [];
   const routes: { url: string; body: unknown }[] = [];
   const ticket = () => server.issueTicket();
   const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -135,13 +136,28 @@ function setup(
       random: () => 0.5,
       page: new FakePageLifecycle(),
     },
-    engineOptions: { capture: capture.factory(), clock, random: () => 0.5 },
+    engineOptions: {
+      capture: (captureOptions) => {
+        const source = new FakeCaptureSource();
+        captures.push(source);
+        return source.factory()(captureOptions);
+      },
+      // Hands-free's VAD, which never hears speech here: the engine streams on arming regardless.
+      vad: async () => ({ start: async () => {}, pause: async () => {}, destroy: async () => {} }),
+      clock,
+      random: () => 0.5,
+    },
   };
   const controller = new CaptureController(deps);
   return {
     clock,
     server,
-    capture,
+    /** The capture source of the engine started last. */
+    get capture(): FakeCaptureSource {
+      const source = captures.at(-1);
+      if (!source) throw new Error("no engine has started yet");
+      return source;
+    },
     controller,
     routes,
     chimes,
@@ -275,6 +291,58 @@ describe("CaptureController in fake mode", () => {
     expect(ui.store?.getState().projections.utterances).toHaveLength(1);
     t.controller.togglePause();
     expect(t.controller.getState().frozen).toBeNull();
+    t.controller.dispose();
+  });
+
+  it("carries the session's audio clock across `H`, so a new engine's utterances come after the old one's", async () => {
+    const t = setup();
+    const fake = createFakeVoice(SCENARIO);
+    t.controller.start({ selection: null, fake });
+    await settle(100);
+    await t.clock.advance(200);
+    await talk(t, fake.holdMs); // engine 1, push-to-talk: 1,600 ms of audio
+
+    t.controller.toggleHandsFree(); // engine 2, hands-free, streams 1,600 ms from arming
+    await settle(100);
+    await t.clock.advance(200);
+    expect(t.controller.getState().capture.state).toBe("armed");
+    for (let done = 0; done < fake.holdMs; done += 32) {
+      t.capture.speak(32);
+      await t.clock.advance(32);
+    }
+    t.controller.toggleHandsFree(); // engine 2 ends its turn as it stops; engine 3 is push-to-talk
+    await settle(100);
+    await t.clock.advance(1_500);
+    await talk(t, fake.holdMs); // engine 3
+
+    const utterances = t.controller.getState().store?.getState().projections.utterances ?? [];
+    expect(utterances).toHaveLength(3);
+    // Each engine's audio starts where the last one's stopped, not at 0 again.
+    expect(utterances.map((u) => u.startMs)).toEqual([0, 1_600, 3_200]);
+    for (let i = 1; i < utterances.length; i++) {
+      expect(utterances[i]?.startMs).toBeGreaterThan(utterances[i - 1]?.endMs ?? Infinity);
+    }
+    t.controller.dispose();
+  });
+
+  it("carries the session's audio clock across a pause and resume", async () => {
+    const t = setup();
+    const fake = createFakeVoice(SCENARIO);
+    t.controller.start({ selection: null, fake });
+    await settle(100);
+    await t.clock.advance(200);
+    await talk(t, fake.holdMs);
+    t.controller.pauseCapture();
+    t.controller.resumeCapture(); // while the paused engine is still stopping
+    await settle(100);
+    await t.clock.advance(200);
+    expect(t.controller.getState().capture.state).toBe("armed");
+    await talk(t, fake.holdMs);
+    const utterances = t.controller.getState().store?.getState().projections.utterances ?? [];
+    expect(utterances.map((u) => [u.text, u.startMs])).toEqual([
+      ["Met Dana Lee at Acme Corp", 0],
+      ["That is all", 1_600],
+    ]);
     t.controller.dispose();
   });
 });
