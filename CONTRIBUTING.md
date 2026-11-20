@@ -77,6 +77,25 @@ EARSHOT_EVAL_WAVS=lab/.cache/wavs-stub EARSHOT_EVAL_SCRIPTS=d001,d010 pnpm exec 
 
 Leave out `EARSHOT_EVAL_SCRIPTS` for all 30, about 15 minutes in real time. The run prints a report, with latency p50 and p95 from each turn's `turn.measured`, and writes it to `apps/web/.data/eval/report.json`. With Kokoro's WAVs in `lab/.cache/wavs` (`uv sync --project lab --group tts`, then `render_debriefs.py` without `--stub`), leave out `EARSHOT_EVAL_WAVS`. `packages/evals/baselines/ci.json` is written on purpose, from a green CI `eval` run's `eval-report` artifact: `pnpm --filter @earshot/evals baseline:update <report.json>`.
 
+### The eval tiers
+
+Each tier, what runs it, and what it costs ([ADR-0031](docs/adr/0031-eval-harness-v1.md)). The two $0 gates run in seconds, so run them before you push anything that touches `packages/agent`, `packages/understanding`, or `packages/evals`.
+
+| Tier | Run it locally | In CI | Cost |
+|---|---|---|---|
+| Linking gate (G1a): linker v1 and the second witness on the confusable-name set's test split | `pnpm --filter @earshot/evals eval:linking --linker v1 --split test --check` | `checks`, every PR | $0 |
+| Understanding gate (G2b, G3a): all 200 debriefs through each LLM adapter's offline cassettes | `pnpm --filter @earshot/evals eval:understanding --check` | `checks`, every PR | $0 |
+| The fake-microphone eval: 30 rendered debriefs through the capture screen | As above | `ui` (5 scripts) and `eval` (all 30) | $0 |
+| Live smoke eval: 30 debriefs as text through a real model, against a three-run baseline | `EVAL_SMOKE_BUDGET_USD=0.10 pnpm --filter @earshot/evals eval:smoke --offline` runs it through the cassettes for $0, which checks the plumbing only. A live run also needs `EVAL_SMOKE_ANTHROPIC_KEY` | `eval-smoke`, skipped until `EVAL_SMOKE_ENABLED` is `true` | Budget-guarded: about $0.03 a run with the prompt cache |
+| `eval-live`: real providers end to end | `workflow_dispatch` on `eval-live` | By hand | Budget-guarded |
+
+What to regenerate, and in what order, when you change:
+
+- **A debrief script or the generator:** `pnpm --filter @earshot/evals debriefs:gen` (generated scripts only), then `cassettes:gen`, then `eval:understanding --write-baseline`. Review the baseline's diff before you commit it; the baseline is tied to the scripts' bytes, so the gate fails until it's re-recorded.
+- **The prompt, the tool schema, or request options in `@earshot/agent`:** `pnpm --filter @earshot/evals cassettes:gen`, and `@earshot/agent`'s cassettes the same way.
+- **The smoke set:** `pnpm --filter @earshot/evals smoke:select` rewrites `smoke.json`. A new baseline then has to be recorded live: dispatch `eval-smoke` with `baseline` checked, then review and commit the artifact.
+- **Linker v1's features or its fit:** `pnpm --filter @earshot/evals linker:fit`, then `eval:linking --linker v1 --split test --write-baseline`. Tune on the calibration split only; the test split is what G1 is judged on.
+
 ## Commands
 
 | Task | Command |

@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 4 WP9 built it: the Groq Whisper runner, each turn's audio buffer, the session's witness queue, the price row, Settings → Capture with its one-time consent, `SessionDO`'s handling of `witness`, the scripted fake witness, and the end-to-end test of a mishearing. **The live check is pending the user's approval**: ten real turns from the user's own browser, under $0.01 (see "The live check"). Until it runs, everything about Groq's answers here is as documented, not observed. The fallback witness (spec WP9 step 7, cut third) isn't built.
+Accepted (2026-11-20). Phase 4 WP9 built it: the Groq Whisper runner, each turn's audio buffer, the session's witness queue, the price row, Settings → Capture with its one-time consent, `SessionDO`'s handling of `witness`, the scripted fake witness, and the end-to-end test of a mishearing. **The live check is pending the user's approval**: ten real turns from the user's own browser, under $0.01 (see "The live check"). Until it runs, everything about Groq's answers here is as documented, not observed. The fallback witness (spec WP9 step 7, cut third) isn't built.
 
 Builds on ADR-0027 (the `witness` message, `proposal.flagged`, `turn.witnessed`) and ADR-0028 (`readUnbiased`, `compareWitnesses`, θ_d). Amends ADR-0002: one provider key, the user's Groq key, goes from the browser straight to its provider, since Groq mints no short-lived credential for batch transcription. Follows ADR-0021 for where that key lives.
 
@@ -43,7 +43,7 @@ That needs:
 - **The tail.** After the release, the recording takes 200 ms more of the microphone's audio, which the speech stream mostly doesn't get. That's for the end of a word cut by an early release. The tail's words land at most 200 ms past the turn's audio on the clock, inside `SessionDO`'s 1 s allowance.
 - **The cap.** Past 120 s, a recording drops its audio at once and only counts on, and the turn is skipped as `too_long`.
 - **Emitting it.** The engine emits `turn_audio` once per `turn_end`, after it, as soon as the tail is in: usually first, because the provider's finalize takes longer than 200 ms. A late final's turn has no audio of its own (`audio: null`).
-- **Hands-free turns** have no press. A recording runs while the engine streams, is cut at each turn end, and the next starts there; a long silence drops it.
+- **Hands-free turns** have no press. A recording runs while the engine streams, and the provider's end of turn splits it 200 ms past the turn's last final, or where the capture stands if that's sooner. The end of turn lands a silence wait and a network hop after the last word, and the rep may be into the next sentence by then. So the samples already captured past the split start the next turn's recording, on the same clock, and the next sentence's opening words, often the name to check, are its own. Leaving hands-free, whose finals may still be coming, cuts where it stands, and a long silence drops the recording. (Codex found the cut-on-arrival bug on #47; fixed in 210c668.)
 - **Off by default.** Without `turnAudio`, the engine keeps nothing past the ring, as before.
 
 ### The session's side (`packages/voice/src/session/witness.ts`)

@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-19). Phase 4 WP3 drafted the problem and the metrics, and committed the measurement they rest on: the confusable-name set `confusable.v1`, its harness, and linker v0's baseline. WP4 (2026-11-20) wrote linker v1, fit it on the calibration split, and recorded its biased-only numbers. WP5 (2026-11-20) added the second witness's comparison and its threshold θ_d, refit the thresholds with the witness, and ran gate G1a on the test split: it passes, at 86.9% coverage and a 0.6% wrong-account rate. CI's `checks` job now runs it. WP8 (2026-11-20) wired linker v1 into `SessionDO` (ADR-0027) and changed the web app's keyterm order; the set's simulator keeps the old order as `keytermListV1` (see "Keyterms after WP8"). Builds on ADR-0027 (contracts and the pipeline) and ADR-0026 (eval harness v0).
+Accepted (2026-11-20; proposed 2026-11-19). Phase 4 WP3 drafted the problem and the metrics, and committed the measurement they rest on: the confusable-name set `confusable.v1`, its harness, and linker v0's baseline. WP4 (2026-11-20) wrote linker v1, fit it on the calibration split, and recorded its biased-only numbers. WP5 (2026-11-20) added the second witness's comparison and its threshold θ_d, refit the thresholds with the witness, and ran gate G1a on the test split: it passes, at 86.9% coverage and a 0.6% wrong-account rate. CI's `checks` job now runs it. WP8 (2026-11-20) wired linker v1 into `SessionDO` (ADR-0027) and changed the web app's keyterm order; the set's simulator keeps the old order as `keytermListV1` (see "Keyterms after WP8"). WP10's 200 debriefs run the linker end to end through the pipeline (ADR-0031). Still to run: WP6's mined set (gate G1b), which needs the maintainer's approval; a miss there goes into this ADR and Phase 8. Builds on ADR-0027 (contracts and the pipeline) and ADR-0026 (eval harness v0).
 
 ## Context and problem
 
@@ -268,6 +268,8 @@ Per class, v1 decides:
 | Without the open account | the open account, wherever it's read: the family source, the prefilter's bonus, `focus`, and its part in `rivalContext` | 0.70 / 0.40 / 0.35 / 0.02 | 82.5% | 5.1% | 1 | 0.0% |
 
 Sound carries the linker, and context separates the homophones. The open account alone is worth 11 points of coverage, and without it one item outside E2 and G links to the wrong record. Trigrams add nothing on this set: its mishearings keep their codes by construction (see Consequences). They stay, because they're cheap, and because real speech-to-text errors that change a code are what they're for. WP6's mined set will say whether that holds.
+
+It's the sound *features* that carry it, not the Double Metaphone candidate source alone. Dropping only `"sound"` from the frozen parameters' sources, and keeping the homophone source and the features, still passes G1a with no regression: the other sources find the same candidates. Dropping both phonetic sources turns the features off as well, and with the frozen thresholds G1a fails at 58.9% coverage and a 2.4% wrong-account rate (WP12, 2026-11-20; the gate G3a demonstration, #49).
 
 **Speed.** 1,000 mentions against the 250 records take about 0.2 s in Node, including the index (target: under 1 s). That's about 0.13 ms per mention at the median and 0.5 ms at p95, against the understanding step's 20 ms budget.
 

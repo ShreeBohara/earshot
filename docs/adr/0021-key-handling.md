@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15). This implements ADR-0009 in `packages/keys`, and the vault's storage in `packages/db`. The web app's routes and Settings → Keys followed in Phase 2 (2026-11-16); see "In the web app" below.
+Accepted (2026-11-15). This implements ADR-0009 in `packages/keys`, and the vault's storage in `packages/db`. The web app's routes and Settings → Keys followed in Phase 2 (2026-11-16); see "In the web app" below. Amended for Phase 4 (2026-11-20): the second witness uses the Groq key from the page; see "Amendment: Phase 4" below.
 
 ## Context and problem
 
@@ -139,6 +139,12 @@ Onboarding offers it as a third way to start, alongside adding a key and the rep
 - Turning the vault on is a deploy-time decision: one secret per environment, and the runbook to change it. There's no per-workspace switch.
 - The end-to-end test reads the magic link the dev server prints, so it needs zero-setup mode. A local `.dev.vars` file stops wrangler from passing the test's environment to the dev server.
 - The web app's stories run in `@earshot/ui`'s Storybook, so `apps/web` carries Storybook as a dev dependency for their types.
+
+## Amendment: Phase 4 (2026-11-20)
+
+- **The Groq key, used from the page.** The second witness (ADR-0029) reads the rep's Groq key from the device and sends it from the page straight to `api.groq.com`, in an `Authorization` header, once per turn. On that path it never goes through Earshot. Groq has no short-lived credential to mint, so this is the one place a page uses an AI key itself (ADR-0002's Phase 4 amendment). If the rep also picks Groq for extraction, the same key rides on each `turn_end` to `SessionDO`, as since Phase 3.
+- **On the device only.** The witness needs the key on the device. One kept only in the vault doesn't turn it on, and the capture screen doesn't offer it.
+- **Tests.** `packages/voice/test/witness-groq.test.ts` holds that the key goes only to `api.groq.com`, only in `Authorization`, and into neither the URL, the request body, the result, nor a log. The session protocol refuses key-shaped strings outside `turn_end.key`, so a witness message can't carry one.
 
 ## More information
 

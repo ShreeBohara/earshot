@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20), drafted by Phase 4 WP10. WP10 built:
+Accepted (2026-11-20). Drafted by Phase 4 WP10, which built:
 
 - debrief format v2;
 - the generator and d031–d200;
@@ -10,7 +10,7 @@ Proposed (2026-11-20), drafted by Phase 4 WP10. WP10 built:
 - the understanding cassettes, with seeded and labelled errors;
 - the understanding report, and its gate in CI's `checks` job, with a baseline.
 
-WP11 built the live smoke tier (below): its set, runner, noise band, and budget guards, off until the user turns it on (WP11b). WP12 finishes this ADR and amends ADR-0026. Builds on ADR-0026 (harness v0), ADR-0027 (contracts and the pipeline), ADR-0028 (the linker, the confusable set and its simulator), ADR-0029 (the second witness), and ADR-0030 (the normalizers).
+WP11 built the live smoke tier (below): its set, runner, noise band, and budget guards, off until the user turns it on (WP11b). WP12 accepted it, amended ADR-0026, and showed gate G3a: #49, which dropped the phonetic candidate sources, was blocked by `checks`. Builds on ADR-0026 (harness v0), ADR-0027 (contracts and the pipeline), ADR-0028 (the linker, the confusable set and its simulator), ADR-0029 (the second witness), and ADR-0030 (the normalizers).
 
 ## Context and problem
 
