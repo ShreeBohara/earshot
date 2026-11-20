@@ -16,7 +16,7 @@ import {
   type Heard,
   hearBiased,
   hearUnbiased,
-  keytermList,
+  keytermListV1,
   type NearSnap,
 } from "../channel/witness";
 import { DECOYS, type Decoy } from "./decoys";
@@ -131,7 +131,7 @@ const KEYTERMS = new Map<string | null, readonly string[]>();
 function keytermsFor(focusEntityId: string | null): readonly string[] {
   let terms = KEYTERMS.get(focusEntityId);
   if (!terms) {
-    terms = keytermList(LINKING_ENTITIES, focusEntityId);
+    terms = keytermListV1(LINKING_ENTITIES, focusEntityId);
     KEYTERMS.set(focusEntityId, terms);
   }
   return terms;

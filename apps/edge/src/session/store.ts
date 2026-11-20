@@ -30,12 +30,17 @@ export type MetaKey =
   | "sid"
   | "uid"
   | "wid"
-  // `start`: the seq of `session.started`, when it arrived by the DO's clock, and its settings.
+  // `start`: the seq of `session.started`, when it arrived by the DO's clock, and its settings,
+  // the account open in Earshot (`focusEntityId`) among them.
   | "started_seq"
   | "capture_started_ms"
   | "call_time"
   | "time_zone"
   | "entities"
+  | "focus_entity_id"
+  // The records turns linked from words that were said, most recent first, at most 20 (JSON): the
+  // linker's `recent` context (Phase 4 spec, WP8 step 4).
+  | "link_recent"
   // `end` (or an idle session ended by the DO): the seq of `session.ended`, and when.
   | "ended_seq"
   | "ended_ms"

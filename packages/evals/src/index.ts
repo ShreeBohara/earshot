@@ -59,6 +59,7 @@ export {
   DemoEntityId,
   type ExpectedField,
   ExpectedProposal,
+  expectedDecision,
   expectedFields,
   isNormalizedText,
   KEY_FIELDS,
@@ -71,6 +72,8 @@ export {
   MIN_LEAD_IN_MS,
   MIN_PAUSE_MS,
   MIN_TURNS,
+  type Named,
+  namedOf,
   TURN_TAGS,
   TurnTag,
 } from "./schema";

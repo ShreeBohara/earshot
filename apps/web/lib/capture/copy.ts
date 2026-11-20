@@ -1,6 +1,14 @@
 // What the capture screen says about each code. Codes come from the voice engine, the session
 // socket, and the client; none of them ever carries a provider's own message or a key.
-import type { ProposalTypeV2, SessionErrorCode, TurnOutcome } from "@earshot/core";
+import type {
+  ProposalTypeV2,
+  RiskFlagV2,
+  RiskKindV2,
+  SessionErrorCode,
+  TargetCandidate,
+  TargetV2,
+  TurnOutcome,
+} from "@earshot/core";
 import type { VoiceErrorCode } from "@earshot/voice";
 import type { ClientIssueCode } from "@earshot/voice/session";
 
@@ -122,15 +130,80 @@ export function turnOutcomeText(outcome: TurnOutcome, types: readonly ProposalTy
   }
 }
 
-export const RISK_LABELS: Readonly<Record<string, string>> = {
+/**
+ * What each risk badge says. `unsupported` means one thing wherever it appears (ADR-0027): the
+ * words the model cited don't back what it wrote. A field whose quote isn't in the transcript is
+ * dropped with it; a date, time, or amount whose quote says no such value keeps its value with
+ * it; a target whose name isn't in the transcript links nothing. `date` and `number` come only
+ * from Phase 3's sessions: Phase 4 checks those values against their words instead (ADR-0030).
+ */
+export const RISK_LABELS: Readonly<Record<RiskKindV2, string>> = {
   date: "Check the date",
   number: "Check the number",
   negation: "Check the negation",
   low_confidence: "Low confidence",
-  unsupported: "No supporting words",
+  unsupported: "Not backed by what was said",
   new_entity: "Creates a record",
   witness_conflict: "Transcripts disagree",
+  link_uncertain: "Linked by sound",
+  ambiguous_target: "Pick the record",
+  implied_target: "Open account assumed",
+  value_mismatch: "Differs from what was said",
+  ambiguous_value: "Two readings",
+  self_correction: "Corrected while speaking",
+  weak_support: "Loosely backed by what was said",
 };
+
+/** Badges on the target (`field: "target"`) that read better said of the record. */
+const TARGET_RISK_LABELS: Partial<Readonly<Record<RiskKindV2, string>>> = {
+  unsupported: "Record's name not in the transcript",
+  witness_conflict: "Transcripts disagree on the name",
+};
+
+/** A risk badge's text: its kind, and the field it's on (the target needs no field name). */
+export function riskLabel(flag: RiskFlagV2): string {
+  const label = RISK_LABELS[flag.kind] ?? flag.kind;
+  if (flag.field === undefined) return label;
+  if (flag.field === "target") return TARGET_RISK_LABELS[flag.kind] ?? label;
+  return `${label}: ${fieldLabel(flag.field).toLowerCase()}`;
+}
+
+/** A question names candidates at least this likely, or the most likely one alone. */
+export const ASK_MIN_P = 0.05;
+
+/** The candidates a question names: at most three records and "new", most likely first. */
+export function askCandidates(target: Pick<TargetV2, "candidates">): TargetCandidate[] {
+  const likely = target.candidates.filter((candidate) => candidate.p >= ASK_MIN_P);
+  return likely.length > 0 ? likely : target.candidates.slice(0, 1);
+}
+
+/** "A", "A or B", "A, B, or C". */
+function either(names: readonly string[]): string {
+  if (names.length <= 2) return names.join(" or ");
+  return `${names.slice(0, -1).join(", ")}, or ${names.at(-1)}`;
+}
+
+/**
+ * What a card says about its record, after any downgrade: the linked record's name; "Ask: Acme
+ * Dynamics or Akme Dynamics?" when the linker asks; "New" for a record to create; "No record"
+ * when none was named or the name wasn't found. Phase 4's tray is read-only; Phase 5 answers.
+ */
+export function targetHeading(target: TargetV2, nameOf: (entityId: string) => string): string {
+  switch (target.decision) {
+    case "linked":
+      return target.entityId === null ? "No record" : nameOf(target.entityId);
+    case "ask": {
+      const names = askCandidates(target).map((candidate) =>
+        candidate.entityId === null ? "a new record" : nameOf(candidate.entityId),
+      );
+      return names.length > 0 ? `Ask: ${either(names)}?` : "Ask";
+    }
+    case "new":
+      return "New";
+    case "none":
+      return "No record";
+  }
+}
 
 /** `nextStep` as "Next step". */
 export function fieldLabel(name: string): string {

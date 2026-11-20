@@ -111,27 +111,28 @@ describe("the 30 scripts' expected values", () => {
     }
   });
 
-  it("every expected field passes the faithfulness check, unchanged, but three expanded names", () => {
-    const flagged: string[] = [];
+  it("every expected field passes the faithfulness check, unchanged and unflagged", () => {
     for (const field of FIELDS) {
       const result = checkScripted(field);
       // Nothing right is ever replaced.
       expect(result.value, where(field)).toBe(field.value);
+      expect(result.verdict, where(field)).toBe("supported");
       // Negation is the only flag a right value may carry: a negated quote is worth a look anyway.
-      const flags = result.flags.filter((flag) => flag.kind !== "negation");
-      if (result.verdict === "supported" && flags.length === 0) continue;
-      expect(result.verdict, where(field)).toBe("mismatch");
-      expect(flags.map((flag) => flag.kind)).toEqual(["value_mismatch"]);
-      flagged.push(`${field.script.id} ${field.field}: ${field.value} / ${field.quote}`);
+      expect(
+        result.flags.filter((flag) => flag.kind !== "negation"),
+        where(field),
+      ).toEqual([]);
     }
-    // Phase 3's scripts expand three company names past their quotes, which the Phase 3 prompt
-    // could do from the CRM list. Names must equal their quotes (spec WP7 step 5), and the v2
-    // extractor no longer sees the list (decision 1): the linker resolves the company instead.
-    expect(flagged).toEqual([
-      "d002 company: Akme Dynamics / Akme",
-      "d012 company: Sigma Tooling / Sigma",
-      "d027 counterpart: Verdant Agritech / Verdant",
-    ]);
+    // Phase 3's scripts expanded three company names past their quotes ("Akme" written "Akme
+    // Dynamics"), which the Phase 3 prompt could do from the CRM list. The v2 extractor no longer
+    // sees it (decision 1), so WP8 writes names as said, and the linker resolves the company.
+    const named = (id: string, name: string) =>
+      FIELDS.find((field) => field.script.id === id && field.field === name)?.value;
+    expect([
+      named("d002", "company"),
+      named("d012", "company"),
+      named("d027", "counterpart"),
+    ]).toEqual(["Akme", "Sigma", "Verdant"]);
   });
 
   it("a wrong date or amount, like a model's, is replaced with the expected value", () => {

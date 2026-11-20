@@ -104,7 +104,7 @@ describe("submitProposalsInput", () => {
 
   it("refuses unknown types, extra keys, and missing quotes, as structure", () => {
     expect(
-      submitProposalsInput.safeParse({ proposals: [{ type: "meeting", target: null, fields: {} }] })
+      submitProposalsInput.safeParse({ proposals: [{ type: "lunch", target: null, fields: {} }] })
         .success,
     ).toBe(false);
     expect(submitProposalsInput.safeParse({ proposals: [], note: "hi" }).success).toBe(false);
@@ -112,6 +112,73 @@ describe("submitProposalsInput", () => {
     expect(missing.success).toBe(false);
     if (!missing.success)
       expect(describeIssues(missing.error)[0]).toMatch(/^proposals\.0\.fields\.title\.quote: /);
+  });
+
+  it("takes a target as the words that named a record, with a kind and an optional company", () => {
+    const target = (value: unknown) =>
+      submitProposalsInput.safeParse({
+        proposals: [{ ...taskWith({}).proposals[0], target: value }],
+      });
+    expect(target({ quote: "Dana Lee", kind: "contact", company: { quote: "Acme" } }).success).toBe(
+      true,
+    );
+    expect(target({ quote: "Acme", kind: "company", company: null }).success).toBe(true);
+    // v1's bare name, an unknown kind, and a missing company are all refused.
+    expect(target("Acme Corp").success).toBe(false);
+    expect(target({ quote: "Acme", kind: "account", company: null }).success).toBe(false);
+    expect(target({ quote: "Acme", kind: "company" }).success).toBe(false);
+    const long = target({ quote: "x".repeat(201), kind: "company", company: null });
+    expect(long.success).toBe(false);
+    if (!long.success) {
+      expect(describeIssues(long.error)).toEqual(["proposals.0.target.quote: quote is too long"]);
+    }
+  });
+
+  it("gives a contact no target: its record is the person it names", () => {
+    const contact = {
+      type: "contact",
+      fields: {
+        name: { value: "Dana Lee", quote: "Dana Lee" },
+        title: null,
+        company: null,
+        email: null,
+        phone: null,
+      },
+    };
+    expect(submitProposalsInput.safeParse({ proposals: [contact] }).success).toBe(true);
+    expect(
+      submitProposalsInput.safeParse({ proposals: [{ ...contact, target: null }] }).success,
+    ).toBe(false);
+  });
+
+  it("takes a meeting, with its date as YYYY-MM-DD and its time as HH:MM", () => {
+    const meeting = (time: unknown) => ({
+      proposals: [
+        {
+          type: "meeting",
+          target: null,
+          fields: {
+            title: { value: "Kickoff", quote: "kickoff" },
+            date: { value: "2026-12-07", quote: "December 7th" },
+            time,
+            attendees: null,
+          },
+        },
+      ],
+    });
+    expect(submitProposalsInput.safeParse(meeting(null)).success).toBe(true);
+    expect(
+      submitProposalsInput.safeParse(meeting({ value: "15:00", quote: "at 3pm" })).success,
+    ).toBe(true);
+    for (const value of ["3pm", "24:00", "9:30", "15:00:00"]) {
+      const result = submitProposalsInput.safeParse(meeting({ value, quote: "at 3pm" }));
+      expect(result.success, value).toBe(false);
+      if (!result.success) {
+        expect(describeIssues(result.error)).toEqual([
+          "proposals.0.fields.time.value: expected a time as HH:MM on a 24-hour clock",
+        ]);
+      }
+    }
   });
 
   it("lists at most ten problems, and says how many more there were", () => {

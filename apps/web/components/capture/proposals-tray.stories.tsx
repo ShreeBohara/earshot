@@ -23,16 +23,29 @@ type Story = StoryObj<typeof meta>;
 
 export const Empty: Story = { args: { proposals: [] } };
 
-/** Live: every card in the proposed state's blue, with its target, fields, quotes, and risks. */
+/**
+ * Live: every card in the proposed state's blue, with the linker's decision on its record (a
+ * question with its candidates, the open account, a link by sound), its fields, quotes, and risks.
+ */
 export const Live: Story = {
   play: async ({ args, canvasElement }) => {
     const panel = within(themePanel(canvasElement));
     const cards = panel.getAllByRole("article");
     await expect(cards).toHaveLength(3);
-    await expect(panel.getByRole("heading", { name: "Contact · New" })).toBeVisible();
-    await expect(panel.getByRole("heading", { name: "Task · Acme Corp" })).toBeVisible();
-    await expect(panel.getByText("Creates a record")).toBeVisible();
-    await expect(panel.getByText("Check the date: due date")).toBeVisible();
+    await expect(
+      panel.getByRole("heading", { name: "Contact · Ask: Dana Li or a new record?" }),
+    ).toBeVisible();
+    const candidates = within(panel.getByRole("list", { name: "Candidates" }));
+    await expect(candidates.getByText("Dana Li")).toBeVisible();
+    await expect(candidates.getByText("38%")).toBeVisible();
+    await expect(
+      panel.getByRole("heading", { name: "Deal update · Acme Corp - Security Platform" }),
+    ).toBeVisible();
+    await expect(panel.getByRole("heading", { name: "Task · Dana Li" })).toBeVisible();
+    await expect(panel.getByText("Pick the record")).toBeVisible();
+    await expect(panel.getByText("Open account assumed")).toBeVisible();
+    await expect(panel.getByText("Linked by sound")).toBeVisible();
+    await expect(panel.getByText("Differs from what was said: due date")).toBeVisible();
     await expect(panel.getAllByText("Proposed")).toHaveLength(3);
     const first = cards[0] as HTMLElement;
     await userEvent.hover(first);

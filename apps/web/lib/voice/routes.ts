@@ -41,7 +41,7 @@ import {
 } from "./config";
 import { sessionEntities, startEntityBudget } from "./entities";
 import { clientIp, noStoreJson, readJsonBody, refusal, refuseCrossSite, serverError } from "./http";
-import { type CrmEntity, rankEntities, sessionKeyterms } from "./keyterms";
+import { accountFamilyCount, type CrmEntity, rankEntities, sessionKeyterms } from "./keyterms";
 import { isMintProvider, mintCredential } from "./mint";
 import { issueTicket, sessionSocketUrl } from "./tickets";
 import type {
@@ -120,7 +120,9 @@ const ENTITY_KINDS: readonly EntityKind[] = ["company", "contact", "deal"];
  * `{ mode: "debrief", engine: "cascaded", providers, selectedAccountId? }` (400), and the user
  * must be under 20 new sessions in 10 minutes (429). Then, in one tenant transaction, it inserts
  * the session's row, reads the workspace's CRM rows, ranks them (lib/voice/keyterms.ts), and
- * signs the first ticket. Answers 201 with `CreateSessionResponse`.
+ * signs the first ticket. Answers 201 with `CreateSessionResponse`: the selected account, if it's
+ * a company among the session's entities, is its `focusEntityId`, and each contact and deal
+ * carries its company's id as `parentId` (Phase 4 WP8).
  */
 export async function createSessionRoute(
   viewer: Viewer,
@@ -167,16 +169,22 @@ export async function createSessionRoute(
         now: deps.now(),
       });
       log.addSecret(ticket.ticket);
+      const entities = sessionEntities(ranked.all, startEntityBudget(body.providers));
+      const account = ranked.account;
       return {
         sessionId: row.id,
         ticket,
-        entities: sessionEntities(ranked.all, startEntityBudget(body.providers)),
-        keyterms: sessionKeyterms(ranked.keytermSources),
+        entities,
+        // `start` refuses a focus outside its entities, so the account counts only if it's there.
+        focusEntityId:
+          account && entities.some((entity) => entity.id === account.id) ? account.id : null,
+        keyterms: sessionKeyterms(ranked.keytermSources, accountFamilyCount(ranked)),
       };
     }, viewer);
 
     log.info("session created", {
       entities: created.entities.length,
+      focus: created.focusEntityId !== null,
       keyterms: counts(created.keyterms),
     });
     const answer: CreateSessionResponse = {
@@ -185,6 +193,7 @@ export async function createSessionRoute(
       ticketExpiresAt: created.ticket.expiresAt.toISOString(),
       edgeUrl: sessionSocketUrl(config.edgeOrigin, created.sessionId),
       entities: created.entities,
+      focusEntityId: created.focusEntityId,
       keyterms: created.keyterms,
     };
     return noStoreJson(201, answer);

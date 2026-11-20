@@ -7,6 +7,7 @@ import {
   FakeCaptureSource,
   FakePageLifecycle,
   FakeSessionServer,
+  NO_TARGET,
   settle,
 } from "@earshot/voice/testing";
 import { describe, expect, it } from "vitest";
@@ -24,6 +25,7 @@ const SCENARIO: FakeScenario = {
   startedAt: "2026-11-10T19:15:00.000Z",
   timeZone: "America/Los_Angeles",
   entities: [{ id: "co_1", kind: "company", name: "Acme Corp", aliases: ["Acme"] }],
+  focusEntityId: "co_1",
   llm: { provider: "anthropic", model: "claude-haiku-5-5" },
   turns: [{ text: "Met Dana Lee at Acme Corp" }, { text: "That is all" }],
 };
@@ -51,7 +53,7 @@ function setup(
         .filter((u) => u.text.includes("Dana"))
         .map((u) => ({
           type: "contact" as const,
-          targetEntityId: null,
+          target: { ...NO_TARGET, decision: "new" as const, kind: "contact" as const, p: 1 },
           fields: {
             name: {
               value: "Dana Lee",
@@ -63,7 +65,7 @@ function setup(
               },
             },
           },
-          riskFlags: [{ kind: "new_entity" as const }],
+          riskFlags: [{ kind: "new_entity" as const, field: "target" }],
         })),
   });
   /** One per engine, as each engine starts its own capture graph and closes it when it stops. */
@@ -88,6 +90,7 @@ function setup(
           ticketExpiresAt: first.ticketExpiresAt,
           edgeUrl: server.edgeUrl,
           entities: [{ id: "crm-1", kind: "company", name: "Real CRM Co", aliases: [] }],
+          focusEntityId: "crm-1",
           keyterms: { assemblyai: ["Real CRM Co"], deepgram: ["Real CRM Co"] },
         },
         { status: 201 },
@@ -210,10 +213,12 @@ describe("CaptureController in fake mode", () => {
         providers: { speechToText: { provider: "fake", model: "fake" }, llm: SCENARIO.llm },
       },
     });
-    // The cassettes were recorded with the scenario's entities, call time, and zone, not the CRM's.
+    // The cassettes were recorded with the scenario's entities, open account, call time, and
+    // zone, not the CRM's.
     const [start] = t.server.received.filter((m) => m.t === "start");
     expect(start).toMatchObject({
       entities: SCENARIO.entities,
+      focusEntityId: SCENARIO.focusEntityId,
       startedAt: SCENARIO.startedAt,
       timeZone: SCENARIO.timeZone,
     });

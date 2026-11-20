@@ -10,6 +10,7 @@ export {
   type FakeSessionServerOptions,
   type FakeSessionTicket,
   type FakeTurn,
+  NO_TARGET,
 } from "./fake-session-server";
 export { FakeServerSocket, FakeSocketServer, settle } from "./fake-socket";
 export {

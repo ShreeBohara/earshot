@@ -1,6 +1,7 @@
 // Both adapters against the committed cassettes: the demo session's turns (valid output), invalid
-// output then a retry, invalid output twice, rate limits, and how errors map to outcomes.
-import type { LlmProvider, RiskFlag } from "@earshot/core";
+// output then a retry, invalid output twice, rate limits, and how errors map to outcomes. The
+// demo session runs with Acme Corp open, so turns that name no record target it.
+import type { LlmProvider, RiskFlagV2, TargetDecision } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import { DEMO_COMPANY_ID, DEMO_DEAL_ID, DEMO_UTTERANCES } from "../src/testing";
 import { expectValidPayloads, replay } from "./helpers";
@@ -9,54 +10,78 @@ interface Expected {
   readonly outcome: "proposals" | "nothing_to_propose";
   readonly proposals: readonly {
     readonly type: string;
-    readonly targetEntityId: string | null;
+    readonly decision: TargetDecision;
+    readonly entityId: string | null;
     readonly fields: readonly string[];
-    readonly riskFlags: readonly RiskFlag[];
+    readonly riskFlags: readonly RiskFlagV2[];
   }[];
 }
 
+const ASK: RiskFlagV2 = { kind: "ambiguous_target", field: "target" };
+const IMPLIED: RiskFlagV2 = { kind: "implied_target", field: "target" };
+
 const DEMO_EXPECTED: readonly Expected[] = [
   {
+    // "Dana Lee" sounds like both Donna Lee and Dana Li: the linker asks.
     outcome: "proposals",
     proposals: [
       {
         type: "contact",
-        targetEntityId: null,
+        decision: "ask",
+        entityId: null,
         fields: ["name", "title", "company"],
-        riskFlags: [{ kind: "new_entity" }],
+        riskFlags: [ASK],
       },
     ],
   },
   { outcome: "nothing_to_propose", proposals: [] },
   {
+    // "the deal" names nothing: the open account's only deal.
     outcome: "proposals",
     proposals: [
-      { type: "deal_update", targetEntityId: DEMO_DEAL_ID, fields: ["stage"], riskFlags: [] },
+      {
+        type: "deal_update",
+        decision: "linked",
+        entityId: DEMO_DEAL_ID,
+        fields: ["stage"],
+        riskFlags: [IMPLIED],
+      },
+    ],
+  },
+  {
+    // "Dana" again: Donna Lee or Dana Li. The due date's reading agrees, so it isn't flagged.
+    outcome: "proposals",
+    proposals: [
+      {
+        type: "task",
+        decision: "ask",
+        entityId: null,
+        fields: ["title", "dueDate"],
+        riskFlags: [ASK],
+      },
     ],
   },
   {
     outcome: "proposals",
     proposals: [
       {
-        type: "task",
-        targetEntityId: DEMO_COMPANY_ID,
-        fields: ["title", "dueDate"],
-        riskFlags: [{ kind: "date", field: "dueDate" }],
+        type: "note",
+        decision: "linked",
+        entityId: DEMO_COMPANY_ID,
+        fields: ["body"],
+        riskFlags: [IMPLIED],
       },
     ],
-  },
-  {
-    outcome: "proposals",
-    proposals: [{ type: "note", targetEntityId: DEMO_COMPANY_ID, fields: ["body"], riskFlags: [] }],
   },
   {
     outcome: "proposals",
     proposals: [
       {
         type: "commitment",
-        targetEntityId: DEMO_COMPANY_ID,
+        decision: "linked",
+        entityId: DEMO_COMPANY_ID,
         fields: ["text", "counterpart"],
-        riskFlags: [],
+        riskFlags: [IMPLIED],
       },
     ],
   },
@@ -75,11 +100,13 @@ describe.each(PROVIDERS)("%s adapter", (provider) => {
         expect(
           result.proposals.map((proposal) => ({
             type: proposal.type,
-            targetEntityId: proposal.targetEntityId,
+            decision: proposal.target.decision,
+            entityId: proposal.target.entityId,
             fields: Object.keys(proposal.fields),
             riskFlags: proposal.riskFlags,
           })),
         ).toEqual(expected.proposals);
+        for (const proposal of result.proposals) expect(proposal.linker).toBe("linker.v1");
         const utterance = DEMO_UTTERANCES[turn - 1];
         for (const proposal of result.proposals) {
           for (const field of Object.values(proposal.fields)) {
@@ -102,6 +129,21 @@ describe.each(PROVIDERS)("%s adapter", (provider) => {
 
     it("keeps the evidence the transcript supports, word timings included", async () => {
       const { result } = await replay(provider, "demo-turn-1");
+      expect(result.proposals[0]?.target).toMatchObject({
+        decision: "ask",
+        kind: "contact",
+        mention: {
+          quote: "Dana Lee",
+          evidence: { span: [48, 56], audioMs: [4420, 4960], confidence: 0.81 },
+        },
+        // The company said with her links on its own: it's Acme Corp.
+        company: { quote: "Acme Corp", entityId: DEMO_COMPANY_ID },
+        candidates: [
+          { entityId: "ct_112", p: 0.5 },
+          { entityId: "ct_145", p: 0.5 },
+          { entityId: null, p: 0 },
+        ],
+      });
       expect(result.proposals[0]?.fields).toMatchObject({
         name: {
           value: "Dana Lee",

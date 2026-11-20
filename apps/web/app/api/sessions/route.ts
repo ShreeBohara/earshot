@@ -7,10 +7,11 @@ export const dynamic = "force-dynamic";
 /**
  * Starts a debrief: `{ "mode": "debrief", "engine": "cascaded", "providers": { "speechToText",
  * "llm" }, "selectedAccountId"? }`. Writes the session's row in the viewer's workspace, then
- * answers 201 with `{ sessionId, ticket, ticketExpiresAt, edgeUrl, entities, keyterms }`: the
- * first ticket for the edge Worker's session socket, the CRM records the session may mention,
- * and keyterms for each speech-to-text provider. Signed-in users only, 20 per 10 minutes
- * (lib/voice/routes.ts, docs/adr/0023).
+ * answers 201 with `{ sessionId, ticket, ticketExpiresAt, edgeUrl, entities, focusEntityId,
+ * keyterms }`: the first ticket for the edge Worker's session socket, the CRM records the session
+ * may mention (each contact and deal with its company as `parentId`), the account open in Earshot
+ * (or null), and keyterms for each speech-to-text provider. Signed-in users only, 20 per 10
+ * minutes (lib/voice/routes.ts, docs/adr/0023).
  */
 export const POST = withViewer(async (viewer, request) =>
   createSessionRoute(viewer, request, await voiceRouteDeps()),

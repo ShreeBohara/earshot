@@ -1,6 +1,13 @@
+import type { UtteranceFinalV2 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import { createProposalExtractor } from "../src/extractor";
-import { cassette, createCassetteFetch, SCENARIO_API_KEY, scenario } from "../src/testing";
+import {
+  cassette,
+  createCassetteFetch,
+  DEMO_COMPANY_ID,
+  SCENARIO_API_KEY,
+  scenario,
+} from "../src/testing";
 import { runTurn, sessionErrorFor, TURN_OUTCOMES } from "../src/turn";
 import { counter, expectValidPayloads } from "./helpers";
 
@@ -128,6 +135,89 @@ describe("runTurn", () => {
     ]);
     expect(result.usage?.usageId).toBe("01a1c6e5-0000-7000-8000-000000000002");
     expectValidPayloads(result);
+  });
+});
+
+describe("runTurn's understanding step", () => {
+  const unbiased: UtteranceFinalV2 = {
+    utteranceId: "01a1c6e5-0000-7000-8000-0000000000ff",
+    text: "I need to send Donna the pricing breakdown by Thursday.",
+    confidence: 0.6,
+    startMs: 20_300,
+    endMs: 24_900,
+    witness: "unbiased",
+  };
+
+  it("leaves the second witness's utterances out of extraction", async () => {
+    const fetch = createCassetteFetch(cassette("anthropic", "demo-turn-4"));
+    const result = await runTurn({
+      extractor: createProposalExtractor({ provider: "anthropic", fetch }),
+      ...task.turn,
+      utterances: [...task.turn.utterances, unbiased],
+      apiKey: SCENARIO_API_KEY,
+      signal: new AbortController().signal,
+    });
+    // The request is the one recorded without it, and the turn doesn't count it.
+    expect(fetch.misses).toEqual([]);
+    expect(result.completed.utteranceIds).toEqual(
+      task.turn.utterances.map((utterance) => utterance.utteranceId),
+    );
+    for (const proposal of result.proposals) {
+      for (const field of Object.values(proposal.fields)) {
+        expect(field.evidence.utteranceId).not.toBe(unbiased.utteranceId);
+      }
+    }
+  });
+
+  it("makes no call for a turn that only the second witness heard", async () => {
+    const fetch = createCassetteFetch({ name: "empty", description: "", interactions: [] });
+    const result = await runTurn({
+      extractor: createProposalExtractor({ provider: "anthropic", fetch }),
+      ...task.turn,
+      utterances: [unbiased],
+      apiKey: SCENARIO_API_KEY,
+      signal: new AbortController().signal,
+    });
+    expect(result).toMatchObject({
+      outcome: "nothing_to_propose",
+      completed: { utteranceIds: [] },
+    });
+    expect(fetch.played).toBe(0);
+  });
+
+  it("names the open account in the prompt, and passes the session's links on", async () => {
+    // Turn 1's "Dana Lee" sounds like Donna Lee and Dana Li. With Dana Li linked earlier in the
+    // session, it links her; "Acme Corp", said beside her, links too, and both join the links.
+    const contact = scenario("anthropic", "demo-turn-1");
+    const fetch = createCassetteFetch(cassette("anthropic", "demo-turn-1"));
+    const result = await runTurn({
+      extractor: createProposalExtractor({ provider: "anthropic", fetch }),
+      ...contact.turn,
+      session: { ...contact.turn.session, recent: ["ct_145"] },
+      apiKey: SCENARIO_API_KEY,
+      signal: new AbortController().signal,
+    });
+    // The cassette was recorded with "Open account: Acme Corp" in the prompt: no miss.
+    expect(fetch.misses).toEqual([]);
+    expect(result.proposals[0]?.target).toMatchObject({
+      decision: "linked",
+      entityId: "ct_145",
+      basis: "context",
+      company: { entityId: DEMO_COMPANY_ID },
+    });
+    expect(result.recent).toEqual(["ct_145", DEMO_COMPANY_ID]);
+    // A turn that fails passes the links on unchanged.
+    const failed = await runTurn({
+      extractor: createProposalExtractor({
+        provider: "anthropic",
+        fetch: createCassetteFetch(cassette("anthropic", "key-rejected")),
+      }),
+      ...scenario("anthropic", "key-rejected").turn,
+      session: { ...contact.turn.session, recent: ["ct_145"] },
+      apiKey: SCENARIO_API_KEY,
+      signal: new AbortController().signal,
+    });
+    expect(failed.recent).toEqual(["ct_145"]);
   });
 });
 

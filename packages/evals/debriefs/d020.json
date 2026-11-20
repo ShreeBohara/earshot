@@ -5,6 +5,7 @@
   "voice": "bm_lewis",
   "callTime": "2026-11-18T18:30:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_017",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_017",
+          "named": {
+            "quote": "Tidewater Biotech"
+          },
           "fields": {
             "body": {
               "value": "Legal is reviewing the expansion paperwork, according to Maren Lindqvist.",
@@ -29,6 +33,9 @@
         {
           "type": "note",
           "target": "co_017",
+          "named": {
+            "quote": "Tidewater"
+          },
           "fields": {
             "body": {
               "value": "They want to phase the expansion: the first phase is $90,000 and the rest comes next year.",
@@ -45,6 +52,9 @@
         {
           "type": "task",
           "target": "ct_085",
+          "named": {
+            "quote": "Brian Reilly"
+          },
           "fields": {
             "title": {
               "value": "Walk Brian Reilly through the cold rooms",

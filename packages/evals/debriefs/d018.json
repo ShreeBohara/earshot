@@ -5,6 +5,7 @@
   "voice": "am_fenrir",
   "callTime": "2026-12-14T21:20:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_054",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,10 @@
         {
           "type": "deal_update",
           "target": "deal_027",
+          "named": {
+            "quote": "site rollout",
+            "company": "Coastal Power Systems"
+          },
           "fields": {
             "stage": {
               "value": "closed won",
@@ -29,6 +34,10 @@
         {
           "type": "deal_update",
           "target": "deal_027",
+          "named": {
+            "quote": "Coastal rollout",
+            "company": "Coastal"
+          },
           "fields": {
             "amount": {
               "value": 81500,
@@ -45,6 +54,9 @@
         {
           "type": "commitment",
           "target": "ct_129",
+          "named": {
+            "quote": "Allen Foster"
+          },
           "fields": {
             "text": {
               "value": "Send Allen Foster an onboarding plan",

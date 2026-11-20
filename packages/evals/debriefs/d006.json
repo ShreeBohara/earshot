@@ -5,6 +5,7 @@
   "voice": "am_liam",
   "callTime": "2026-11-24T17:30:00.000Z",
   "timeZone": "America/Chicago",
+  "focusEntityId": "co_043",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_043",
+          "named": {
+            "quote": "Meridian Supply Co"
+          },
           "fields": {
             "body": {
               "value": "Met Jeffrey Walsh about warehouse sensors for their Nashville site.",
@@ -30,6 +34,9 @@
         {
           "type": "task",
           "target": "ct_037",
+          "named": {
+            "quote": "Jeffrey Walsh"
+          },
           "fields": {
             "title": {
               "value": "Send Jeffrey Walsh a quote for sixty units",
@@ -40,6 +47,9 @@
         {
           "type": "note",
           "target": "co_043",
+          "named": {
+            "quote": "Meridian"
+          },
           "fields": {
             "body": {
               "value": "They won't consider anything without a two-year warranty.",
@@ -56,6 +66,9 @@
         {
           "type": "commitment",
           "target": "ct_037",
+          "named": {
+            "quote": "Jeffrey Walsh"
+          },
           "fields": {
             "text": {
               "value": "Send Jeffrey Walsh the warranty terms",

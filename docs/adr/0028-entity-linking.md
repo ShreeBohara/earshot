@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-19). Phase 4 WP3 drafted the problem and the metrics, and committed the measurement they rest on: the confusable-name set `confusable.v1`, its harness, and linker v0's baseline. WP4 (2026-11-20) wrote linker v1, fit it on the calibration split, and recorded its biased-only numbers. WP5 (2026-11-20) added the second witness's comparison and its threshold θ_d, refit the thresholds with the witness, and ran gate G1a on the test split: it passes, at 86.9% coverage and a 0.6% wrong-account rate. CI's `checks` job now runs it. Builds on ADR-0027 (contracts and the pipeline) and ADR-0026 (eval harness v0).
+Proposed (2026-11-19). Phase 4 WP3 drafted the problem and the metrics, and committed the measurement they rest on: the confusable-name set `confusable.v1`, its harness, and linker v0's baseline. WP4 (2026-11-20) wrote linker v1, fit it on the calibration split, and recorded its biased-only numbers. WP5 (2026-11-20) added the second witness's comparison and its threshold θ_d, refit the thresholds with the witness, and ran gate G1a on the test split: it passes, at 86.9% coverage and a 0.6% wrong-account rate. CI's `checks` job now runs it. WP8 (2026-11-20) wired linker v1 into `SessionDO` (ADR-0027) and changed the web app's keyterm order; the set's simulator keeps the old order as `keytermListV1` (see "Keyterms after WP8"). Builds on ADR-0027 (contracts and the pipeline) and ADR-0026 (eval harness v0).
 
 ## Context and problem
 
@@ -85,7 +85,7 @@ The harness strips the labels before a linker sees an item (`linkingCase`). Ids 
 - consonant swaps that change it, used only by the unbiased witness;
 - compounds split ("Glow Vex"), words joined, and the last word dropped.
 
-The biased witness is primed with the session's keyterms, built as `apps/web/lib/voice/keyterms.ts` builds them: the open account, its contacts and deals, then the other companies, cut at AssemblyAI's 100 terms.
+The biased witness is primed with the session's keyterms, built as `apps/web/lib/voice/keyterms.ts` built them when the set was generated: the open account, its contacts and deals, then the other companies, each record's name followed by its aliases, cut at AssemblyAI's 100 terms. The simulator's copy of that rule is frozen as `keytermListV1` (`src/channel/witness.ts`); WP8 changed the web app's (below).
 
 - An in-list spelling that sounds exactly like what it heard always wins. When several do, it picks uniformly: that's how a confusable group's spellings appear.
 - One a word away wins with probability `pSnap` = 1/3. That's E2's rate, and the spec's shares imply it (4% snapped against 8% unsnapped).
@@ -368,6 +368,25 @@ Per class:
 
 **The CI check.** The required `checks` job runs `pnpm --filter @earshot/evals eval:linking --linker v1 --split test --check --summary` after the build, and writes the report to the job summary. It fails on G1a, or on a regression against `baselines/linking.json`: coverage down more than 3 points, or the wrong-account rate up more than 0.5 point. Run locally without the sound and homophone sources, it fails on four counts: coverage 58.9%, wrong-account 2.4%, and both regressions. G3a's test PR, which removes the phonetic source, should fail the same way.
 
+### Keyterms after WP8 (2026-11-20)
+
+The web app's keyterm order changed in WP8 (`sessionKeyterms` in `apps/web/lib/voice/keyterms.ts`). The open account's family still comes first, each record's name and then its aliases. Then every other company's name comes, and only then their aliases. Before, each company brought its aliases along. With no account open, the demo CRM's 60 companies and 68 aliases ran past AssemblyAI's 100 terms at "Summit Ridge Capital", so every company after it alphabetically, "Willowbrook Pharma" among them, was never boosted. Now all 60 names fit, then the first 40 aliases. Deepgram's shorter list follows the same order.
+
+`confusable.v1` was generated under the old order, and a test holds it to its committed bytes. So the simulator doesn't follow: its copy is frozen and renamed `keytermListV1`, with a comment that says why. Neither the set, its generator's output, nor `baselines/linking.json` changed. What the divergence means:
+
+- **For the companies the old cap left out** (alphabetically after "Summit Ridge Capital", in a session with no account open), the set and the product now differ both ways. The set's biased stream leaves their mishearings as heard, where a boosted name would often snap back to its own spelling: the set has more misheard-name items (class B) for them than the product would see. And it never snaps a sound-alike new name to their spellings: it has fewer snapped new names (class E2) than the product would see. The second matters more, since only the second witness catches a snap.
+- **The cap still cuts 28 of the 128 company terms** with no account open. Before, they were whole companies, names and aliases; now they're the last 28 aliases.
+- **A set built on the new order is `confusable.v2`,** with its own baseline (WP6 or WP10 may write one alongside a refit simulator). It's never an edit to v1.
+
+### Linker v1 on the 30 scripts (WP8)
+
+Run through the product pipeline on the 30 hand-written debriefs (ADR-0027), linker v1 decides 96 of the 100 targets as a person would, and asks about the other 4, each time offering the right record. The asks show two phrasings `confusable.v1` doesn't have:
+
+- **A deal named with a word dropped from its company's name** ("Blue Harbor site rollout" for "Blue Harbor Analytics - Site rollout") scores p 0.71, just under τ_link. The set's deal mentions only ever drop words from the end ("Ironbridge Textiles annual").
+- **A company named while its own deal is in play** ("Summit Ridge Medical" after its starter plan was linked, or beside it in the same turn). The company and the deal named by the company both score near 1, and normalizing the candidates' probabilities splits them about 50/50, whatever the model's kind says.
+
+Both are safe, a question rather than a wrong account, and both are for linker v2: a refit on WP10's generated debriefs, or a kind filter measured on the set first. A deal whose company was said apart from the rest ("Pier Logistics … the expansion") is folded into the spoken form the set uses before linking (ADR-0027), so it stays in v1's training distribution.
+
 ## Consequences
 
 **Good**
@@ -385,7 +404,7 @@ Per class:
 
 - **The biased witness's mistakes on CRM names keep their sound by construction.** So a misheard CRM name and a new name are separable by sound alone, which real streams won't always allow. This is the main way simulated mishearings may flatter the linker. WP6's mined set (G1b) measures it on real errors, and a miss goes into this ADR and Phase 8.
 - **The ground truth uses the homophone list as well as Double Metaphone.** "Sean" (SN) and "Shawn" (XN) sound the same to it, but not to the product's phonetic keys. Ten items involve that group, so a linker that relies on Double Metaphone alone will lose them.
-- **Keyterms follow production, cap included.** With no account open, the alphabetically last companies, from Summit Ridge Medical on, aren't boosted at all. That's a finding about the product, not only the eval.
+- **Keyterms followed production, cap included.** With no account open, the alphabetically last companies, from Summit Ridge Medical on, weren't boosted at all. That was a finding about the product, not only the eval, and WP8 fixed the product (below); `confusable.v1` keeps the old rule.
 - **Some things are simpler than in life:**
   - the two transcripts differ only at the mention and the company;
   - the extractor's kind is always right;
@@ -393,7 +412,7 @@ Per class:
 
   WP10's generated debriefs add disfluency and implied targets.
 - **Class G's "ask" is reachable only through the second witness.** A wrong open account with nothing else to contradict it looks the same as class C's open-account cue.
-- **The keyterm rule and its cap are copied from the web app.** If the web app changes, the simulator doesn't follow, and v1 shouldn't.
+- **The keyterm rule and its cap were copied from the web app, and the two now differ.** The simulator keeps v1's rule (`keytermListV1`), as it should: the set and its baseline were built with it.
 - **The fit's limits barely bind.** WP4's search counted E2 and G as asks, and every grid point met the 1.5% and 5% limits. With the witness in the search, 4,480 of 16,800 points do, but τ_link, δ, and τ_new still sit at the grid's edges (δ and τ_new at their tops, τ_link near its floor). Real speech in WP6 may move them.
 - **Coverage is thin.** 86.9% on test against the gate's 85%. On calibration, in sample, it's exactly 85.0%, and 84.2% out of fold. The unbiased witness's sound changes cost about 2 points in false conflicts, and no θ_d can tell them from snaps.
 - **θ_d sits at the grid's floor.** Any difference in the codes is a different sound. Real Whisper output may change codes more often than the simulator does, with more false conflicts. WP6's mined set and WP9's live check will show it.

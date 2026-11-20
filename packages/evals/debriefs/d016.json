@@ -5,6 +5,7 @@
   "voice": "am_puck",
   "callTime": "2026-12-10T15:20:00.000Z",
   "timeZone": "America/Chicago",
+  "focusEntityId": "co_003",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,10 @@
         {
           "type": "deal_update",
           "target": "deal_037",
+          "named": {
+            "quote": "expansion",
+            "company": "Pier Logistics"
+          },
           "fields": {
             "stage": {
               "value": "contract sent",
@@ -29,6 +34,10 @@
         {
           "type": "deal_update",
           "target": "deal_037",
+          "named": {
+            "quote": "expansion",
+            "company": "Pier"
+          },
           "fields": {
             "closeDate": {
               "value": "2027-01-29",
@@ -45,6 +54,10 @@
         {
           "type": "task",
           "target": "ct_007",
+          "named": {
+            "quote": "Aisha Khan",
+            "company": "Peer Logistics"
+          },
           "fields": {
             "title": {
               "value": "Call Aisha Khan about the invoice dispute",

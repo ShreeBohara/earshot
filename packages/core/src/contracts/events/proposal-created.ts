@@ -90,7 +90,17 @@ export const ProposalTypeV2 = z.enum([
 ]);
 export type ProposalTypeV2 = z.infer<typeof ProposalTypeV2>;
 
-/** v1's seven risk kinds, unchanged, plus seven from the linker, the normalizers, and the checks. */
+/**
+ * v1's seven risk kinds, unchanged, plus seven from the linker, the normalizers, and the checks.
+ *
+ * `unsupported` means one thing in both versions, wherever it appears (ADR-0027): the words the
+ * model cited don't back what it wrote. On a field whose quote isn't in the turn's transcript, the
+ * field was dropped, and the flag names it (v1's only use). On a date, time, or amount whose quote
+ * holds no reading of that kind, the value is kept, flagged (the faithfulness check, ADR-0030).
+ * On the target (`field: "target"`), the record's name isn't in the transcript, so nothing was
+ * linked and the decision is `none`. Phase 4's writer no longer raises `date` or `number`: the
+ * normalizers check those values against their quotes instead.
+ */
 export const RiskKindV2 = z.enum([
   "date",
   "number",

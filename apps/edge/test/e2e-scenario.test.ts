@@ -5,6 +5,7 @@ import type { ExtractorOptions, ProposalExtractor, RunTurnInput, TurnResult } fr
 import {
   DEMO_CALL_TIME,
   DEMO_ENTITIES,
+  DEMO_FOCUS_ID,
   DEMO_TIME_ZONE,
   DEMO_UTTERANCES,
 } from "@earshot/agent/testing";
@@ -28,8 +29,11 @@ describe("the e2e scenario", () => {
       startedAt: DEMO_CALL_TIME,
       timeZone: DEMO_TIME_ZONE,
       entities: DEMO_ENTITIES,
+      // Acme Corp is open: the prompt names it, and the cassettes were recorded with it.
+      focusEntityId: DEMO_FOCUS_ID,
       llm: { provider: "anthropic", model: "claude-haiku-5-5" },
     });
+    expect(DEMO_ENTITIES.map((entity) => entity.id)).toContain(scenario.focusEntityId);
     expect(scenario.turns.map((turn) => turn.text)).toEqual(DEMO_UTTERANCES.map((u) => u.text));
     // One recorded answer per line, so every press gets one.
     expect(demoCassette(scenario.llm.provider).interactions).toHaveLength(scenario.turns.length);
@@ -64,6 +68,7 @@ describe("the eval scenarios", () => {
         llm: { provider: "anthropic", model: "claude-haiku-5-5" },
       });
       expect(scenario?.entities).toBe(context.entities);
+      expect(scenario?.focusEntityId).toBe(context.focusEntityId);
       expect(scenario?.turns.map((turn) => turn.text)).toEqual(script.turns.map(turnTranscript));
       // The e2e Worker finds the script's cassette by the call time `start` carries.
       for (const provider of ["anthropic", "groq"] as const) {

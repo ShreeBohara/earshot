@@ -5,6 +5,7 @@
   "voice": "am_liam",
   "callTime": "2026-12-10T00:30:00.000Z",
   "timeZone": "America/Denver",
+  "focusEntityId": "co_005",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_005",
+          "named": {
+            "quote": "Atlas Freight"
+          },
           "fields": {
             "body": {
               "value": "The pilot is going well, according to Emeka Zielinski.",
@@ -29,6 +33,10 @@
         {
           "type": "deal_update",
           "target": "deal_013",
+          "named": {
+            "quote": "pilot program",
+            "company": "Atlas"
+          },
           "fields": {
             "amount": {
               "value": 14000,
@@ -45,6 +53,9 @@
         {
           "type": "task",
           "target": "ct_041",
+          "named": {
+            "quote": "Signe Lindqvist"
+          },
           "fields": {
             "title": {
               "value": "Send Signe Lindqvist a rollout plan",
@@ -65,6 +76,9 @@
         {
           "type": "commitment",
           "target": "ct_147",
+          "named": {
+            "quote": "Emeka Zielinski"
+          },
           "fields": {
             "text": {
               "value": "Add driver training at no extra cost",

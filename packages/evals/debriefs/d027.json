@@ -14,6 +14,9 @@
         {
           "type": "note",
           "target": "co_055",
+          "named": {
+            "quote": "Verdant Agritech"
+          },
           "fields": {
             "body": {
               "value": "They run irrigation for about three hundred farms.",
@@ -54,6 +57,9 @@
         {
           "type": "note",
           "target": "co_055",
+          "named": {
+            "quote": "Verdant"
+          },
           "fields": {
             "body": {
               "value": "Luca Castellano will only sign if the pilot is under $20,000.",
@@ -70,13 +76,16 @@
         {
           "type": "commitment",
           "target": "co_055",
+          "named": {
+            "quote": "Verdant"
+          },
           "fields": {
             "text": {
               "value": "Send Verdant Agritech a pilot proposal",
               "quote": "a pilot proposal"
             },
             "counterpart": {
-              "value": "Verdant Agritech",
+              "value": "Verdant",
               "quote": "Verdant"
             },
             "dueDate": {

@@ -26,11 +26,13 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.keyboard.press("Enter");
     await waitUntilReady(page);
 
-    // Line 1: a new contact.
+    // Line 1: a contact, "Dana Lee", who sounds like two in the CRM: the linker asks.
     await sayWithSpace(page);
     await expect(transcript(page).locator("p")).toHaveText([LINES[0]], { timeout: 20_000 });
     await expect(proposalCards(page).first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole("heading", { name: "Contact · New" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Contact · Ask: Donna Lee or Dana Li?" }),
+    ).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
 
     // Line 2: nothing to propose, said so in the feed.

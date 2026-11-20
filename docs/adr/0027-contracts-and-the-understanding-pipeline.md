@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-19). Phase 4 WP1 builds the contracts below: proposal schema v2 with its upcaster, two new event types, the protocol additions, and migration 0012. WP8 finishes this ADR when `SessionDO` writes v2 through the pipeline; until then the pipeline section is the plan. Amends ADR-0020 (see its "Phase 4 event types").
+Accepted (2026-11-20). Phase 4 WP1 built the contracts below: proposal schema v2 with its upcaster, two new event types, the protocol additions, and migration 0012. WP8 (2026-11-20) built the pipeline: tool schema v2, prompt v2, `understand()`, and `SessionDO` writing `proposal.created` v2, with the web app sending the open account and each record's parent. The second witness's message and comparison in `SessionDO` are WP9's. Amends ADR-0020 (see its "Phase 4 event types") and ADR-0025 (no CRM list, tool schema v2).
 
 ## Context and problem
 
@@ -57,9 +57,9 @@ Every stored Phase 3 event has to keep loading (ADR-0020). The client and the ed
 - The `target` column keeps the decision as the events have it.
 - Flags on the target go into `risk_flags` as `kind:target`.
 
-### Writers until WP8
+### Writers
 
-`SessionDO`'s Phase 3 extractor keeps writing `proposal.created` v1, and so does the in-memory fake in `@earshot/voice/testing`. Readers upcast every v1 event, so the client store, the replay demo, and Postgres already see v2.
+From WP8, `SessionDO` writes `proposal.created` v2, and so does the in-memory fake in `@earshot/voice/testing`. Readers still upcast every stored v1 event, so Phase 3's sessions, the replay demo, and Postgres's older rows read as v2.
 
 ### Rules the schema doesn't check
 
@@ -69,20 +69,76 @@ Three cross-field rules have no JSON Schema form short of a union, which would c
 - `mention` is null only for an implied target or "none";
 - no proposal has a field named `target`.
 
-### The pipeline (WP8 builds it)
+### The pipeline (WP8)
 
-`turn_end` runs one forced tool call with no CRM list. Its drafts carry a target quote, a kind, and a company quote. `understand(draft, ctx)` then runs four pure steps inside `SessionDO`:
+`turn_end` runs one forced tool call with no CRM list. `runTurn` (`@earshot/agent`) then understands the drafts, and returns `proposal.created` v2 payloads, the turn's usage, and the session's earlier links once this turn's are added.
 
-1. Locate every quote in the turn's biased utterances.
-2. Link: candidates, features, a calibrated probability, and the decision rule (ADR-0028).
-3. Normalize dates, amounts, negations, and corrections.
-4. Check each value against its quote.
+**Tool schema v2** (`packages/agent/src/schema.ts`). Each proposal's `target` is `{ quote, kind, company: { quote } | null } | null`: the words that named the record, exactly as transcribed; the kind they name (`company`, `contact`, or `deal`); and the company said with a contact or a deal. A contact proposal has no `target`: its record is the person its `name` field names, with its `company` field as context. The `meeting` type is new: `title`, `date` (YYYY-MM-DD), `time` (HH:MM, 24-hour), and `attendees`, each quoted. The JSON Schema still meets Anthropic's strict rules and Groq's (types, enums, and nullability only); time formats and the quotes' 200-character cap are checked in the refinement, like dates.
 
-An unquoted target becomes "none" with `unsupported:target`. If no name was said and an account is open, the target is that account (`basis: "focus"`, `implied_target`). When the witness arrives, the comparison writes `proposal.flagged` and `turn.witnessed` (spec §4.6).
+**Prompt v2** (`prompt.ts`). No CRM list, which was about 1,600 of a turn's 3,600 input tokens. One line names the open account (`Open account: Acme Dynamics`), when there is one. New rules: quote names exactly as transcribed and never correct a spelling; give a deal's company as said, even inside the deal's name ("the Acme renewal" has the company "Acme"); if the rep doesn't name the record in this turn, set `target` to null (and don't fill it in from the open account); a contact has no target. Phase 3's rules stay: this turn's transcript only, negations kept, dates resolved against the call time. Line breaks are joined by splitting and trimming rather than with `\s*[\r\n]+\s*`, which backtracks quadratically on a long run of spaces.
+
+**`understand(draft, ctx)`** (`understand.ts`, replacing `attach.ts`), pure, with the session's link index, open account, earlier links, and the linker's frozen parameters:
+
+1. **Evidence.** Every quote (each field's, the target's, and its company's) is located in the turn's biased utterances, as Phase 3 located them. A field whose quote isn't there is dropped and flagged; a proposal left with no field is dropped.
+2. **Link** (ADR-0028), with the kinds the proposal type allows and the turn's other named records as companies said in the turn.
+3. and 4. **Normalize and check** each field (`checkField`, ADR-0030), a meeting's time against its date. A unique reading replaces a value that disagrees, kept in `norm.llmValue`.
+
+Spec §4.3's rules, as built:
+
+- **An unquoted target** (its words aren't in the transcript) is `none`, with `kind` as the model gave it, no mention, and `unsupported` on the target. It's never linked.
+- **An implied target**: no record named and an account open. The target is the account (`linked`, `basis: "focus"`, `p` null, no mention or candidates), flagged `implied_target`. A deal update can't target a company, so it takes the open account's only deal. With no deal or several it has no target: a question would need probabilities the linker never computed, so Phase 5 asks the rep instead. With no account open, an unnamed record is `none`, unflagged.
+- **Contact proposals** link on the `name` field's words, with the `company` field's as the linker's company context.
+- **Deals named by their company** resolve to the company's only deal, on the linker's `context` basis; with several, it asks.
+- **A deal's company said apart from the rest** ("Pier Logistics … the expansion") is read by the linker as the two together, company first. Linker v1 was fit on deal mentions in that spoken form ("Pier expansion") with no separate company: none of `confusable.v1`'s 98 deal items has one. So a deal's company is never passed on the side, where `parentCtx` would weigh it out of its training distribution; it's folded into the words, unless they already hold it. The target keeps both quotes and the company's own link.
+- **Flags on the target** (`field: "target"`): `ambiguous_target` for an ask, `new_entity` for a new record, `link_uncertain` for a link that isn't exact with p below 0.97, `implied_target`, and `unsupported`. `target.company.entityId` is the company's own link when it links, else null.
+- **Earlier links.** Each turn's targets linked from words that were said, and each company linked beside them, join the session's earlier links, most recent first, at most 20. An implied target doesn't: nothing named it. Within a turn, each proposal sees the links the proposals before it made.
+- **Unbiased utterances** never reach extraction: `SessionDO` and `runTurn` both keep only the biased witness's.
+
+**`SessionDO`** stores `focus_entity_id` (from `start`) and `link_recent` (the JSON list above, written in the turn's transaction) in `meta`. It builds the link index from the stored entities on the first turn after each wake, never at `start`, since the constructor runs again after every hibernation. The turn's log line counts the decisions (linked, ask, new, none) and holds no names.
+
+**The web app.** `POST /api/sessions` answers with `focusEntityId`: the request's `selectedAccountId` when it's a company among the session's entities (`start` refuses any other), else null. Each contact and deal carries `parentId`: the `crm_entities.id` of the company on the same connection whose source id is its `properties.companyId`. The client sends both in `start`; the capture screen's fake mode takes them from the e2e scenario, whose cassettes were recorded with them.
+
+### What `unsupported` means
+
+One thing, in every version and place: the words the model cited don't back what it wrote.
+
+- On a field whose quote isn't in the turn's transcript: the field is dropped, and the flag names it. This is Phase 3's only use.
+- On a date, time, or amount whose quote holds no reading of that kind: the value is kept, flagged (the faithfulness check's "unread", ADR-0030).
+- On the target (`unsupported:target`): the record's name isn't in the transcript, so nothing is linked and the decision is `none`.
+
+The contract (`RiskKindV2`'s documentation), the pipeline, and the copy (`RISK_LABELS`, which the tray and the `/demo` page share: "Not backed by what was said", and on the target "Record's name not in the transcript") say the same.
+
+### The 30 scripts under v2 (names as said)
+
+Phase 3's scripts named each target by id, and the cassettes drafted the target by its exact CRM name. Under v2 the cassettes draft what a model that never saw the list would write, so the ground truth gained three optional fields, with no format version bump:
+
+- **`focusEntityId` per script:** the account the debrief is about, in 28 of the 30; d027 and d029 run with none.
+- **`named` per proposal:** the words that named its record, its kind, and the company said with it. Absent for a contact, whose record is its `name`.
+- **`decision` per proposal:** set only where the linker should ask (below); otherwise it's the plain reading of `target`.
+
+**Names are written as said.** Three Phase 3 values expanded a company past the rep's words ("Akme Dynamics" where the rep said "Akme"; "Sigma Tooling"; "Verdant Agritech" as a counterpart), which only a model that saw the list could write. WP8 fixed the ground truth rather than score names through the linked target: the values are now "Akme", "Sigma", and "Verdant". The linker resolves the company, and the eval scores the target by the linker's decision. A test holds every name field in the scripts equal to its quote once normalized.
+
+**What linker v1 decides** on the scripts' 100 proposals, through both adapters' cassettes: 96 as written (91 linked, 5 new contacts) and 4 asks, each offering the scripted record:
+
+- **d008 turn 2,** "Blue Harbor site rollout": a deal named with a word dropped from its company ("Blue Harbor" for Blue Harbor Analytics), p 0.71 against τ_link's 0.72. `confusable.v1`'s deal mentions only ever drop words from the end.
+- **d009 turn 3, d026 turns 1 and 2:** a company named while its own deal is in play ("Summit Ridge Medical" after its starter plan was linked; "Granite State Builders" beside, and "Granite" after, its analytics add-on). The company and the deal named by the company both score near 1, and the linker's normalization splits them about 50/50. The model's kind ("company") is a feature, not a filter (spec §4.4), so it doesn't settle them.
+
+Each is a safe outcome, a question rather than a wrong account, and each is input for linker v2 (WP10's 200 debriefs measure how often they happen). The scripts record them as `decision: "ask"`, since the fake-microphone eval checks each turn's decision exactly.
+
+### Measurements (WP8)
+
+- **Speed** (this Mac, Node 26, the 30 scripts' 118 turns, 5 rounds): the link index builds in about 7 ms, once per wake; the first, cold turn takes about 4 ms; warm turns take 0.24 ms at the median and 0.82 ms at p95, against the understanding step's 20 ms p95 target.
+- **Flags:** 41 of the 100 proposals carry one: `link_uncertain` 27 (links by context below p 0.97, most of them at 0.93, mostly contacts and homophone companies the open account settles), `negation` 6, `new_entity` 5, `ambiguous_target` 4. That's above the 35% guard WP10 will report; `link_uncertain` on context links is what to look at first.
+- **Bundle:** the edge Worker's dry-run bundle grows from 2,491 KiB to 2,713 KiB (gzip 464 to 511 KiB): +222 KiB, +48 KiB gzipped, for chrono-node's English parser, double-metaphone, the linker with its parameters, the normalizers, and the faithfulness check. A workerd test runs chrono-node and double-metaphone through `runTurn`. Startup time is measured on the first deploy.
+- **Tokens:** the eval cassettes' input estimate falls from about 3,600 to about 2,000 tokens a turn with the list gone (an estimate, not a measurement; the live smoke eval measures it).
+- **End to end:** the fake-microphone eval, run locally on `--stub` WAVs (tones, so not an evaluation), passed all 30 scripts and 118 of 118 turns as scripted, through the capture screen, the e2e Worker's `SessionDO`, and the cassettes. On this Mac, end of speech to card painted took 46 ms at the median and 63 ms at p95, and last final to proposal 11 and 24 ms. The Kokoro run, and the overhead baseline it records (`baselines/ci.json`, not committed yet), are CI's `eval` job's.
 
 ## Consequences
 
 **Good**
+
+- The model can no longer choose a CRM record, so a misheard name and the model's guess can't line up, and prompt injection loses its target: linking is deterministic and testable at $0.
+- A turn that names no record still lands on the open account, visibly flagged.
 
 - Every Phase 3 session still loads: `demo-session.jsonl` is byte-for-byte unchanged and replays to v2 targets.
 - The decision, its evidence, and its candidates are data, so a card can show "Ask: Acme Dynamics or Akme Dynamics?" and an eval can score it at $0.
@@ -95,10 +151,15 @@ An unquoted target becomes "none" with `unsupported:target`. If no name was said
 - `targetEntityId` and `target.entityId` duplicate each other on the view and in the table.
 - `supersedes` and `linker` live only in the events. The `proposals` table has no columns for them yet.
 - The three cross-field rules aren't enforced by the schema in either language.
+- Linker v1 asks on phrasings its set never had: a word dropped from a deal's company, and a company named while its own deal is in play (4 of the scripts' 100 targets).
+- `link_uncertain` flags most context links, which pushes the scripts' flag rate to 41%.
+- Folding a deal's company into its words is a product-side reading the confusable set doesn't measure. It matches the set's spoken form, but WP10's generated debriefs are where it's scored.
 
 ## More information
 
-- Spec: `reports/Earshot Phase 4 build spec.md`, §4.1 to §4.3 and WP1.
+- Spec: `reports/Earshot Phase 4 build spec.md`, §4.1 to §4.3, WP1, and WP8.
+- Pipeline: `packages/agent/src/{schema,prompt,understand,turn}.ts`; `apps/edge/src/session-do.ts`; `apps/web/lib/voice/{routes,entities,keyterms}.ts`; the tray's copy in `apps/web/lib/capture/copy.ts`.
+- Ground truth: `packages/evals/debriefs/` (`focusEntityId`, `named`, `decision`), `packages/evals/src/{schema,generate,check,session}.ts`; regenerate the cassettes with `pnpm --filter @earshot/agent cassettes:gen` and `pnpm --filter @earshot/evals cassettes:gen`.
 - Contracts: `packages/core/src/contracts/events/{proposal-created,proposal-flagged,turn-witnessed}.ts`, `entity-ref.ts`, and `session-protocol.ts`.
 - Upcaster and projections: `packages/events/src/{upcasters,projections/proposals}.ts`.
 - Storage: `packages/db/migrations/0012_proposal_targets.sql` and `packages/db/src/projections.ts`.

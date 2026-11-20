@@ -9,7 +9,7 @@ import {
   HOMOPHONES,
   hearBiased,
   hearUnbiased,
-  keytermList,
+  keytermListV1,
   MISHEAR_OPS,
   mulberry32,
   opCandidates,
@@ -163,14 +163,15 @@ describe("the mishearing rules", () => {
 });
 
 describe("the witnesses", () => {
-  const noFocus = keytermList(LINKING_ENTITIES, null);
+  const noFocus = keytermListV1(LINKING_ENTITIES, null);
 
-  it("use the session's keyterms as the web app builds them: 100, the open account's first", () => {
+  it("use the session's keyterms as the web app built them for v1: 100, the open account's first", () => {
     expect(noFocus).toHaveLength(100);
     expect(noFocus.slice(0, 2)).toEqual(["Acme Dynamics", "Acme"]);
     // With no account open, the alphabetically last companies miss AssemblyAI's 100-term cap.
+    // The web app no longer drops them (names before aliases, WP8); v1's frozen policy does.
     expect(noFocus).not.toContain("Willowbrook Pharma");
-    const lantern = keytermList(LINKING_ENTITIES, "co_053");
+    const lantern = keytermListV1(LINKING_ENTITIES, "co_053");
     expect(lantern.slice(0, 2)).toEqual(["Lantern Hospitality", "Lantern"]);
     expect(lantern).toContain("Katherine Moore");
     expect(lantern).toContain("Lantern Hospitality - Starter plan");

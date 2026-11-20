@@ -5,6 +5,7 @@
   "voice": "af_heart",
   "callTime": "2026-11-17T22:20:00.000Z",
   "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_011",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_011",
+          "named": {
+            "quote": "Acme Dynamics"
+          },
           "fields": {
             "body": {
               "value": "Dana Lee wants to expand the rollout to two more plants.",
@@ -29,6 +33,10 @@
         {
           "type": "deal_update",
           "target": "deal_028",
+          "named": {
+            "quote": "Acme Dynamics expansion",
+            "company": "Acme Dynamics"
+          },
           "fields": {
             "amount": {
               "value": 42000,
@@ -49,6 +57,9 @@
         {
           "type": "task",
           "target": "ct_045",
+          "named": {
+            "quote": "Dana Lee"
+          },
           "fields": {
             "title": {
               "value": "Send Dana Lee a revised quote",

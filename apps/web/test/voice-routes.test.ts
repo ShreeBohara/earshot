@@ -330,6 +330,7 @@ describe("POST /api/sessions", () => {
     expect(Object.keys(result.body).sort()).toEqual([
       "edgeUrl",
       "entities",
+      "focusEntityId",
       "keyterms",
       "sessionId",
       "ticket",
@@ -339,8 +340,9 @@ describe("POST /api/sessions", () => {
     expect(result.body.edgeUrl).toBe(
       `wss://earshot-edge.example.workers.dev/v1/sessions/${sessionId}/ws`,
     );
-    // No CRM loaded yet.
+    // No CRM loaded yet, and no account open.
     expect(result.body.entities).toEqual([]);
+    expect(result.body.focusEntityId).toBeNull();
     expect(result.body.keyterms).toEqual({ assemblyai: [], deepgram: [] });
 
     const [row] = await sessionRows();
@@ -379,7 +381,7 @@ describe("POST /api/sessions", () => {
       reason: "expired",
     });
     expect(log.lines.join("\n")).toContain(
-      'session created {"entities":0,"keyterms":{"assemblyai":0,"deepgram":0}}',
+      'session created {"entities":0,"focus":false,"keyterms":{"assemblyai":0,"deepgram":0}}',
     );
   });
 
@@ -395,10 +397,29 @@ describe("POST /api/sessions", () => {
     const frame = startFrame(entities);
     expect(parseClientMessage(frame).ok).toBe(true);
     expect(utf8Length(frame)).toBeLessThan(MAX_MESSAGE_BYTES);
-    // Without a selected account, companies come first.
+    // Without a selected account, companies come first, and no account is open.
     expect(entities.slice(0, 60).every((entity) => entity.kind === "company")).toBe(true);
+    expect(result.body.focusEntityId).toBeNull();
 
-    expectWithinLimits(result.body.keyterms as SessionKeyterms);
+    // Each contact and deal names its company by the company's crm_entities id.
+    const byId = new Map(entities.map((entity) => [entity.id, entity]));
+    const danaLee = entities.find((entity) => entity.name === "Dana Lee");
+    expect(danaLee?.parentId).toBe(await demoEntityId("co_011"));
+    for (const entity of entities) {
+      if (entity.kind === "company") expect(entity).not.toHaveProperty("parentId");
+      else expect(byId.get(entity.parentId ?? "")?.kind, entity.name).toBe("company");
+    }
+
+    // Every company's name is a keyterm, the alphabetically last ones too (WP8): names before
+    // aliases, where each company used to bring its aliases along and run out at "Summit Ridge".
+    const keyterms = result.body.keyterms as SessionKeyterms;
+    expectWithinLimits(keyterms);
+    const companyNames = entities
+      .filter((entity) => entity.kind === "company")
+      .map((entity) => entity.name);
+    expect(keyterms.assemblyai.slice(0, companyNames.length)).toEqual(companyNames);
+    expect(keyterms.assemblyai).toContain("Willowbrook Pharma");
+    expect(keyterms.assemblyai).toHaveLength(100);
   });
 
   it("ranks the selected account, its contacts, and its deals first, then the other companies", async () => {
@@ -429,11 +450,14 @@ describe("POST /api/sessions", () => {
       name: "Harborview Health",
       aliases: ["Harborview"],
     });
+    // The selected account is the session's open account, and its family names it as parent.
+    expect(result.body.focusEntityId).toBe(accountId);
     const related = entities.slice(1, 1 + contactNames.length + dealNames.length);
     expect(related.map((entity) => [entity.kind, entity.name])).toEqual([
       ...contactNames.map((name) => ["contact", name]),
       ...dealNames.map((name) => ["deal", name]),
     ]);
+    expect(related.every((entity) => entity.parentId === accountId)).toBe(true);
     expect(entities[1 + related.length]).toMatchObject({
       kind: "company",
       name: "Redwood Robotics",
@@ -442,9 +466,10 @@ describe("POST /api/sessions", () => {
     const keyterms = result.body.keyterms as SessionKeyterms;
     const expected = ["Harborview Health", "Harborview", ...contactNames, ...dealNames];
     expect(keyterms.assemblyai.slice(0, expected.length)).toEqual(expected);
+    // Then every other company's name, the most recently updated first, before any alias.
     expect(keyterms.assemblyai.slice(expected.length, expected.length + 2)).toEqual([
       "Redwood Robotics",
-      "Redwood",
+      "Acme Dynamics",
     ]);
     expect(keyterms.deepgram.slice(0, expected.length)).toEqual(expected);
     expectWithinLimits(keyterms);
@@ -459,6 +484,7 @@ describe("POST /api/sessions", () => {
       expect(result.status).toBe(201);
       expect(result.body.entities).toEqual(plain.body.entities);
       expect(result.body.keyterms).toEqual(plain.body.keyterms);
+      expect(result.body.focusEntityId).toBeNull();
     }
   });
 

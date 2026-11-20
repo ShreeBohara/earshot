@@ -18,10 +18,16 @@ export type CreateSessionResponse = {
   /** The session socket's URL: `wss://<edge>/v1/sessions/<sessionId>/ws`. */
   edgeUrl: string;
   /**
-   * The CRM records the session may mention, best first. Send them unchanged in `start`: the list
-   * is cut to fit that message's 64 KiB, given the providers this request named.
+   * The CRM records the session may mention, best first, each contact and deal with its company
+   * as `parentId`. Send them unchanged in `start`: the list is cut to fit that message's 64 KiB,
+   * given the providers this request named.
    */
   entities: EntityRef[];
+  /**
+   * The account open in Earshot: the request's `selectedAccountId`, when it's a company among
+   * `entities`, else null. Send it in `start` as `focusEntityId`; the linker reads it as context.
+   */
+  focusEntityId: string | null;
   keyterms: SessionKeyterms;
 };
 

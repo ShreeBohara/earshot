@@ -2,9 +2,15 @@
 // cases, and each provider's response to them in its own wire format. scripts/gen-cassettes.ts
 // runs the real adapters against these responses to record what they send; the tests replay the
 // result. No byte here came from a provider.
+//
+// The drafts are tool schema v2's (Phase 4 WP8): each target is the words that named a record, or
+// null when the rep named none, and the understanding step links them. The demo session runs with
+// Acme Corp open in Earshot, so a turn that names no record targets it (`implied_target`).
 import type { EntityRef, LlmProvider, TurnOutcome, UtteranceFinalV2 } from "@earshot/core";
+import { buildLinkIndex } from "@earshot/understanding/link";
 import { LLM_MODELS } from "../extractor";
 import type { ToolProposal } from "../schema";
+import type { LinkSession } from "../understand";
 
 /**
  * The key the scenarios run with. Cassettes never hold a key, so any string of the right shape
@@ -22,16 +28,33 @@ export const DEMO_DEAL_ID = "01a0f831-afe8-7fff-84cf-71639949085b";
 
 /**
  * The session's entities: Acme Corp and its deal, and look-alikes from `@earshot/demo-crm`'s
- * confusable groups, so a sloppy target can't land by luck.
+ * confusable groups, so a sloppy target can't land by luck. "Dana Lee", whom the rep meets in
+ * turn 1, sounds like both Donna Lee and Dana Li, so the linker asks.
  */
 export const DEMO_ENTITIES: readonly EntityRef[] = [
   { id: DEMO_COMPANY_ID, kind: "company", name: "Acme Corp", aliases: ["Acme"] },
-  { id: DEMO_DEAL_ID, kind: "deal", name: "Acme Corp - Security Platform", aliases: [] },
+  {
+    id: DEMO_DEAL_ID,
+    kind: "deal",
+    name: "Acme Corp - Security Platform",
+    aliases: [],
+    parentId: DEMO_COMPANY_ID,
+  },
   { id: "co_044", kind: "company", name: "Akme Dynamics", aliases: ["Akme"] },
   { id: "co_040", kind: "company", name: "Acmi Dynamics", aliases: ["Acmi"] },
   { id: "ct_112", kind: "contact", name: "Donna Lee", aliases: [] },
   { id: "ct_145", kind: "contact", name: "Dana Li", aliases: [] },
 ];
+
+/** The account open in Earshot during the demo session: Acme Corp. */
+export const DEMO_FOCUS_ID = DEMO_COMPANY_ID;
+
+/** The demo session as the linker sees it at its start: its records, Acme Corp open, no links. */
+export const DEMO_SESSION: LinkSession = {
+  index: buildLinkIndex(DEMO_ENTITIES),
+  focusEntityId: DEMO_FOCUS_ID,
+  recent: [],
+};
 
 /** The demo session's seven utterances, as `utterance.final` v2 (the first is upcast from v1). */
 export const DEMO_UTTERANCES: readonly UtteranceFinalV2[] = [
@@ -135,12 +158,16 @@ export function demoTurnId(n: number): string {
   return `01a1c6e2-0000-7000-8000-${n.toString(16).padStart(12, "0")}`;
 }
 
-/** What the "model" drafts for each demo turn: one turn per utterance, as in the fixture. */
+/**
+ * What the "model" drafts for each demo turn, one turn per utterance, as in the fixture. A v2
+ * model sees no CRM list, so it quotes names as said and leaves `target` null where the rep named
+ * no record: turns 3, 5, and 6 name none, so they take Acme Corp, the open account (or its only
+ * deal). Turn 4 names "Dana", which sounds like two contacts.
+ */
 const DEMO_DRAFTS: readonly (readonly ToolProposal[])[] = [
   [
     {
       type: "contact",
-      target: null,
       fields: {
         name: { value: "Dana Lee", quote: "Dana Lee" },
         title: { value: "VP of Operations", quote: "VP of Operations" },
@@ -154,7 +181,7 @@ const DEMO_DRAFTS: readonly (readonly ToolProposal[])[] = [
   [
     {
       type: "deal_update",
-      target: "Acme Corp - Security Platform",
+      target: null,
       fields: {
         stage: { value: "proposal", quote: "move the deal to the proposal stage" },
         amount: null,
@@ -165,7 +192,7 @@ const DEMO_DRAFTS: readonly (readonly ToolProposal[])[] = [
   [
     {
       type: "task",
-      target: "Acme Corp",
+      target: { quote: "Dana", kind: "contact", company: null },
       fields: {
         title: {
           value: "Send Dana the pricing breakdown",
@@ -178,7 +205,7 @@ const DEMO_DRAFTS: readonly (readonly ToolProposal[])[] = [
   [
     {
       type: "note",
-      target: "Acme Corp",
+      target: null,
       fields: {
         body: {
           value: "The pilot is going well; their main concern is how long SSO setup takes.",
@@ -190,13 +217,13 @@ const DEMO_DRAFTS: readonly (readonly ToolProposal[])[] = [
   [
     {
       type: "commitment",
-      target: "Acme Corp",
+      target: null,
       fields: {
         text: {
           value: "Run a security workshop with Acme Corp's IT team",
           quote: "run a security workshop with their IT team",
         },
-        counterpart: { value: "Acme Corp's IT team", quote: "their IT team" },
+        counterpart: { value: "their IT team", quote: "their IT team" },
         dueDate: null,
       },
     },
@@ -358,7 +385,8 @@ export function groqError(
 export interface ScenarioTurn {
   readonly turnId: string;
   readonly utterances: readonly UtteranceFinalV2[];
-  readonly entities: readonly EntityRef[];
+  /** The session as the linker sees it when the turn starts. */
+  readonly session: LinkSession;
   readonly callTime: string;
   readonly timeZone: string;
 }
@@ -379,7 +407,7 @@ function demoTurn(index: number): ScenarioTurn {
   return {
     turnId: demoTurnId(index + 1),
     utterances: [utteranceAt(index)],
-    entities: DEMO_ENTITIES,
+    session: DEMO_SESSION,
     callTime: DEMO_CALL_TIME,
     timeZone: DEMO_TIME_ZONE,
   };
@@ -439,7 +467,7 @@ const TASK_MISSING_QUOTE = {
   proposals: [
     {
       type: "task",
-      target: "Acme Corp",
+      target: { quote: "Dana", kind: "contact", company: null },
       fields: { title: { value: "Send Dana the pricing breakdown" }, dueDate: null },
     },
   ],

@@ -5,6 +5,7 @@
   "voice": "bf_alice",
   "callTime": "2026-11-20T15:30:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_051",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_051",
+          "named": {
+            "quote": "Fernhill Education"
+          },
           "fields": {
             "body": {
               "value": "Interested in campus energy dashboards for twelve schools.",
@@ -29,6 +33,9 @@
         {
           "type": "task",
           "target": "ct_059",
+          "named": {
+            "quote": "Steven Clarke"
+          },
           "fields": {
             "title": {
               "value": "Send Steven Clarke a proposal for their budget meeting",
@@ -70,6 +77,9 @@
         {
           "type": "note",
           "target": "co_051",
+          "named": {
+            "quote": "Fernhill"
+          },
           "fields": {
             "body": {
               "value": "Quoting software only for now, not hardware.",

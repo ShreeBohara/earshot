@@ -9,7 +9,7 @@
       "description": "Acme Dynamics wants two more plants: deal update and a quote for Dana Lee",
       "interactions": [
         {
-          "key": "bb24e34260a0e4390d6ef1393c124f8d54487ca44726961c5b03a2025838912e",
+          "key": "e0f5798522fb438b12565e0d8bc0f63456be7d166b365280cb3a8d38ccde5c83",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -53,7 +53,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Acme Dynamics\",\"fields\":{\"body\":{\"value\":\"Dana Lee wants to expand the rollout to two more plants.\",\"quote\":\"wants to expand the rollout to two more plants\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Acme Dynamics\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Dana Lee wants to expand the rollout to two more plants.\",\"quote\":\"wants to expand the rollout to two more plants\"}}}]}"
                         }
                       }
                     ]
@@ -62,9 +62,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3630,
+                "prompt_tokens": 2030,
                 "completion_tokens": 136,
-                "total_tokens": 3766,
+                "total_tokens": 2166,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -73,7 +73,7 @@
           }
         },
         {
-          "key": "81de153d5c882b13fdaeedc9535f738effe17168b359d755b52cceebe0185910",
+          "key": "19b2ca49a710ee62660828a609cdf58be7539433a0ddd110d8078d54e34ee599",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -117,7 +117,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Acme Dynamics - Expansion\",\"fields\":{\"stage\":{\"value\":\"presentation scheduled\",\"quote\":\"presentation scheduled\"},\"amount\":{\"value\":42000,\"quote\":\"forty-two thousand dollars\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Acme Dynamics expansion\",\"kind\":\"deal\",\"company\":{\"quote\":\"Acme Dynamics\"}},\"fields\":{\"stage\":{\"value\":\"presentation scheduled\",\"quote\":\"presentation scheduled\"},\"amount\":{\"value\":42000,\"quote\":\"forty-two thousand dollars\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -126,9 +126,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -137,7 +137,7 @@
           }
         },
         {
-          "key": "ee453fb35b8fc0c3940eeea7a7f05a744b169724aeb56d58cdd69091f029f2bc",
+          "key": "6888cd722967da3f49f788ea3c81fd8e141be60b77953b76f7506af9ed2bc053",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -181,7 +181,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Dana Lee\",\"fields\":{\"title\":{\"value\":\"Send Dana Lee a revised quote\",\"quote\":\"owe Dana Lee a revised quote\"},\"dueDate\":{\"value\":\"2026-11-20\",\"quote\":\"by Friday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana Lee\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Dana Lee a revised quote\",\"quote\":\"owe Dana Lee a revised quote\"},\"dueDate\":{\"value\":\"2026-11-20\",\"quote\":\"by Friday\"}}}]}"
                         }
                       }
                     ]
@@ -190,9 +190,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3611,
+                "prompt_tokens": 2011,
                 "completion_tokens": 136,
-                "total_tokens": 3747,
+                "total_tokens": 2147,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -201,7 +201,7 @@
           }
         },
         {
-          "key": "5fecd41f5a500189fd366e9fa01a11c37a4fc9f57993fa89bc609800f3433813",
+          "key": "a3a8192aa4e9c53925bdfdb56022e4b0b5fbe8e4b67821386658308062e592ec",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -254,9 +254,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3605,
+                "prompt_tokens": 2005,
                 "completion_tokens": 60,
-                "total_tokens": 3665,
+                "total_tokens": 2065,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -271,7 +271,7 @@
       "description": "Akme Dynamics: budget approved, a security review, and a new procurement lead",
       "interactions": [
         {
-          "key": "ad914e4e70b915e6e41eba9774f2e628017d1599d43745e07f33c9b30d6dd776",
+          "key": "8c2693ec3d1286d1d0b3e778b8c6f8a6f118c2546526dd765b32c6e884a99a47",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -315,7 +315,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Akme Dynamics\",\"fields\":{\"body\":{\"value\":\"Dana Li confirmed next year's budget is approved.\",\"quote\":\"confirmed the budget for next year is approved\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Akme Dynamics\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Dana Li confirmed next year's budget is approved.\",\"quote\":\"confirmed the budget for next year is approved\"}}}]}"
                         }
                       }
                     ]
@@ -324,9 +324,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3631,
+                "prompt_tokens": 2031,
                 "completion_tokens": 136,
-                "total_tokens": 3767,
+                "total_tokens": 2167,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -335,7 +335,7 @@
           }
         },
         {
-          "key": "31fd4c1bc513789624e42c08e052acbc5d3f4d29d99d7b7b167c881b0a10d335",
+          "key": "207a7687848553965f3966031281d8b7c78ff4ea7450e94e80befa71b6f0f097",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -379,7 +379,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Dana Li\",\"fields\":{\"title\":{\"value\":\"Set up a security review call with Dana Li\",\"quote\":\"a security review call with our team\"},\"dueDate\":{\"value\":\"2026-11-24\",\"quote\":\"on Tuesday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Dana Li\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Set up a security review call with Dana Li\",\"quote\":\"a security review call with our team\"},\"dueDate\":{\"value\":\"2026-11-24\",\"quote\":\"on Tuesday\"}}}]}"
                         }
                       }
                     ]
@@ -388,9 +388,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -399,7 +399,7 @@
           }
         },
         {
-          "key": "c687902f7055b57363c4c8a0b5af418747dd5074c120707a466c015384629db8",
+          "key": "c74547d9b011601dac3ba35c6943f123065791d88e42e85627fd5b2a5e83ead7",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -443,7 +443,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":null,\"fields\":{\"name\":{\"value\":\"Hiroshi Tanabe\",\"quote\":\"Hiroshi Tanabe\"},\"title\":{\"value\":\"procurement lead\",\"quote\":\"procurement lead\"},\"company\":{\"value\":\"Akme Dynamics\",\"quote\":\"Akme\"},\"email\":null,\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Hiroshi Tanabe\",\"quote\":\"Hiroshi Tanabe\"},\"title\":{\"value\":\"procurement lead\",\"quote\":\"procurement lead\"},\"company\":{\"value\":\"Akme\",\"quote\":\"Akme\"},\"email\":null,\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -452,9 +452,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3623,
+                "prompt_tokens": 2023,
                 "completion_tokens": 136,
-                "total_tokens": 3759,
+                "total_tokens": 2159,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -463,7 +463,7 @@
           }
         },
         {
-          "key": "54723c1dae35bf4925ff730d28410938bed0a10231270d06005a4ae0c36ecba4",
+          "key": "1cf711dc749003db0b04351261b755e71469db9994911243337a1ab1958306ce",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -507,7 +507,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Dana Li\",\"fields\":{\"text\":{\"value\":\"Hold Akme Dynamics' pricing through March\",\"quote\":\"hold Akme's pricing through March\"},\"counterpart\":{\"value\":\"Dana Li\",\"quote\":\"Dana Li\"},\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Dana Li\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Hold Akme Dynamics' pricing through March\",\"quote\":\"hold Akme's pricing through March\"},\"counterpart\":{\"value\":\"Dana Li\",\"quote\":\"Dana Li\"},\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -516,9 +516,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3614,
+                "prompt_tokens": 2014,
                 "completion_tokens": 136,
-                "total_tokens": 3750,
+                "total_tokens": 2150,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -533,7 +533,7 @@
       "description": "Atmos Industrial wants to restart onboarding; Raj Patel needs a fresh quote",
       "interactions": [
         {
-          "key": "8514855094a6ed7f73ad912dd71ece91bb4a01692e15da303f57817e35326da0",
+          "key": "77d875e20ef0a72c61cb30fc6f6ec557a24637acabd3d5785d160cd9f251ef30",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -577,7 +577,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Atmos Industrial\",\"fields\":{\"body\":{\"value\":\"Finance wants to restart the onboarding package they passed on in June.\",\"quote\":\"finance wants to restart the onboarding package they passed on in June\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Atmos Industrial\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Finance wants to restart the onboarding package they passed on in June.\",\"quote\":\"finance wants to restart the onboarding package they passed on in June\"}}}]}"
                         }
                       }
                     ]
@@ -586,9 +586,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3630,
+                "prompt_tokens": 2030,
                 "completion_tokens": 136,
-                "total_tokens": 3766,
+                "total_tokens": 2166,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -597,7 +597,7 @@
           }
         },
         {
-          "key": "da6a26d2c49235d578660116676fc8583ec253e1c3b8dc574ead2d49de7a9b48",
+          "key": "e19afa59e5cffeb9edf5098deaf109fa77d78cd12710f18620b281cdc66a4405",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -641,7 +641,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Raj Patel\",\"fields\":{\"title\":{\"value\":\"Send Raj Patel a fresh quote at $17,500\",\"quote\":\"a fresh quote at seventeen thousand five hundred\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"by the end of the month\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Raj Patel\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Raj Patel a fresh quote at $17,500\",\"quote\":\"a fresh quote at seventeen thousand five hundred\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"by the end of the month\"}}}]}"
                         }
                       }
                     ]
@@ -650,9 +650,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -661,7 +661,7 @@
           }
         },
         {
-          "key": "e15d370f9c572003ee98958dfc779277e8cdd354f1acfcad3a54226fc61a4e18",
+          "key": "cd180721ab796ad0a4e51f866e1a81adba4dddcb5320d4ddfcec737e423c5b1b",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -714,9 +714,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3617,
+                "prompt_tokens": 2017,
                 "completion_tokens": 60,
-                "total_tokens": 3677,
+                "total_tokens": 2077,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -725,7 +725,7 @@
           }
         },
         {
-          "key": "016b3ba1bfa527944267c7c9df37c7b98760fa161906a24158ac8ef1d8785c94",
+          "key": "34fa33e81db21cc10947ff382ca4b7f3deacd76b44e396700e8f520711e093fa",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -769,7 +769,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Atmos Industrial\",\"fields\":{\"body\":{\"value\":\"Raj Patel is not the decision maker; their general manager, Yara Okafor, is.\",\"quote\":\"Raj is not the decision maker. That's their general manager, Yara Okafor\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Atmos\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Raj Patel is not the decision maker; their general manager, Yara Okafor, is.\",\"quote\":\"Raj is not the decision maker. That's their general manager, Yara Okafor\"}}}]}"
                         }
                       }
                     ]
@@ -778,9 +778,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3621,
+                "prompt_tokens": 2021,
                 "completion_tokens": 136,
-                "total_tokens": 3757,
+                "total_tokens": 2157,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -795,7 +795,7 @@
       "description": "Globelex Systems renewal moves to contract sent at a higher amount",
       "interactions": [
         {
-          "key": "f8a2190adc247f4695cf4685f67b0e5488cc6752a954daba1ff8c3b88d3124da",
+          "key": "19f64240ec332b61716baac60acca96b814d5972a2200cd58f864baa342b8683",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -839,7 +839,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Globelex Systems\",\"fields\":{\"body\":{\"value\":\"Bryan Reilly, their VP of Operations, is ready to move forward with the renewal.\",\"quote\":\"Bryan Reilly, their VP of operations, is ready to move forward\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Globelex Systems\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Bryan Reilly, their VP of Operations, is ready to move forward with the renewal.\",\"quote\":\"Bryan Reilly, their VP of operations, is ready to move forward\"}}}]}"
                         }
                       }
                     ]
@@ -848,9 +848,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -859,7 +859,7 @@
           }
         },
         {
-          "key": "af3c132eed59b3168aa1179d3b5714466d551175f5d17c4a175c5cbff798d8b3",
+          "key": "6e9be7902bcc4b23100fb933ec402e2379a2979e5aca115c51400a2f1450a005",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -903,7 +903,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Globelex Systems - Annual renewal\",\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":{\"value\":44000,\"quote\":\"forty-four thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Globelex annual renewal\",\"kind\":\"deal\",\"company\":{\"quote\":\"Globelex\"}},\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":{\"value\":44000,\"quote\":\"forty-four thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -912,9 +912,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3625,
+                "prompt_tokens": 2025,
                 "completion_tokens": 136,
-                "total_tokens": 3761,
+                "total_tokens": 2161,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -923,7 +923,7 @@
           }
         },
         {
-          "key": "b24d8df840780f5a3e5dce8d1816a343405734479892c116948a365b394afeb6",
+          "key": "17feef758824c6c63a4f65bc60c93a9aa05478fe2e3d30504b8bc4dcedae6967",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -967,7 +967,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Bryan Reilly\",\"fields\":{\"text\":{\"value\":\"Send Bryan Reilly the order form for signature\",\"quote\":\"send the order form for signature\"},\"counterpart\":{\"value\":\"Bryan Reilly\",\"quote\":\"Bryan Reilly\"},\"dueDate\":{\"value\":\"2026-12-04\",\"quote\":\"by December 4th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Bryan Reilly\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Bryan Reilly the order form for signature\",\"quote\":\"send the order form for signature\"},\"counterpart\":{\"value\":\"Bryan Reilly\",\"quote\":\"Bryan Reilly\"},\"dueDate\":{\"value\":\"2026-12-04\",\"quote\":\"by December 4th\"}}}]}"
                         }
                       }
                     ]
@@ -976,9 +976,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3620,
+                "prompt_tokens": 2020,
                 "completion_tokens": 136,
-                "total_tokens": 3756,
+                "total_tokens": 2156,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -987,7 +987,7 @@
           }
         },
         {
-          "key": "98405b100e8f4880bf7aadf32b5f2ccc118a35ec5a4e0e694d9976dddf4a8d06",
+          "key": "09f89dc75aa8e606c4858ad822306a98e05d66fed0e5779e51b683c6dabc4dc5",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1040,9 +1040,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3614,
+                "prompt_tokens": 2014,
                 "completion_tokens": 60,
-                "total_tokens": 3674,
+                "total_tokens": 2074,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -1057,7 +1057,7 @@
       "description": "Northwind Logistics wants a route-planning pilot across forty depots",
       "interactions": [
         {
-          "key": "67182187a4a908e303308c28a209f4d24e4c8384f28c38ce1f0d87d360021a5a",
+          "key": "e11ce008f5027d22ba9631b937ff96c90c19b2230a7b2e1e0df74d234b80b76f",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1101,7 +1101,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Northwind Logistics\",\"fields\":{\"body\":{\"value\":\"John Whitaker wants to trial route planning across forty depots.\",\"quote\":\"wants to trial route planning across forty depots\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Northwind Logistics\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"John Whitaker wants to trial route planning across forty depots.\",\"quote\":\"wants to trial route planning across forty depots\"}}}]}"
                         }
                       }
                     ]
@@ -1110,9 +1110,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3629,
+                "prompt_tokens": 2029,
                 "completion_tokens": 136,
-                "total_tokens": 3765,
+                "total_tokens": 2165,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1121,7 +1121,7 @@
           }
         },
         {
-          "key": "e8c0530bab08296182b4b7194918e5f4b28814deb0a318d9ab3c3ae20f526372",
+          "key": "0003394a230c34d8cfb85122fc3e47d0b460ce628209accc39aeba06ccefc58a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1165,7 +1165,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"John Whitaker\",\"fields\":{\"title\":{\"value\":\"Send John Whitaker a pilot proposal\",\"quote\":\"a pilot proposal\"},\"dueDate\":{\"value\":\"2026-11-26\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"John Whitaker\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send John Whitaker a pilot proposal\",\"quote\":\"a pilot proposal\"},\"dueDate\":{\"value\":\"2026-11-26\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -1174,9 +1174,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1185,7 +1185,7 @@
           }
         },
         {
-          "key": "ef0861c16748e378e65caefd0dc93f3df2608bc12fa0c42dd1803eb888a59fa7",
+          "key": "bb5aa892a4767858dfbd39c2c3f391b479713334a6a99383dbcf93d08edb9677",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1229,7 +1229,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":null,\"fields\":{\"name\":{\"value\":\"Fiona Gallagher\",\"quote\":\"Fiona Gallagher\"},\"title\":{\"value\":\"head of IT\",\"quote\":\"head of IT\"},\"company\":null,\"email\":{\"value\":\"fiona.gallagher@northwind-logistics.example\",\"quote\":\"fiona.gallagher@northwind-logistics.example\"},\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Fiona Gallagher\",\"quote\":\"Fiona Gallagher\"},\"title\":{\"value\":\"head of IT\",\"quote\":\"head of IT\"},\"company\":null,\"email\":{\"value\":\"fiona.gallagher@northwind-logistics.example\",\"quote\":\"fiona.gallagher@northwind-logistics.example\"},\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -1238,9 +1238,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3625,
+                "prompt_tokens": 2025,
                 "completion_tokens": 136,
-                "total_tokens": 3761,
+                "total_tokens": 2161,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1249,7 +1249,7 @@
           }
         },
         {
-          "key": "f2cb80ff26342f16b66e1b645e6b62a3826734af6054893f3b17dbf00b61d2bd",
+          "key": "b89c77306d50a20cd8e46ad8191b436bb151756a5217ea4d5f82321a168bc448",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1302,9 +1302,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3615,
+                "prompt_tokens": 2015,
                 "completion_tokens": 60,
-                "total_tokens": 3675,
+                "total_tokens": 2075,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -1319,7 +1319,7 @@
       "description": "Meridian Supply Co: warehouse sensors, a sixty-unit quote, and warranty terms",
       "interactions": [
         {
-          "key": "b8d83fecd3973866222c7dbdbdd37525c966179d1ec999484a11c71c7cb1b7b7",
+          "key": "b1b8f791a43ca76b774b4c864ab20a90385297501e2bfc0a07c16b05c942df89",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1363,7 +1363,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Meridian Supply Co\",\"fields\":{\"body\":{\"value\":\"Met Jeffrey Walsh about warehouse sensors for their Nashville site.\",\"quote\":\"warehouse sensors for their Nashville site\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Meridian Supply Co\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Met Jeffrey Walsh about warehouse sensors for their Nashville site.\",\"quote\":\"warehouse sensors for their Nashville site\"}}}]}"
                         }
                       }
                     ]
@@ -1372,9 +1372,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1383,7 +1383,7 @@
           }
         },
         {
-          "key": "6d4bdd24c1f2eb42aaab517d876333f40d76c92106e0ffb04373ae7f98dfac26",
+          "key": "68d9575be507c802929ad11a3ab42e65001183d7c952a3ca2cccac4fb117d3b9",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1427,7 +1427,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Jeffrey Walsh\",\"fields\":{\"title\":{\"value\":\"Send Jeffrey Walsh a quote for sixty units\",\"quote\":\"a quote for sixty units\"},\"dueDate\":null}},{\"type\":\"note\",\"target\":\"Meridian Supply Co\",\"fields\":{\"body\":{\"value\":\"They won't consider anything without a two-year warranty.\",\"quote\":\"Meridian won't consider anything without a two-year warranty\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Jeffrey Walsh\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Jeffrey Walsh a quote for sixty units\",\"quote\":\"a quote for sixty units\"},\"dueDate\":null}},{\"type\":\"note\",\"target\":{\"quote\":\"Meridian\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"They won't consider anything without a two-year warranty.\",\"quote\":\"Meridian won't consider anything without a two-year warranty\"}}}]}"
                         }
                       }
                     ]
@@ -1436,9 +1436,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3628,
+                "prompt_tokens": 2028,
                 "completion_tokens": 212,
-                "total_tokens": 3840,
+                "total_tokens": 2240,
                 "completion_tokens_details": {
                   "reasoning_tokens": 60
                 }
@@ -1447,7 +1447,7 @@
           }
         },
         {
-          "key": "e7253dca708d146e332f808cf602d332a2c6e564a9066fa4c567153f995afb84",
+          "key": "f3caeb5456baf844144ae9fcabf01de8315a41806f6004df68a93d7e48651679",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1491,7 +1491,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Jeffrey Walsh\",\"fields\":{\"text\":{\"value\":\"Send Jeffrey Walsh the warranty terms\",\"quote\":\"have the warranty terms to him\"},\"counterpart\":{\"value\":\"Jeffrey Walsh\",\"quote\":\"Jeffrey Walsh\"},\"dueDate\":{\"value\":\"2026-12-08\",\"quote\":\"in two weeks\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Jeffrey Walsh\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Jeffrey Walsh the warranty terms\",\"quote\":\"have the warranty terms to him\"},\"counterpart\":{\"value\":\"Jeffrey Walsh\",\"quote\":\"Jeffrey Walsh\"},\"dueDate\":{\"value\":\"2026-12-08\",\"quote\":\"in two weeks\"}}}]}"
                         }
                       }
                     ]
@@ -1500,9 +1500,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3618,
+                "prompt_tokens": 2018,
                 "completion_tokens": 136,
-                "total_tokens": 3754,
+                "total_tokens": 2154,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1517,7 +1517,7 @@
       "description": "Pacific Coast Electric adds three substations; Catherine Moore needs a revised invoice",
       "interactions": [
         {
-          "key": "c2f4e25b26f574c2cd3a5824a363f5414e3711bfd545bb6fa127cd1a2f331ebb",
+          "key": "9952c4214ae7db4ecb2c0afd2b950d2ba734a55d7a16f62037ad770fa2119dc2",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1561,7 +1561,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Pacific Coast Electric\",\"fields\":{\"body\":{\"value\":\"They want to add three more substations to their support contract.\",\"quote\":\"wants to add three more substations to their support contract\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Pacific Coast Electric\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"They want to add three more substations to their support contract.\",\"quote\":\"wants to add three more substations to their support contract\"}}}]}"
                         }
                       }
                     ]
@@ -1570,9 +1570,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3622,
+                "prompt_tokens": 2022,
                 "completion_tokens": 136,
-                "total_tokens": 3758,
+                "total_tokens": 2158,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1581,7 +1581,7 @@
           }
         },
         {
-          "key": "18a63be147f87c3149cd9a957c913c66c03fca05f619095262eb81b28434c9b8",
+          "key": "ba4a75ee5f284e916909b91dd8e1410f72b4a6909e1ca591f2d2231347433bf5",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1625,7 +1625,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Catherine Moore\",\"fields\":{\"title\":{\"value\":\"Send Catherine Moore a revised invoice\",\"quote\":\"a revised invoice\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"by Monday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Catherine Moore\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Catherine Moore a revised invoice\",\"quote\":\"a revised invoice\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"by Monday\"}}}]}"
                         }
                       }
                     ]
@@ -1634,9 +1634,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3619,
+                "prompt_tokens": 2019,
                 "completion_tokens": 136,
-                "total_tokens": 3755,
+                "total_tokens": 2155,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1645,7 +1645,7 @@
           }
         },
         {
-          "key": "c6358ae06e9d28c09659a558d4bc087511d83812d3284e68d1438f09ee4cf291",
+          "key": "bc09eac86d53cb5cb50da393942ae2745fa11c68b4980da12ab5773d797c7e7c",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1698,9 +1698,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3621,
+                "prompt_tokens": 2021,
                 "completion_tokens": 60,
-                "total_tokens": 3681,
+                "total_tokens": 2081,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -1709,7 +1709,7 @@
           }
         },
         {
-          "key": "ad932fd084674f25a190d3d3ce882fb916596bbd79e6e57786ed35f6f55beefa",
+          "key": "79ab059fc8bafdbd3470d72cd83acf3cd8dbd535c9d0fc28bf6c785c4b325832",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1753,7 +1753,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Catherine Moore\",\"fields\":{\"text\":{\"value\":\"Send Catherine Moore the updated substation list\",\"quote\":\"the updated substation list\"},\"counterpart\":{\"value\":\"Catherine Moore\",\"quote\":\"Catherine Moore\"},\"dueDate\":{\"value\":\"2026-12-01\",\"quote\":\"by Tuesday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Catherine Moore\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Catherine Moore the updated substation list\",\"quote\":\"the updated substation list\"},\"counterpart\":{\"value\":\"Catherine Moore\",\"quote\":\"Catherine Moore\"},\"dueDate\":{\"value\":\"2026-12-01\",\"quote\":\"by Tuesday\"}}}]}"
                         }
                       }
                     ]
@@ -1762,9 +1762,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3617,
+                "prompt_tokens": 2017,
                 "completion_tokens": 136,
-                "total_tokens": 3753,
+                "total_tokens": 2153,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1779,7 +1779,7 @@
       "description": "Blue Harbor Analytics will sign the site rollout for a January start",
       "interactions": [
         {
-          "key": "335327bfb407b0ac81c0a55e4b7a2de50cb71e3b4f965eb3cc0b0c6b9b774c44",
+          "key": "69ac959c5531c8f39a3451f4ea199fd6d7ec63cc1e2a663c742ca7e102cea2e2",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1823,7 +1823,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Blue Harbor Analytics\",\"fields\":{\"body\":{\"value\":\"Kathryn Moore says they'll sign the site rollout if we can start in January.\",\"quote\":\"they'll sign the site rollout if we can start in January\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Blue Harbor Analytics\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Kathryn Moore says they'll sign the site rollout if we can start in January.\",\"quote\":\"they'll sign the site rollout if we can start in January\"}}}]}"
                         }
                       }
                     ]
@@ -1832,9 +1832,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3631,
+                "prompt_tokens": 2031,
                 "completion_tokens": 136,
-                "total_tokens": 3767,
+                "total_tokens": 2167,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1843,7 +1843,7 @@
           }
         },
         {
-          "key": "df2178ac67c7e08bcdacb83d77b53002affbe5d65510cbf12f12e7841562df93",
+          "key": "4e4cbd13683c11a04430d094825188f5905d4ed45695a0ad3e2af66c7e63145e",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1887,7 +1887,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Blue Harbor Analytics - Site rollout\",\"fields\":{\"stage\":{\"value\":\"decision maker bought in\",\"quote\":\"decision maker bought in\"},\"amount\":null,\"closeDate\":{\"value\":\"2026-12-18\",\"quote\":\"December 18th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Blue Harbor site rollout\",\"kind\":\"deal\",\"company\":{\"quote\":\"Blue Harbor\"}},\"fields\":{\"stage\":{\"value\":\"decision maker bought in\",\"quote\":\"decision maker bought in\"},\"amount\":null,\"closeDate\":{\"value\":\"2026-12-18\",\"quote\":\"December 18th\"}}}]}"
                         }
                       }
                     ]
@@ -1896,9 +1896,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3625,
+                "prompt_tokens": 2025,
                 "completion_tokens": 136,
-                "total_tokens": 3761,
+                "total_tokens": 2161,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1907,7 +1907,7 @@
           }
         },
         {
-          "key": "459b9623bd4da33679c1fffe1d7a60f04340f8e587f22db43f0e4223b9ecf3ab",
+          "key": "7792c7592443c53075ac4b3bafbacf2692dff59f568ad0f99e8c7f50c84aaf7b",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -1951,7 +1951,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Zoe Park\",\"fields\":{\"title\":{\"value\":\"Loop Zoe Park in on the kickoff invite\",\"quote\":\"loop her in on the kickoff invite\"},\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Zoe Park\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Loop Zoe Park in on the kickoff invite\",\"quote\":\"loop her in on the kickoff invite\"},\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -1960,9 +1960,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3625,
+                "prompt_tokens": 2025,
                 "completion_tokens": 136,
-                "total_tokens": 3761,
+                "total_tokens": 2161,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -1971,7 +1971,7 @@
           }
         },
         {
-          "key": "b4301a0d2d0ea4fa69f2bf41f14b4d687fd680b29067af55a6a4bb1b49c64389",
+          "key": "fc83f4d9f0482744949f70eaff393c0571805c71e37ef1a5fb1acacd457dc5a6",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2024,9 +2024,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3618,
+                "prompt_tokens": 2018,
                 "completion_tokens": 60,
-                "total_tokens": 3678,
+                "total_tokens": 2078,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -2041,7 +2041,7 @@
       "description": "Summit Ridge Medical approves the starter plan and pushes the close to January",
       "interactions": [
         {
-          "key": "94040495a19e7c42ac545496be684fd6eb43c4a75a9bc6cf32c6ad0a74040c42",
+          "key": "3e07ec649b7756b763b175256562bc3644c36946dbed30e8195032b1f795ac16",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2085,7 +2085,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Summit Ridge Medical - Starter plan\",\"fields\":{\"stage\":null,\"amount\":{\"value\":22000,\"quote\":\"twenty-two thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"starter plan\",\"kind\":\"deal\",\"company\":{\"quote\":\"Summit Ridge Medical\"}},\"fields\":{\"stage\":null,\"amount\":{\"value\":22000,\"quote\":\"twenty-two thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -2094,9 +2094,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3631,
+                "prompt_tokens": 2031,
                 "completion_tokens": 136,
-                "total_tokens": 3767,
+                "total_tokens": 2167,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2105,7 +2105,7 @@
           }
         },
         {
-          "key": "45ec00a3ed5d3172fa0946e23dccebf345c11902ad3ec851154eec279be767e2",
+          "key": "937d5183a8017f09d67a45f14e5bbeeac31a313287e095b9088061a87c98c808",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2149,7 +2149,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Summit Ridge Medical - Starter plan\",\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-15\",\"quote\":\"January 15th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Summit Ridge Medical starter plan\",\"kind\":\"deal\",\"company\":{\"quote\":\"Summit Ridge Medical\"}},\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-15\",\"quote\":\"January 15th\"}}}]}"
                         }
                       }
                     ]
@@ -2158,9 +2158,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3629,
+                "prompt_tokens": 2029,
                 "completion_tokens": 136,
-                "total_tokens": 3765,
+                "total_tokens": 2165,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2169,7 +2169,7 @@
           }
         },
         {
-          "key": "9a3674772a585daefc7c89558d885d19f82aa5cf01b3b5f95f1cd3e2778f6126",
+          "key": "b9204d2a4dd5b2d5d88722cd3f2369a73ceaf5cc71996e05bffa027df363a5a0",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2213,7 +2213,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Summit Ridge Medical\",\"fields\":{\"text\":{\"value\":\"Send Summit Ridge Medical the HIPAA addendum\",\"quote\":\"send over the HIPAA addendum\"},\"counterpart\":{\"value\":\"Summit Ridge Medical\",\"quote\":\"Summit Ridge Medical\"},\"dueDate\":{\"value\":\"2026-12-04\",\"quote\":\"by Friday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Summit Ridge Medical\",\"kind\":\"company\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Summit Ridge Medical the HIPAA addendum\",\"quote\":\"send over the HIPAA addendum\"},\"counterpart\":{\"value\":\"Summit Ridge Medical\",\"quote\":\"Summit Ridge Medical\"},\"dueDate\":{\"value\":\"2026-12-04\",\"quote\":\"by Friday\"}}}]}"
                         }
                       }
                     ]
@@ -2222,9 +2222,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3618,
+                "prompt_tokens": 2018,
                 "completion_tokens": 136,
-                "total_tokens": 3754,
+                "total_tokens": 2154,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2233,7 +2233,7 @@
           }
         },
         {
-          "key": "618c006f42c4a65b2b9c56e67d838bd1eaf3c04ca597b6d00ac98e1c04265e79",
+          "key": "d6d31509bf9be32aca5dfef7040c3b5f6365fdd21632593577726948cee61226",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2286,9 +2286,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3605,
+                "prompt_tokens": 2005,
                 "completion_tokens": 60,
-                "total_tokens": 3665,
+                "total_tokens": 2065,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -2303,7 +2303,7 @@
       "description": "Harborview Marine renewal: a corrected amount, a later close, and updated terms",
       "interactions": [
         {
-          "key": "29f2f9fd63ebd597421e1d9bff36ceea26d4be4ea2ee98a2170a1815008e92e2",
+          "key": "4ed78bf6b0f7e71be64f6626029434e04e32c77ac109e969080569e84f616c3d",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2347,7 +2347,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Harborview Marine - Annual renewal\",\"fields\":{\"stage\":null,\"amount\":{\"value\":185000,\"quote\":\"one hundred eighty-five thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Harborview Marine renewal\",\"kind\":\"deal\",\"company\":{\"quote\":\"Harborview Marine\"}},\"fields\":{\"stage\":null,\"amount\":{\"value\":185000,\"quote\":\"one hundred eighty-five thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -2356,9 +2356,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3636,
+                "prompt_tokens": 2036,
                 "completion_tokens": 136,
-                "total_tokens": 3772,
+                "total_tokens": 2172,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2367,7 +2367,7 @@
           }
         },
         {
-          "key": "3255716311389bb9eceed9b086d5314dbc3d338a8f135d45f94d5d64910ab58d",
+          "key": "08045f10e654248f1e0aebe46fe3b9e7416393572cb4127a65e2e23d4822be42",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2411,7 +2411,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Harborview Marine - Annual renewal\",\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-20\",\"quote\":\"January 20th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Harborview Marine renewal\",\"kind\":\"deal\",\"company\":{\"quote\":\"Harborview Marine\"}},\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-20\",\"quote\":\"January 20th\"}}}]}"
                         }
                       }
                     ]
@@ -2420,9 +2420,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2431,7 +2431,7 @@
           }
         },
         {
-          "key": "8e701c9f92a89590994e60adde3c2f28a1adea1ecf2213ea46e2808b2e298d28",
+          "key": "3ba42a8999d984b167ff22846ef4231e5766b711566e72336cd67c40f29e2ca3",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2484,9 +2484,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3617,
+                "prompt_tokens": 2017,
                 "completion_tokens": 60,
-                "total_tokens": 3677,
+                "total_tokens": 2077,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -2495,7 +2495,7 @@
           }
         },
         {
-          "key": "1c3a1b3e86e0d4f4ac3e153e7c5b69d9fb0d2d4c8c2c8f61d709a965ffab3cd8",
+          "key": "834dbeca9174a16729121399ce4e6a6a9957a0745f9830e2528af44c8b6258fa",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2539,7 +2539,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Muhammad Hassan\",\"fields\":{\"title\":{\"value\":\"Send Muhammad Hassan the updated terms\",\"quote\":\"send Muhammad Hassan the updated terms\"},\"dueDate\":{\"value\":\"2026-12-03\",\"quote\":\"tomorrow\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Muhammad Hassan\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Muhammad Hassan the updated terms\",\"quote\":\"send Muhammad Hassan the updated terms\"},\"dueDate\":{\"value\":\"2026-12-03\",\"quote\":\"tomorrow\"}}}]}"
                         }
                       }
                     ]
@@ -2548,9 +2548,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3615,
+                "prompt_tokens": 2015,
                 "completion_tokens": 136,
-                "total_tokens": 3751,
+                "total_tokens": 2151,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2565,7 +2565,7 @@
       "description": "Kestrel Aero closes the analytics add-on, with a kickoff on December 14th",
       "interactions": [
         {
-          "key": "30993fcf5932c8d6e6827a6fdac5f3965fd6ea1b15dcdfe33792de41cd016f7e",
+          "key": "9c2d840ed1481075c51d12821b92af42c4cc77e32a15eee51148d05719be08af",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2609,7 +2609,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Kestrel Aero - Analytics add-on\",\"fields\":{\"stage\":{\"value\":\"closed won\",\"quote\":\"closed won\"},\"amount\":null,\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"analytics add-on\",\"kind\":\"deal\",\"company\":{\"quote\":\"Kestrel Aero\"}},\"fields\":{\"stage\":{\"value\":\"closed won\",\"quote\":\"closed won\"},\"amount\":null,\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -2618,9 +2618,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3631,
+                "prompt_tokens": 2031,
                 "completion_tokens": 136,
-                "total_tokens": 3767,
+                "total_tokens": 2167,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2629,7 +2629,7 @@
           }
         },
         {
-          "key": "a1579209c8849520b70e04a314f092ec0d8271504bbba3716615a09472055d3d",
+          "key": "6eac5d5cb8ac4e23fc196c826d4107a322705022dc1fbd344f3e6f9884af1a1a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2673,7 +2673,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Kestrel Aero - Analytics add-on\",\"fields\":{\"stage\":null,\"amount\":{\"value\":132000,\"quote\":\"one hundred thirty-two thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Kestrel add-on\",\"kind\":\"deal\",\"company\":{\"quote\":\"Kestrel\"}},\"fields\":{\"stage\":null,\"amount\":{\"value\":132000,\"quote\":\"one hundred thirty-two thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -2682,9 +2682,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2693,7 +2693,7 @@
           }
         },
         {
-          "key": "4a95023cbb2b3d411054f80d5a5cbfd72fcf9885624e04abd32a9f6c1d6921ec",
+          "key": "2411260cb4fed17bfcfb6936b89e80273a33dfd6154488eced79d8c49e8eb489",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2737,7 +2737,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Bruno Underhill\",\"fields\":{\"title\":{\"value\":\"Schedule the kickoff with Bruno Underhill\",\"quote\":\"Schedule the kickoff with Bruno Underhill\"},\"dueDate\":{\"value\":\"2026-12-14\",\"quote\":\"December 14th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Bruno Underhill\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Schedule the kickoff with Bruno Underhill\",\"quote\":\"Schedule the kickoff with Bruno Underhill\"},\"dueDate\":{\"value\":\"2026-12-14\",\"quote\":\"December 14th\"}}}]}"
                         }
                       }
                     ]
@@ -2746,9 +2746,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3615,
+                "prompt_tokens": 2015,
                 "completion_tokens": 136,
-                "total_tokens": 3751,
+                "total_tokens": 2151,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2757,7 +2757,7 @@
           }
         },
         {
-          "key": "d5f7338fffd50f846259d239b3d212a43c753231166aacc99645b5085f38fed8",
+          "key": "070db2f7cd959d8e144bf4fd9b6220683b17a397c7888a91e3a0b02058e75645",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2810,9 +2810,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3617,
+                "prompt_tokens": 2017,
                 "completion_tokens": 60,
-                "total_tokens": 3677,
+                "total_tokens": 2077,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -2827,7 +2827,7 @@
       "description": "Sigma Tooling plans another expansion; a new operations director and a site visit",
       "interactions": [
         {
-          "key": "f1d016198e8e275fd4ef5f08dddd62334cd7d5b0d29d7bc3d7b850595cde518b",
+          "key": "5113503bc9f139a529a77e45cd1bca7c516dc3b8fbace11a1f24d1c767a57832",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2871,7 +2871,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Sigma Tooling\",\"fields\":{\"body\":{\"value\":\"They want to expand again next quarter, probably another five work cells.\",\"quote\":\"wants to expand again next quarter, probably another five work cells\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Sigma Tooling\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"They want to expand again next quarter, probably another five work cells.\",\"quote\":\"wants to expand again next quarter, probably another five work cells\"}}}]}"
                         }
                       }
                     ]
@@ -2880,9 +2880,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2891,7 +2891,7 @@
           }
         },
         {
-          "key": "984d3f2931b2eeb2fac208a2b6ef5d021aa5294618031875861941dc0bc6edb3",
+          "key": "6365a09e3598315951ac90e49cefda63d8fc6cdcbc69f17c4404d4e3411dead7",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2935,7 +2935,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":null,\"fields\":{\"name\":{\"value\":\"Paloma Ruiz\",\"quote\":\"Paloma Ruiz\"},\"title\":{\"value\":\"operations director\",\"quote\":\"operations director\"},\"company\":{\"value\":\"Sigma Tooling\",\"quote\":\"Sigma\"},\"email\":null,\"phone\":{\"value\":\"555-0143\",\"quote\":\"555-0143\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Paloma Ruiz\",\"quote\":\"Paloma Ruiz\"},\"title\":{\"value\":\"operations director\",\"quote\":\"operations director\"},\"company\":{\"value\":\"Sigma\",\"quote\":\"Sigma\"},\"email\":null,\"phone\":{\"value\":\"555-0143\",\"quote\":\"555-0143\"}}}]}"
                         }
                       }
                     ]
@@ -2944,9 +2944,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3619,
+                "prompt_tokens": 2019,
                 "completion_tokens": 136,
-                "total_tokens": 3755,
+                "total_tokens": 2155,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -2955,7 +2955,7 @@
           }
         },
         {
-          "key": "bd3dbb9d38fd83b8af3fd5f391cc66a0d8c360f507b31e6f7d76e893d6102274",
+          "key": "524601b087604ad5ded5a35494f95e6c065d0336bf92cb3229da4974b852e5cc",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -2999,7 +2999,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Sigma Tooling\",\"fields\":{\"title\":{\"value\":\"Book a site visit with Paloma Ruiz\",\"quote\":\"Book a site visit at Sigma with Paloma\"},\"dueDate\":{\"value\":\"2026-12-09\",\"quote\":\"Wednesday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Sigma\",\"kind\":\"company\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Book a site visit with Paloma Ruiz\",\"quote\":\"Book a site visit at Sigma with Paloma\"},\"dueDate\":{\"value\":\"2026-12-09\",\"quote\":\"Wednesday\"}}}]}"
                         }
                       }
                     ]
@@ -3008,9 +3008,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3618,
+                "prompt_tokens": 2018,
                 "completion_tokens": 136,
-                "total_tokens": 3754,
+                "total_tokens": 2154,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3019,7 +3019,7 @@
           }
         },
         {
-          "key": "ed32c3b3d5c3652b1e9f3a329a6680c6fd4b98a5efd2f36c4930a896fcb3efe3",
+          "key": "48ac653edb94fd134a3631d83efe25b43521a62fa3eb61345c5fb2d491719876",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3072,9 +3072,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3619,
+                "prompt_tokens": 2019,
                 "completion_tokens": 60,
-                "total_tokens": 3679,
+                "total_tokens": 2079,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -3089,7 +3089,7 @@
       "description": "Zenith Packaging's pilot cut downtime; a business case deck for Erick Nilsson",
       "interactions": [
         {
-          "key": "a1ce958c508e83be7cbd18acb3a2e3dddafecf5b02f55827931c3c3da53f913b",
+          "key": "d48855681d14e204b23fb96721145221b8622048c34c507a0c133b2ad5a1862b",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3133,7 +3133,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Zenith Packaging\",\"fields\":{\"body\":{\"value\":\"The pilot cut downtime by twelve percent, according to Erick Nilsson.\",\"quote\":\"the pilot cut downtime by twelve percent\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Zenith Packaging\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"The pilot cut downtime by twelve percent, according to Erick Nilsson.\",\"quote\":\"the pilot cut downtime by twelve percent\"}}}]}"
                         }
                       }
                     ]
@@ -3142,9 +3142,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3631,
+                "prompt_tokens": 2031,
                 "completion_tokens": 136,
-                "total_tokens": 3767,
+                "total_tokens": 2167,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3153,7 +3153,7 @@
           }
         },
         {
-          "key": "c384a721bba9c2f5f9971a689dff932ee29084f31a0307253ab227da7c0b83b3",
+          "key": "f4d44e19b5f41817cee9ece20225dc285b6c281305d023881384e610645be03f",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3197,7 +3197,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Mireille Kowalski\",\"fields\":{\"title\":{\"value\":\"Invite Mireille Kowalski to the next call\",\"quote\":\"bring their head of finance, Mireille Kowalski, into the next call\"},\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Mireille Kowalski\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Invite Mireille Kowalski to the next call\",\"quote\":\"bring their head of finance, Mireille Kowalski, into the next call\"},\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -3206,9 +3206,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3620,
+                "prompt_tokens": 2020,
                 "completion_tokens": 136,
-                "total_tokens": 3756,
+                "total_tokens": 2156,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3217,7 +3217,7 @@
           }
         },
         {
-          "key": "afab6d5237848efa88913cbf2ebe90bcc1c170d36a8a9337557a3fdfa5540bf3",
+          "key": "60feb5ad93b8b0601e20dc0694bb591ccc37229b01513fdf4a26a15479267d92",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3261,7 +3261,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Erick Nilsson\",\"fields\":{\"text\":{\"value\":\"Send Erick Nilsson a business case deck\",\"quote\":\"a business case deck\"},\"counterpart\":{\"value\":\"Erick Nilsson\",\"quote\":\"Erick Nilsson\"},\"dueDate\":{\"value\":\"2026-12-15\",\"quote\":\"by December 15th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Erick Nilsson\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Erick Nilsson a business case deck\",\"quote\":\"a business case deck\"},\"counterpart\":{\"value\":\"Erick Nilsson\",\"quote\":\"Erick Nilsson\"},\"dueDate\":{\"value\":\"2026-12-15\",\"quote\":\"by December 15th\"}}}]}"
                         }
                       }
                     ]
@@ -3270,9 +3270,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3281,7 +3281,7 @@
           }
         },
         {
-          "key": "fd2775537176581a00bd30ede64b14928b74601269a3402184eb154b8abb0d3c",
+          "key": "deada9a3cbbb232476f2c0d78f88745f1cb791a81fc55dab2c85457193f3bb95",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3334,9 +3334,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3613,
+                "prompt_tokens": 2013,
                 "completion_tokens": 60,
-                "total_tokens": 3673,
+                "total_tokens": 2073,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -3351,7 +3351,7 @@
       "description": "Nite Security Group wants a two-site badge analytics pilot",
       "interactions": [
         {
-          "key": "9c1a348d417677eff4a23957d66f575c7616d57f5496427b175bed5b326efabe",
+          "key": "abcc56d9543cd48b4797209e488986e309b0b092c98553ddd7c006d5280580b6",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3395,7 +3395,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Nite Security Group\",\"fields\":{\"body\":{\"value\":\"Sarah Cohen wants to pilot badge analytics at two sites.\",\"quote\":\"wants to pilot badge analytics at two sites\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Nite Security Group\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Sarah Cohen wants to pilot badge analytics at two sites.\",\"quote\":\"wants to pilot badge analytics at two sites\"}}}]}"
                         }
                       }
                     ]
@@ -3404,9 +3404,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3628,
+                "prompt_tokens": 2028,
                 "completion_tokens": 136,
-                "total_tokens": 3764,
+                "total_tokens": 2164,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3415,7 +3415,7 @@
           }
         },
         {
-          "key": "f1f6ce135c8f8504c499927c43ebd2c384efce5aa6380a27510990f1312cc08b",
+          "key": "70abecbacc48f1001480cdf3f34fa9814f461a6b2ba8f1e97a3fcc447118d527",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3459,7 +3459,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Sarah Cohen\",\"fields\":{\"title\":{\"value\":\"Send Sarah Cohen a pilot quote for $15,000\",\"quote\":\"Send Sarah Cohen a pilot quote for fifteen thousand\"},\"dueDate\":{\"value\":\"2026-12-10\",\"quote\":\"by Thursday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Sarah Cohen\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Sarah Cohen a pilot quote for $15,000\",\"quote\":\"Send Sarah Cohen a pilot quote for fifteen thousand\"},\"dueDate\":{\"value\":\"2026-12-10\",\"quote\":\"by Thursday\"}}}]}"
                         }
                       }
                     ]
@@ -3468,9 +3468,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3479,7 +3479,7 @@
           }
         },
         {
-          "key": "5b288c8b7e4abc6deeda6b733cd33e0c4a5aabe79f920819cb85c53544be3b25",
+          "key": "38ab69ddb2ff799a228d2a84d74617b895ec4d02085f91893a6e576f68f2662a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3532,9 +3532,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3622,
+                "prompt_tokens": 2022,
                 "completion_tokens": 60,
-                "total_tokens": 3682,
+                "total_tokens": 2082,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -3543,7 +3543,7 @@
           }
         },
         {
-          "key": "7dc46e18176cf436c34f0549fa1bcc0c89bf574ad454ba4ab91da8b9f1a43573",
+          "key": "60a11ace0c25f1cb270710b2df78fffa836e27495879e2870ae12145f0e0cb1c",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3587,7 +3587,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Nite Security Group\",\"fields\":{\"title\":{\"value\":\"Complete the security questionnaire\",\"quote\":\"our security questionnaire\"},\"dueDate\":{\"value\":\"2026-12-18\",\"quote\":\"by December 18th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Nite Security\",\"kind\":\"company\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Complete the security questionnaire\",\"quote\":\"our security questionnaire\"},\"dueDate\":{\"value\":\"2026-12-18\",\"quote\":\"by December 18th\"}}}]}"
                         }
                       }
                     ]
@@ -3596,9 +3596,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3613,7 +3613,7 @@
       "description": "Right Fabrication's starter plan advances at a lower amount and a later close",
       "interactions": [
         {
-          "key": "86da8812d18a0065e7db2882337f8c1ef8a0df5dd074adf1a742745fc32e81fb",
+          "key": "6ca8507fbbd186febe150e8265d2edb1f0ed2316dbce729ffcb47ddf0e066b13",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3657,7 +3657,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Right Fabrication\",\"fields\":{\"body\":{\"value\":\"Santiago Holm liked the demo.\",\"quote\":\"Santiago Holm, liked the demo\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Right Fabrication\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Santiago Holm liked the demo.\",\"quote\":\"Santiago Holm, liked the demo\"}}}]}"
                         }
                       }
                     ]
@@ -3666,9 +3666,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3677,7 +3677,7 @@
           }
         },
         {
-          "key": "16e0b0affa1524be2a97cd76bdbceaea8ea765d78d8b8999a00fe0e62af8ee8e",
+          "key": "8714fb582321cb8b24cbae1906afe5b8786a1124570a9945234743e1820cd456",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3721,7 +3721,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Right Fabrication - Starter plan\",\"fields\":{\"stage\":{\"value\":\"decision maker bought in\",\"quote\":\"decision maker bought in\"},\"amount\":{\"value\":78000,\"quote\":\"seventy-eight thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Right Fabrication starter plan\",\"kind\":\"deal\",\"company\":{\"quote\":\"Right Fabrication\"}},\"fields\":{\"stage\":{\"value\":\"decision maker bought in\",\"quote\":\"decision maker bought in\"},\"amount\":{\"value\":78000,\"quote\":\"seventy-eight thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -3730,9 +3730,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3629,
+                "prompt_tokens": 2029,
                 "completion_tokens": 136,
-                "total_tokens": 3765,
+                "total_tokens": 2165,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3741,7 +3741,7 @@
           }
         },
         {
-          "key": "895e8edeb5df6b2ea935a2dd0cf04e0976183fb99b87c5f438bbf40263fece31",
+          "key": "b2a8888d18ab9d9f9cac1e396029bce6011b04437d9f5144828e73524cd774f4",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3785,7 +3785,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Right Fabrication - Starter plan\",\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2026-12-22\",\"quote\":\"December 22nd\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Right Fabrication\",\"kind\":\"deal\",\"company\":null},\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2026-12-22\",\"quote\":\"December 22nd\"}}}]}"
                         }
                       }
                     ]
@@ -3794,9 +3794,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3623,
+                "prompt_tokens": 2023,
                 "completion_tokens": 136,
-                "total_tokens": 3759,
+                "total_tokens": 2159,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3805,7 +3805,7 @@
           }
         },
         {
-          "key": "24ec59d604b2dcf35cbaed4d482868b754a6b2b0310233f612324dee81e2a1f0",
+          "key": "5c33efbcc7c61eab1537b8405f2bfb2eeef28204ddbeff776a0ed220a3dca738",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3858,9 +3858,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 60,
-                "total_tokens": 3684,
+                "total_tokens": 2084,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -3875,7 +3875,7 @@
       "description": "Pier Logistics' expansion goes to contract; Aisha Khan at Peer Logistics needs a call",
       "interactions": [
         {
-          "key": "64a9324e07679bfdb6890e17fcb75b0c97db853239f9ea475dac6d17a57d8bc2",
+          "key": "976ac0d1630c8d23df586a7b709e01217121caa61237ad2ff707279d8a0eb943",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3919,7 +3919,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Pier Logistics - Expansion\",\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":null,\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"expansion\",\"kind\":\"deal\",\"company\":{\"quote\":\"Pier Logistics\"}},\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":null,\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -3928,9 +3928,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3630,
+                "prompt_tokens": 2030,
                 "completion_tokens": 136,
-                "total_tokens": 3766,
+                "total_tokens": 2166,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -3939,7 +3939,7 @@
           }
         },
         {
-          "key": "415afc16c6b132035973b907e396e342c7b8cf2a9e9a6043c04ae29b4f0c1b38",
+          "key": "4287d92a016cbdb4cefcbfb66a6d431b3a778c51ece60d4b9b60c16619d2bac7",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -3983,7 +3983,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Pier Logistics - Expansion\",\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-29\",\"quote\":\"January 29th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"expansion\",\"kind\":\"deal\",\"company\":{\"quote\":\"Pier\"}},\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-29\",\"quote\":\"January 29th\"}}}]}"
                         }
                       }
                     ]
@@ -3992,9 +3992,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4003,7 +4003,7 @@
           }
         },
         {
-          "key": "9bc3bd85ca689de4a91213020ddf4100fae4fa381489f00a21498ee9b8432492",
+          "key": "e1a1327982f2d2a3bdc8e914907421792c15e2b887f1f03a9a56c518c29a7f3a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4047,7 +4047,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Aisha Khan\",\"fields\":{\"title\":{\"value\":\"Call Aisha Khan about the invoice dispute\",\"quote\":\"call Aisha Khan over at Peer Logistics about their invoice dispute\"},\"dueDate\":{\"value\":\"2026-12-11\",\"quote\":\"tomorrow\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Aisha Khan\",\"kind\":\"contact\",\"company\":{\"quote\":\"Peer Logistics\"}},\"fields\":{\"title\":{\"value\":\"Call Aisha Khan about the invoice dispute\",\"quote\":\"call Aisha Khan over at Peer Logistics about their invoice dispute\"},\"dueDate\":{\"value\":\"2026-12-11\",\"quote\":\"tomorrow\"}}}]}"
                         }
                       }
                     ]
@@ -4056,9 +4056,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3623,
+                "prompt_tokens": 2023,
                 "completion_tokens": 136,
-                "total_tokens": 3759,
+                "total_tokens": 2159,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4067,7 +4067,7 @@
           }
         },
         {
-          "key": "b84a10c76a57c59c7aa4ef24ba83698eb2ce4c00123f2022c09705a157f80ae6",
+          "key": "43d774095b04ffc0df14dc7389b0ed45d198cfe2f7d711536076a75ea03aae19",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4111,7 +4111,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":\"Ingrid Dalgaard\",\"fields\":{\"name\":{\"value\":\"Ingrid Dalgaard\",\"quote\":\"Ingrid Dalgaard\"},\"title\":null,\"company\":null,\"email\":{\"value\":\"ingrid.dalgaard@pier-logistics.example\",\"quote\":\"ingrid.dalgaard@pier-logistics.example\"},\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Ingrid Dalgaard\",\"quote\":\"Ingrid Dalgaard\"},\"title\":null,\"company\":null,\"email\":{\"value\":\"ingrid.dalgaard@pier-logistics.example\",\"quote\":\"ingrid.dalgaard@pier-logistics.example\"},\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -4120,9 +4120,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3620,
+                "prompt_tokens": 2020,
                 "completion_tokens": 136,
-                "total_tokens": 3756,
+                "total_tokens": 2156,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4137,7 +4137,7 @@
       "description": "Marsh Medical wants a cold storage monitoring pilot",
       "interactions": [
         {
-          "key": "29057f4796aa792957be7975d01e625b94f137d6a54b3aea1c3070a79402c571",
+          "key": "71f90a13639c340fc200b4f12605ed440b98c1f8e979f8be9429fc570d28fbbd",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4181,7 +4181,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Marsh Medical\",\"fields\":{\"body\":{\"value\":\"Mary Allen wants a cold storage monitoring pilot.\",\"quote\":\"wants a cold storage monitoring pilot\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Marsh Medical\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Mary Allen wants a cold storage monitoring pilot.\",\"quote\":\"wants a cold storage monitoring pilot\"}}}]}"
                         }
                       }
                     ]
@@ -4190,9 +4190,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4201,7 +4201,7 @@
           }
         },
         {
-          "key": "e89d3e0d844b642e08f43daf54831fb698da36a000d84652ad610e7f487528bc",
+          "key": "da0546ba75e77e12e04e0b852430864299db2d2e5856e667f44a8cce66a7ce55",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4245,7 +4245,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Marsh Medical\",\"fields\":{\"body\":{\"value\":\"The pilot would cover eight clinics for ninety days at $9,600.\",\"quote\":\"pilot would cover eight clinics for ninety days at nine thousand six hundred dollars\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Marsh\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"The pilot would cover eight clinics for ninety days at $9,600.\",\"quote\":\"pilot would cover eight clinics for ninety days at nine thousand six hundred dollars\"}}}]}"
                         }
                       }
                     ]
@@ -4254,9 +4254,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4265,7 +4265,7 @@
           }
         },
         {
-          "key": "39bec117220d392034733934dfa8564324d2183a3138c90149c5d6a6fd294118",
+          "key": "5ff9eca56f1f6a7a0ea148825a09f24fc6ae5c4b0336cfbceb7a4564dbe4a65e",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4309,7 +4309,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Mary Allen\",\"fields\":{\"text\":{\"value\":\"Send Mary Allen the pilot agreement\",\"quote\":\"send the pilot agreement\"},\"counterpart\":{\"value\":\"Mary Allen\",\"quote\":\"Mary Allen\"},\"dueDate\":{\"value\":\"2026-12-18\",\"quote\":\"a week from today\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Mary Allen\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Mary Allen the pilot agreement\",\"quote\":\"send the pilot agreement\"},\"counterpart\":{\"value\":\"Mary Allen\",\"quote\":\"Mary Allen\"},\"dueDate\":{\"value\":\"2026-12-18\",\"quote\":\"a week from today\"}}}]}"
                         }
                       }
                     ]
@@ -4318,9 +4318,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3617,
+                "prompt_tokens": 2017,
                 "completion_tokens": 136,
-                "total_tokens": 3753,
+                "total_tokens": 2153,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4329,7 +4329,7 @@
           }
         },
         {
-          "key": "9cc4d45f7ae7e34cd88c2f8f5de7431a2e975b8aaa74e66d0cd99ac1210efdba",
+          "key": "db5d1a1c335b31e76f3b5c604c64a4cc9db2ab473fd05389b9ecb953e9fa4d9f",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4382,9 +4382,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 60,
-                "total_tokens": 3676,
+                "total_tokens": 2076,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -4399,7 +4399,7 @@
       "description": "Coastal Power Systems countersigns the site rollout",
       "interactions": [
         {
-          "key": "affc4ce629f52202b80c784a39f42854cc7c5d86f0f1c1ffa2eaff5b587df0ce",
+          "key": "4af66df56254a40fa83f38a6fb98650dc8ce25eeabd3240db2d195db135db059",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4443,7 +4443,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Coastal Power Systems - Site rollout\",\"fields\":{\"stage\":{\"value\":\"closed won\",\"quote\":\"closed won\"},\"amount\":null,\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"site rollout\",\"kind\":\"deal\",\"company\":{\"quote\":\"Coastal Power Systems\"}},\"fields\":{\"stage\":{\"value\":\"closed won\",\"quote\":\"closed won\"},\"amount\":null,\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -4452,9 +4452,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3632,
+                "prompt_tokens": 2032,
                 "completion_tokens": 136,
-                "total_tokens": 3768,
+                "total_tokens": 2168,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4463,7 +4463,7 @@
           }
         },
         {
-          "key": "d3a282e16074773083855ae54dab7169bf877e03589fec9f18ccce17f20267bf",
+          "key": "a611db5722591a49980c9c897dcf83a937d5e864211aa6fec0d9c8e64a062aad",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4507,7 +4507,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Coastal Power Systems - Site rollout\",\"fields\":{\"stage\":null,\"amount\":{\"value\":81500,\"quote\":\"eighty-one thousand five hundred\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Coastal rollout\",\"kind\":\"deal\",\"company\":{\"quote\":\"Coastal\"}},\"fields\":{\"stage\":null,\"amount\":{\"value\":81500,\"quote\":\"eighty-one thousand five hundred\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -4516,9 +4516,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3629,
+                "prompt_tokens": 2029,
                 "completion_tokens": 136,
-                "total_tokens": 3765,
+                "total_tokens": 2165,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4527,7 +4527,7 @@
           }
         },
         {
-          "key": "26ed222bfdb9faffeb086a461572add7480a0095cec368c47d04e06f1c89b9c9",
+          "key": "3156fe0a486a7a96402b260864153cbefff1f13651bc9b1e4c6e61435c8c0cb5",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4571,7 +4571,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Allen Foster\",\"fields\":{\"text\":{\"value\":\"Send Allen Foster an onboarding plan\",\"quote\":\"an onboarding plan\"},\"counterpart\":{\"value\":\"Allen Foster\",\"quote\":\"Allen Foster\"},\"dueDate\":{\"value\":\"2026-12-18\",\"quote\":\"by the end of the week\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Allen Foster\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Allen Foster an onboarding plan\",\"quote\":\"an onboarding plan\"},\"counterpart\":{\"value\":\"Allen Foster\",\"quote\":\"Allen Foster\"},\"dueDate\":{\"value\":\"2026-12-18\",\"quote\":\"by the end of the week\"}}}]}"
                         }
                       }
                     ]
@@ -4580,9 +4580,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3617,
+                "prompt_tokens": 2017,
                 "completion_tokens": 136,
-                "total_tokens": 3753,
+                "total_tokens": 2153,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4591,7 +4591,7 @@
           }
         },
         {
-          "key": "12b70c0425e7969d6c6b3d410abc68e4eafe88e0819f7cdaac9070f4f4516aec",
+          "key": "6eee05df8801f478c64c0bfa6dd3bb753752b4fbf0d1364ec4462937d53ea88d",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4644,9 +4644,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3605,
+                "prompt_tokens": 2005,
                 "completion_tokens": 60,
-                "total_tokens": 3665,
+                "total_tokens": 2065,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -4661,7 +4661,7 @@
       "description": "Juniper Bay Telecom's pilot goes to contract; a new title for Geoffrey Walsh",
       "interactions": [
         {
-          "key": "afab78066ea865a539ce5b0738bb0a497f19c0cf285e34f836951a1ead221c9b",
+          "key": "2a386127c8047c86086e76440365f0608e9af6f127d6be3be9392745b996c8c9",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4705,7 +4705,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Juniper Bay Telecom\",\"fields\":{\"body\":{\"value\":\"Geoffrey Walsh is happy with the pilot results.\",\"quote\":\"is happy with the results\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Juniper Bay Telecom\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Geoffrey Walsh is happy with the pilot results.\",\"quote\":\"is happy with the results\"}}}]}"
                         }
                       }
                     ]
@@ -4714,9 +4714,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4725,7 +4725,7 @@
           }
         },
         {
-          "key": "1811045da4b892343dab0105211cc9c880c7591e11341a93536e949c6fd7bc23",
+          "key": "7be1887d51c02a1060c039c6c1301776ed880536d3fdc7d5240963f958d08393",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4769,7 +4769,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Juniper Bay Telecom - Pilot program\",\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":{\"value\":26000,\"quote\":\"twenty-six thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Juniper Bay pilot\",\"kind\":\"deal\",\"company\":{\"quote\":\"Juniper Bay\"}},\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":{\"value\":26000,\"quote\":\"twenty-six thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -4778,9 +4778,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3622,
+                "prompt_tokens": 2022,
                 "completion_tokens": 136,
-                "total_tokens": 3758,
+                "total_tokens": 2158,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4789,7 +4789,7 @@
           }
         },
         {
-          "key": "5abafd9df30f4d15f11a3fdf13e52a681998aa507f14a629d58fe7c13298bfde",
+          "key": "391de6c6100cf4f306b7ba4bcd559352c486c36bcdf2518bdba0c2f6da28ade3",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4833,7 +4833,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Juniper Bay Telecom - Pilot program\",\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2026-12-31\",\"quote\":\"December 31st\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Juniper Bay pilot\",\"kind\":\"deal\",\"company\":{\"quote\":\"Juniper Bay\"}},\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2026-12-31\",\"quote\":\"December 31st\"}}}]}"
                         }
                       }
                     ]
@@ -4842,9 +4842,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3614,
+                "prompt_tokens": 2014,
                 "completion_tokens": 136,
-                "total_tokens": 3750,
+                "total_tokens": 2150,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4853,7 +4853,7 @@
           }
         },
         {
-          "key": "9f60cc649d6fc78b07a860077ac4657434e6d98476c48f153e7a43146539982a",
+          "key": "8e155485f7bb8f0f3a39d8cfe4444fdf7629ffcd376f681ff84d996c38ef3da1",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4897,7 +4897,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":\"Geoffrey Walsh\",\"fields\":{\"name\":{\"value\":\"Geoffrey Walsh\",\"quote\":\"Geoffrey Walsh\"},\"title\":{\"value\":\"director of supply chain\",\"quote\":\"director of supply chain\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Geoffrey Walsh\",\"quote\":\"Geoffrey Walsh\"},\"title\":{\"value\":\"director of supply chain\",\"quote\":\"director of supply chain\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -4906,9 +4906,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -4917,7 +4917,7 @@
           }
         },
         {
-          "key": "712a2e53d2f2ad7ba6a34af81b4d51640b69ebc3d1a39cfcccd5a77be5200035",
+          "key": "e5928ca2f5597e7850e5f8643c0402a77736cf588e126e235595da818964ba31",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -4970,9 +4970,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3607,
+                "prompt_tokens": 2007,
                 "completion_tokens": 60,
-                "total_tokens": 3667,
+                "total_tokens": 2067,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -4987,7 +4987,7 @@
       "description": "Tidewater Biotech's expansion is in legal review and phased; a cold room walkthrough",
       "interactions": [
         {
-          "key": "34e5657a4b75e62807c3e97a847cb5a9110888c90592a79cd502ce906d3dfbcf",
+          "key": "1ec9dc02617b38a77de04e40e5755a299bf8eafdb063d0da3fe2aad56859ed58",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5031,7 +5031,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Tidewater Biotech\",\"fields\":{\"body\":{\"value\":\"Legal is reviewing the expansion paperwork, according to Maren Lindqvist.\",\"quote\":\"legal is reviewing the expansion paperwork now\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Tidewater Biotech\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Legal is reviewing the expansion paperwork, according to Maren Lindqvist.\",\"quote\":\"legal is reviewing the expansion paperwork now\"}}}]}"
                         }
                       }
                     ]
@@ -5040,9 +5040,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5051,7 +5051,7 @@
           }
         },
         {
-          "key": "7adc6bef71668daa581dc3ae9afe2e63d8799123421529a73c6311085a899ba3",
+          "key": "f057769265a8215075374f5c31fdd9611df232c5552d681d3a2090884edced8e",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5095,7 +5095,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Tidewater Biotech\",\"fields\":{\"body\":{\"value\":\"They want to phase the expansion: the first phase is $90,000 and the rest comes next year.\",\"quote\":\"the first phase is ninety thousand and the rest comes next year\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Tidewater\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"They want to phase the expansion: the first phase is $90,000 and the rest comes next year.\",\"quote\":\"the first phase is ninety thousand and the rest comes next year\"}}}]}"
                         }
                       }
                     ]
@@ -5104,9 +5104,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5115,7 +5115,7 @@
           }
         },
         {
-          "key": "6f9c5d7fea96cdc285fb538d5e91b37077c726d1e2fe005ecbc8177c3f5e7177",
+          "key": "82f0a8b9fa4c307b3021d74c3bcc9bf015cdba80ae31b1af29838bd1fb6df80d",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5159,7 +5159,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Brian Reilly\",\"fields\":{\"title\":{\"value\":\"Walk Brian Reilly through the cold rooms\",\"quote\":\"a walkthrough of the cold rooms\"},\"dueDate\":{\"value\":\"2026-11-23\",\"quote\":\"on Monday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Brian Reilly\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Walk Brian Reilly through the cold rooms\",\"quote\":\"a walkthrough of the cold rooms\"},\"dueDate\":{\"value\":\"2026-11-23\",\"quote\":\"on Monday\"}}}]}"
                         }
                       }
                     ]
@@ -5168,9 +5168,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3622,
+                "prompt_tokens": 2022,
                 "completion_tokens": 136,
-                "total_tokens": 3758,
+                "total_tokens": 2158,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5185,7 +5185,7 @@
       "description": "Quarry Lane Media's analytics add-on qualifies; paperwork to Shawn Murphy",
       "interactions": [
         {
-          "key": "1d114978047b98d2ca163ab0051f5eff9c180ccb52fe9a7acece2a10ba2c5b1e",
+          "key": "41355c86a43a47aec4a84000977ae7a186e3bce79c76e25a11a3df286ea2209e",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5229,7 +5229,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Quarry Lane Media\",\"fields\":{\"body\":{\"value\":\"Priya Nair wants the analytics add-on live before their spring campaign.\",\"quote\":\"wants the analytics add-on live before their spring campaign\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Quarry Lane Media\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Priya Nair wants the analytics add-on live before their spring campaign.\",\"quote\":\"wants the analytics add-on live before their spring campaign\"}}}]}"
                         }
                       }
                     ]
@@ -5238,9 +5238,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3629,
+                "prompt_tokens": 2029,
                 "completion_tokens": 136,
-                "total_tokens": 3765,
+                "total_tokens": 2165,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5249,7 +5249,7 @@
           }
         },
         {
-          "key": "4a95a2b92f775cbd86554b6165753498f5f8c77ccd12773c1892d039c2ab405f",
+          "key": "8260e161e63a85e1f1f662d1aceb1f58bee53d058b040a6d62ec8137e2c4674b",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5293,7 +5293,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Quarry Lane Media - Analytics add-on\",\"fields\":{\"stage\":{\"value\":\"qualified to buy\",\"quote\":\"qualified to buy\"},\"amount\":{\"value\":7500,\"quote\":\"seven thousand five hundred\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Quarry Lane analytics add-on\",\"kind\":\"deal\",\"company\":{\"quote\":\"Quarry Lane\"}},\"fields\":{\"stage\":{\"value\":\"qualified to buy\",\"quote\":\"qualified to buy\"},\"amount\":{\"value\":7500,\"quote\":\"seven thousand five hundred\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -5302,9 +5302,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3632,
+                "prompt_tokens": 2032,
                 "completion_tokens": 136,
-                "total_tokens": 3768,
+                "total_tokens": 2168,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5313,7 +5313,7 @@
           }
         },
         {
-          "key": "04c9ca6be1155ab76e71b7df5637ec24c55330c5ff9dd2040d7b625a3c95a772",
+          "key": "1650e1db1aea0ead4ea042a27ea04731a92ef066699676e9e689bba080b4bd43",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5357,7 +5357,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Shawn Murphy\",\"fields\":{\"title\":{\"value\":\"Send Shawn Murphy the order form\",\"quote\":\"Send him the order form\"},\"dueDate\":{\"value\":\"2026-11-24\",\"quote\":\"by Tuesday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Shawn Murphy\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Shawn Murphy the order form\",\"quote\":\"Send him the order form\"},\"dueDate\":{\"value\":\"2026-11-24\",\"quote\":\"by Tuesday\"}}}]}"
                         }
                       }
                     ]
@@ -5366,9 +5366,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5377,7 +5377,7 @@
           }
         },
         {
-          "key": "ae474d8c6ba377c1fed035788cda250b02d6a453a385dfdac0116dce7dbdeb90",
+          "key": "e1096cd4abae3c700282b38bc0ab2f4c5d875e044c6ecb5760f11bd95010fdd0",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5421,7 +5421,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":\"Priya Nair\",\"fields\":{\"name\":{\"value\":\"Priya Nair\",\"quote\":\"Priya Nair\"},\"title\":{\"value\":\"managing director\",\"quote\":\"managing director\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Priya Nair\",\"quote\":\"Priya Nair\"},\"title\":{\"value\":\"managing director\",\"quote\":\"managing director\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -5430,9 +5430,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5447,7 +5447,7 @@
       "description": "Fernhill Education wants campus energy dashboards for twelve schools",
       "interactions": [
         {
-          "key": "3bb7c4120febfe36b916901c3c4021ea596d8947bb3b9c9aef593fdb2050473e",
+          "key": "fa51b11cd0f732161b0d8d2257feb09567e7852eb2f1acc573af8b9e05026b13",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5491,7 +5491,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Fernhill Education\",\"fields\":{\"body\":{\"value\":\"Interested in campus energy dashboards for twelve schools.\",\"quote\":\"interested in campus energy dashboards for twelve schools\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Fernhill Education\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Interested in campus energy dashboards for twelve schools.\",\"quote\":\"interested in campus energy dashboards for twelve schools\"}}}]}"
                         }
                       }
                     ]
@@ -5500,9 +5500,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3620,
+                "prompt_tokens": 2020,
                 "completion_tokens": 136,
-                "total_tokens": 3756,
+                "total_tokens": 2156,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5511,7 +5511,7 @@
           }
         },
         {
-          "key": "cfbda7dfab0c152147f34f8e53a1c791831717fbfae3a562739e037d81c9885e",
+          "key": "9daee40dcf14f20ae3f6d1c861c403a27e950a60e33e72a06571d1345259d1d5",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5555,7 +5555,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Steven Clarke\",\"fields\":{\"title\":{\"value\":\"Send Steven Clarke a proposal for their budget meeting\",\"quote\":\"needs a proposal\"},\"dueDate\":{\"value\":\"2026-12-09\",\"quote\":\"by December 9th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Steven Clarke\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Steven Clarke a proposal for their budget meeting\",\"quote\":\"needs a proposal\"},\"dueDate\":{\"value\":\"2026-12-09\",\"quote\":\"by December 9th\"}}}]}"
                         }
                       }
                     ]
@@ -5564,9 +5564,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3621,
+                "prompt_tokens": 2021,
                 "completion_tokens": 136,
-                "total_tokens": 3757,
+                "total_tokens": 2157,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5575,7 +5575,7 @@
           }
         },
         {
-          "key": "dd8ec16cfa560f938f4c713c8c727768cb08b53a6ec55e7683e51517145dfafe",
+          "key": "6f9638f42243e75d1dd7e30523f09885b840dcf52bb2492c88c5aa7eceebd376",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5619,7 +5619,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":null,\"fields\":{\"name\":{\"value\":\"Ama Mensah\",\"quote\":\"Ama Mensah\"},\"title\":{\"value\":\"IT lead\",\"quote\":\"IT lead\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Ama Mensah\",\"quote\":\"Ama Mensah\"},\"title\":{\"value\":\"IT lead\",\"quote\":\"IT lead\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -5628,9 +5628,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5639,7 +5639,7 @@
           }
         },
         {
-          "key": "ac84f1acf556dd5171285e97b74afc7bc10d65ec3bef61e0d0c4bb70a1287450",
+          "key": "499aac900077eff13d804a4260e506f9f0619bf07cbd2d8444262060520dfa2c",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5683,7 +5683,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Fernhill Education\",\"fields\":{\"body\":{\"value\":\"Quoting software only for now, not hardware.\",\"quote\":\"not quoting hardware yet, just the software\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Fernhill\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Quoting software only for now, not hardware.\",\"quote\":\"not quoting hardware yet, just the software\"}}}]}"
                         }
                       }
                     ]
@@ -5692,9 +5692,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5709,7 +5709,7 @@
       "description": "Copperleaf Retail reopens the starter plan it turned down in July",
       "interactions": [
         {
-          "key": "b912210b804217c92622443929f23da0b4a293f4328d664abf830c7035f7a125",
+          "key": "5e86e203f375924ba83cc90547bf9979b7fe69a3c41915d487ac0cec933f8dc7",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5753,7 +5753,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Copperleaf Retail\",\"fields\":{\"body\":{\"value\":\"Mohammed Hassan says they want to reopen the starter plan we lost in July.\",\"quote\":\"they want to reopen the starter plan we lost in July\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Copperleaf Retail\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Mohammed Hassan says they want to reopen the starter plan we lost in July.\",\"quote\":\"they want to reopen the starter plan we lost in July\"}}}]}"
                         }
                       }
                     ]
@@ -5762,9 +5762,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5773,7 +5773,7 @@
           }
         },
         {
-          "key": "79956f380e295d2039ea825c72eeaf34ba424fd0cedb82b98813592b7b7bd6fd",
+          "key": "3e4c2d4bd83c6ef3215b0065e93aa1eadb714bba888bb7ba9a2a02bc440e5208",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5817,7 +5817,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Copperleaf Retail - Starter plan\",\"fields\":{\"stage\":{\"value\":\"qualified to buy\",\"quote\":\"qualified to buy\"},\"amount\":{\"value\":12000,\"quote\":\"twelve thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Copperleaf starter plan\",\"kind\":\"deal\",\"company\":{\"quote\":\"Copperleaf\"}},\"fields\":{\"stage\":{\"value\":\"qualified to buy\",\"quote\":\"qualified to buy\"},\"amount\":{\"value\":12000,\"quote\":\"twelve thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -5826,9 +5826,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3620,
+                "prompt_tokens": 2020,
                 "completion_tokens": 136,
-                "total_tokens": 3756,
+                "total_tokens": 2156,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5837,7 +5837,7 @@
           }
         },
         {
-          "key": "dcf6e6f159519c247821a3683f8248f80e124989246254b6dc2c5747d6722f36",
+          "key": "8d0fccdb6b869a04a861123736dccf2afc7672d6cd35140b8346949e6521e0f2",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5881,7 +5881,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Mohammed Hassan\",\"fields\":{\"text\":{\"value\":\"Send Mohammed Hassan a new quote\",\"quote\":\"a new quote\"},\"counterpart\":{\"value\":\"Mohammed Hassan\",\"quote\":\"Mohammed Hassan\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"by the end of the month\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Mohammed Hassan\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Mohammed Hassan a new quote\",\"quote\":\"a new quote\"},\"counterpart\":{\"value\":\"Mohammed Hassan\",\"quote\":\"Mohammed Hassan\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"by the end of the month\"}}}]}"
                         }
                       }
                     ]
@@ -5890,9 +5890,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5907,7 +5907,7 @@
       "description": "Thistle Software stalls on the multi-year agreement",
       "interactions": [
         {
-          "key": "3d09b16d921958f54b87245996124f21fbc8bee04d3e5170f9360adf917490a2",
+          "key": "269ae35d7a001ff6e0ce2ac69b7c515ec7a11e16b4bc0f03515479f9a43dea66",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -5951,7 +5951,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Thistle Software\",\"fields\":{\"body\":{\"value\":\"Procurement hasn't signed the multi-year agreement yet, according to Marcus Eriksen.\",\"quote\":\"procurement hasn't signed yet\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Thistle Software\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Procurement hasn't signed the multi-year agreement yet, according to Marcus Eriksen.\",\"quote\":\"procurement hasn't signed yet\"}}}]}"
                         }
                       }
                     ]
@@ -5960,9 +5960,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -5971,7 +5971,7 @@
           }
         },
         {
-          "key": "91b8d5ccb82823e0e754a20a808419e476de186d7531155e1abe25e8e0bed7c8",
+          "key": "653daa8de45f3418dbd4125914b8192bc023f7062d7843ae4ee017a737d204ef",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6015,7 +6015,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Thistle Software - Multi-year agreement\",\"fields\":{\"stage\":{\"value\":\"decision maker bought in\",\"quote\":\"decision maker bought in\"},\"amount\":null,\"closeDate\":{\"value\":\"2026-12-16\",\"quote\":\"December 16th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Thistle\",\"kind\":\"deal\",\"company\":null},\"fields\":{\"stage\":{\"value\":\"decision maker bought in\",\"quote\":\"decision maker bought in\"},\"amount\":null,\"closeDate\":{\"value\":\"2026-12-16\",\"quote\":\"December 16th\"}}}]}"
                         }
                       }
                     ]
@@ -6024,9 +6024,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3625,
+                "prompt_tokens": 2025,
                 "completion_tokens": 136,
-                "total_tokens": 3761,
+                "total_tokens": 2161,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6035,7 +6035,7 @@
           }
         },
         {
-          "key": "750a21941f41f0d2d88ac756d84ac4afd73dc704616e53667e4bbb682427db6c",
+          "key": "de72878a871fa521238421fb1aaf4e51fea3244acf41662a760ef4c5e3a70d99",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6079,7 +6079,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Alan Foster\",\"fields\":{\"title\":{\"value\":\"Walk Alan Foster through the redlines\",\"quote\":\"walk through the redlines\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"on Monday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Alan Foster\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Walk Alan Foster through the redlines\",\"quote\":\"walk through the redlines\"},\"dueDate\":{\"value\":\"2026-11-30\",\"quote\":\"on Monday\"}}}]}"
                         }
                       }
                     ]
@@ -6088,9 +6088,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6099,7 +6099,7 @@
           }
         },
         {
-          "key": "f4002dae92565a2838efa541d23ba6acaf6f836818206a87c48302df420e72d9",
+          "key": "10515c378bc360b7aa271e7b4869135f723a00c83855c5d92581c165c843879c",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6152,9 +6152,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3605,
+                "prompt_tokens": 2005,
                 "completion_tokens": 60,
-                "total_tokens": 3665,
+                "total_tokens": 2065,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -6169,7 +6169,7 @@
       "description": "Lantern Hospitality expands guest messaging; references and a title change",
       "interactions": [
         {
-          "key": "91787a925719add0d7838b9429b1b70e5f806cf36c3d309079b08afd0548ec80",
+          "key": "10ccbabc3b1683864a5cc9a8f390d134fe1c85beefbdb7833fd6a9c69d42a3b0",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6213,7 +6213,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Lantern Hospitality\",\"fields\":{\"body\":{\"value\":\"They want to roll out guest messaging to six more hotels.\",\"quote\":\"wants to roll out guest messaging to six more hotels\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Lantern Hospitality\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"They want to roll out guest messaging to six more hotels.\",\"quote\":\"wants to roll out guest messaging to six more hotels\"}}}]}"
                         }
                       }
                     ]
@@ -6222,9 +6222,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3619,
+                "prompt_tokens": 2019,
                 "completion_tokens": 136,
-                "total_tokens": 3755,
+                "total_tokens": 2155,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6233,7 +6233,7 @@
           }
         },
         {
-          "key": "ed915a0c126cb6d326d3fac146c738822b1a03d4d161f2ee5521c91b8cec6e7f",
+          "key": "c589055086f2c234cc6261bc6547cfe0706b05697640344d6ec3ccd2d68d76aa",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6277,7 +6277,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Katherine Moore\",\"fields\":{\"title\":{\"value\":\"Send Katherine Moore references from two hotel groups\",\"quote\":\"references from two hotel groups\"},\"dueDate\":{\"value\":\"2026-12-04\",\"quote\":\"by Friday\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Katherine Moore\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Katherine Moore references from two hotel groups\",\"quote\":\"references from two hotel groups\"},\"dueDate\":{\"value\":\"2026-12-04\",\"quote\":\"by Friday\"}}}]}"
                         }
                       }
                     ]
@@ -6286,9 +6286,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6297,7 +6297,7 @@
           }
         },
         {
-          "key": "e6492f49102337be5a08e8563eef0574766ab31bf512f108af924732826660aa",
+          "key": "b9159562b92482bcedb444fda523fb0ddad1735ce098dd98120217e2151afd7c",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6341,7 +6341,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":\"Erik Nilsson\",\"fields\":{\"name\":{\"value\":\"Erik Nilsson\",\"quote\":\"Erik Nilsson\"},\"title\":{\"value\":\"supply chain director\",\"quote\":\"supply chain director\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Erik Nilsson\",\"quote\":\"Erik Nilsson\"},\"title\":{\"value\":\"supply chain director\",\"quote\":\"supply chain director\"},\"company\":null,\"email\":null,\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -6350,9 +6350,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6361,7 +6361,7 @@
           }
         },
         {
-          "key": "457cb8c6e4400f4b765ebb683f067bcb052f8d16e39ab80019235f88b4946aac",
+          "key": "7f067184da4ed4c814abfeeaadb05137190963e115969e584d9201f34511e60a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6405,7 +6405,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Lantern Hospitality\",\"fields\":{\"text\":{\"value\":\"Run a pricing workshop with Lantern Hospitality in January\",\"quote\":\"a pricing workshop with Lantern in January\"},\"counterpart\":null,\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Lantern\",\"kind\":\"company\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Run a pricing workshop with Lantern Hospitality in January\",\"quote\":\"a pricing workshop with Lantern in January\"},\"counterpart\":null,\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -6414,9 +6414,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6431,7 +6431,7 @@
       "description": "Granite State Builders drops the analytics add-on this year",
       "interactions": [
         {
-          "key": "d32e6611da5cb41e3017756fc0cd0d3600c51140289f92cfb517e4a5322e05ec",
+          "key": "cdb9f8ab3adff86688a4744038deb9fde50ca4b5561334398f9f5aab02a4991f",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6475,7 +6475,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Granite State Builders - Analytics add-on\",\"fields\":{\"stage\":{\"value\":\"closed lost\",\"quote\":\"closed lost\"},\"amount\":null,\"closeDate\":null}},{\"type\":\"note\",\"target\":\"Granite State Builders\",\"fields\":{\"body\":{\"value\":\"They're not going ahead with the analytics add-on this year.\",\"quote\":\"They're not going ahead with the analytics add-on this year\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"analytics add-on\",\"kind\":\"deal\",\"company\":{\"quote\":\"Granite State Builders\"}},\"fields\":{\"stage\":{\"value\":\"closed lost\",\"quote\":\"closed lost\"},\"amount\":null,\"closeDate\":null}},{\"type\":\"note\",\"target\":{\"quote\":\"Granite State Builders\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"They're not going ahead with the analytics add-on this year.\",\"quote\":\"They're not going ahead with the analytics add-on this year\"}}}]}"
                         }
                       }
                     ]
@@ -6484,9 +6484,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3631,
+                "prompt_tokens": 2031,
                 "completion_tokens": 212,
-                "total_tokens": 3843,
+                "total_tokens": 2243,
                 "completion_tokens_details": {
                   "reasoning_tokens": 60
                 }
@@ -6495,7 +6495,7 @@
           }
         },
         {
-          "key": "6861b97b16b571bdf1b2c711f76b38b6f9f0cbb204f56833d3c13ccc4fc1d402",
+          "key": "c71564f17815832b81122fc3653445315f86dd8d32aef85f9bde3783c121df2a",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6539,7 +6539,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Granite State Builders\",\"fields\":{\"body\":{\"value\":\"Their budget was moved to their new headquarters build, according to Shaun Murphy.\",\"quote\":\"budget got moved to their new headquarters build\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Granite\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Their budget was moved to their new headquarters build, according to Shaun Murphy.\",\"quote\":\"budget got moved to their new headquarters build\"}}}]}"
                         }
                       }
                     ]
@@ -6548,9 +6548,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3620,
+                "prompt_tokens": 2020,
                 "completion_tokens": 136,
-                "total_tokens": 3756,
+                "total_tokens": 2156,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6559,7 +6559,7 @@
           }
         },
         {
-          "key": "fd9063622fd73b77c61a0c4cf0a8348d4af0d5f3076e4733ab322a22200ec9b1",
+          "key": "73ab555fecb5b39a44c4ef9c1a68cdc7da0bb2f27903cec321966f278d19b872",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6603,7 +6603,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Shaun Murphy\",\"fields\":{\"title\":{\"value\":\"Check back with Shaun Murphy\",\"quote\":\"check back with Shaun Murphy\"},\"dueDate\":{\"value\":\"2027-03-01\",\"quote\":\"March 1st\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Shaun Murphy\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Check back with Shaun Murphy\",\"quote\":\"check back with Shaun Murphy\"},\"dueDate\":{\"value\":\"2027-03-01\",\"quote\":\"March 1st\"}}}]}"
                         }
                       }
                     ]
@@ -6612,9 +6612,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3615,
+                "prompt_tokens": 2015,
                 "completion_tokens": 136,
-                "total_tokens": 3751,
+                "total_tokens": 2151,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6629,7 +6629,7 @@
       "description": "First meeting with Verdant Agritech: three hundred farms and a pilot under twenty thousand",
       "interactions": [
         {
-          "key": "e9a8401277f64aec197a8257cf5b923b68b7bf882ca1d9a7259900973a03cc31",
+          "key": "bda303028fc8fbf23567aaecf74d70a5d3ec32e85c74d1a23093077cbfde1db0",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6673,7 +6673,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Verdant Agritech\",\"fields\":{\"body\":{\"value\":\"They run irrigation for about three hundred farms.\",\"quote\":\"They run irrigation for about three hundred farms\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Verdant Agritech\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"They run irrigation for about three hundred farms.\",\"quote\":\"They run irrigation for about three hundred farms\"}}}]}"
                         }
                       }
                     ]
@@ -6682,9 +6682,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6693,7 +6693,7 @@
           }
         },
         {
-          "key": "427613a50e372319ad11cf4420e1745f853e3060b381782b0f0b725bb852db61",
+          "key": "f853394559935bffb949ac6e7a15057dee8621487e4d0bb80bdd4b2f9fc8d9ee",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6737,7 +6737,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"target\":null,\"fields\":{\"name\":{\"value\":\"Elif Demir\",\"quote\":\"Elif Demir\"},\"title\":{\"value\":\"head of operations\",\"quote\":\"head of operations\"},\"company\":null,\"email\":{\"value\":\"elif.demir@verdant-agritech.example\",\"quote\":\"elif.demir@verdant-agritech.example\"},\"phone\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"contact\",\"fields\":{\"name\":{\"value\":\"Elif Demir\",\"quote\":\"Elif Demir\"},\"title\":{\"value\":\"head of operations\",\"quote\":\"head of operations\"},\"company\":null,\"email\":{\"value\":\"elif.demir@verdant-agritech.example\",\"quote\":\"elif.demir@verdant-agritech.example\"},\"phone\":null}}]}"
                         }
                       }
                     ]
@@ -6746,9 +6746,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6757,7 +6757,7 @@
           }
         },
         {
-          "key": "440b667d941434802497e023999c3e28dc9f1b904c910b60f553a19ccb004389",
+          "key": "c73ff5d060b381a9a4fac9ab492eca1de99f2e771e70c10fe7be67286fdbfb16",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6801,7 +6801,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Verdant Agritech\",\"fields\":{\"body\":{\"value\":\"Luca Castellano will only sign if the pilot is under $20,000.\",\"quote\":\"will only sign if the Verdant pilot is under twenty thousand dollars\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Verdant\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"Luca Castellano will only sign if the pilot is under $20,000.\",\"quote\":\"will only sign if the Verdant pilot is under twenty thousand dollars\"}}}]}"
                         }
                       }
                     ]
@@ -6810,9 +6810,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3625,
+                "prompt_tokens": 2025,
                 "completion_tokens": 136,
-                "total_tokens": 3761,
+                "total_tokens": 2161,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6821,7 +6821,7 @@
           }
         },
         {
-          "key": "bdf486f9acf1e04faf242c076d29e16660c0f6874e86f9f55f09562fe6288eb9",
+          "key": "51ab7f9861d6053a62becce60c810568d91d26094879c8856ce14e46181261f3",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6865,7 +6865,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Verdant Agritech\",\"fields\":{\"text\":{\"value\":\"Send Verdant Agritech a pilot proposal\",\"quote\":\"a pilot proposal\"},\"counterpart\":{\"value\":\"Verdant Agritech\",\"quote\":\"Verdant\"},\"dueDate\":{\"value\":\"2026-12-11\",\"quote\":\"by December 11th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Verdant\",\"kind\":\"company\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Send Verdant Agritech a pilot proposal\",\"quote\":\"a pilot proposal\"},\"counterpart\":{\"value\":\"Verdant\",\"quote\":\"Verdant\"},\"dueDate\":{\"value\":\"2026-12-11\",\"quote\":\"by December 11th\"}}}]}"
                         }
                       }
                     ]
@@ -6874,9 +6874,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3614,
+                "prompt_tokens": 2014,
                 "completion_tokens": 136,
-                "total_tokens": 3750,
+                "total_tokens": 2150,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -6885,7 +6885,7 @@
           }
         },
         {
-          "key": "8f83b8ce62e7a66800c08684d8eb5eefedcdc3b0b431f5527fe5758b74f834a4",
+          "key": "a9ed9c44c6fca3d32290c6bcb36b9dd9c2ebbf25837aec28d43f2ff100cf08d9",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6938,9 +6938,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3606,
+                "prompt_tokens": 2006,
                 "completion_tokens": 60,
-                "total_tokens": 3666,
+                "total_tokens": 2066,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -6955,7 +6955,7 @@
       "description": "Ironbridge Textiles' renewal is agreed and sent",
       "interactions": [
         {
-          "key": "745e4d27563b9c452358c5425e9414afd869d3d848de4451b637903b3f6d801a",
+          "key": "0ec356dc2d7f1962ecaf45d28f8fce5eb384f0f170aa98343859aa159aa45946",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -6999,7 +6999,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Ironbridge Textiles - Annual renewal\",\"fields\":{\"stage\":null,\"amount\":{\"value\":31500,\"quote\":\"thirty-one thousand five hundred\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Ironbridge Textiles renewal\",\"kind\":\"deal\",\"company\":{\"quote\":\"Ironbridge Textiles\"}},\"fields\":{\"stage\":null,\"amount\":{\"value\":31500,\"quote\":\"thirty-one thousand five hundred\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -7008,9 +7008,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3628,
+                "prompt_tokens": 2028,
                 "completion_tokens": 136,
-                "total_tokens": 3764,
+                "total_tokens": 2164,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7019,7 +7019,7 @@
           }
         },
         {
-          "key": "28cf2844cd5a8de403b0ebe9eae371251d52b36199c42e82367c9a0ece23ecdd",
+          "key": "69cc0c43fc62f447f719bed00ca2ef60695b72fb5859831a7eeaf0a7a701e24b",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7063,7 +7063,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Ironbridge Textiles - Annual renewal\",\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":null,\"closeDate\":{\"value\":\"2026-12-18\",\"quote\":\"December 18th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Ironbridge renewal\",\"kind\":\"deal\",\"company\":{\"quote\":\"Ironbridge\"}},\"fields\":{\"stage\":{\"value\":\"contract sent\",\"quote\":\"contract sent\"},\"amount\":null,\"closeDate\":{\"value\":\"2026-12-18\",\"quote\":\"December 18th\"}}}]}"
                         }
                       }
                     ]
@@ -7072,9 +7072,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3621,
+                "prompt_tokens": 2021,
                 "completion_tokens": 136,
-                "total_tokens": 3757,
+                "total_tokens": 2157,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7089,7 +7089,7 @@
       "description": "Sparrow Robotics' expansion is with legal; a corrected close date and a bigger order",
       "interactions": [
         {
-          "key": "aea2753e07f2ab4d9837e4def662f9f520d21ee4dbd42269852ff51dee3118cf",
+          "key": "b74b3e744f26c49417a2c0b7b787af8f357e565610fbe14a53e41e426249618f",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7133,7 +7133,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Sparrow Robotics\",\"fields\":{\"body\":{\"value\":\"The expansion contract is with their legal team, according to Noor Moreau.\",\"quote\":\"the expansion contract is with their legal team\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Sparrow Robotics\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"The expansion contract is with their legal team, according to Noor Moreau.\",\"quote\":\"the expansion contract is with their legal team\"}}}]}"
                         }
                       }
                     ]
@@ -7142,9 +7142,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3624,
+                "prompt_tokens": 2024,
                 "completion_tokens": 136,
-                "total_tokens": 3760,
+                "total_tokens": 2160,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7153,7 +7153,7 @@
           }
         },
         {
-          "key": "d8f9019671919e096103d66d4359d054c6233e88f65080faa398d0e92148604d",
+          "key": "bf55b657fb62841d150a3d7b973efaeed256a8d70043df21c3207c2c5b6aa2ee",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7197,7 +7197,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Sparrow Robotics - Expansion\",\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-06\",\"quote\":\"January 6th\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"Sparrow\",\"kind\":\"deal\",\"company\":null},\"fields\":{\"stage\":null,\"amount\":null,\"closeDate\":{\"value\":\"2027-01-06\",\"quote\":\"January 6th\"}}}]}"
                         }
                       }
                     ]
@@ -7206,9 +7206,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3627,
+                "prompt_tokens": 2027,
                 "completion_tokens": 136,
-                "total_tokens": 3763,
+                "total_tokens": 2163,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7217,7 +7217,7 @@
           }
         },
         {
-          "key": "d3273f93e00b9b426f8442615e4892c39cb529059cf00ba72319a3856220c5ee",
+          "key": "2ab8254608ed596a172f7e3fb4aec4f100955f81d4c7b8bb2defe069889b8f29",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7261,7 +7261,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Sparrow Robotics - Expansion\",\"fields\":{\"stage\":null,\"amount\":{\"value\":9000,\"quote\":\"nine thousand\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"expansion\",\"kind\":\"deal\",\"company\":{\"quote\":\"Sparrow\"}},\"fields\":{\"stage\":null,\"amount\":{\"value\":9000,\"quote\":\"nine thousand\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -7270,9 +7270,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3621,
+                "prompt_tokens": 2021,
                 "completion_tokens": 136,
-                "total_tokens": 3757,
+                "total_tokens": 2157,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7281,7 +7281,7 @@
           }
         },
         {
-          "key": "5b2321bfca0cf28b9ce6cdc8b6e49553e11f7be3f134bdb1670d76b657f5126c",
+          "key": "46bdbe53b4027520db018e216fd2574b168d69ce1f62b118311b7fa1a48b4606",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7325,7 +7325,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Luca Dalgaard\",\"fields\":{\"title\":{\"value\":\"Send Luca Dalgaard the updated order form\",\"quote\":\"the updated order form\"},\"dueDate\":{\"value\":\"2026-12-09\",\"quote\":\"tomorrow\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Luca Dalgaard\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Luca Dalgaard the updated order form\",\"quote\":\"the updated order form\"},\"dueDate\":{\"value\":\"2026-12-09\",\"quote\":\"tomorrow\"}}}]}"
                         }
                       }
                     ]
@@ -7334,9 +7334,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3619,
+                "prompt_tokens": 2019,
                 "completion_tokens": 136,
-                "total_tokens": 3755,
+                "total_tokens": 2155,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7345,7 +7345,7 @@
           }
         },
         {
-          "key": "fed659360d537804dbe16a5489ddd098cee1e3855208393adba7bae56585035a",
+          "key": "1f6b1eb001992ac1589cbfaab5cd6541f1c694d4f5293b507260030a838e94ef",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7398,9 +7398,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3606,
+                "prompt_tokens": 2006,
                 "completion_tokens": 60,
-                "total_tokens": 3666,
+                "total_tokens": 2066,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }
@@ -7415,7 +7415,7 @@
       "description": "Atlas Freight's pilot grows to fifteen trucks; a rollout plan due tomorrow",
       "interactions": [
         {
-          "key": "fa2a06be0f2ca25f240093f8b249a40f17bc650bfa3f1b53076dc7d1ee91d634",
+          "key": "a1c9504989247dd044739a8ac44c58b0fe36c5b024ed88575d3da532d9d15d09",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7459,7 +7459,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":\"Atlas Freight\",\"fields\":{\"body\":{\"value\":\"The pilot is going well, according to Emeka Zielinski.\",\"quote\":\"the pilot is going well\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"note\",\"target\":{\"quote\":\"Atlas Freight\",\"kind\":\"company\",\"company\":null},\"fields\":{\"body\":{\"value\":\"The pilot is going well, according to Emeka Zielinski.\",\"quote\":\"the pilot is going well\"}}}]}"
                         }
                       }
                     ]
@@ -7468,9 +7468,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3625,
+                "prompt_tokens": 2025,
                 "completion_tokens": 136,
-                "total_tokens": 3761,
+                "total_tokens": 2161,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7479,7 +7479,7 @@
           }
         },
         {
-          "key": "35ca3768bde4abb075143a31909381078ee5a9563b31655c4c96c982a90ed022",
+          "key": "7823244a1e4efb78da2c1dc753584cd39799aa392e6301cc803d5acdebbe26a0",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7523,7 +7523,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":\"Atlas Freight - Pilot program\",\"fields\":{\"stage\":null,\"amount\":{\"value\":14000,\"quote\":\"fourteen thousand dollars\"},\"closeDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"deal_update\",\"target\":{\"quote\":\"pilot program\",\"kind\":\"deal\",\"company\":{\"quote\":\"Atlas\"}},\"fields\":{\"stage\":null,\"amount\":{\"value\":14000,\"quote\":\"fourteen thousand dollars\"},\"closeDate\":null}}]}"
                         }
                       }
                     ]
@@ -7532,9 +7532,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3626,
+                "prompt_tokens": 2026,
                 "completion_tokens": 136,
-                "total_tokens": 3762,
+                "total_tokens": 2162,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7543,7 +7543,7 @@
           }
         },
         {
-          "key": "607e50f2fa1eeeeaeeb3bf13c7771336025c41cda1a1a744d171e9250f2ee675",
+          "key": "1cb480fa65a1a578acd3a70a961635e357dcc8bba934f435c4f6e69ffe71ef6d",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7587,7 +7587,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":\"Signe Lindqvist\",\"fields\":{\"title\":{\"value\":\"Send Signe Lindqvist a rollout plan\",\"quote\":\"a rollout plan\"},\"dueDate\":{\"value\":\"2026-12-10\",\"quote\":\"by tomorrow\"}}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"task\",\"target\":{\"quote\":\"Signe Lindqvist\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"title\":{\"value\":\"Send Signe Lindqvist a rollout plan\",\"quote\":\"a rollout plan\"},\"dueDate\":{\"value\":\"2026-12-10\",\"quote\":\"by tomorrow\"}}}]}"
                         }
                       }
                     ]
@@ -7596,9 +7596,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3616,
+                "prompt_tokens": 2016,
                 "completion_tokens": 136,
-                "total_tokens": 3752,
+                "total_tokens": 2152,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7607,7 +7607,7 @@
           }
         },
         {
-          "key": "8e78617782be2cade28b53945ff37b7fdf0af46d410eff346a01f6c514267592",
+          "key": "965d2df6cc9746fc448b658b02e69a840d7874915fbb1eb56b2e8d63a174eff5",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7651,7 +7651,7 @@
                         "type": "function",
                         "function": {
                           "name": "submit_proposals",
-                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":\"Emeka Zielinski\",\"fields\":{\"text\":{\"value\":\"Add driver training at no extra cost\",\"quote\":\"add driver training at no extra cost\"},\"counterpart\":{\"value\":\"Emeka Zielinski\",\"quote\":\"Emeka Zielinski\"},\"dueDate\":null}}]}"
+                          "arguments": "{\"proposals\":[{\"type\":\"commitment\",\"target\":{\"quote\":\"Emeka Zielinski\",\"kind\":\"contact\",\"company\":null},\"fields\":{\"text\":{\"value\":\"Add driver training at no extra cost\",\"quote\":\"add driver training at no extra cost\"},\"counterpart\":{\"value\":\"Emeka Zielinski\",\"quote\":\"Emeka Zielinski\"},\"dueDate\":null}}]}"
                         }
                       }
                     ]
@@ -7660,9 +7660,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3617,
+                "prompt_tokens": 2017,
                 "completion_tokens": 136,
-                "total_tokens": 3753,
+                "total_tokens": 2153,
                 "completion_tokens_details": {
                   "reasoning_tokens": 48
                 }
@@ -7671,7 +7671,7 @@
           }
         },
         {
-          "key": "a3d9749668e4acaf7e4ba80ee71cea0abb3010b51b77524f69bae96c4f34adb0",
+          "key": "d9d2b1c1dd147c979157c75e61e20fc87c552746f5ac115d64e14bab8e5e271f",
           "request": {
             "method": "POST",
             "path": "/openai/v1/chat/completions",
@@ -7724,9 +7724,9 @@
                 }
               ],
               "usage": {
-                "prompt_tokens": 3622,
+                "prompt_tokens": 2022,
                 "completion_tokens": 60,
-                "total_tokens": 3682,
+                "total_tokens": 2082,
                 "completion_tokens_details": {
                   "reasoning_tokens": 36
                 }

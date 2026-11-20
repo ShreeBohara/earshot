@@ -7,6 +7,7 @@ import {
 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import {
+  parentIds,
   START_SLACK_BYTES,
   sessionEntities,
   startEntityBudget,
@@ -14,6 +15,7 @@ import {
   utf8Length,
 } from "@/lib/voice/entities";
 import {
+  accountFamilyCount,
   type CrmEntity,
   estimateKeytermTokens,
   KEYTERM_LIMITS,
@@ -106,16 +108,55 @@ describe("rankEntities", () => {
 });
 
 describe("sessionKeyterms", () => {
-  it("takes each source's name, then its aliases, deduplicated ignoring case", () => {
+  it("takes every source's name before any alias, deduplicated ignoring case", () => {
     const keyterms = sessionKeyterms([
       { name: "Acme Corp", aliases: ["Acme", "ACME CORP", " acme "] },
       { name: "  Dana   Lee ", aliases: [] },
       { name: "acme", aliases: ["Akme"] },
     ]);
     expect(keyterms).toEqual({
-      assemblyai: ["Acme Corp", "Acme", "Dana Lee", "Akme"],
-      deepgram: ["Acme Corp", "Acme", "Dana Lee", "Akme"],
+      assemblyai: ["Acme Corp", "Dana Lee", "acme", "Akme"],
+      deepgram: ["Acme Corp", "Dana Lee", "acme", "Akme"],
     });
+  });
+
+  it("keeps the selected account's family together, names and aliases, ahead of the rest", () => {
+    const keyterms = sessionKeyterms(
+      [
+        { name: "Acme Corp", aliases: ["Acme"] },
+        { name: "Dana Lee", aliases: [] },
+        { name: "Northwind Labs", aliases: ["Northwind"] },
+        { name: "Zenith Packaging", aliases: ["Zenith"] },
+      ],
+      2,
+    );
+    expect(keyterms.assemblyai).toEqual([
+      "Acme Corp",
+      "Acme",
+      "Dana Lee",
+      "Northwind Labs",
+      "Zenith Packaging",
+      "Northwind",
+      "Zenith",
+    ]);
+  });
+
+  it("is fair to every company with no account open: all 60 demo names fit AssemblyAI's 100", () => {
+    const companies = Array.from({ length: 60 }, (_, n) =>
+      row({
+        kind: "company",
+        name: `Company ${String(n).padStart(2, "0")} Holdings`,
+        aliases: [`C${n}`, `Co${n}`],
+      }),
+    );
+    const ranked = rankEntities(companies);
+    expect(accountFamilyCount(ranked)).toBe(0);
+    const { assemblyai } = sessionKeyterms(ranked.keytermSources, accountFamilyCount(ranked));
+    expect(assemblyai).toHaveLength(100);
+    // Every name, the last one alphabetically too, then the first 40 aliases.
+    expect(assemblyai.slice(0, 60)).toEqual(companies.map((company) => company.name).sort());
+    expect(assemblyai).toContain("Company 59 Holdings");
+    expect(assemblyai.slice(60, 62)).toEqual(["C0", "Co0"]);
   });
 
   it("drops what can't be a keyterm: one character, control characters, anything shaped like a key", () => {
@@ -168,7 +209,7 @@ describe("sessionKeyterms", () => {
 });
 
 describe("sessionEntities", () => {
-  it("leaves room in `start` for everything but the entities, plus some slack", () => {
+  it("leaves room in `start` for everything but the entities, the open account, and some slack", () => {
     const envelope = JSON.stringify({
       t: "start",
       msgId: uuidv7(),
@@ -177,6 +218,7 @@ describe("sessionEntities", () => {
       providers: PROVIDERS,
       startedAt: "2026-11-15T19:15:00.000Z",
       entities: [],
+      focusEntityId: uuidv7(),
     });
     expect(startEntityBudget(PROVIDERS)).toBe(
       MAX_MESSAGE_BYTES - utf8Length(envelope) - START_SLACK_BYTES,
@@ -238,6 +280,47 @@ describe("sessionEntities", () => {
     expect(entities.length).toBeLessThan(250);
     expect(utf8Length(frame)).toBeLessThanOrEqual(MAX_MESSAGE_BYTES);
     expect(parseClientMessage(frame)).toMatchObject({ ok: true });
+  });
+});
+
+describe("parentIds", () => {
+  it("maps each contact and deal to its company's id, on the same connection only", () => {
+    const acme = row({ kind: "company", name: "Acme Corp", sourceId: "co_1" });
+    const other = row({
+      kind: "company",
+      name: "Acme Corp",
+      sourceId: "co_1",
+      connectionId: "conn-2",
+    });
+    const dana = row({ kind: "contact", name: "Dana Lee", companyId: "co_1" });
+    const deal = row({
+      kind: "deal",
+      name: "Acme Corp - Renewal",
+      companyId: "co_1",
+      connectionId: "conn-2",
+    });
+    const orphan = row({ kind: "contact", name: "Sam Ray", companyId: "co_9" });
+    const parents = parentIds([acme, other, dana, deal, orphan]);
+    expect(parents.get(dana.id)).toBe(acme.id);
+    expect(parents.get(deal.id)).toBe(other.id);
+    expect(parents.has(orphan.id)).toBe(false);
+    expect(parents.has(acme.id)).toBe(false);
+    const [, , sentDana] = sessionEntities([acme, other, dana], 60_000);
+    expect(sentDana).toEqual({
+      id: dana.id,
+      kind: "contact",
+      name: "Dana Lee",
+      aliases: [],
+      parentId: acme.id,
+    });
+  });
+
+  it("leaves off a parentId the socket wouldn't take", () => {
+    const ref = toEntityRef(
+      { id: "ct_1", kind: "contact", name: "Dana Lee", aliases: [] },
+      "x".repeat(129),
+    );
+    expect(ref).toEqual({ id: "ct_1", kind: "contact", name: "Dana Lee", aliases: [] });
   });
 });
 

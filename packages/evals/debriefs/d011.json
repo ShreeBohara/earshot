@@ -5,6 +5,7 @@
   "voice": "af_jessica",
   "callTime": "2026-12-03T16:15:00.000Z",
   "timeZone": "America/Chicago",
+  "focusEntityId": "co_056",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,10 @@
         {
           "type": "deal_update",
           "target": "deal_006",
+          "named": {
+            "quote": "analytics add-on",
+            "company": "Kestrel Aero"
+          },
           "fields": {
             "stage": {
               "value": "closed won",
@@ -29,6 +34,10 @@
         {
           "type": "deal_update",
           "target": "deal_006",
+          "named": {
+            "quote": "Kestrel add-on",
+            "company": "Kestrel"
+          },
           "fields": {
             "amount": {
               "value": 132000,
@@ -45,6 +54,9 @@
         {
           "type": "task",
           "target": "ct_010",
+          "named": {
+            "quote": "Bruno Underhill"
+          },
           "fields": {
             "title": {
               "value": "Schedule the kickoff with Bruno Underhill",

@@ -115,10 +115,15 @@ export interface SendStartInput {
   readonly providers: SessionProviders;
   /** When capture started, by the client's clock. */
   readonly startedAt: string;
-  /** From `POST /api/sessions`, unchanged. */
+  /** From `POST /api/sessions`, unchanged: each record with its `parentId`, where it has one. */
   readonly entities: readonly EntityRef[];
   /** The rep's IANA time zone, so "by Thursday" resolves on their calendar. */
   readonly timeZone?: string;
+  /**
+   * The account open in Earshot, from `POST /api/sessions`: one of `entities`. The linker reads
+   * it as context, and a proposal that names no record targets it. Null or absent for none.
+   */
+  readonly focusEntityId?: string | null;
 }
 
 export interface SendTurnEndInput {
@@ -303,6 +308,7 @@ export class SessionClient {
       startedAt: input.startedAt,
       entities: [...input.entities],
       ...(input.timeZone ? { timeZone: input.timeZone } : {}),
+      ...(input.focusEntityId ? { focusEntityId: input.focusEntityId } : {}),
     });
   }
 

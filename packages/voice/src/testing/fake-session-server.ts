@@ -21,7 +21,7 @@ import {
   type EventEnvelope,
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
-  type ProposalCreatedV1,
+  type ProposalCreatedV2,
   parseClientMessage,
   SESSION_CLOSE_CODES,
   SESSION_PROTOCOL_VERSION,
@@ -37,11 +37,22 @@ import type { SocketFactory } from "../stt/socket";
 import { type FakeServerSocket, FakeSocketServer } from "./fake-socket";
 
 /**
- * The schema version SessionDO writes for each event type where that isn't the latest: Phase 3's
- * extractor drafts `proposal.created` v1, which readers upcast to v2, until Phase 4's extractor
- * v2 (WP8) writes v2.
+ * The schema version SessionDO writes for each event type where that isn't the latest. None
+ * since Phase 4 WP8: extractor v2 writes `proposal.created` v2, as this fake does.
  */
-const WRITTEN_VERSIONS: Readonly<Record<string, number>> = { "proposal.created": 1 };
+const WRITTEN_VERSIONS: Readonly<Record<string, number>> = {};
+
+/** A target the linker couldn't settle on anything: no record named. For drafts in tests. */
+export const NO_TARGET: ProposalCreatedV2["target"] = {
+  decision: "none",
+  entityId: null,
+  kind: null,
+  basis: null,
+  p: null,
+  mention: null,
+  company: null,
+  candidates: [],
+};
 
 /** One turn as the fake's extractor sees it. */
 export interface FakeTurn {
@@ -50,8 +61,12 @@ export interface FakeTurn {
   readonly llm: { readonly provider: string; readonly model: string };
 }
 
-/** A proposal the fake's extractor drafts; the server gives it an id. */
-export type FakeProposal = Omit<ProposalCreatedV1, "proposalId">;
+/**
+ * A proposal the fake's extractor drafts, as `proposal.created` v2 without its id, which the
+ * server gives it. `supersedes` and `linker` may be left out: null and "linker.v1".
+ */
+export type FakeProposal = Omit<ProposalCreatedV2, "proposalId" | "supersedes" | "linker"> &
+  Partial<Pick<ProposalCreatedV2, "supersedes" | "linker">>;
 
 export interface FakeSessionServerOptions {
   readonly sessionId: string;
@@ -442,7 +457,12 @@ export class FakeSessionServer {
         utterances.length > 0
           ? (this.#propose?.({ turnId: message.turnId, utterances, llm: message.llm }) ?? [])
           : [];
-      const proposals = drafts.map((draft) => ({ proposalId: this.#newId(), ...draft }));
+      const proposals = drafts.map((draft) => ({
+        proposalId: this.#newId(),
+        supersedes: null,
+        linker: "linker.v1",
+        ...draft,
+      }));
       this.#commit(message.msgId, [
         ...proposals.map((proposal) => ({ type: "proposal.created", payload: proposal })),
         {

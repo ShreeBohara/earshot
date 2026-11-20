@@ -5,6 +5,7 @@
   "voice": "bf_isabella",
   "callTime": "2026-12-07T15:30:00.000Z",
   "timeZone": "Europe/London",
+  "focusEntityId": "co_016",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_016",
+          "named": {
+            "quote": "Zenith Packaging"
+          },
           "fields": {
             "body": {
               "value": "The pilot cut downtime by twelve percent, according to Erick Nilsson.",
@@ -29,6 +33,9 @@
         {
           "type": "task",
           "target": "ct_049",
+          "named": {
+            "quote": "Mireille Kowalski"
+          },
           "fields": {
             "title": {
               "value": "Invite Mireille Kowalski to the next call",
@@ -45,6 +52,9 @@
         {
           "type": "commitment",
           "target": "ct_039",
+          "named": {
+            "quote": "Erick Nilsson"
+          },
           "fields": {
             "text": {
               "value": "Send Erick Nilsson a business case deck",

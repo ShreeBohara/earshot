@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 4 WP7 built the normalizers and the faithfulness check in `@earshot/understanding` (`./normalize`, `./faithfulness`). WP8 calls them from `understand()` in `SessionDO`; until then nothing in the product runs them. Builds on ADR-0027 (the v2 contracts: `FieldNorm` and the seven new risk kinds) and follows the Phase 4 build spec's decisions 9 to 13.
+Proposed (2026-11-20). Phase 4 WP7 built the normalizers and the faithfulness check in `@earshot/understanding` (`./normalize`, `./faithfulness`). WP8 (2026-11-20) calls them from `understand()` in `SessionDO` on every field, retires `@earshot/agent`'s `risk.ts` patterns, and settles what `unsupported` means (see "WP8: the risk patterns, and `unsupported`"). Builds on ADR-0027 (the v2 contracts: `FieldNorm` and the seven new risk kinds) and follows the Phase 4 build spec's decisions 9 to 13.
 
 ## Context and problem
 
@@ -80,8 +80,19 @@ Three facts shape the design:
 - **Decision 12:** a unique, certain reading of a date, time, or amount replaces a disagreeing value. The model's value goes to `norm.llmValue`, with `value_mismatch`. Every reading of an ambiguous quote goes to `norm.readings`, and the model's value stands. `norm.currency` records a currency the words name.
 - Names, emails, phones, and stages are never replaced: their only "reading" is the transcript's spelling, which may be the mishearing.
 - `verdict` (`supported`, `replaced`, `ambiguous`, `mismatch`, `unread`, `weak`, `unchecked`) is for WP10's report of the normalizers' catches; it isn't part of the contract.
-- **Flags** come in a fixed order: `self_correction`, `value_mismatch`, `ambiguous_value`, `unsupported`, `weak_support`, `negation`. The `date`, `number`, and `low_confidence` flags stay with WP8, which decides whether `risk.ts`'s patterns go.
+- **Flags** come in a fixed order: `self_correction`, `value_mismatch`, `ambiguous_value`, `unsupported`, `weak_support`, `negation`. WP8 decided the `date`, `number`, and `low_confidence` flags (below).
 - The package restates `FieldValue`, `FieldNorm`, and the flag shape rather than importing `@earshot/core` (as the linker restates its types); a type test in `@earshot/evals` fails to compile if they drift.
+
+### WP8: the risk patterns, and `unsupported` (2026-11-20)
+
+Phase 3's `risk.ts` raised four flags by pattern: `date`, `number`, `negation`, and `low_confidence`. WP8 removed the file. `understand()` now raises, per field, `checkField`'s flags (`negation` among them), then `low_confidence`:
+
+- **`date` and `number` are retired.** They flagged every date field and every quote with a digit or a number word, because nothing checked those values. Now `checkField` reads each date, time, and amount from its own words: a value that agrees passes unflagged; one that disagrees gets `value_mismatch` (replaced, if the reading is unique), `ambiguous_value`, `self_correction`, or `unsupported`. A blanket badge on every right date would only add to the flag rate (WP10's guard is 35% or less). Stored Phase 3 events keep theirs, and the tray still labels them.
+- **`negation`** now comes from the NegEx-style check above, on every field, instead of `risk.ts`'s "a negation word in the quote or the three words before it".
+- **`low_confidence` stays** as Phase 3 had it: evidence below 0.7 (the lowest word's confidence, with word timings). It's about the transcription, which nothing else checks.
+- **Accepted gap:** a number inside free text (a note's "nine thousand six hundred dollars") is no longer flagged by itself. Free text is checked only for support (`weak_support`); WP10's seeded "model-like" errors will show what that costs.
+
+**`unsupported` means one thing** everywhere (ADR-0027): the words the model cited don't back what it wrote. Phase 3 used it for a quote not found in the transcript (the field is dropped, and the flag names it). The faithfulness check uses it for a date, time, or amount quote with no reading of that kind (the value stays). Spec §4.3 uses it on the target for a name not found (nothing is linked). Each is a case of the one meaning. The contract's documentation, the pipeline, and the tray ("Not backed by what was said") all say so.
 
 ### Ground truth (decision 13)
 
@@ -89,9 +100,9 @@ Three facts shape the design:
 
 ## Consequences
 
-- **Measured on the 30 scripts:** every scripted date and amount resolves to its expected value, alone and certain. Every expected field passes the faithfulness check unchanged, except three company names the Phase 3 scripts expand past their quotes ("Akme" written "Akme Dynamics", "Sigma", "Verdant"). Those get `value_mismatch` and are kept; the v2 extractor no longer sees the CRM list, so WP8 or WP10 should write such names as said and let the linker resolve them. A wrong date (a day off) or amount (ten times) is replaced with the expected value every time. The lowest free-text overlap is 0.60.
+- **Measured on the 30 scripts:** every scripted date and amount resolves to its expected value, alone and certain. Every expected field passes the faithfulness check unchanged. WP7 found three company names the Phase 3 scripts expanded past their quotes ("Akme" written "Akme Dynamics", "Sigma", "Verdant"); WP8 rewrote them as said, and the linker resolves the company (ADR-0027). A wrong date (a day off) or amount (ten times) is replaced with the expected value every time. The lowest free-text overlap is 0.60.
 - **Cost:** about 0.02 ms per turn at the median and 0.14 ms at p95 for every field check on the scripts, 3.6 ms for the first, cold turn (this Mac, Node 26), against the pipeline's 20 ms p95 target.
-- **Bundle:** chrono-node's English parser adds about 104 KB unminified (48 KB minified, 14 KB gzipped). The package's product entries together grow from about 79 KB to 233 KB unminified (36 KB to 109 KB minified; 14 KB to 37 KB gzipped). Importing `chrono-node` itself would carry all 16 locales, about 486 KB; the bundle test fails if any locale but English comes along. WP8's edge bundle check records the Worker's size and startup.
+- **Bundle:** chrono-node's English parser adds about 104 KB unminified (48 KB minified, 14 KB gzipped). The package's product entries together grow from about 79 KB to 233 KB unminified (36 KB to 109 KB minified; 14 KB to 37 KB gzipped). Importing `chrono-node` itself would carry all 16 locales, about 486 KB; the bundle test fails if any locale but English comes along. WP8 measured the edge Worker: +222 KiB, +48 KiB gzipped, with the linker (ADR-0027); startup waits for the first deploy.
 - **Known gaps:** fiscal quarters; "between Tuesday and Thursday" said on a Tuesday; corrections of names and stages (dates and amounts only); spoken emails spelled letter by letter; backward negation ("X isn't involved"); and amounts in other currencies are flagged, never converted.
 - **Flag rate:** a negated note body is flagged even when the model kept the negation. That is v1's behavior, narrowed by scopes and pseudo-triggers; WP10's flag-rate guard (35% or less) will show whether it's too loud.
 

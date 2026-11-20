@@ -5,6 +5,7 @@
   "voice": "am_adam",
   "callTime": "2026-12-03T21:00:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_059",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -14,6 +15,10 @@
         {
           "type": "deal_update",
           "target": "deal_020",
+          "named": {
+            "quote": "analytics add-on",
+            "company": "Granite State Builders"
+          },
           "fields": {
             "stage": {
               "value": "closed lost",
@@ -24,6 +29,10 @@
         {
           "type": "note",
           "target": "co_059",
+          "named": {
+            "quote": "Granite State Builders"
+          },
+          "decision": "ask",
           "fields": {
             "body": {
               "value": "They're not going ahead with the analytics add-on this year.",
@@ -40,6 +49,10 @@
         {
           "type": "note",
           "target": "co_059",
+          "named": {
+            "quote": "Granite"
+          },
+          "decision": "ask",
           "fields": {
             "body": {
               "value": "Their budget was moved to their new headquarters build, according to Shaun Murphy.",
@@ -56,6 +69,9 @@
         {
           "type": "task",
           "target": "ct_074",
+          "named": {
+            "quote": "Shaun Murphy"
+          },
           "fields": {
             "title": {
               "value": "Check back with Shaun Murphy",

@@ -3,6 +3,8 @@ import { matchEntity, TARGET_KINDS } from "@earshot/agent";
 import { DEMO_CALL_TIME } from "@earshot/agent/testing";
 import { ProposalType } from "@earshot/core";
 import { contacts } from "@earshot/demo-crm";
+import { fieldKind } from "@earshot/understanding/faithfulness";
+import { normalizeName } from "@earshot/understanding/names";
 import { describe, expect, it } from "vitest";
 import {
   CORRECTION_MARKER,
@@ -15,10 +17,12 @@ import {
   debriefAt,
   demoEntity,
   ExpectedProposal,
+  expectedDecision,
   expectedFields,
   KEY_FIELDS,
   localDate,
   NEGATION_PATTERN,
+  namedOf,
   parseUsd,
   resolveDatePhrase,
 } from "../src";
@@ -158,6 +162,45 @@ describe("the ground truth", () => {
         matchEntity(entity.name, DEMO_SESSION_ENTITIES, TARGET_KINDS[proposal.type])?.id,
         label(entry),
       ).toBe(proposal.target);
+    }
+  });
+
+  it("quotes how the rep named each record from its own turn, and never for a contact", () => {
+    for (const entry of PROPOSALS) {
+      const named = namedOf(entry.proposal);
+      if (entry.proposal.type === "contact") {
+        expect(named, label(entry)).toBeNull();
+        continue;
+      }
+      if (named === null) continue;
+      expect(entry.turn.text, label(entry)).toContain(named.quote);
+      if (named.company !== undefined)
+        expect(entry.turn.text, label(entry)).toContain(named.company);
+      // A record the CRM doesn't hold needs its kind said.
+      if (entry.proposal.target === null) expect(named.kind, label(entry)).toBeDefined();
+    }
+  });
+
+  it("asks only about a record the script names, and opens only demo companies", () => {
+    for (const entry of PROPOSALS) {
+      if (expectedDecision(entry.proposal) === "ask") {
+        expect(entry.proposal.target, label(entry)).not.toBeNull();
+      }
+    }
+    for (const script of DEBRIEFS) {
+      if (script.focusEntityId === undefined) continue;
+      expect(demoEntity(script.focusEntityId).kind, script.id).toBe("company");
+    }
+  });
+
+  it("writes names as the rep said them, since the extractor no longer sees the CRM list", () => {
+    for (const entry of PROPOSALS) {
+      for (const [name, field] of expectedFields(entry.proposal)) {
+        if (fieldKind(entry.proposal.type, name) !== "name") continue;
+        expect(normalizeName(String(field.value)), `${label(entry)} ${name}`).toBe(
+          normalizeName(field.quote),
+        );
+      }
     }
   });
 

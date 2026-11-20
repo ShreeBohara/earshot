@@ -9,7 +9,7 @@
       "description": "Acme Dynamics wants two more plants: deal update and a quote for Dana Lee",
       "interactions": [
         {
-          "key": "19166278e20b47ce7ee66c22ea907785ed5804fdf2b7a88ffc4db9e45e1e967f",
+          "key": "339dd93e81432e906ebbda552855beb576008a4016d40c1ea98237c24818b8af",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -53,7 +53,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Acme Dynamics",
+                        "target": {
+                          "quote": "Acme Dynamics",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Dana Lee wants to expand the rollout to two more plants.",
@@ -68,7 +72,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3630,
+                "input_tokens": 2030,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -77,7 +81,7 @@
           }
         },
         {
-          "key": "510da409fd047d2f37ade0e9bd79cbff72f90c6f1333d629fb6596e9952cc116",
+          "key": "53224f8f5d8e23a84bef93dba96d349ef910fc3c5db92af74a2b509bedd0f549",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -121,7 +125,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Acme Dynamics - Expansion",
+                        "target": {
+                          "quote": "Acme Dynamics expansion",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Acme Dynamics"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "presentation scheduled",
@@ -141,7 +151,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -150,7 +160,7 @@
           }
         },
         {
-          "key": "654e1070b444797a4394ec4778a3043354c9b50e42536eb0cabfbf9bbd05265b",
+          "key": "bf4c9a4ec793680452688ae7de292d9be6f8cbe90ef72925f09fb7e34693a1cb",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -194,7 +204,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Dana Lee",
+                        "target": {
+                          "quote": "Dana Lee",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Dana Lee a revised quote",
@@ -213,7 +227,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3611,
+                "input_tokens": 2011,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -222,7 +236,7 @@
           }
         },
         {
-          "key": "89e64ac3cec463975b5a696a6205f541a05f1d9f1c037e2ea59e1e36040b1a62",
+          "key": "db751d48afaa4f4b8492bd27abc6981a65b5b5b125819d94451fd67604105303",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -270,7 +284,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3605,
+                "input_tokens": 2005,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -285,7 +299,7 @@
       "description": "Akme Dynamics: budget approved, a security review, and a new procurement lead",
       "interactions": [
         {
-          "key": "b8e604b64d8d5f92a62983134480493c37205620831a01fc4a3273a5a54d3de4",
+          "key": "e97a27afe2f3844f2c3ba754d4d214f2d506ef45791e8ec274c38a134b614ccc",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -329,7 +343,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Akme Dynamics",
+                        "target": {
+                          "quote": "Akme Dynamics",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Dana Li confirmed next year's budget is approved.",
@@ -344,7 +362,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3631,
+                "input_tokens": 2031,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -353,7 +371,7 @@
           }
         },
         {
-          "key": "0fe14ecbf545dfdf62068033470516ad26213e8aedbaef784767c49e0edf0a70",
+          "key": "c2a2b54b0cb3ddb7e52aaaa6955b4ed8145c82c7a57a27a0b905af7e71764f99",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -397,7 +415,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Dana Li",
+                        "target": {
+                          "quote": "Dana Li",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Set up a security review call with Dana Li",
@@ -416,7 +438,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -425,7 +447,7 @@
           }
         },
         {
-          "key": "afd9b2a17666c75f73b8ce9c1ae4588f272324d7b5a113d6dc3055a807f9c04e",
+          "key": "356407aaae9ca984475e7b506e4d66f48ee9e97862078fac51c81f8def3b90ef",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -469,7 +491,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": null,
                         "fields": {
                           "name": {
                             "value": "Hiroshi Tanabe",
@@ -480,7 +501,7 @@
                             "quote": "procurement lead"
                           },
                           "company": {
-                            "value": "Akme Dynamics",
+                            "value": "Akme",
                             "quote": "Akme"
                           },
                           "email": null,
@@ -494,7 +515,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3623,
+                "input_tokens": 2023,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -503,7 +524,7 @@
           }
         },
         {
-          "key": "18161aae879fb35708b5640bae6b612e8b3bc799abc7813cf43b7d914c710686",
+          "key": "00055d80c8cd9909f11dbde7c3c1ceadc3165e247b3d4823976bedbb3b5ad328",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -547,7 +568,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Dana Li",
+                        "target": {
+                          "quote": "Dana Li",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Hold Akme Dynamics' pricing through March",
@@ -567,7 +592,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3614,
+                "input_tokens": 2014,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -582,7 +607,7 @@
       "description": "Atmos Industrial wants to restart onboarding; Raj Patel needs a fresh quote",
       "interactions": [
         {
-          "key": "a82fe07317d5dfc76878bc14c0265cb74ffc2df1eb441b7ef2c7139719bb7375",
+          "key": "0c7480ba3145666e942848de166af817f8f2547efe62c2a7bf30eb3e7464202d",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -626,7 +651,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Atmos Industrial",
+                        "target": {
+                          "quote": "Atmos Industrial",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Finance wants to restart the onboarding package they passed on in June.",
@@ -641,7 +670,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3630,
+                "input_tokens": 2030,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -650,7 +679,7 @@
           }
         },
         {
-          "key": "0e62dcec0645196e20d387f7cef24183ec26705ebcd6240a0c9b8f881cceadd7",
+          "key": "e046ec068b69be3c2e764c57c96f2a22cb1767f9d9794c0d720cc45fc6ff75b6",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -694,7 +723,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Raj Patel",
+                        "target": {
+                          "quote": "Raj Patel",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Raj Patel a fresh quote at $17,500",
@@ -713,7 +746,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -722,7 +755,7 @@
           }
         },
         {
-          "key": "5e2a3dddd8f4ace0cce6fa5043127de79b2f8acafeaa1df178de2f0f4044de50",
+          "key": "045494afe7dd10f45816fa0fd11709a7801c72252c253e89368c70c530448651",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -770,7 +803,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3617,
+                "input_tokens": 2017,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -779,7 +812,7 @@
           }
         },
         {
-          "key": "b03548de4521c39576e23c70eb4bc8023ed03e40bee38d1965cc43cdb593e7ad",
+          "key": "ffae1ba13db9ace7183baabf2cef2b8c82986a315640f49f9df96d0cf1516c4e",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -823,7 +856,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Atmos Industrial",
+                        "target": {
+                          "quote": "Atmos",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Raj Patel is not the decision maker; their general manager, Yara Okafor, is.",
@@ -838,7 +875,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3621,
+                "input_tokens": 2021,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -853,7 +890,7 @@
       "description": "Globelex Systems renewal moves to contract sent at a higher amount",
       "interactions": [
         {
-          "key": "23807deab8b807e43628644a5a3e5bc28b62f4efb3401949c3729f07f3e5600f",
+          "key": "01ea4bdd832857fd401b1f8665a6390a650e0c65f15c5dc69bf40c4430c56d36",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -897,7 +934,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Globelex Systems",
+                        "target": {
+                          "quote": "Globelex Systems",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Bryan Reilly, their VP of Operations, is ready to move forward with the renewal.",
@@ -912,7 +953,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -921,7 +962,7 @@
           }
         },
         {
-          "key": "bdb6407b3c05063be539a293ba4dc607cd96586774a4df25bf1020e0a2bde40a",
+          "key": "145d32cca8e8898339ace2d9bfe2acf6ba35664b3450a3e457b23d195888931d",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -965,7 +1006,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Globelex Systems - Annual renewal",
+                        "target": {
+                          "quote": "Globelex annual renewal",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Globelex"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "contract sent",
@@ -985,7 +1032,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3625,
+                "input_tokens": 2025,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -994,7 +1041,7 @@
           }
         },
         {
-          "key": "fee332f7454b5e8401830d0ab2e51330b423834ef0647898773797f2701679a8",
+          "key": "08ebb1215c7b806ddcc2ac09e3b6ed6806fd49fca92d747b570a84849df3b840",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1038,7 +1085,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Bryan Reilly",
+                        "target": {
+                          "quote": "Bryan Reilly",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Bryan Reilly the order form for signature",
@@ -1061,7 +1112,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3620,
+                "input_tokens": 2020,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1070,7 +1121,7 @@
           }
         },
         {
-          "key": "525b2e75138205e4ffa971ece8cf22e78daeb3275e154fed30c3d28ec11f5a4e",
+          "key": "bfccfac2c37369dae450a3a82085369048d4ab35f3da3a8407490340bf8c0eca",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1118,7 +1169,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3614,
+                "input_tokens": 2014,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1133,7 +1184,7 @@
       "description": "Northwind Logistics wants a route-planning pilot across forty depots",
       "interactions": [
         {
-          "key": "ac33f9eba4e5a667754cd160178cddc2930f820248bf5aec171ab140c4973777",
+          "key": "d74ac18842f0d8ec0c689e0486af81ef8f92be09f5f8e214617190fc5606c4fa",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1177,7 +1228,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Northwind Logistics",
+                        "target": {
+                          "quote": "Northwind Logistics",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "John Whitaker wants to trial route planning across forty depots.",
@@ -1192,7 +1247,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3629,
+                "input_tokens": 2029,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1201,7 +1256,7 @@
           }
         },
         {
-          "key": "8112a3d2a8dfcf4d5beb5fa241a32d2f38962feb7a42c228ac3736045a8a875d",
+          "key": "45dd486dfcc5bcc9a115e32f9932c6d11acb82e01f83683cab18fc38e32457b5",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1245,7 +1300,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "John Whitaker",
+                        "target": {
+                          "quote": "John Whitaker",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send John Whitaker a pilot proposal",
@@ -1264,7 +1323,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1273,7 +1332,7 @@
           }
         },
         {
-          "key": "40ab0a814086612f87e0f5a9eba27c58ee3d4ba5374d391171b9f486c66dac30",
+          "key": "de3a7ceb4997af72728e5ec8b80041bc31bc5f70a886eb06433189b378954b33",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1317,7 +1376,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": null,
                         "fields": {
                           "name": {
                             "value": "Fiona Gallagher",
@@ -1342,7 +1400,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3625,
+                "input_tokens": 2025,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1351,7 +1409,7 @@
           }
         },
         {
-          "key": "6115e72d96b1a424afd9a13aff0a15ec70d0f9b4f15634c80f0b86d0232741c6",
+          "key": "addd9d47900a5941c1c1690ee194512d066dc9a0247885ad08c8c40ff68a0df9",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1399,7 +1457,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3615,
+                "input_tokens": 2015,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1414,7 +1472,7 @@
       "description": "Meridian Supply Co: warehouse sensors, a sixty-unit quote, and warranty terms",
       "interactions": [
         {
-          "key": "f8e2483fe9cc3f29047a21a1934bc375368512cf8e9c3cc0ed7cce44ba37d134",
+          "key": "19171709357c79f852f2916607d8742112086bbef2faaa3361496dc8bbedbe7a",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1458,7 +1516,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Meridian Supply Co",
+                        "target": {
+                          "quote": "Meridian Supply Co",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Met Jeffrey Walsh about warehouse sensors for their Nashville site.",
@@ -1473,7 +1535,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1482,7 +1544,7 @@
           }
         },
         {
-          "key": "31e6698a126cd6416f6be5ac02153d64687806db1112e2542b4fa7d2efb19125",
+          "key": "6045964b3d1e117c649053bdbc01b1ee0e684c0a38307a788e75b73cab973240",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1526,7 +1588,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Jeffrey Walsh",
+                        "target": {
+                          "quote": "Jeffrey Walsh",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Jeffrey Walsh a quote for sixty units",
@@ -1537,7 +1603,11 @@
                       },
                       {
                         "type": "note",
-                        "target": "Meridian Supply Co",
+                        "target": {
+                          "quote": "Meridian",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "They won't consider anything without a two-year warranty.",
@@ -1552,7 +1622,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3628,
+                "input_tokens": 2028,
                 "output_tokens": 152,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1561,7 +1631,7 @@
           }
         },
         {
-          "key": "5fed3ffc47890db768f358939ddee3c983bf1dd1beae6bb2a3d2f267605c6605",
+          "key": "01ed1eda6ec0f54be967aa3f8ea2225f19f34362ffd8a6f13d068f079e3eb5eb",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1605,7 +1675,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Jeffrey Walsh",
+                        "target": {
+                          "quote": "Jeffrey Walsh",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Jeffrey Walsh the warranty terms",
@@ -1628,7 +1702,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3618,
+                "input_tokens": 2018,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1643,7 +1717,7 @@
       "description": "Pacific Coast Electric adds three substations; Catherine Moore needs a revised invoice",
       "interactions": [
         {
-          "key": "d4eb919f2efe0daf74397a9b27e1f9c26ab6eb8371e313d13cd9d0fa3393d995",
+          "key": "72e46bc0ef7a1803bba4d7739f486a8ccd6797ccf72662826a865f9dcc1aaa8f",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1687,7 +1761,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Pacific Coast Electric",
+                        "target": {
+                          "quote": "Pacific Coast Electric",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "They want to add three more substations to their support contract.",
@@ -1702,7 +1780,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3622,
+                "input_tokens": 2022,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1711,7 +1789,7 @@
           }
         },
         {
-          "key": "60a76540bc4073467d9f6fee81807a8d2f197729193156dba6df953e9f4fc4e0",
+          "key": "0a48f4ad1582675699b05c83f694ceb64990e87ba37cc2460361923cff850f9c",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1755,7 +1833,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Catherine Moore",
+                        "target": {
+                          "quote": "Catherine Moore",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Catherine Moore a revised invoice",
@@ -1774,7 +1856,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3619,
+                "input_tokens": 2019,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1783,7 +1865,7 @@
           }
         },
         {
-          "key": "e969e23a2584117ecc033e7b934aa8e8dd252b71fba1cc8bec98335365859009",
+          "key": "a79e2a1fac632df500c2fc7ca9e41856f456527a3d9a9c6bc3ad43272711e398",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1831,7 +1913,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3621,
+                "input_tokens": 2021,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1840,7 +1922,7 @@
           }
         },
         {
-          "key": "45f02972fe9bc269894c496af79b73aca9cc7b88781fc9df0e1c2580bafbb713",
+          "key": "0f7d9f9734e9894e7ef910b429ad6d0b94a6faaee7a625dc31542adb92c4a702",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1884,7 +1966,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Catherine Moore",
+                        "target": {
+                          "quote": "Catherine Moore",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Catherine Moore the updated substation list",
@@ -1907,7 +1993,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3617,
+                "input_tokens": 2017,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1922,7 +2008,7 @@
       "description": "Blue Harbor Analytics will sign the site rollout for a January start",
       "interactions": [
         {
-          "key": "6b62f85fba17b2e21759bb66ecce84aa5a4c352c029723bbfdc4d8697c890a9d",
+          "key": "6b92f5cffa94e7ad24137ad2c818f0a4fadec76fe52ca4c0a248252b41f04eef",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -1966,7 +2052,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Blue Harbor Analytics",
+                        "target": {
+                          "quote": "Blue Harbor Analytics",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Kathryn Moore says they'll sign the site rollout if we can start in January.",
@@ -1981,7 +2071,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3631,
+                "input_tokens": 2031,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -1990,7 +2080,7 @@
           }
         },
         {
-          "key": "59c3e95571a08a8ed9b22539c91f5af569b0db66e581cd718cc9ec91a4b32a8b",
+          "key": "09cb707dcff55e47764e4d64bbddf41007b47bc22b2df1bb0a6cd151e07a9442",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2034,7 +2124,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Blue Harbor Analytics - Site rollout",
+                        "target": {
+                          "quote": "Blue Harbor site rollout",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Blue Harbor"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "decision maker bought in",
@@ -2054,7 +2150,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3625,
+                "input_tokens": 2025,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2063,7 +2159,7 @@
           }
         },
         {
-          "key": "c3d730c980ed85eb5176d6a0132dc4f9ed0fc934af9993fafc9aa41df8c81f3a",
+          "key": "3051a7ec8b655ad946f819ad651978282345bbdd490f3e97301aab3d6a868948",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2107,7 +2203,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Zoe Park",
+                        "target": {
+                          "quote": "Zoe Park",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Loop Zoe Park in on the kickoff invite",
@@ -2123,7 +2223,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3625,
+                "input_tokens": 2025,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2132,7 +2232,7 @@
           }
         },
         {
-          "key": "be6a1caf15ea2f8cf707095fbcbf70e8e99c0eb97bc49ea748f655bacee528ee",
+          "key": "3f78d576ae88f5d8c101cd977a121a6db3558433681b9c0f66312a8a70506fcd",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2180,7 +2280,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3618,
+                "input_tokens": 2018,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2195,7 +2295,7 @@
       "description": "Summit Ridge Medical approves the starter plan and pushes the close to January",
       "interactions": [
         {
-          "key": "ce0d9ec7f137d2f6e2ccab67a35412dff2d98a9327b2858fd07df20a4bfc26a2",
+          "key": "1e9b03ddfd8893ff30ad8b9bd7bc4bd51ae673ff3679af07abf96e43df80ff4c",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2239,7 +2339,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Summit Ridge Medical - Starter plan",
+                        "target": {
+                          "quote": "starter plan",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Summit Ridge Medical"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": {
@@ -2256,7 +2362,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3631,
+                "input_tokens": 2031,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2265,7 +2371,7 @@
           }
         },
         {
-          "key": "bfeb53caa409a3a0046bb2d8a46fb0a0dfb39dbcc9ce08c8c5828255ffb1d4f8",
+          "key": "6ab504e59843a3d4f38e200cc0e5b99a56353e2a52e61b390e43229f5b05bff7",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2309,7 +2415,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Summit Ridge Medical - Starter plan",
+                        "target": {
+                          "quote": "Summit Ridge Medical starter plan",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Summit Ridge Medical"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": null,
@@ -2326,7 +2438,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3629,
+                "input_tokens": 2029,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2335,7 +2447,7 @@
           }
         },
         {
-          "key": "0824281b17a758eb6cd9320e0b4adee2d54db7d62882878aab0698be4c54a902",
+          "key": "46557f01c818294133e22aa4bf64b6e95a688e044cb68088041edd5ec786eae3",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2379,7 +2491,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Summit Ridge Medical",
+                        "target": {
+                          "quote": "Summit Ridge Medical",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Summit Ridge Medical the HIPAA addendum",
@@ -2402,7 +2518,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3618,
+                "input_tokens": 2018,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2411,7 +2527,7 @@
           }
         },
         {
-          "key": "f67c5a60e7109a465b20e763273aa5e79025b7ab4f31cdc8e1ab0412ad4dee92",
+          "key": "4b29f9cf57ce4c5edbb848a0196d36c437932614fb0d75b4557a13dceae33334",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2459,7 +2575,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3605,
+                "input_tokens": 2005,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2474,7 +2590,7 @@
       "description": "Harborview Marine renewal: a corrected amount, a later close, and updated terms",
       "interactions": [
         {
-          "key": "6c1ca5afe8e0db1140e961ad417002dba778fe203e793f1973ef0306d35a0fb7",
+          "key": "10839a2ac433838d3cace90d712481e30d761a347f9f0b4c5736cf2c7c15bba1",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2518,7 +2634,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Harborview Marine - Annual renewal",
+                        "target": {
+                          "quote": "Harborview Marine renewal",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Harborview Marine"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": {
@@ -2535,7 +2657,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3636,
+                "input_tokens": 2036,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2544,7 +2666,7 @@
           }
         },
         {
-          "key": "aa9209ecd6a7afd260105a80aa5381192b84887d37c6d58f7b5138d80ff59a49",
+          "key": "d1e83800136881de89787c790eca32bfa55cb802cda77fe5d3bb318c42f7bc89",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2588,7 +2710,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Harborview Marine - Annual renewal",
+                        "target": {
+                          "quote": "Harborview Marine renewal",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Harborview Marine"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": null,
@@ -2605,7 +2733,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2614,7 +2742,7 @@
           }
         },
         {
-          "key": "1f6a1ca31d72412ec358397914f7416fe40180ad861d3573d75694a7b5516dbf",
+          "key": "bfd55cc7f5188421fd17c64a1e0c2c5e60354d3d69ec4f10d8a78521c587beb9",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2662,7 +2790,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3617,
+                "input_tokens": 2017,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2671,7 +2799,7 @@
           }
         },
         {
-          "key": "d7f0ed59559ed7432eaf55d692411bbae5afbbf6ea3d1dc54cb20338f75a8367",
+          "key": "0df6c720d9c72e40ed9a50e89d5e1ea986ee9a9238922309f13c5edc1a38998b",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2715,7 +2843,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Muhammad Hassan",
+                        "target": {
+                          "quote": "Muhammad Hassan",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Muhammad Hassan the updated terms",
@@ -2734,7 +2866,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3615,
+                "input_tokens": 2015,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2749,7 +2881,7 @@
       "description": "Kestrel Aero closes the analytics add-on, with a kickoff on December 14th",
       "interactions": [
         {
-          "key": "5ff0609ff164c0058accfc237a7b4cbf85d44b37f64b91e64183f53a5d4b65b9",
+          "key": "cd6869872d108807115ca92dbf9dcc70e39b9001fa65bcbdaaac3c1d9a93c4a8",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2793,7 +2925,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Kestrel Aero - Analytics add-on",
+                        "target": {
+                          "quote": "analytics add-on",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Kestrel Aero"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "closed won",
@@ -2810,7 +2948,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3631,
+                "input_tokens": 2031,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2819,7 +2957,7 @@
           }
         },
         {
-          "key": "e0823e3a0e3167595ef64157644dce28dc8c4d43ef903ed0564fc84cc919da66",
+          "key": "23a59f7f9db740fa22ffbae4784472244a5da1f1615dc54f0336604ada69467e",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2863,7 +3001,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Kestrel Aero - Analytics add-on",
+                        "target": {
+                          "quote": "Kestrel add-on",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Kestrel"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": {
@@ -2880,7 +3024,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2889,7 +3033,7 @@
           }
         },
         {
-          "key": "cc0f02d4f6ab0640a8539c3c2e8b42aebc13f0846d8b8662b8f4844566c4b197",
+          "key": "9f716cd32a325fde83288ca4e7735ea59047845b63395ca536eb24161ad429c5",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -2933,7 +3077,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Bruno Underhill",
+                        "target": {
+                          "quote": "Bruno Underhill",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Schedule the kickoff with Bruno Underhill",
@@ -2952,7 +3100,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3615,
+                "input_tokens": 2015,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -2961,7 +3109,7 @@
           }
         },
         {
-          "key": "973d92d145f9f2a427f49504db8211e763450a4b30f58ea4a4b18da81062fe09",
+          "key": "8d70d01202a5fb97caae46ad4c179e2f3c805f614fd2257c11ae255ab2d9b884",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3009,7 +3157,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3617,
+                "input_tokens": 2017,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3024,7 +3172,7 @@
       "description": "Sigma Tooling plans another expansion; a new operations director and a site visit",
       "interactions": [
         {
-          "key": "a74bb10e497f8adfd7c75e8da2e1061d5f3c43ad58c89b45a38a37c1a4de4896",
+          "key": "3444e9a5e189ea14ba229b7f666ec56ca246a4367ad566691351b96c8cd00a58",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3068,7 +3216,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Sigma Tooling",
+                        "target": {
+                          "quote": "Sigma Tooling",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "They want to expand again next quarter, probably another five work cells.",
@@ -3083,7 +3235,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3092,7 +3244,7 @@
           }
         },
         {
-          "key": "0d92caa5ede54e1ecba41a3e8a4fce7732abbb3ea0bd477f51cdd219b1de7f61",
+          "key": "aa05273b1d6e5852ed162774d894f3b5a1d1834305fee39e324c336af8be2a9b",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3136,7 +3288,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": null,
                         "fields": {
                           "name": {
                             "value": "Paloma Ruiz",
@@ -3147,7 +3298,7 @@
                             "quote": "operations director"
                           },
                           "company": {
-                            "value": "Sigma Tooling",
+                            "value": "Sigma",
                             "quote": "Sigma"
                           },
                           "email": null,
@@ -3164,7 +3315,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3619,
+                "input_tokens": 2019,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3173,7 +3324,7 @@
           }
         },
         {
-          "key": "40faf585ce52a7662fed18cc7b8c23b343105d4b235152fe8cec56444ad7a463",
+          "key": "764745fcbbcf79928cc13e87eba2a8800af00b6d1fc33326bc8039ca573d069b",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3217,7 +3368,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Sigma Tooling",
+                        "target": {
+                          "quote": "Sigma",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Book a site visit with Paloma Ruiz",
@@ -3236,7 +3391,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3618,
+                "input_tokens": 2018,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3245,7 +3400,7 @@
           }
         },
         {
-          "key": "3f5a3dba927fe4c1931481d0918178f21f117d64cd9d1927d969a36a86c6f02a",
+          "key": "0ed38d4bc1256a103c41fe477207781963f7b8ef30e7c661f1ff5e7b765992a7",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3293,7 +3448,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3619,
+                "input_tokens": 2019,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3308,7 +3463,7 @@
       "description": "Zenith Packaging's pilot cut downtime; a business case deck for Erick Nilsson",
       "interactions": [
         {
-          "key": "679292972507e3dbb5837096e7e8aa3e374d6fef649a52230974f498bc71f0ca",
+          "key": "2c4463c3b8620d97a371c36d6bd18dbbc702dace252736b7a14e142955fb9190",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3352,7 +3507,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Zenith Packaging",
+                        "target": {
+                          "quote": "Zenith Packaging",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "The pilot cut downtime by twelve percent, according to Erick Nilsson.",
@@ -3367,7 +3526,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3631,
+                "input_tokens": 2031,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3376,7 +3535,7 @@
           }
         },
         {
-          "key": "f3e56bddae279233b2117e4a8fead9499cee11b66d0f90327b0f444eab549067",
+          "key": "ad20e2a08dabb690617f0f6e4b6c6983ea7c0e86b0be624f4ba9ee69b96c75b0",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3420,7 +3579,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Mireille Kowalski",
+                        "target": {
+                          "quote": "Mireille Kowalski",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Invite Mireille Kowalski to the next call",
@@ -3436,7 +3599,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3620,
+                "input_tokens": 2020,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3445,7 +3608,7 @@
           }
         },
         {
-          "key": "a6958959787e037575be48658b30c7b78a893811dbf8841587d21deb686ce9ba",
+          "key": "0eba6ec76ee535ba9d453840a0fe95f9929e9d4e0b2565a84c12149202a46796",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3489,7 +3652,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Erick Nilsson",
+                        "target": {
+                          "quote": "Erick Nilsson",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Erick Nilsson a business case deck",
@@ -3512,7 +3679,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3521,7 +3688,7 @@
           }
         },
         {
-          "key": "921437523969f14f8b31af50d35728ceba06352bc8ef99b0f13d167e6d4e1d3d",
+          "key": "c43fd8802cff782b7b885e4ffe54bfbf53ea530b606c3880dc62980ab6e04bd7",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3569,7 +3736,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3613,
+                "input_tokens": 2013,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3584,7 +3751,7 @@
       "description": "Nite Security Group wants a two-site badge analytics pilot",
       "interactions": [
         {
-          "key": "dc1289280bcdee540920095311ced539727ec8b2bbe4a93e5fa42dacab405759",
+          "key": "12f763bbccf3e6ceec94906b40b29a239a8bc48fdd4adb9f328e6d2fb9a26bf4",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3628,7 +3795,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Nite Security Group",
+                        "target": {
+                          "quote": "Nite Security Group",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Sarah Cohen wants to pilot badge analytics at two sites.",
@@ -3643,7 +3814,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3628,
+                "input_tokens": 2028,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3652,7 +3823,7 @@
           }
         },
         {
-          "key": "25db718eb97f5f20cdda93184dad957c3d98f31ca5eb45bf5076ef50ff1ee23c",
+          "key": "272778b0f9aab51128a228d0fcb044a6d7c6d182ec3514372ca3ef8ce1f5dd19",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3696,7 +3867,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Sarah Cohen",
+                        "target": {
+                          "quote": "Sarah Cohen",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Sarah Cohen a pilot quote for $15,000",
@@ -3715,7 +3890,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3724,7 +3899,7 @@
           }
         },
         {
-          "key": "3e0c5d15c457ad2154c9641be818a577f19134ae30287b04587a743891bfc46b",
+          "key": "9785641f67e993a235019f3fdf68111f7b589d85b1ae176493c3b1a25a745476",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3772,7 +3947,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3622,
+                "input_tokens": 2022,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3781,7 +3956,7 @@
           }
         },
         {
-          "key": "fd5a4c2f3896cef0d5a7dfb8320df69a3be13985b2c5300224558740c3a6e189",
+          "key": "f7b3680906d4c5139c507417c6ebeaaee69392178c0dcc548422e3208ba5f1fb",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3825,7 +4000,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Nite Security Group",
+                        "target": {
+                          "quote": "Nite Security",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Complete the security questionnaire",
@@ -3844,7 +4023,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3859,7 +4038,7 @@
       "description": "Right Fabrication's starter plan advances at a lower amount and a later close",
       "interactions": [
         {
-          "key": "7cd9286ddeba05ff0a6e3ba1caec0137fbdb8384524d61a7e1a2c255fdec97f7",
+          "key": "565b3453ebdb13912f0c7f21c337ad5f2caa6b950f35b581cd46eb09c1f94702",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3903,7 +4082,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Right Fabrication",
+                        "target": {
+                          "quote": "Right Fabrication",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Santiago Holm liked the demo.",
@@ -3918,7 +4101,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -3927,7 +4110,7 @@
           }
         },
         {
-          "key": "48e2770c12f5445c3acb94d18da38daf3e3a4be5f5e1bd8afe04a30d60cde6f3",
+          "key": "671cb67452f395b63ab3d4dfaef160809f1a6a6d930c809087c2a70f5cf6207e",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -3971,7 +4154,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Right Fabrication - Starter plan",
+                        "target": {
+                          "quote": "Right Fabrication starter plan",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Right Fabrication"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "decision maker bought in",
@@ -3991,7 +4180,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3629,
+                "input_tokens": 2029,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4000,7 +4189,7 @@
           }
         },
         {
-          "key": "bdabbeeedec866a08b09858066453586746e06934a0104f822a0b7fa43b5b93c",
+          "key": "9defd7d0a266da4ea1d8e942ee685e7842c55388f7d4f136bc96b2d15d9a8bc7",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4044,7 +4233,11 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Right Fabrication - Starter plan",
+                        "target": {
+                          "quote": "Right Fabrication",
+                          "kind": "deal",
+                          "company": null
+                        },
                         "fields": {
                           "stage": null,
                           "amount": null,
@@ -4061,7 +4254,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3623,
+                "input_tokens": 2023,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4070,7 +4263,7 @@
           }
         },
         {
-          "key": "77fa231df1069da5536f87b8705f43239e7e2c0d995ec4d4012b045df13795ba",
+          "key": "86302cebc4a184f9f88d0c7fffc100749065bbc5d0e1e5663cd821df92dbf319",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4118,7 +4311,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4133,7 +4326,7 @@
       "description": "Pier Logistics' expansion goes to contract; Aisha Khan at Peer Logistics needs a call",
       "interactions": [
         {
-          "key": "edc022c4cf0ac0ae10a706486f3ca6ef6e5b01dd1362be5a3c51c256aeb9132b",
+          "key": "1c2fa3e61882d1c9b72c87ef905b1f3b0db8ea4d2d59bbcb12d95b68dec4b6af",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4177,7 +4370,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Pier Logistics - Expansion",
+                        "target": {
+                          "quote": "expansion",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Pier Logistics"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "contract sent",
@@ -4194,7 +4393,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3630,
+                "input_tokens": 2030,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4203,7 +4402,7 @@
           }
         },
         {
-          "key": "3707dd06660c066147f7bc5b8607a3d594b74c0f741ab53b78da72291b0f7164",
+          "key": "12ff1bbfeac4e9a0b8c66201fd5e14f7129b780f375c3a6feb93054b7d502ed5",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4247,7 +4446,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Pier Logistics - Expansion",
+                        "target": {
+                          "quote": "expansion",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Pier"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": null,
@@ -4264,7 +4469,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4273,7 +4478,7 @@
           }
         },
         {
-          "key": "7480b08f7eafe974e455d9b6b9d2cc4d160fe35a6c91f5b8f211998f3ff6c6dc",
+          "key": "48d2cad3229d7dfc746b9e324b528ff902dc7b9fc0b1e250a0f4f7c86bead3ae",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4317,7 +4522,13 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Aisha Khan",
+                        "target": {
+                          "quote": "Aisha Khan",
+                          "kind": "contact",
+                          "company": {
+                            "quote": "Peer Logistics"
+                          }
+                        },
                         "fields": {
                           "title": {
                             "value": "Call Aisha Khan about the invoice dispute",
@@ -4336,7 +4547,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3623,
+                "input_tokens": 2023,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4345,7 +4556,7 @@
           }
         },
         {
-          "key": "c200a3e8cf2a4a790f65b5fa7916a5787ab36e92f1b351ecae53ce9b6e17155e",
+          "key": "426dd905c8585644fe7994e0ee4a7717aea517e6b7008161c06b97ce199aa462",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4389,7 +4600,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": "Ingrid Dalgaard",
                         "fields": {
                           "name": {
                             "value": "Ingrid Dalgaard",
@@ -4411,7 +4621,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3620,
+                "input_tokens": 2020,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4426,7 +4636,7 @@
       "description": "Marsh Medical wants a cold storage monitoring pilot",
       "interactions": [
         {
-          "key": "8d9ecc0186be3ff132353fb354aeb61e421479909af1b34bc324b642e4f82e16",
+          "key": "009b5b6fab7512825db16e1e68a72d162a9b1c1b90754c9a8da53eb341d6d107",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4470,7 +4680,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Marsh Medical",
+                        "target": {
+                          "quote": "Marsh Medical",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Mary Allen wants a cold storage monitoring pilot.",
@@ -4485,7 +4699,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4494,7 +4708,7 @@
           }
         },
         {
-          "key": "f6fe61d7e23b77b55f8a72c0992940df2fb2acc65be69b57c01f54d4c7621524",
+          "key": "e22fcde1f88a549e00c980791e5679290db98b530ce2c5197df2f4e167d6b96d",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4538,7 +4752,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Marsh Medical",
+                        "target": {
+                          "quote": "Marsh",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "The pilot would cover eight clinics for ninety days at $9,600.",
@@ -4553,7 +4771,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4562,7 +4780,7 @@
           }
         },
         {
-          "key": "356b1b673ec28f928f71bc63e9f2324fd1cbdfa3fd8e2ca86fbf1287240fa978",
+          "key": "326e38210d43244adfba6bed4615321b7fbfefc74c844055fb78fe5412c94dc1",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4606,7 +4824,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Mary Allen",
+                        "target": {
+                          "quote": "Mary Allen",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Mary Allen the pilot agreement",
@@ -4629,7 +4851,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3617,
+                "input_tokens": 2017,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4638,7 +4860,7 @@
           }
         },
         {
-          "key": "b8dd30a0842f5bf81695c82ee046c67b211479724049d4259c22b6f52bc799ab",
+          "key": "adc7f59606b8b03386eedbb9f423e0133c7d6425f5aa496810e591f076a2ec91",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4686,7 +4908,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4701,7 +4923,7 @@
       "description": "Coastal Power Systems countersigns the site rollout",
       "interactions": [
         {
-          "key": "662fb7374bb47b9be7cf0ed6c2802053df17167d747f47b384f20dbe68316159",
+          "key": "98032197c540271f1d1971044990209f938cfc6c9d2719d9e510d72c90e83cc9",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4745,7 +4967,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Coastal Power Systems - Site rollout",
+                        "target": {
+                          "quote": "site rollout",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Coastal Power Systems"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "closed won",
@@ -4762,7 +4990,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3632,
+                "input_tokens": 2032,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4771,7 +4999,7 @@
           }
         },
         {
-          "key": "792507675ef79ad856823ca10ae6b1160d374b22e8f0ec4531423b122f4373c9",
+          "key": "f90ec3fbcb647e27b8bf13598da6ec726b9b858d59510ccbed2257e4e088d258",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4815,7 +5043,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Coastal Power Systems - Site rollout",
+                        "target": {
+                          "quote": "Coastal rollout",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Coastal"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": {
@@ -4832,7 +5066,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3629,
+                "input_tokens": 2029,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4841,7 +5075,7 @@
           }
         },
         {
-          "key": "b9208b56524479916f652d336e27e86f876c222d4c229b93439fa041c3d1c74b",
+          "key": "d6aa95979d74361008d6bfe9bf8c3b5c3632da4209c30c0999f1fdaf8cddd8e7",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4885,7 +5119,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Allen Foster",
+                        "target": {
+                          "quote": "Allen Foster",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Allen Foster an onboarding plan",
@@ -4908,7 +5146,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3617,
+                "input_tokens": 2017,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4917,7 +5155,7 @@
           }
         },
         {
-          "key": "cd795e33e9d2fac481f9a6e658f2ff453edf9111b255defac3bd02dad1c7b1e7",
+          "key": "a4145aef41fc18473c34b012f3b43df5ad59f9ed6ce9cc02dc2a21d31228cf98",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -4965,7 +5203,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3605,
+                "input_tokens": 2005,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -4980,7 +5218,7 @@
       "description": "Juniper Bay Telecom's pilot goes to contract; a new title for Geoffrey Walsh",
       "interactions": [
         {
-          "key": "285d7a1d8d00116665296e11346d36b33a95ff3def2657b759597a27b2fc34bd",
+          "key": "b38c6f45cb5c68585a00aaabc71fd7f7d06ede276c962a9fdebef990478bb2d6",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5024,7 +5262,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Juniper Bay Telecom",
+                        "target": {
+                          "quote": "Juniper Bay Telecom",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Geoffrey Walsh is happy with the pilot results.",
@@ -5039,7 +5281,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5048,7 +5290,7 @@
           }
         },
         {
-          "key": "1134f127e6455cdc53326c7a72e690c1d677f23d18e18fef0b0b2d6b8aeb2821",
+          "key": "5bb43afb0f80018dc37a0029985527c7bd6246a384472b743501f2f70ef986f9",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5092,7 +5334,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Juniper Bay Telecom - Pilot program",
+                        "target": {
+                          "quote": "Juniper Bay pilot",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Juniper Bay"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "contract sent",
@@ -5112,7 +5360,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3622,
+                "input_tokens": 2022,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5121,7 +5369,7 @@
           }
         },
         {
-          "key": "5a240444250bf44a16d5fbcac49d7ba785dc854529c5a7c4647ebcec50895719",
+          "key": "f43bc123f1e26ef8425d81dc86b0b56915caab31667c9937e022d5d501955a82",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5165,7 +5413,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Juniper Bay Telecom - Pilot program",
+                        "target": {
+                          "quote": "Juniper Bay pilot",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Juniper Bay"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": null,
@@ -5182,7 +5436,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3614,
+                "input_tokens": 2014,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5191,7 +5445,7 @@
           }
         },
         {
-          "key": "264ea5cae70901b9e23380d9367966ed41a143c81845db5e46299107b94f8496",
+          "key": "b3328e488a84dcc227eb5a113ad46b1a265cdb2878efa308d43cd78d6516934b",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5235,7 +5489,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": "Geoffrey Walsh",
                         "fields": {
                           "name": {
                             "value": "Geoffrey Walsh",
@@ -5257,7 +5510,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5266,7 +5519,7 @@
           }
         },
         {
-          "key": "d0f587a101021d7bdab6754b959357983401ff2e30981518cf405f4d56d2177c",
+          "key": "5fb1ee4c4a8a2b3f6747108abea9c6d30673975af04988f6216cfc79bf2afabf",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5314,7 +5567,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3607,
+                "input_tokens": 2007,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5329,7 +5582,7 @@
       "description": "Tidewater Biotech's expansion is in legal review and phased; a cold room walkthrough",
       "interactions": [
         {
-          "key": "be4d72a0802fcd8c218f7ac76fcc6d3b4ec9c86eed8e95d296b011c8ee5c1682",
+          "key": "75fee64c9fee69ee3fa2095c85195a43ae4b4700083c365a79179ba1d73fcfac",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5373,7 +5626,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Tidewater Biotech",
+                        "target": {
+                          "quote": "Tidewater Biotech",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Legal is reviewing the expansion paperwork, according to Maren Lindqvist.",
@@ -5388,7 +5645,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5397,7 +5654,7 @@
           }
         },
         {
-          "key": "8804e58ae46bb961d6e045426cfe4fe8cadeff0d395982337b88037f9c8956f5",
+          "key": "95eca61c9134155736b34e5b145723d1b867bd09ddb96be3ce7fa91b81c9cc99",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5441,7 +5698,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Tidewater Biotech",
+                        "target": {
+                          "quote": "Tidewater",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "They want to phase the expansion: the first phase is $90,000 and the rest comes next year.",
@@ -5456,7 +5717,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5465,7 +5726,7 @@
           }
         },
         {
-          "key": "819931bece60c3a4c4f284244fa324bbf9f36d82a9748311f6eccadee1190175",
+          "key": "105c4ecd284ff2a98b810590b3f52ea87eb85e9b8024f5bd81646e157686127e",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5509,7 +5770,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Brian Reilly",
+                        "target": {
+                          "quote": "Brian Reilly",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Walk Brian Reilly through the cold rooms",
@@ -5528,7 +5793,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3622,
+                "input_tokens": 2022,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5543,7 +5808,7 @@
       "description": "Quarry Lane Media's analytics add-on qualifies; paperwork to Shawn Murphy",
       "interactions": [
         {
-          "key": "c506332e54e0e0fd49a249d36622cc1070d3a9fbcabd8f91f8c2a4f741dca107",
+          "key": "fe6086d42ed5ad094329f600c93e93a5bd02c65b979143f22a1c50fe48bc5c89",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5587,7 +5852,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Quarry Lane Media",
+                        "target": {
+                          "quote": "Quarry Lane Media",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Priya Nair wants the analytics add-on live before their spring campaign.",
@@ -5602,7 +5871,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3629,
+                "input_tokens": 2029,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5611,7 +5880,7 @@
           }
         },
         {
-          "key": "4e6b940fe97a79c3df45f5e49be285bd4619cf8b469a3ef8addd8d883202abe8",
+          "key": "07b8310f48ac7a64a2773dc1aa4dd222613d3238f34e3509f46614e93ef6b588",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5655,7 +5924,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Quarry Lane Media - Analytics add-on",
+                        "target": {
+                          "quote": "Quarry Lane analytics add-on",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Quarry Lane"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "qualified to buy",
@@ -5675,7 +5950,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3632,
+                "input_tokens": 2032,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5684,7 +5959,7 @@
           }
         },
         {
-          "key": "c79a37c8bf37234a22c094e2f31a99c382ce0186b11c872f5a7280c2df2812b9",
+          "key": "1f7a6327ad65fe8c6920eb92e5c77b4275b0d4b702e5a640230c11f77842eaaa",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5728,7 +6003,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Shawn Murphy",
+                        "target": {
+                          "quote": "Shawn Murphy",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Shawn Murphy the order form",
@@ -5747,7 +6026,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5756,7 +6035,7 @@
           }
         },
         {
-          "key": "e587d5367c95dfd626019843b7855819073510e23dc56b1b2e9f160038b2b177",
+          "key": "251491fe501eeff4ac32b2361b76e3bf13b0b2f492b026577e371f44cf7f7bb4",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5800,7 +6079,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": "Priya Nair",
                         "fields": {
                           "name": {
                             "value": "Priya Nair",
@@ -5822,7 +6100,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5837,7 +6115,7 @@
       "description": "Fernhill Education wants campus energy dashboards for twelve schools",
       "interactions": [
         {
-          "key": "1ed01b10324f820c3071ab0bca993dbc49c4d6e80fe8faedd6742941b0593a51",
+          "key": "5cb07832fa849a0db724e8f94f9ec2172b39f2ab47842275666e37f9f7bba4c2",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5881,7 +6159,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Fernhill Education",
+                        "target": {
+                          "quote": "Fernhill Education",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Interested in campus energy dashboards for twelve schools.",
@@ -5896,7 +6178,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3620,
+                "input_tokens": 2020,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5905,7 +6187,7 @@
           }
         },
         {
-          "key": "0255be393c7d43f7b0c51ba18dd7b87338eaa2c6a65e726fd918919a4de38e98",
+          "key": "db5cde13132943ed4a784a62c6f9e2df46b2e854b55f9366481bdf75e938eafa",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -5949,7 +6231,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Steven Clarke",
+                        "target": {
+                          "quote": "Steven Clarke",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Steven Clarke a proposal for their budget meeting",
@@ -5968,7 +6254,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3621,
+                "input_tokens": 2021,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -5977,7 +6263,7 @@
           }
         },
         {
-          "key": "3192d759ce3a288909e84a3f4b3485562bc846fb6bea8e641a663a9efdae0db1",
+          "key": "cb2260c891ad50a5d8c673a07a8a0b4c427154939ac3961e99bdcfa4c17f8873",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6021,7 +6307,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": null,
                         "fields": {
                           "name": {
                             "value": "Ama Mensah",
@@ -6043,7 +6328,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6052,7 +6337,7 @@
           }
         },
         {
-          "key": "50e3e30b4de8aecf5053b402d2b5b2b9239ec25e1821b91c1ea5910209fb0f00",
+          "key": "d6701b982f74a11d7478c70c512b33e2d6777332665919d1295217566ff44f59",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6096,7 +6381,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Fernhill Education",
+                        "target": {
+                          "quote": "Fernhill",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Quoting software only for now, not hardware.",
@@ -6111,7 +6400,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6126,7 +6415,7 @@
       "description": "Copperleaf Retail reopens the starter plan it turned down in July",
       "interactions": [
         {
-          "key": "cddab92c30f1f7643b1015e14416dabeea37656ba10118fb2c6aadaa50e0abe8",
+          "key": "559200c3ad02b8ae47bc96112c8523491d8c5ccad1cf84fbedfd9f794e151995",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6170,7 +6459,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Copperleaf Retail",
+                        "target": {
+                          "quote": "Copperleaf Retail",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Mohammed Hassan says they want to reopen the starter plan we lost in July.",
@@ -6185,7 +6478,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6194,7 +6487,7 @@
           }
         },
         {
-          "key": "6d17523f57793d58f411c4698556b25e184359793caebd6d57727cb36a4c1f20",
+          "key": "914ae452266bbc7908487ee1e74859cef5e8f68e58969cc7435c9c3125ed1335",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6238,7 +6531,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Copperleaf Retail - Starter plan",
+                        "target": {
+                          "quote": "Copperleaf starter plan",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Copperleaf"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "qualified to buy",
@@ -6258,7 +6557,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3620,
+                "input_tokens": 2020,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6267,7 +6566,7 @@
           }
         },
         {
-          "key": "2c31aeeaf50343f81db585f47db583ca460ccfcb6fc22837c2a349ad1f3a562a",
+          "key": "d43d7993f45d9e93ca307711896229cbcfba9b8a7a26dbc6730f13afda3f6070",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6311,7 +6610,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Mohammed Hassan",
+                        "target": {
+                          "quote": "Mohammed Hassan",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Mohammed Hassan a new quote",
@@ -6334,7 +6637,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6349,7 +6652,7 @@
       "description": "Thistle Software stalls on the multi-year agreement",
       "interactions": [
         {
-          "key": "e9d9e0939cd96ca2bbfba8e6cb93451062c0ed06f3ef7cad6cccc8ad36550abd",
+          "key": "856affe0f8e2ce8e5ee368aa93936b041a181cbd541dda6179b75d983f7e90de",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6393,7 +6696,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Thistle Software",
+                        "target": {
+                          "quote": "Thistle Software",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Procurement hasn't signed the multi-year agreement yet, according to Marcus Eriksen.",
@@ -6408,7 +6715,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6417,7 +6724,7 @@
           }
         },
         {
-          "key": "802662f831bcea1adf71bf6a1faf22c67675220fa90778b2ee1f941a7ad4f4b7",
+          "key": "57d6dd1b99c394d45ef15fe4eff3e4d8cf5e4308ec660e81c99c73860b6ce851",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6461,7 +6768,11 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Thistle Software - Multi-year agreement",
+                        "target": {
+                          "quote": "Thistle",
+                          "kind": "deal",
+                          "company": null
+                        },
                         "fields": {
                           "stage": {
                             "value": "decision maker bought in",
@@ -6481,7 +6792,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3625,
+                "input_tokens": 2025,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6490,7 +6801,7 @@
           }
         },
         {
-          "key": "0da334b20749c8116ef10554e7b76e2a9df7c2de303c404a98ef77c17626106d",
+          "key": "a0b24fc0dc367857545d216a02019b7d7f9cd4244f2eb2f2357a400b68f795eb",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6534,7 +6845,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Alan Foster",
+                        "target": {
+                          "quote": "Alan Foster",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Walk Alan Foster through the redlines",
@@ -6553,7 +6868,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6562,7 +6877,7 @@
           }
         },
         {
-          "key": "3aa60c4e90788305c9c44049fb7d56808eb8f11ea8257ce240c5486ab8259632",
+          "key": "73ab1540cd3caa491e3b5ef9167b6b12c638832ef14cea8dccb002e053e2405d",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6610,7 +6925,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3605,
+                "input_tokens": 2005,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6625,7 +6940,7 @@
       "description": "Lantern Hospitality expands guest messaging; references and a title change",
       "interactions": [
         {
-          "key": "a6c8d44eda8328428808cae0e4c7fee12a1fa89afddf1e7be344a7ae355ee877",
+          "key": "d4447a0b37b50a1028b7f8e34ae508ed5d14a1b73496a5ef72a9d4a2ff039e2b",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6669,7 +6984,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Lantern Hospitality",
+                        "target": {
+                          "quote": "Lantern Hospitality",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "They want to roll out guest messaging to six more hotels.",
@@ -6684,7 +7003,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3619,
+                "input_tokens": 2019,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6693,7 +7012,7 @@
           }
         },
         {
-          "key": "416b8f8cf479fc26b02e5c8fd696c4a275738241939e64b443f618c310372bcd",
+          "key": "da56cf2e6d5c9c1e4e5dcc519f5d264a1431966a8f853845f0b5a8d5c40ad902",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6737,7 +7056,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Katherine Moore",
+                        "target": {
+                          "quote": "Katherine Moore",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Katherine Moore references from two hotel groups",
@@ -6756,7 +7079,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6765,7 +7088,7 @@
           }
         },
         {
-          "key": "e2fa5202025fbb6f67d24268a15e41f7ad57f2d8b1fd1915026b905718237a98",
+          "key": "6fd9d24ec28782f9327741545170fc3f4609c012d8309f8d97b7625832ee12bd",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6809,7 +7132,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": "Erik Nilsson",
                         "fields": {
                           "name": {
                             "value": "Erik Nilsson",
@@ -6831,7 +7153,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6840,7 +7162,7 @@
           }
         },
         {
-          "key": "178ef90303469bd298c7c19b42a41a527660057b711abdf7816d5ebce3538464",
+          "key": "2f085cf243ba78983a4e3f7921f43e3d22d307ab6bb4a690e5f630a33c076971",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6884,7 +7206,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Lantern Hospitality",
+                        "target": {
+                          "quote": "Lantern",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Run a pricing workshop with Lantern Hospitality in January",
@@ -6901,7 +7227,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6916,7 +7242,7 @@
       "description": "Granite State Builders drops the analytics add-on this year",
       "interactions": [
         {
-          "key": "79cec083126b7ea3856557a0c023764628b5d488b033d02fa0168fb2b3a0a874",
+          "key": "c9d25ef196b005244601eaac6797242d91d7d5a50b1fb5e8b3ff09669a726568",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -6960,7 +7286,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Granite State Builders - Analytics add-on",
+                        "target": {
+                          "quote": "analytics add-on",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Granite State Builders"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "closed lost",
@@ -6972,7 +7304,11 @@
                       },
                       {
                         "type": "note",
-                        "target": "Granite State Builders",
+                        "target": {
+                          "quote": "Granite State Builders",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "They're not going ahead with the analytics add-on this year.",
@@ -6987,7 +7323,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3631,
+                "input_tokens": 2031,
                 "output_tokens": 152,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -6996,7 +7332,7 @@
           }
         },
         {
-          "key": "2aff252ee531cf8937f143e86185bf032b1be6ceccfaedbcebc572a235be01e3",
+          "key": "ab5f84039bef5432f4f97f7810f6cfddd74c71b7cd0b484953f9226c41ad13b2",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7040,7 +7376,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Granite State Builders",
+                        "target": {
+                          "quote": "Granite",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Their budget was moved to their new headquarters build, according to Shaun Murphy.",
@@ -7055,7 +7395,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3620,
+                "input_tokens": 2020,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7064,7 +7404,7 @@
           }
         },
         {
-          "key": "6a1805f4c0e6ae48dc3b4e8e067e4bb4619e6d3896ede930a0ec0e7ae4a5fbee",
+          "key": "87917afdf7686e476ae1071c8bd07be2a914bf0d13344e9f36fe01f8bf457f8a",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7108,7 +7448,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Shaun Murphy",
+                        "target": {
+                          "quote": "Shaun Murphy",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Check back with Shaun Murphy",
@@ -7127,7 +7471,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3615,
+                "input_tokens": 2015,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7142,7 +7486,7 @@
       "description": "First meeting with Verdant Agritech: three hundred farms and a pilot under twenty thousand",
       "interactions": [
         {
-          "key": "d6aa093178d9ae0854c20550b7e70b183cc20c55a8a3927837ebf048de66ffaf",
+          "key": "f9dc63425a788053764c548ba2b8bc71efd7e7226563a955e7d1ad97d93e4816",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7186,7 +7530,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Verdant Agritech",
+                        "target": {
+                          "quote": "Verdant Agritech",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "They run irrigation for about three hundred farms.",
@@ -7201,7 +7549,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7210,7 +7558,7 @@
           }
         },
         {
-          "key": "9f0fd518b7b9effd13ce6c4334dd21708dde0401e2008b51be46f7c86cff61bb",
+          "key": "dea4eb5cee253430ab06fb526a26171d9c5be4b9bbe26a4f2c988dad9a2d0194",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7254,7 +7602,6 @@
                     "proposals": [
                       {
                         "type": "contact",
-                        "target": null,
                         "fields": {
                           "name": {
                             "value": "Elif Demir",
@@ -7279,7 +7626,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7288,7 +7635,7 @@
           }
         },
         {
-          "key": "29b5b046bbf0f597daa16f34cadff8583b1c5c3c94a7af32397a5f6807553721",
+          "key": "1c627dc1adf23e4f90ee7b9c89c485c2953afa25c2f983c533b6494c0819359a",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7332,7 +7679,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Verdant Agritech",
+                        "target": {
+                          "quote": "Verdant",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "Luca Castellano will only sign if the pilot is under $20,000.",
@@ -7347,7 +7698,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3625,
+                "input_tokens": 2025,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7356,7 +7707,7 @@
           }
         },
         {
-          "key": "cf699a8f2dfae3d84d839079fa43d46e31417c47759315e82446e2997c66ec59",
+          "key": "109a60096723e2c6f301baeeaaa02f28987c6d738504356693d92976c274bb50",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7400,14 +7751,18 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Verdant Agritech",
+                        "target": {
+                          "quote": "Verdant",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Send Verdant Agritech a pilot proposal",
                             "quote": "a pilot proposal"
                           },
                           "counterpart": {
-                            "value": "Verdant Agritech",
+                            "value": "Verdant",
                             "quote": "Verdant"
                           },
                           "dueDate": {
@@ -7423,7 +7778,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3614,
+                "input_tokens": 2014,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7432,7 +7787,7 @@
           }
         },
         {
-          "key": "634e9dda652e98e79957723aff2eddf52298ae60751838bfbbf70a8047ec37b0",
+          "key": "b9967cf72b787ba0c43008da0b36ab39b13b13560889f433ee1f1b72638a16ea",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7480,7 +7835,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3606,
+                "input_tokens": 2006,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7495,7 +7850,7 @@
       "description": "Ironbridge Textiles' renewal is agreed and sent",
       "interactions": [
         {
-          "key": "5385a3765fb4a983d402fb26a77a29be3cd8329ac9ffbdc5ac3e0d63872f00db",
+          "key": "733a1f158627c5ece51cb68c28641cf73b3acd846e9e29133cb7faa212aad8e0",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7539,7 +7894,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Ironbridge Textiles - Annual renewal",
+                        "target": {
+                          "quote": "Ironbridge Textiles renewal",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Ironbridge Textiles"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": {
@@ -7556,7 +7917,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3628,
+                "input_tokens": 2028,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7565,7 +7926,7 @@
           }
         },
         {
-          "key": "b081386835955765292622a2e11ad5184863a5977db36a228d20ffb3e60aaf6c",
+          "key": "389b2683402f6db52bf3afce5db9b6798d5362041eee980282cc0331ca1c83ba",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7609,7 +7970,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Ironbridge Textiles - Annual renewal",
+                        "target": {
+                          "quote": "Ironbridge renewal",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Ironbridge"
+                          }
+                        },
                         "fields": {
                           "stage": {
                             "value": "contract sent",
@@ -7629,7 +7996,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3621,
+                "input_tokens": 2021,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7644,7 +8011,7 @@
       "description": "Sparrow Robotics' expansion is with legal; a corrected close date and a bigger order",
       "interactions": [
         {
-          "key": "53feb7827345d00e920043b063ee5dd9ad0876f119adb0a501779c52e2594b27",
+          "key": "e893650ffc16c49cfc4724caa88f9bd742e2aafb3ae71fe87413709df14951c7",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7688,7 +8055,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Sparrow Robotics",
+                        "target": {
+                          "quote": "Sparrow Robotics",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "The expansion contract is with their legal team, according to Noor Moreau.",
@@ -7703,7 +8074,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3624,
+                "input_tokens": 2024,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7712,7 +8083,7 @@
           }
         },
         {
-          "key": "401959e3ff680ef6fae1f44447b5d40d380621a8e40c5737d68ba8b3af4f6c04",
+          "key": "ed0555f5a37160979e209f2cfb3acc94390893759b3e15311702d7166488acea",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7756,7 +8127,11 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Sparrow Robotics - Expansion",
+                        "target": {
+                          "quote": "Sparrow",
+                          "kind": "deal",
+                          "company": null
+                        },
                         "fields": {
                           "stage": null,
                           "amount": null,
@@ -7773,7 +8148,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3627,
+                "input_tokens": 2027,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7782,7 +8157,7 @@
           }
         },
         {
-          "key": "73723c9064a10d7018e406f99cef7cfd01796fd453685c4049a9b961741cad60",
+          "key": "185f2092bcab67903602b79e349c7bdd1c2a0aa328b4a8b431b6a5cc24fbf518",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7826,7 +8201,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Sparrow Robotics - Expansion",
+                        "target": {
+                          "quote": "expansion",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Sparrow"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": {
@@ -7843,7 +8224,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3621,
+                "input_tokens": 2021,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7852,7 +8233,7 @@
           }
         },
         {
-          "key": "bedec8485b4fa819b93c0dfddff7e1110ec1d2b388a1ee7e96d7e84857802524",
+          "key": "f7555770a9a6339e4201b1918087173463a1dc022483d4418bd3d136e20f2c7a",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7896,7 +8277,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Luca Dalgaard",
+                        "target": {
+                          "quote": "Luca Dalgaard",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Luca Dalgaard the updated order form",
@@ -7915,7 +8300,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3619,
+                "input_tokens": 2019,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7924,7 +8309,7 @@
           }
         },
         {
-          "key": "5649d4d3f6cab94dfa543d58f8c40131590a880e4765615e5150700a9818b04a",
+          "key": "7c03a4b715d6fda059a9926cc5782b38015730ecbd7bd295e4382c6fa89a51e5",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -7972,7 +8357,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3606,
+                "input_tokens": 2006,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -7987,7 +8372,7 @@
       "description": "Atlas Freight's pilot grows to fifteen trucks; a rollout plan due tomorrow",
       "interactions": [
         {
-          "key": "643183621f79c1c1e036f7bc83841f4ac778c49e9738f6547f1410765da4fd0a",
+          "key": "71aeed2e7bc0d556ab4bdeb465fb829c3b62ab6b6cdd3282a063e827d0c0830b",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -8031,7 +8416,11 @@
                     "proposals": [
                       {
                         "type": "note",
-                        "target": "Atlas Freight",
+                        "target": {
+                          "quote": "Atlas Freight",
+                          "kind": "company",
+                          "company": null
+                        },
                         "fields": {
                           "body": {
                             "value": "The pilot is going well, according to Emeka Zielinski.",
@@ -8046,7 +8435,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3625,
+                "input_tokens": 2025,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -8055,7 +8444,7 @@
           }
         },
         {
-          "key": "516b2f87d84df0b65431c764086734c5c38734c5205201f86c1fc9a8bf0e3460",
+          "key": "7a047cd81efa7e1cf0b07e04dea600be39aed6cc6a828f006d2ce83a0c6fae30",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -8099,7 +8488,13 @@
                     "proposals": [
                       {
                         "type": "deal_update",
-                        "target": "Atlas Freight - Pilot program",
+                        "target": {
+                          "quote": "pilot program",
+                          "kind": "deal",
+                          "company": {
+                            "quote": "Atlas"
+                          }
+                        },
                         "fields": {
                           "stage": null,
                           "amount": {
@@ -8116,7 +8511,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3626,
+                "input_tokens": 2026,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -8125,7 +8520,7 @@
           }
         },
         {
-          "key": "4b470b84ccd3fabf74847603b70144e47fe13c1ab02c5435ab18c7441b27b24d",
+          "key": "e2a529d3569af15fc9e30db7840820c089fa8fdd5a7b2283c930837c70c9754e",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -8169,7 +8564,11 @@
                     "proposals": [
                       {
                         "type": "task",
-                        "target": "Signe Lindqvist",
+                        "target": {
+                          "quote": "Signe Lindqvist",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "title": {
                             "value": "Send Signe Lindqvist a rollout plan",
@@ -8188,7 +8587,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3616,
+                "input_tokens": 2016,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -8197,7 +8596,7 @@
           }
         },
         {
-          "key": "bfd03839d8a9a0f844a73c57497c1311cf599f6ab88b066e9fa720e15126fd92",
+          "key": "c40c2457e8c4b0eb00f59444d1afd5fb7f21fa1af3025c4cdb67fdb5d62d04c1",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -8241,7 +8640,11 @@
                     "proposals": [
                       {
                         "type": "commitment",
-                        "target": "Emeka Zielinski",
+                        "target": {
+                          "quote": "Emeka Zielinski",
+                          "kind": "contact",
+                          "company": null
+                        },
                         "fields": {
                           "text": {
                             "value": "Add driver training at no extra cost",
@@ -8261,7 +8664,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3617,
+                "input_tokens": 2017,
                 "output_tokens": 88,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0
@@ -8270,7 +8673,7 @@
           }
         },
         {
-          "key": "8ba5414bce2822947b348bbbef3a7b37b1d56789135f9a5f9554db779e7d19d3",
+          "key": "a49c36ac536c9f972579967125677149e74c91019af9c430a7ecc758a618bd2a",
           "request": {
             "method": "POST",
             "path": "/v1/messages",
@@ -8318,7 +8721,7 @@
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
-                "input_tokens": 3622,
+                "input_tokens": 2022,
                 "output_tokens": 24,
                 "cache_creation_input_tokens": 0,
                 "cache_read_input_tokens": 0

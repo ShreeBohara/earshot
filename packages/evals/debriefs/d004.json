@@ -6,6 +6,7 @@
   "speed": 1.05,
   "callTime": "2026-11-20T21:05:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_027",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -14,6 +15,9 @@
         {
           "type": "note",
           "target": "co_027",
+          "named": {
+            "quote": "Globelex Systems"
+          },
           "fields": {
             "body": {
               "value": "Bryan Reilly, their VP of Operations, is ready to move forward with the renewal.",
@@ -30,6 +34,10 @@
         {
           "type": "deal_update",
           "target": "deal_026",
+          "named": {
+            "quote": "Globelex annual renewal",
+            "company": "Globelex"
+          },
           "fields": {
             "stage": {
               "value": "contract sent",
@@ -50,6 +58,9 @@
         {
           "type": "commitment",
           "target": "ct_080",
+          "named": {
+            "quote": "Bryan Reilly"
+          },
           "fields": {
             "text": {
               "value": "Send Bryan Reilly the order form for signature",

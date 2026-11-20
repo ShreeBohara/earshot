@@ -9,7 +9,7 @@
 // when the call returns. Nothing in this module keeps a key.
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGroq } from "@ai-sdk/groq";
-import type { EntityRef, LlmProvider, UtteranceFinalV2 } from "@earshot/core";
+import type { LlmProvider, UtteranceFinalV2 } from "@earshot/core";
 import {
   APICallError,
   generateText,
@@ -19,7 +19,6 @@ import {
   ToolChoiceViolationError,
   tool,
 } from "ai";
-import { attachEvidence, type ProposalDraft } from "./attach";
 import { type CallFailure, classifyCallError, extractionError } from "./errors";
 import { type AiGatewayConfig, providerEndpoint } from "./gateway";
 import {
@@ -49,22 +48,25 @@ export const LLM_MODELS = {
 } as const satisfies Record<LlmProvider, string>;
 
 export interface ExtractInput {
-  /** The turn's final utterances, in order. At least one. */
+  /** The turn's final utterances from the biased witness, in order. At least one. */
   readonly utterances: readonly UtteranceFinalV2[];
-  /** The session's entities, from `start`. */
-  readonly entities: readonly EntityRef[];
   /** When the call happened (ISO 8601): the session's start. Relative dates resolve against it. */
   readonly callTime: string;
   /** The rep's IANA time zone. An unknown zone falls back to UTC. */
   readonly timeZone: string;
+  /** The name of the account open in Earshot, which the prompt names on one line; or none. */
+  readonly openAccount?: string | null;
   /** The user's LLM key, for this call only. Never stored, logged, or returned. */
   readonly apiKey: string;
   readonly signal: AbortSignal;
 }
 
 export interface ExtractResult {
-  /** The proposals, with evidence attached, target resolved, and risk flags. May be empty. */
-  readonly drafts: readonly ProposalDraft[];
+  /**
+   * The proposals as the model drafted them, validated: quoted fields and the words that named
+   * each record. May be empty. `understand` turns them into `proposal.created` v2 payloads.
+   */
+  readonly drafts: readonly ToolProposal[];
   /** Tokens over every call this extraction made. */
   readonly usage: TokenUsage;
   /** What those calls cost, priced per call from the extractor's price table. */
@@ -244,11 +246,13 @@ export function createProposalExtractor(options: ExtractorOptions): ProposalExtr
           throw extractionError(REFUSED, { attempts: attempt, latencyMs, usage, costUsd });
         }
         if (outcome.kind === "valid") {
-          const context = { utterances: input.utterances, entities: input.entities };
-          const drafts = outcome.input.proposals
-            .map((proposal: ToolProposal) => attachEvidence(proposal, context))
-            .filter((draft): draft is ProposalDraft => draft !== null);
-          return { drafts, usage, costUsd, attempts: attempt, latencyMs: Math.round(latencyMs) };
+          return {
+            drafts: outcome.input.proposals,
+            usage,
+            costUsd,
+            attempts: attempt,
+            latencyMs: Math.round(latencyMs),
+          };
         }
         problems = outcome.problems;
       }

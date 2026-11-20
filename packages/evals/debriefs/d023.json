@@ -5,6 +5,7 @@
   "voice": "am_michael",
   "callTime": "2026-11-23T19:10:00.000Z",
   "timeZone": "America/New_York",
+  "focusEntityId": "co_041",
   "turns": [
     {
       "pauseBeforeMs": 1500,
@@ -13,6 +14,9 @@
         {
           "type": "note",
           "target": "co_041",
+          "named": {
+            "quote": "Copperleaf Retail"
+          },
           "fields": {
             "body": {
               "value": "Mohammed Hassan says they want to reopen the starter plan we lost in July.",
@@ -29,6 +33,10 @@
         {
           "type": "deal_update",
           "target": "deal_036",
+          "named": {
+            "quote": "Copperleaf starter plan",
+            "company": "Copperleaf"
+          },
           "fields": {
             "stage": {
               "value": "qualified to buy",
@@ -49,6 +57,9 @@
         {
           "type": "commitment",
           "target": "ct_088",
+          "named": {
+            "quote": "Mohammed Hassan"
+          },
           "fields": {
             "text": {
               "value": "Send Mohammed Hassan a new quote",

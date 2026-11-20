@@ -2,7 +2,13 @@
 // and what it should produce: 2 to 5 push-to-talk turns, the silence before each, the Kokoro
 // voice that speaks them, the call time relative dates resolve against, and the proposals each
 // turn should yield. lab/scripts/render_debriefs.py renders the audio from the same files.
-import type { ProposalType } from "@earshot/core";
+//
+// Phase 4 (WP8) adds three optional fields for extractor v2 and the entity linker, without a
+// format version bump: the account open in Earshot (`focusEntityId`), how the rep named each
+// proposal's record (`named`, which tool schema v2's drafts quote), and what the linker should
+// decide (`decision`, derived when absent; see `expectedDecision`). Names are written as said:
+// the extractor no longer sees the CRM list, so "Akme" stays "Akme" and the linker resolves it.
+import type { ProposalType, TargetDecision } from "@earshot/core";
 import { z } from "zod";
 
 export const DEBRIEF_FORMAT_VERSION = 1;
@@ -73,7 +79,7 @@ export const DemoEntityId = z.string().regex(/^(?:co|ct|deal)_\d{3}$/);
 
 /**
  * A field as the model should draft it: the value the CRM should store, and the exact words of
- * the turn it comes from. The quote is what `attachEvidence` looks for, so it must be a substring
+ * the turn it comes from. The quote is what `understand` looks for, so it must be a substring
  * of the turn's text.
  */
 function quoted<V extends z.ZodType>(value: V) {
@@ -87,6 +93,31 @@ const Usd = quoted(z.number().int().positive());
 
 const target = DemoEntityId.nullable();
 
+/** A record kind: `@earshot/core`'s `EntityKind`. */
+const Kind = z.enum(["company", "contact", "deal"]);
+
+/**
+ * How the rep named a proposal's record in its turn, as tool schema v2 drafts it: the words as
+ * said (a substring of the turn), the kind of record they name (the target's kind when absent),
+ * and the company said in the same breath as a contact or deal. Absent when the turn names no
+ * record: the draft's target is then null, and the open account stands in (`implied_target`).
+ */
+const Named = z.strictObject({
+  quote: z.string().min(1),
+  kind: Kind.optional(),
+  company: z.string().min(1).optional(),
+});
+export type Named = z.infer<typeof Named>;
+
+/**
+ * What the linker should decide about a proposal's target. Absent means the plain reading of
+ * `target`: a record is linked, and null is a new contact, or no target for other types.
+ */
+const Decision = z.enum(["linked", "ask", "new", "none"]);
+
+/** Extractor v2's fields on a proposal whose record is a target (every type but contact). */
+const targeting = { target, named: Named.optional(), decision: Decision.optional() };
+
 /**
  * One proposal a turn should yield: its type, its target (a demo CRM id, or null for a new
  * contact or a record the session doesn't hold), and its fields. A field left out is one the
@@ -95,17 +126,19 @@ const target = DemoEntityId.nullable();
 export const ExpectedProposal = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("note"),
-    target,
+    ...targeting,
     fields: z.strictObject({ body: Text }),
   }),
   z.strictObject({
     type: z.literal("task"),
-    target,
+    ...targeting,
     fields: z.strictObject({ title: Text, dueDate: Day.optional() }),
   }),
   z.strictObject({
     type: z.literal("contact"),
     target,
+    // A contact's record is the person its `name` field names, so it's never `named` otherwise.
+    decision: Decision.optional(),
     fields: z.strictObject({
       name: Text,
       title: Text.optional(),
@@ -116,14 +149,14 @@ export const ExpectedProposal = z.discriminatedUnion("type", [
   }),
   z.strictObject({
     type: z.literal("deal_update"),
-    target,
+    ...targeting,
     fields: z
       .strictObject({ stage: Text.optional(), amount: Usd.optional(), closeDate: Day.optional() })
       .refine((fields) => Object.keys(fields).length > 0, "a deal update changes a field"),
   }),
   z.strictObject({
     type: z.literal("commitment"),
-    target,
+    ...targeting,
     fields: z.strictObject({
       text: Text,
       counterpart: Text.optional(),
@@ -133,6 +166,21 @@ export const ExpectedProposal = z.discriminatedUnion("type", [
 ]);
 export type ExpectedProposal = z.infer<typeof ExpectedProposal>;
 export type ExpectedField = { readonly value: string | number; readonly quote: string };
+
+/** How the rep named a proposal's record, or null: never for a contact, whose record is its name. */
+export function namedOf(proposal: ExpectedProposal): Named | null {
+  return "named" in proposal ? (proposal.named ?? null) : null;
+}
+
+/**
+ * What the linker should decide about a proposal's target: `decision` when the script says, else
+ * "linked" for a target, "new" for a contact with none, and "none" for anything else with none.
+ */
+export function expectedDecision(proposal: ExpectedProposal): TargetDecision {
+  if (proposal.decision) return proposal.decision;
+  if (proposal.target !== null) return "linked";
+  return proposal.type === "contact" ? "new" : "none";
+}
 
 /** Text as the fake speech-to-text adapter emits it: single spaces, no line breaks, trimmed. */
 export function isNormalizedText(text: string): boolean {
@@ -179,6 +227,14 @@ export const DebriefScript = z
     callTime: z.iso.datetime({ offset: true }),
     /** The rep's IANA time zone. */
     timeZone: z.string().refine(isTimeZone, "an IANA time zone"),
+    /**
+     * The account open in Earshot while the rep debriefs: a demo CRM company. The session's
+     * `start` carries it, the prompt names it, and the linker reads its family as context.
+     */
+    focusEntityId: z
+      .string()
+      .regex(/^co_\d{3}$/)
+      .optional(),
     turns: z.array(DebriefTurn).min(MIN_TURNS).max(MAX_TURNS),
   })
   .superRefine((script, ctx) => {
