@@ -1,3 +1,4 @@
+import { fromJsonl } from "@earshot/events";
 import demoLog from "@earshot/events/fixtures/demo-session.jsonl";
 import { Badge } from "@earshot/ui/components/badge";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@earshot/ui/components/card";
@@ -5,8 +6,9 @@ import { StatePill } from "@earshot/ui/components/state-pill";
 import { CheckIcon, PencilIcon, XIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DemoReplay } from "@/components/demo/demo-replay";
 import { linkButton } from "@/components/link-button";
-import { buildDemo, clock, type DemoField, type DemoProposal } from "@/lib/demo";
+import { buildDemo, clock, type Demo, type DemoField, type DemoProposal } from "@/lib/demo";
 
 export const metadata: Metadata = {
   title: "Replay demo · Earshot",
@@ -14,8 +16,9 @@ export const metadata: Metadata = {
     "A recorded debrief replayed into CRM proposals, with the evidence behind every field.",
 };
 
-// Replayed on the server when the site is built and served as static HTML: no database, no
-// account. The session log is bundled as a string (the *.jsonl rule in next.config.ts).
+// Built once and served as static HTML: no database, no account, no key, no edge Worker, and no
+// provider. The session log is bundled as a string (the *.jsonl rule in next.config.ts); the
+// browser plays it over time, and the whole-session summary is replayed here at build time.
 export const dynamic = "force-static";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -151,8 +154,72 @@ function ProposalCard({ proposal }: { proposal: DemoProposal }) {
   );
 }
 
+/** Today's static summary: the transcript, the proposals as reviewed, and the event log. */
+function WholeSession({ demo }: { demo: Demo }) {
+  return (
+    <div className="flex flex-col gap-10">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <section aria-labelledby="transcript-heading" className="flex flex-col gap-4">
+          <h2 id="transcript-heading" className="font-medium text-sm">
+            Transcript
+          </h2>
+          <ol className="flex flex-col gap-1">
+            {demo.utterances.map((utterance) => (
+              <li
+                key={utterance.id}
+                id={`u-${utterance.id}`}
+                className="grid scroll-mt-6 grid-cols-[3.5rem_1fr] gap-3 rounded-lg px-3 py-2 target:bg-state-proposed-bg target:ring-1 target:ring-state-proposed-border"
+              >
+                <span className="pt-0.5 font-mono text-muted-foreground text-xs tabular-nums">
+                  {utterance.at}
+                </span>
+                <p className="text-pretty leading-relaxed">{utterance.text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section aria-labelledby="proposals-heading" className="flex flex-col gap-4">
+          <h2 id="proposals-heading" className="font-medium text-sm">
+            Proposals <span className="text-muted-foreground">({demo.proposals.length})</span>
+          </h2>
+          <ul className="flex flex-col gap-4">
+            {demo.proposals.map((proposal) => (
+              <li key={proposal.id}>
+                <ProposalCard proposal={proposal} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <section aria-labelledby="log-heading" className="flex flex-col gap-3">
+        <h2 id="log-heading" className="font-medium text-sm">
+          Event log
+        </h2>
+        <details className="group rounded-lg border">
+          <summary className="flex min-h-10 cursor-pointer items-center rounded-lg px-4 text-sm outline-none focus-visible:focus-ring">
+            All {demo.events.length} events, in order
+          </summary>
+          <ol className="flex flex-col divide-y border-t font-mono text-xs">
+            {demo.events.map((event) => (
+              <li key={event.seq} className="grid grid-cols-[2.5rem_4rem_1fr_auto] gap-3 px-4 py-2">
+                <span className="text-muted-foreground tabular-nums">#{event.seq}</span>
+                <span className="text-muted-foreground tabular-nums">{event.at}</span>
+                <span>{event.type}</span>
+                <span className="text-muted-foreground">v{event.schemaVersion}</span>
+              </li>
+            ))}
+          </ol>
+        </details>
+      </section>
+    </div>
+  );
+}
+
 export default function DemoPage() {
   const demo = buildDemo(demoLog);
+  const log = fromJsonl(demoLog);
   const { session } = demo;
   const providers = session.providers as {
     speechToText?: { provider: string; model: string };
@@ -195,9 +262,10 @@ export default function DemoPage() {
           </p>
           <h1 className="font-serif text-5xl tracking-tight">A debrief, replayed</h1>
           <p className="max-w-prose text-pretty text-lg text-muted-foreground leading-relaxed">
-            A rep&apos;s spoken notes after a call with Acme Corp, rebuilt from the session&apos;s
-            event log by the same replay engine the app runs. Every proposed field points to the
-            words it came from.
+            A rep&apos;s spoken notes after a call with Acme Corp, played back from the
+            session&apos;s event log through the screen a live debrief uses: the words as they were
+            said, each proposal as it arrived, then the rep&apos;s review. Every proposed field
+            points to the words it came from.
           </p>
           <dl className="flex flex-wrap gap-x-6 gap-y-1 pt-1 font-mono text-muted-foreground text-xs">
             <div className="flex gap-1.5">
@@ -233,64 +301,7 @@ export default function DemoPage() {
           </dl>
         </header>
 
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-          <section aria-labelledby="transcript-heading" className="flex flex-col gap-4">
-            <h2 id="transcript-heading" className="font-medium text-sm">
-              Transcript
-            </h2>
-            <ol className="flex flex-col gap-1">
-              {demo.utterances.map((utterance) => (
-                <li
-                  key={utterance.id}
-                  id={`u-${utterance.id}`}
-                  className="grid scroll-mt-6 grid-cols-[3.5rem_1fr] gap-3 rounded-lg px-3 py-2 target:bg-state-proposed-bg target:ring-1 target:ring-state-proposed-border"
-                >
-                  <span className="pt-0.5 font-mono text-muted-foreground text-xs tabular-nums">
-                    {utterance.at}
-                  </span>
-                  <p className="text-pretty leading-relaxed">{utterance.text}</p>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          <section aria-labelledby="proposals-heading" className="flex flex-col gap-4">
-            <h2 id="proposals-heading" className="font-medium text-sm">
-              Proposals <span className="text-muted-foreground">({demo.proposals.length})</span>
-            </h2>
-            <ul className="flex flex-col gap-4">
-              {demo.proposals.map((proposal) => (
-                <li key={proposal.id}>
-                  <ProposalCard proposal={proposal} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-
-        <section aria-labelledby="log-heading" className="flex flex-col gap-3">
-          <h2 id="log-heading" className="font-medium text-sm">
-            Event log
-          </h2>
-          <details className="group rounded-lg border">
-            <summary className="flex min-h-10 cursor-pointer items-center rounded-lg px-4 text-sm outline-none focus-visible:focus-ring">
-              All {demo.events.length} events, in order
-            </summary>
-            <ol className="flex flex-col divide-y border-t font-mono text-xs">
-              {demo.events.map((event) => (
-                <li
-                  key={event.seq}
-                  className="grid grid-cols-[2.5rem_4rem_1fr_auto] gap-3 px-4 py-2"
-                >
-                  <span className="text-muted-foreground tabular-nums">#{event.seq}</span>
-                  <span className="text-muted-foreground tabular-nums">{event.at}</span>
-                  <span>{event.type}</span>
-                  <span className="text-muted-foreground">v{event.schemaVersion}</span>
-                </li>
-              ))}
-            </ol>
-          </details>
-        </section>
+        <DemoReplay log={log} wholeSession={<WholeSession demo={demo} />} />
 
         <footer className="flex flex-wrap items-center gap-3 border-t pt-8">
           <p className="text-muted-foreground">Ready to debrief your own calls?</p>

@@ -123,11 +123,23 @@ function ProposalCard({
             const quote = quotes
               ?.get(field.evidence.utteranceId)
               ?.slice(field.evidence.span[0], field.evidence.span[1]);
+            // In a replay, a reviewer's edit replaces the value; the original stays, struck through.
+            const edit = showReview ? proposal.review?.editDiff?.[name] : undefined;
             return (
               <div key={name} className="grid gap-0.5">
                 <dt className="text-muted-foreground text-xs">{fieldLabel(name)}</dt>
-                <dd className="text-pretty">
-                  {show(field.value)}
+                <dd className="text-pretty" data-edited={edit ? "" : undefined}>
+                  {edit ? (
+                    <>
+                      {show(edit.after)}
+                      <span className="block text-muted-foreground text-xs">
+                        <span className="sr-only">Changed from: </span>
+                        <del>{show(edit.before)}</del>
+                      </span>
+                    </>
+                  ) : (
+                    show(field.value)
+                  )}
                   {quote ? (
                     <span className="block font-mono text-muted-foreground text-xs">
                       <span className="sr-only">Heard: </span>“{quote}”

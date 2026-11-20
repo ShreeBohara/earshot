@@ -2,8 +2,8 @@ import { settle } from "@earshot/voice/testing";
 
 /**
  * A clock that moves only when told, running due timers in order with microtasks settled between
- * (the same as packages/voice's test clock). It serves the engine, SessionClient, and the
- * capture controller's own timers.
+ * (the same as packages/voice's test clock). It serves the engine, SessionClient, the capture
+ * controller's own timers, and /demo's replay driver.
  */
 export class ManualClock {
   #now = 0;
@@ -22,6 +22,11 @@ export class ManualClock {
 
   clearTimeout(handle: unknown): void {
     this.#timers.delete(handle as number);
+  }
+
+  /** Timers waiting to fire. */
+  get pending(): number {
+    return this.#timers.size;
   }
 
   async advance(ms: number): Promise<void> {
