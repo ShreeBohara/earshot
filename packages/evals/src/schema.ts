@@ -79,7 +79,7 @@ export const DemoEntityId = z.string().regex(/^(?:co|ct|deal)_\d{3}$/);
 
 /**
  * A field as the model should draft it: the value the CRM should store, and the exact words of
- * the turn it comes from. The quote is what `attachEvidence` looks for, so it must be a substring
+ * the turn it comes from. The quote is what `understand` looks for, so it must be a substring
  * of the turn's text.
  */
 function quoted<V extends z.ZodType>(value: V) {

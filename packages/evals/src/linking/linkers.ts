@@ -3,8 +3,8 @@
 // returns two decisions per item: with the second witness off ("biased only") and after it.
 //
 // Linker v0 is Phase 3's exact matcher, `matchEntity` from @earshot/agent, applied the way
-// `attachEvidence` applies it: to the words the biased transcript has for the mention, among the
-// kinds the proposal type allows. A match links; no match is a new contact for a contact
+// Phase 3's `attachEvidence` applied it: to the words the biased transcript has for the mention,
+// among the kinds the proposal type allows. A match links; no match is a new contact for a contact
 // proposal (Phase 3's `new_entity`) and no target otherwise. It has no probability and no witness.
 //
 // Linker v1 (WP4) is `link` from @earshot/understanding/link with its committed parameters, run

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15)
+Accepted (2026-11-15). Amended (2026-11-20) by Phase 4 WP8: the prompt sends no CRM list, the tool schema is v2, and the understanding step (ADR-0027) replaces the exact matcher and the risk patterns. See "Amendment: Phase 4" below.
 
 ## Context and problem
 
@@ -51,6 +51,17 @@ Phase 3's gate needs a proposal card within 2.5 s of the rep releasing push-to-t
 - Groq's invalid output costs a second round trip. Groq does have strict structured output (`response_format`), but not with tools.
 - Quote matching is literal: a paraphrased quote loses its field. Phase 4's faithfulness check and normalizers replace this.
 - Two pieces are local stand-ins: the price table belongs in `@earshot/voice/prices` (WP4) and the retry policy in WP8's shared `retry` machine. Both are single functions to swap.
+
+## Amendment: Phase 4 (WP8, 2026-11-20)
+
+Spec decision 1 moves the choice of record from the model to a deterministic linker (ADR-0027, ADR-0028). What changed here, and what didn't:
+
+- **No CRM list.** The prompt names at most the account open in Earshot, on one line, and asks the model to quote names exactly as transcribed, never correcting a spelling, and to leave `target` null when the rep names no record. A model that sees the list snaps a mishearing to a CRM spelling just as the keyterm-biased stream does, so their errors line up. Dropping it saves about 1,600 input tokens a turn.
+- **Tool schema v2.** `target` is `{ quote, kind, company: { quote } | null } | null` instead of a name copied from the list; a contact has no `target`; `meeting` is a new type with a date and an `HH:MM` time. Still one forced call of `submit_proposals`, still within Anthropic's strict rules and Groq's.
+- **The extractor returns drafts.** `extract()` returns the validated tool input, and `runTurn` runs `understand()` on it (`packages/agent/src/understand.ts`, replacing `attach.ts`): evidence by quotation as before, then the linker, then the normalizers and the faithfulness check. `runTurn` takes the session's link index, open account, and earlier links, and returns `proposal.created` v2 payloads and the updated links. `matchEntity` stays, as linker v0, the evals' reference.
+- **Risk flags.** `risk.ts`'s patterns are gone. `negation` comes from the NegEx-style check, `low_confidence` stays as it was, and `date` and `number`, which Phase 3 raised on every date and number, gave way to the normalizers' checks of the value against its words (ADR-0030).
+- **Unchanged:** providers built per call from the turn's key, validation with one retry, the retry policy, pricing, AI Gateway, and fetch-level cassettes. The cassettes' keys changed with the prompt and the schema, so `@earshot/agent`'s and `@earshot/evals`' were regenerated offline (`cassettes:gen`); no request reached a provider.
+- **Bundle:** the understanding step adds about 222 KiB (48 KiB gzipped) to the edge Worker (ADR-0027, Measurements).
 
 ## More information
 

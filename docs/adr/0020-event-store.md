@@ -129,7 +129,7 @@ Phase 4's entity linker and second witness change one payload and add two (ADR-0
 - **Projections.** `proposalsProjection` folds v2 targets and `proposal.flagged`: flags are added once each, conflicts are appended, and a downgrade sets "ask" and keeps the old target first among the candidates. A downgrade that doesn't list the old target fails the replay. `sessionProjection` treats both new types like `turn.completed`.
 - **Postgres.** Migration 0012 adds `proposals.target` and `proposals.conflicts`, which `rebuildProjections` writes. `target_entity_id` holds `target.entityId`, and flags on the target are stored as `kind:target`.
 - **Stored events.** Nothing stored changes. `demo-session.jsonl` is byte-for-byte the same. Its committed projections were regenerated on purpose: each proposal gained its upcast `target` and an empty `conflicts`, and nothing else changed.
-- **Writers.** `SessionDO` writes `proposal.created` v1 until Phase 4's WP8, and every reader upcasts it.
+- **Writers.** `SessionDO` wrote `proposal.created` v1 until Phase 4's WP8; from WP8 it writes v2 (ADR-0027), and every reader still upcasts the stored v1 events.
 
 ## Consequences
 
