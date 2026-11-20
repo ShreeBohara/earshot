@@ -20,6 +20,7 @@
     "@earshot/demo-crm": "workspace:*",
     "@earshot/events": "workspace:*",
     "@earshot/keys": "workspace:*",
+    "@earshot/understanding": "workspace:*",
     "@neondatabase/serverless": "catalog:",
     "drizzle-orm": "catalog:"
   },

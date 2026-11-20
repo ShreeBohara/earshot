@@ -1,4 +1,5 @@
 import { companies, contacts, deals, toEntityRows } from "@earshot/demo-crm";
+import { phoneticKeys } from "@earshot/understanding/names";
 import type { PGlite } from "@electric-sql/pglite";
 import { and, eq, like } from "drizzle-orm";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -63,6 +64,21 @@ async function demoAudit(workspaceId: string) {
   return rows.sort((a, b) => a.action.localeCompare(b.action));
 }
 
+/** Every demo row in the database, as the owner sees it, by external id. */
+async function demoRowsInDb() {
+  const rows = await db
+    .select({
+      externalId: crmEntities.externalId,
+      name: crmEntities.name,
+      aliases: crmEntities.aliases,
+      phoneticKeys: crmEntities.phoneticKeys,
+      updatedAt: crmEntities.updatedAt,
+    })
+    .from(crmEntities)
+    .where(like(crmEntities.externalId, `${DEMO_CRM_EXTERNAL_ID_PREFIX}%`));
+  return rows.sort((a, b) => a.externalId.localeCompare(b.externalId));
+}
+
 const demoKeys = toEntityRows().map(
   (row) => `${row.kind}:${DEMO_CRM_EXTERNAL_ID_PREFIX}${row.externalId}`,
 );
@@ -119,6 +135,60 @@ describe("loadDemoCrm", () => {
 
     expect(await load(A)).toEqual({ inserted: 1, total: TOTAL });
     expect(await status(A)).toEqual({ loaded: TOTAL, total: TOTAL, counts: COUNTS });
+  });
+
+  it("fills every row's phonetic keys from its name and aliases, as the name toolkit does", async () => {
+    await load(A);
+
+    const rows = await demoRowsInDb();
+    expect(rows).toHaveLength(TOTAL);
+    for (const row of rows) {
+      expect(row.phoneticKeys.length, row.name).toBeGreaterThan(0);
+      expect(row.phoneticKeys, row.name).toEqual(phoneticKeys([row.name, ...row.aliases]));
+    }
+    // Full-length codes, aliases included, and sound-alikes sharing a key.
+    const keysOf = (name: string) => rows.find((row) => row.name === name)?.phoneticKeys;
+    expect(keysOf("Meridian Supply Co")).toEqual(["MRTN", "MSK", "SPL"]);
+    expect(keysOf("Knight Security")).toEqual(["NT", "SKRT"]);
+    expect(keysOf("Nite Security Group")).toEqual(["KRP", "NT", "SKRT"]);
+  });
+
+  it("fills the keys of rows loaded before keys existed, once, from each row's own name", async () => {
+    const ownKeys = () =>
+      db
+        .select({ phoneticKeys: crmEntities.phoneticKeys })
+        .from(crmEntities)
+        .where(eq(crmEntities.externalId, "hs-101"));
+    const ownBefore = await ownKeys();
+    await load(A);
+    // As Phase 3 left them: the same rows, with no keys. One was renamed since.
+    await db
+      .update(crmEntities)
+      .set({ phoneticKeys: [] })
+      .where(like(crmEntities.externalId, `${DEMO_CRM_EXTERNAL_ID_PREFIX}%`));
+    const [first] = toEntityRows();
+    const renamed = `${DEMO_CRM_EXTERNAL_ID_PREFIX}${first?.externalId}`;
+    await db
+      .update(crmEntities)
+      .set({ name: "Harbourview Hospital", aliases: [] })
+      .where(eq(crmEntities.externalId, renamed));
+
+    expect(await load(A)).toEqual({ inserted: 0, total: TOTAL });
+    const filled = await demoRowsInDb();
+    for (const row of filled) {
+      expect(row.phoneticKeys, row.name).toEqual(phoneticKeys([row.name, ...row.aliases]));
+    }
+    expect(filled.find((row) => row.externalId === renamed)?.phoneticKeys).toEqual(
+      phoneticKeys("Harbourview Hospital"),
+    );
+
+    // Idempotent: loading again changes no row, so no updated_at moves.
+    expect(await load(A)).toEqual({ inserted: 0, total: TOTAL });
+    expect(await demoRowsInDb()).toEqual(filled);
+    // Filling keys isn't a load: the audit log still has the first load only.
+    expect(await demoAudit(A.workspaceId)).toHaveLength(1);
+    // Rows outside the demo CRM keep the keys they had (the seed gives A's HubSpot row its own).
+    expect(await ownKeys()).toEqual(ownBefore);
   });
 
   it("loads into the acting workspace only; B sees nothing of A's demo CRM", async () => {

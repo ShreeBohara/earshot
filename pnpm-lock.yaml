@@ -564,6 +564,9 @@ importers:
       '@earshot/keys':
         specifier: workspace:*
         version: link:../keys
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../understanding
       '@neondatabase/serverless':
         specifier: 'catalog:'
         version: 1.2.0

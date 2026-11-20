@@ -4,7 +4,7 @@
 // that it is one, so row-level security confines it to one workspace and audit entries name the
 // acting user.
 import type { CrmEntityRow } from "@earshot/demo-crm";
-import { and, count, eq, isNull, like, type TablesRelationalConfig } from "drizzle-orm";
+import { and, count, eq, isNull, like, sql, type TablesRelationalConfig } from "drizzle-orm";
 import type { PgQueryResultHKT, PgTransaction } from "drizzle-orm/pg-core";
 import { auditLog, crmEntities } from "./schema";
 import { currentTenant, type TenantContext } from "./tenant";
@@ -41,6 +41,18 @@ async function demoRows(): Promise<CrmEntityRow[]> {
   return toEntityRows();
 }
 
+type KeysOf = (row: { readonly name: string; readonly aliases: readonly string[] }) => string[];
+
+/**
+ * A row's `phonetic_keys`: the Double Metaphone codes of its name and aliases, from the name
+ * toolkit (@earshot/understanding), the one place keys are computed. Imported on first use, like
+ * the dataset, so it stays out of server chunks that reach `@earshot/db` for anything else.
+ */
+async function phoneticKeysOf(): Promise<KeysOf> {
+  const { phoneticKeys } = await import("@earshot/understanding/names");
+  return (row) => phoneticKeys([row.name, ...row.aliases]);
+}
+
 /** Matches the workspace's demo rows and nothing else. */
 function isDemoRow(workspaceId: string) {
   return and(
@@ -53,9 +65,10 @@ function isDemoRow(workspaceId: string) {
 
 /**
  * Loads the demo CRM's companies, contacts, and deals into the workspace's `crm_entities`, with
- * no connection behind them. Idempotent: a row whose external key is already there is skipped
- * (`ON CONFLICT DO NOTHING` on the external-key unique constraint), so loading twice, or after a
- * partial load, leaves exactly one copy of each row.
+ * no connection behind them, and their `phonetic_keys`. Idempotent: a row whose external key is
+ * already there is skipped (`ON CONFLICT DO NOTHING` on the external-key unique constraint), so
+ * loading twice, or after a partial load, leaves exactly one copy of each row. A row already there
+ * whose keys are missing or stale gets them (`fillPhoneticKeys`).
  *
  * Records `demo_crm.loaded` in the audit log, with the counts, when it inserted anything.
  */
@@ -65,7 +78,7 @@ export async function loadDemoCrm<
   TSchema extends TablesRelationalConfig,
 >(tx: PgTransaction<TQueryResult, TFullSchema, TSchema>): Promise<DemoCrmLoadResult> {
   const tenant = await currentTenant(tx, "loadDemoCrm");
-  const rows = await demoRows();
+  const [rows, keysOf] = await Promise.all([demoRows(), phoneticKeysOf()]);
   const inserted = await tx
     .insert(crmEntities)
     .values(
@@ -76,6 +89,7 @@ export async function loadDemoCrm<
         externalId: `${DEMO_CRM_EXTERNAL_ID_PREFIX}${row.externalId}`,
         name: row.name,
         aliases: row.aliases,
+        phoneticKeys: keysOf(row),
         properties: row.properties,
       })),
     )
@@ -88,6 +102,7 @@ export async function loadDemoCrm<
       ],
     })
     .returning({ id: crmEntities.id });
+  await fillPhoneticKeys(tx, tenant.workspaceId, keysOf);
 
   const result = { inserted: inserted.length, total: rows.length };
   if (result.inserted > 0) await recordAudit(tx, tenant, "demo_crm.loaded", result);
@@ -135,6 +150,55 @@ export async function demoCrmStatus<
     total: rows.length,
     counts: { companies: kinds("company"), contacts: kinds("contact"), deals: kinds("deal") },
   };
+}
+
+/**
+ * Gives each of the workspace's demo rows the keys of its own name and aliases, where the stored
+ * keys differ: rows loaded before keys were computed here have none, and a change to the toolkit
+ * makes keys stale. One statement for all of them, and none when every row is current, so it's
+ * idempotent. Not audited: the keys are derived from what the row already says.
+ */
+async function fillPhoneticKeys<
+  TQueryResult extends PgQueryResultHKT,
+  TFullSchema extends Record<string, unknown>,
+  TSchema extends TablesRelationalConfig,
+>(
+  tx: PgTransaction<TQueryResult, TFullSchema, TSchema>,
+  workspaceId: string,
+  keysOf: KeysOf,
+): Promise<void> {
+  const rows = await tx
+    .select({
+      id: crmEntities.id,
+      name: crmEntities.name,
+      aliases: crmEntities.aliases,
+      phoneticKeys: crmEntities.phoneticKeys,
+    })
+    .from(crmEntities)
+    .where(isDemoRow(workspaceId));
+  const stale = rows.flatMap((row) => {
+    const keys = keysOf(row);
+    const same =
+      keys.length === row.phoneticKeys.length && keys.every((k, i) => k === row.phoneticKeys[i]);
+    return same ? [] : [{ id: row.id, keys }];
+  });
+  if (stale.length === 0) return;
+
+  // Each key is its own parameter, so no driver has to encode an array.
+  const keyArray = (keys: readonly string[]) =>
+    sql`array[${sql.join(
+      keys.map((key) => sql`${key}`),
+      sql`, `,
+    )}]::text[]`;
+  const values = sql.join(
+    stale.map(({ id, keys }) => sql`(${id}::uuid, ${keyArray(keys)})`),
+    sql`, `,
+  );
+  await tx.execute(sql`
+    update ${crmEntities} set phonetic_keys = stale.keys, updated_at = now()
+    from (values ${values}) as stale (row_id, keys)
+    where ${crmEntities.id} = stale.row_id and ${crmEntities.workspaceId} = ${workspaceId}
+  `);
 }
 
 async function recordAudit<
