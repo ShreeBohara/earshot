@@ -46,7 +46,31 @@ export {
   UnknownSessionError,
 } from "./event-store";
 export { type DbHealth, readDbHealth, stampBranch } from "./health";
+export {
+  type ImportedSession,
+  type ImportSessionOptions,
+  importSessionLog,
+} from "./import-session";
 export { rebuildProjections, type SessionProjections } from "./projections";
+export {
+  AuditUnavailableError,
+  eventSha256,
+  type RecordedReviewAudit,
+  type ReviewPayload,
+  type ReviewWrite,
+  recordReviewAudit,
+  reviewAuditAction,
+  reviewAuditEntries,
+  type SealRepair,
+  type SessionReviewOptions,
+  type SessionReviewOutcome,
+  type SessionReviewRequest,
+  type SnoozePayload,
+  sealSessionLog,
+  sessionProposals,
+  unsealedSessions,
+  writeSessionReviews,
+} from "./reviews";
 export * as schema from "./schema";
 export {
   currentTenant,
