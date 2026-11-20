@@ -87,7 +87,7 @@ The core loop is **capture, understand, verify, sync, remember**. The design pri
 - Moved to Phase 5: `ask_followup`, follow-up drafts, and the methodology lenses (spec WP14, cut first).
 - Moved to Phase 6: embeddings and Postgres search, with the mirror's sync (spec WP13, cut second). The linker uses aliases, sound, trigrams, and context.
 - The regression gate on all 200 debriefs runs at $0 on offline cassettes. The live smoke eval on a real model is built but off until the maintainer adds its key.
-- Waiting on the maintainer: the live smoke eval's baseline (about $0.15), the second witness's live check (under $0.01), and confusion mining on real speech-to-text (under $0.50).
+- Waiting on the maintainer: the live smoke eval's baseline (about $0.09 with the prompt cache, up to $0.34 without), the second witness's live check (under $0.01), and confusion mining on real speech-to-text (under $0.50).
 
 ## Phase 5: The trust layer: review inbox and approval policies (weeks 12-13)
 
