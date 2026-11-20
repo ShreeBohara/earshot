@@ -64,6 +64,21 @@ describe("evidence clips in Chromium", () => {
     expect(await store.list(SESSION)).toEqual([]);
   });
 
+  it("purges by the expiresAt index on the browser's own IndexedDB, deleting only what expired", async () => {
+    let now = Date.parse("2026-11-20T15:00:00.000Z");
+    const backend = await freshBackend();
+    const store = await ClipStore.open({ backend, now: () => now });
+    const audio = (startMs: number) => ({ startMs, durationMs: 100, pcm: tone(100) });
+    await store.put({ sessionId: SESSION, turnId: TURN, audio: audio(0) });
+    now += 12 * 60 * 60 * 1000;
+    await store.put({ sessionId: SESSION, turnId: `${TURN.slice(0, -1)}2`, audio: audio(1_000) });
+    now += 12 * 60 * 60 * 1000;
+    expect(await store.find(SESSION, 50)).toBeNull();
+    expect(await store.purge()).toBe(1);
+    expect((await store.list(SESSION)).map((clip) => clip.startMs)).toEqual([1_000]);
+    expect(await store.find(SESSION, 1_050)).not.toBeNull();
+  });
+
   it("plays a padded span through a real AudioContext, and reports when it ends", async () => {
     const contexts: AudioContext[] = [];
     const player = new ClipPlayer({
