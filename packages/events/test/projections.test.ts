@@ -14,9 +14,14 @@ import {
   proposal,
   proposalFlagged,
   proposalV2,
+  REVIEWER,
+  reopen,
   review,
+  reviewV2,
   SESSION_ID,
+  sealed,
   sessionLog,
+  snoozed,
   started,
   tsFor,
   turnCompleted,
@@ -42,6 +47,7 @@ describe("sessionProjection", () => {
       providers: { speechToText: { provider: "deepgram", model: "nova-3" } },
       startedAt: "2026-11-10T19:15:00.000Z",
       endedAt: null,
+      sealedAt: null,
       durationMs: null,
       costUsd: null,
       lastSeq: 1,
@@ -92,6 +98,28 @@ describe("sessionProjection", () => {
     expect(() =>
       replay(sessionLog([started(), ended(), ended()]), { session: sessionProjection }),
     ).toThrow(/already ended/);
+  });
+
+  it("records the seal, and keeps following the log after it: the web Worker's reviews", () => {
+    const log = sessionLog([started(), proposal(1), ended(), sealed(), reviewV2(1)]);
+    expect(replay(log, { session: sessionProjection }).session).toMatchObject({
+      status: "ended",
+      endedAt: "2026-11-10T19:15:40.000Z",
+      sealedAt: "2026-11-10T19:16:40.000Z",
+      lastSeq: 4,
+      lastEventAt: tsFor(4),
+    });
+  });
+
+  it("refuses a seal before the end, and a second seal", () => {
+    expect(() => replay(sessionLog([started(), sealed()]), { session: sessionProjection })).toThrow(
+      /can't be sealed before it ends/,
+    );
+    expect(() =>
+      replay(sessionLog([started(), ended(), sealed(), sealed({ by: "web" })]), {
+        session: sessionProjection,
+      }),
+    ).toThrow(/already been sealed/);
   });
 });
 
@@ -174,9 +202,31 @@ describe("proposalsProjection", () => {
       fields: proposal(1).payload.fields,
       riskFlags: [],
       conflicts: [],
+      supersedes: null,
+      supersededBy: null,
+      snoozedUntil: null,
       seq: 2,
       ts: tsFor(2),
-      review: { decision: "edited", editDiff, reviewerMs: 1500, seq: 5, ts: tsFor(5) },
+      // Stored at v1: upcast to v2, with the event's own id as the review id (seq 5's id).
+      review: {
+        reviewId: uuid(1005),
+        decision: "edited",
+        target: null,
+        editDiff,
+        mode: "single",
+        batchId: null,
+        policy: null,
+        undoes: null,
+        reason: null,
+        seen: null,
+        timing: { decisionMs: 1500, handlingMs: 1500 },
+        input: null,
+        surface: null,
+        syncEligibleAt: null,
+        by: null,
+        seq: 5,
+        ts: tsFor(5),
+      },
     });
     expect(proposals[1]?.review).toBeNull();
     expect(proposals[2]?.review).toMatchObject({ decision: "rejected", editDiff: null });
@@ -342,6 +392,238 @@ describe("proposalsProjection: Phase 4 targets, flags, and downgrades", () => {
   });
 });
 
+describe("proposalsProjection: Phase 5 reviews, undo, snoozes, and supersedes", () => {
+  const fold = (bodies: Parameters<typeof sessionLog>[0]) =>
+    replay(sessionLog(bodies), { proposals: proposalsProjection }).proposals;
+  const only = (bodies: Parameters<typeof sessionLog>[0]) => {
+    const [first] = fold(bodies);
+    if (!first) throw new Error("no proposal");
+    return first;
+  };
+
+  it("folds a v2 review, keeping every field in the review view", () => {
+    const chosen = reviewV2(1, "approved", {
+      target: { entityId: uuid(6002) },
+      seen: {
+        tier: "loud",
+        fields: { title: { proposed: "Send the deck" } },
+        target: { entityId: null, offered: [uuid(6001), uuid(6002), null] },
+        relinked: null,
+        clip: "played",
+      },
+      input: "pointer",
+      surface: "tray",
+    });
+    const proposalView = only([started(), utterance(1), proposalV2(1), chosen]);
+    expect(proposalView.status).toBe("approved");
+    // The proposal's id is the view's own; a review with no edits has a null diff.
+    const { proposalId: _, ...fields } = chosen.payload;
+    expect(proposalView.review).toEqual({ ...fields, editDiff: null, seq: 3, ts: tsFor(3) });
+  });
+
+  it("keeps an edit's diff, and a rejection's null diff and sync time", () => {
+    const [edited, rejected] = fold([
+      started(),
+      proposal(1),
+      proposal(2),
+      reviewV2(1, "edited"),
+      reviewV2(2, "rejected"),
+    ]);
+    expect(edited).toMatchObject({
+      status: "edited",
+      review: {
+        decision: "edited",
+        editDiff: { title: { before: "Send the deck", after: "Send the revised deck" } },
+        syncEligibleAt: "2026-11-10T19:16:30.000Z",
+      },
+    });
+    expect(rejected).toMatchObject({
+      status: "rejected",
+      review: { editDiff: null, syncEligibleAt: null, by: REVIEWER },
+    });
+  });
+
+  it("returns a reopened proposal to proposed, with the reopen as its latest review", () => {
+    const reopened = only([started(), proposal(1), reviewV2(1), reopen(1, uuid(7001))]);
+    expect(reopened).toMatchObject({
+      status: "proposed",
+      review: { reviewId: uuid(7101), decision: "reopened", undoes: uuid(7001), reason: "undo" },
+    });
+  });
+
+  it("decides again after a reopen, and reopens that decision in turn", () => {
+    const again = only([
+      started(),
+      proposal(1),
+      reviewV2(1),
+      reopen(1, uuid(7001)),
+      reviewV2(1, "rejected", { reviewId: uuid(7201) }),
+      reopen(1, uuid(7201), { reviewId: uuid(7301) }),
+      reviewV2(1, "edited", { reviewId: uuid(7401) }),
+    ]);
+    expect(again).toMatchObject({ status: "edited", review: { reviewId: uuid(7401), seq: 6 } });
+  });
+
+  it("lets a reopen name a review upcast from v1, by its event id", () => {
+    // sessionLog gives the event at seq 2 the id uuid(1002): the v1 review's upcast reviewId.
+    const undone = only([started(), proposal(1), review(1, "approved"), reopen(1, uuid(1002))]);
+    expect(undone).toMatchObject({ status: "proposed", review: { undoes: uuid(1002) } });
+  });
+
+  it("reopens on a later flag, as SessionDO's system review", () => {
+    const flaggedReopen = reopen(1, uuid(7001), {
+      mode: "system",
+      reason: "flagged",
+      input: "none",
+      surface: "session",
+      timing: { decisionMs: 0, handlingMs: 0 },
+      by: { userId: REVIEWER.userId, auth: null },
+    });
+    const reopened = only([
+      started(),
+      utterance(1),
+      proposalV2(1),
+      reviewV2(1),
+      proposalFlagged(1),
+      flaggedReopen,
+    ]);
+    expect(reopened).toMatchObject({
+      status: "proposed",
+      riskFlags: [
+        { kind: "link_uncertain", field: "target" },
+        { kind: "witness_conflict", field: "target" },
+      ],
+      review: { mode: "system", reason: "flagged", by: { auth: null } },
+    });
+  });
+
+  it("refuses a reopen of a review that isn't the latest", () => {
+    const log = [
+      started(),
+      proposal(1),
+      reviewV2(1),
+      reopen(1, uuid(7001)),
+      reviewV2(1, "approved", { reviewId: uuid(7201) }),
+      reopen(1, uuid(7001), { reviewId: uuid(7301) }),
+    ];
+    expect(() => fold(log)).toThrow(ProjectionError);
+    expect(() => fold(log)).toThrow(
+      `the reopen of proposal ${uuid(3001)} names review ${uuid(7001)}, but its latest is ${uuid(7201)}`,
+    );
+  });
+
+  it("refuses a reopen of a proposal never reviewed, and a reopen of a reopen", () => {
+    expect(() => fold([started(), proposal(1), reopen(1, uuid(7001))])).toThrow(
+      "but it has no review",
+    );
+    const twice = [
+      started(),
+      proposal(1),
+      reviewV2(1),
+      reopen(1, uuid(7001)),
+      reopen(1, uuid(7101), { reviewId: uuid(7201) }),
+    ];
+    expect(() => fold(twice)).toThrow("which is a reopen itself");
+  });
+
+  it("leaves the writers' other rules to checkReview: v1's second decision, with no reopen, loads", () => {
+    const twice = only([started(), proposal(1), review(1, "rejected"), reviewV2(1)]);
+    expect(twice).toMatchObject({ status: "approved", review: { reviewId: uuid(7001) } });
+  });
+
+  it("snoozes a proposal until a time, and wakes it", () => {
+    const asleep = only([started(), proposal(1), snoozed(1)]);
+    expect(asleep).toMatchObject({ status: "proposed", snoozedUntil: "2026-11-11T14:00:00.000Z" });
+    const awake = only([
+      started(),
+      proposal(1),
+      snoozed(1),
+      snoozed(1, null, { snoozeId: uuid(8101) }),
+    ]);
+    expect(awake.snoozedUntil).toBeNull();
+  });
+
+  it("keeps a snooze across a review: the status says the proposal is decided", () => {
+    const decided = only([started(), proposal(1), snoozed(1), reviewV2(1)]);
+    expect(decided).toMatchObject({ status: "approved", snoozedUntil: "2026-11-11T14:00:00.000Z" });
+  });
+
+  it("refuses a snooze of a proposal it hasn't seen", () => {
+    expect(() => fold([started(), snoozed(9)])).toThrow(`no proposal ${uuid(3009)} to snooze`);
+  });
+
+  it("supersedes a proposal: the old one points at its replacement, which points back", () => {
+    const correction = proposalV2(2, {}, { supersedes: uuid(3001) });
+    const [old, replacement] = fold([started(), utterance(1), proposalV2(1), correction]);
+    expect(old).toMatchObject({
+      proposalId: uuid(3001),
+      status: "superseded",
+      supersedes: null,
+      supersededBy: uuid(3002),
+    });
+    expect(replacement).toMatchObject({
+      proposalId: uuid(3002),
+      status: "proposed",
+      supersedes: uuid(3001),
+      supersededBy: null,
+    });
+  });
+
+  it("supersedes a decided proposal too, keeping its last review, and allows a chain", () => {
+    const [first, second, third] = fold([
+      started(),
+      utterance(1),
+      proposalV2(1),
+      reviewV2(1),
+      proposalV2(2, {}, { supersedes: uuid(3001) }),
+      proposalV2(3, {}, { supersedes: uuid(3002) }),
+    ]);
+    expect(first).toMatchObject({ status: "superseded", review: { decision: "approved" } });
+    expect(second).toMatchObject({ status: "superseded", supersededBy: uuid(3003) });
+    expect(third).toMatchObject({ status: "proposed", supersedes: uuid(3002) });
+  });
+
+  it("refuses a review or a snooze of a superseded proposal", () => {
+    const replaced = [
+      started(),
+      utterance(1),
+      proposalV2(1),
+      proposalV2(2, {}, { supersedes: uuid(3001) }),
+    ];
+    expect(() => fold([...replaced, reviewV2(1)])).toThrow(
+      `proposal ${uuid(3001)} was superseded by ${uuid(3002)}, so it takes no review`,
+    );
+    expect(() => fold([...replaced, snoozed(1)])).toThrow("so it takes no snooze");
+    expect(() => fold([...replaced, review(1, "approved")])).toThrow(ProjectionError);
+  });
+
+  it("refuses to supersede a proposal it hasn't seen, or one already replaced", () => {
+    expect(() =>
+      fold([started(), utterance(1), proposalV2(2, {}, { supersedes: uuid(3001) })]),
+    ).toThrow(`no proposal ${uuid(3001)} to supersede`);
+    expect(() =>
+      fold([
+        started(),
+        utterance(1),
+        proposalV2(1),
+        proposalV2(2, {}, { supersedes: uuid(3001) }),
+        proposalV2(3, {}, { supersedes: uuid(3001) }),
+      ]),
+    ).toThrow(`proposal ${uuid(3001)} was already superseded by ${uuid(3002)}`);
+  });
+
+  it("still takes a flag on a superseded proposal", () => {
+    const [old] = fold([
+      started(),
+      utterance(1),
+      proposalV2(1),
+      proposalV2(2, {}, { supersedes: uuid(3001) }),
+      proposalFlagged(1),
+    ]);
+    expect(old).toMatchObject({ status: "superseded", conflicts: [expect.anything()] });
+  });
+});
+
 describe("the Phase 3 event types", () => {
   const phase3 = [usageRecorded(1), turnCompleted(1), turnMeasured(1)];
 
@@ -395,7 +677,13 @@ describe("purity", () => {
       target: { decision: "ask", candidates: [{ entityId: uuid(6001), p: 0.5 }] },
     }),
     turnWitnessed(1),
+    snoozed(2),
+    reviewV2(2),
+    reopen(2, uuid(7002)),
+    proposalV2(3, {}, { supersedes: uuid(3002) }),
     ended(),
+    sealed(),
+    reviewV2(3, "edited"),
   ]);
   const events = raw.map((event) => defaultRegistry.toLatest(event));
 

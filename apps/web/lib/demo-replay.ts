@@ -449,6 +449,8 @@ const REVIEW_TEXT = {
   approved: (label: string) => `Review: approved the ${label}.`,
   edited: (label: string) => `Review: edited the ${label}, then approved it.`,
   rejected: (label: string) => `Review: rejected the ${label}.`,
+  // An undo, or a later flag on an approval (Phase 5): the decision is open again.
+  reopened: (label: string) => `Review: reopened the ${label}.`,
 } as const;
 
 /**

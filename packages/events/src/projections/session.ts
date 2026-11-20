@@ -11,6 +11,11 @@ export interface SessionView {
   providers: SessionProviders;
   startedAt: string;
   endedAt: string | null;
+  /**
+   * When `session.sealed` says the session was sealed: its live writer is done, and the web
+   * Worker writes its reviews from then on. Null until then.
+   */
+  sealedAt: string | null;
   /** `endedAt - startedAt` in ms, once the session has ended. */
   durationMs: number | null;
   costUsd: number | null;
@@ -20,10 +25,11 @@ export interface SessionView {
 }
 
 /**
- * Folds `session.started` and `session.ended` into a `SessionView`; `null` until the session
- * starts. A session log must open with `session.started`. Events may follow `session.ended`,
- * because reviews and late transcripts often land after capture stops; `usage.recorded` after the
- * end adds to the session's cost.
+ * Folds `session.started`, `session.ended`, and `session.sealed` into a `SessionView`; `null`
+ * until the session starts. A session log must open with `session.started`. Events may follow
+ * `session.ended`, because reviews and late transcripts often land after capture stops;
+ * `usage.recorded` after the end adds to the session's cost. A session is sealed once, after it
+ * ends, and events may follow the seal too: the web Worker's reviews.
  */
 export const sessionProjection: Projection<SessionView | null> = {
   initial: null,
@@ -38,6 +44,7 @@ export const sessionProjection: Projection<SessionView | null> = {
         providers: event.payload.providers,
         startedAt: event.payload.startedAt,
         endedAt: null,
+        sealedAt: null,
         durationMs: null,
         costUsd: null,
         lastSeq: event.seq,
@@ -57,6 +64,20 @@ export const sessionProjection: Projection<SessionView | null> = {
         endedAt: event.payload.endedAt,
         durationMs: Date.parse(event.payload.endedAt) - Date.parse(state.startedAt),
         costUsd: event.payload.costUsd ?? null,
+        lastSeq: event.seq,
+        lastEventAt: event.ts,
+      };
+    }
+    if (event.type === "session.sealed") {
+      if (state.status !== "ended") {
+        throw new ProjectionError("session", event, "the session can't be sealed before it ends");
+      }
+      if (state.sealedAt !== null) {
+        throw new ProjectionError("session", event, "the session has already been sealed");
+      }
+      return {
+        ...state,
+        sealedAt: event.payload.sealedAt,
         lastSeq: event.seq,
         lastEventAt: event.ts,
       };

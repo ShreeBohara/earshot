@@ -1,7 +1,7 @@
 // Session tickets (Phase 3 spec §4.3): short-lived credentials the web app signs and the edge
 // Worker checks before a browser may open a session socket.
 //
-//   payload = base64url(JSON.stringify({ v: 1, sid, uid, wid, jti, iat, exp }))
+//   payload = base64url(JSON.stringify({ v: 1, sid, uid, wid, jti, iat, exp, am?, sat? }))
 //   ticket  = payload + "." + base64url(HMAC-SHA256(EARSHOT_SESSION_TICKET_SECRET, payload))
 //
 // Browsers can't set headers on a WebSocket, so the ticket travels as the subprotocol
@@ -10,8 +10,10 @@
 // unchanged in Workers, Node, and browsers.
 //
 // A valid ticket proves the web app issued it, within the last minute, for this session, user,
-// and workspace. Single use is SessionDO's job: it refuses a `jti` it has already seen.
+// and workspace, and, from Phase 5, how and when the web session that asked for it signed in.
+// Single use is SessionDO's job: it refuses a `jti` it has already seen.
 import { z } from "zod";
+import { SignInMethod } from "./contracts/events/proposal-reviewed";
 import { SESSION_SUBPROTOCOL } from "./contracts/session-protocol";
 import { uuidv7 } from "./uuidv7";
 
@@ -24,7 +26,10 @@ export const MAX_TICKET_LIFETIME_SECONDS = 60;
  * real drift while a ticket stays usable for at most 70 s in all.
  */
 export const TICKET_CLOCK_SKEW_SECONDS = 5;
-/** Longer tickets are refused before any decoding. Valid claims make at most about 500. */
+/**
+ * Longer tickets are refused before any decoding. Valid claims make at most about 700: a uid that
+ * JSON escapes in full, with the sign-in claims.
+ */
 export const MAX_TICKET_LENGTH = 1024;
 /** `EARSHOT_SESSION_TICKET_SECRET` must be at least this many bytes of UTF-8. */
 export const MIN_TICKET_SECRET_BYTES = 32;
@@ -53,7 +58,12 @@ const SIGNATURE_BYTES = 32; // HMAC-SHA256
 
 const Seconds = z.int().nonnegative();
 
-/** What a ticket says. `iat` and `exp` are whole seconds since the Unix epoch. */
+/**
+ * What a ticket says. `iat`, `exp`, and `sat` are whole seconds since the Unix epoch. `am` and
+ * `sat` are optional and come together (Phase 5): `SessionDO` records them on every review the
+ * socket sends, as how and when the reviewer signed in. A ticket without them is still version
+ * 1, and signs to exactly the bytes it always did.
+ */
 export const TicketClaims = z
   .strictObject({
     v: z.literal(TICKET_VERSION),
@@ -69,8 +79,23 @@ export const TicketClaims = z
     jti: z.uuid(),
     iat: Seconds,
     exp: Seconds,
+    /** How the web session that minted the ticket signed in. */
+    am: SignInMethod.optional(),
+    /** When that web session signed in: never after the ticket, give or take the clock skew. */
+    sat: Seconds.optional(),
   })
-  .refine((claims) => claims.exp > claims.iat, { path: ["exp"], message: "exp must be after iat" });
+  .refine((claims) => claims.exp > claims.iat, { path: ["exp"], message: "exp must be after iat" })
+  .refine((claims) => (claims.am === undefined) === (claims.sat === undefined), {
+    path: ["am"],
+    message: "am and sat come together",
+  })
+  .refine(
+    (claims) => claims.sat === undefined || claims.sat <= claims.iat + TICKET_CLOCK_SKEW_SECONDS,
+    {
+      path: ["sat"],
+      message: "sat can't be after the ticket was issued",
+    },
+  );
 export type TicketClaims = z.infer<typeof TicketClaims>;
 
 /**
@@ -113,6 +138,7 @@ export async function importTicketKey(secret: string): Promise<CryptoKey> {
 
 /**
  * Claims for a new ticket: a fresh `jti`, issued at `now`, living `ttlSeconds` (60 by default).
+ * `signIn`, when given, is how and when the web session asking for it signed in (`am`, `sat`).
  */
 export function ticketClaims(input: {
   sid: string;
@@ -121,13 +147,14 @@ export function ticketClaims(input: {
   now: Date;
   ttlSeconds?: number;
   jti?: string;
+  signIn?: { method: SignInMethod; at: Date };
 }): TicketClaims {
   const ttl = input.ttlSeconds ?? MAX_TICKET_LIFETIME_SECONDS;
   if (!Number.isInteger(ttl) || ttl < 1 || ttl > MAX_TICKET_LIFETIME_SECONDS) {
     throw new RangeError(`a ticket lives 1 to ${MAX_TICKET_LIFETIME_SECONDS} whole seconds`);
   }
   const iat = Math.floor(epochMs(input.now) / 1000);
-  return {
+  const claims: TicketClaims = {
     v: TICKET_VERSION,
     sid: input.sid,
     uid: input.uid,
@@ -135,6 +162,12 @@ export function ticketClaims(input: {
     jti: input.jti ?? uuidv7(),
     iat,
     exp: iat + ttl,
+  };
+  if (!input.signIn) return claims;
+  return {
+    ...claims,
+    am: input.signIn.method,
+    sat: Math.floor(epochMs(input.signIn.at) / 1000),
   };
 }
 
@@ -145,13 +178,18 @@ export async function signTicket(secret: TicketSecret, claims: TicketClaims): Pr
     const fields = parsed.error.issues.map((issue) => issue.path.join(".") || "claims");
     throw new TypeError(`invalid ticket claims: ${fields.join(", ")}`);
   }
-  const { v, sid, uid, wid, jti, iat, exp } = parsed.data;
+  const { v, sid, uid, wid, jti, iat, exp, am, sat } = parsed.data;
   if (exp - iat > MAX_TICKET_LIFETIME_SECONDS) {
     throw new RangeError(`a ticket lives at most ${MAX_TICKET_LIFETIME_SECONDS} s`);
   }
   const key = await keyFor(secret);
-  // A fixed key order, so the same claims always make the same ticket.
-  const payload = base64urlEncode(utf8.encode(JSON.stringify({ v, sid, uid, wid, jti, iat, exp })));
+  // A fixed key order, so the same claims always make the same ticket. The sign-in claims come
+  // last, and only when set, so a ticket without them is byte for byte what it was before them.
+  const body =
+    am === undefined
+      ? { v, sid, uid, wid, jti, iat, exp }
+      : { v, sid, uid, wid, jti, iat, exp, am, sat };
+  const payload = base64urlEncode(utf8.encode(JSON.stringify(body)));
   const signature = await crypto.subtle.sign("HMAC", key, utf8.encode(payload));
   const ticket = `${payload}.${base64urlEncode(new Uint8Array(signature))}`;
   // Can't happen with valid claims (an ASCII uid of at most 128 characters), but a ticket the

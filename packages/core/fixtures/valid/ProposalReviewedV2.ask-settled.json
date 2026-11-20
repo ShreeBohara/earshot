@@ -1,0 +1,48 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d02",
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c114",
+  "decision": "approved",
+  "target": {
+    "entityId": "01a0f831-b310-7d2e-8f4a-5b6c7d8e9f01"
+  },
+  "mode": "single",
+  "batchId": null,
+  "policy": null,
+  "undoes": null,
+  "reason": null,
+  "seen": {
+    "tier": "loud",
+    "fields": {
+      "name": {
+        "proposed": "Dana Lee"
+      },
+      "company": {
+        "proposed": "Acme Corp"
+      }
+    },
+    "target": {
+      "entityId": null,
+      "offered": [
+        "01a0f831-b310-7d2e-8f4a-5b6c7d8e9f01",
+        "01a0f831-b320-7e3f-9a5b-6c7d8e9f0a12",
+        null
+      ]
+    },
+    "relinked": null,
+    "clip": "played"
+  },
+  "timing": {
+    "decisionMs": 6120,
+    "handlingMs": 6120
+  },
+  "input": "keyboard",
+  "surface": "inbox",
+  "syncEligibleAt": "2026-11-20T21:04:31.250Z",
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": {
+      "method": "passkey",
+      "signedInAt": "2026-11-20T08:12:40.000Z"
+    }
+  }
+}

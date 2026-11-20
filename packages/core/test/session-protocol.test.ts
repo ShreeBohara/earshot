@@ -12,10 +12,12 @@ import {
   MAX_ENTITY_ID_CHARS,
   MAX_ENTITY_NAME_CHARS,
   MAX_MESSAGE_BYTES,
+  MAX_REVIEWS_PER_MESSAGE,
   MAX_SESSION_ENTITIES,
   MAX_UTTERANCE_TEXT_CHARS,
   parseClientMessage,
   parseServerMessage,
+  ReviewInput,
   SESSION_CLOSE_CODES,
   SESSION_PROTOCOL_VERSION,
   ServerMessage,
@@ -40,6 +42,9 @@ const SESSION_ID = "01a1c6e2-9320-7deb-a57a-ba62dc02df02";
 const TURN_ID = "01a1c6e2-c1a0-7d2e-8f31-6b4a9c0d2e1f";
 const UTTERANCE_ID = "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104";
 const UNBIASED_UTTERANCE_ID = "01a1c6f0-2b10-7c4e-9a3d-5e6f7a8b9c0d";
+const PROPOSAL_ID = "01a1c6e2-b422-7d40-b863-98e9e102c114";
+const REVIEW_ID = "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d01";
+const SNOOZE_ID = "01a1c6e4-2c30-7d4e-8f5a-6b7c8d9e0f01";
 
 const entity = (n: number) => ({
   id: `6f1d2c3b-4a5e-4f60-8a7b-${n.toString(16).padStart(12, "0")}`,
@@ -126,7 +131,60 @@ function clientMessages() {
     },
     ack: { t: "ack", seq: 4 },
     end: { t: "end", msgId: uuidv7(), endedAt: "2026-11-15T19:15:40.000Z" },
+    review: {
+      t: "review",
+      msgId: uuidv7(),
+      reviews: [
+        {
+          reviewId: REVIEW_ID,
+          proposalId: PROPOSAL_ID,
+          decision: "edited",
+          target: { entityId: entity(1).id },
+          editDiff: { title: { before: "VP of Operations", after: "VP Operations" } },
+          mode: "single",
+          batchId: null,
+          policy: null,
+          undoes: null,
+          reason: null,
+          seen: {
+            tier: "loud",
+            fields: {
+              name: { proposed: "Dana Lee" },
+              title: { proposed: "VP of Operations", base: "Director", current: "VP" },
+            },
+            target: { entityId: null, offered: [entity(1).id, entity(2).id, null] },
+            relinked: null,
+            clip: "played",
+          },
+          timing: { decisionMs: 2_100, handlingMs: 9_400 },
+          input: "keyboard",
+          surface: "tray",
+        },
+      ],
+    },
+    snooze: {
+      t: "snooze",
+      msgId: uuidv7(),
+      snoozeId: SNOOZE_ID,
+      proposalId: PROPOSAL_ID,
+      until: "2026-11-16T14:00:00.000Z",
+    },
   };
+}
+
+type ReviewItem = ReturnType<typeof clientMessages>["review"]["reviews"][number];
+
+/** A `review` message whose one review is the example's, changed by `overrides`. */
+function reviewWith(overrides: Record<string, unknown>) {
+  const { review } = clientMessages();
+  const [item] = review.reviews;
+  return { ...review, reviews: [{ ...item, ...overrides }] };
+}
+
+/** The example review's `seen`, changed by `overrides`. */
+function seenWith(overrides: Record<string, unknown>) {
+  const [item] = clientMessages().review.reviews;
+  return { ...(item as ReviewItem).seen, ...overrides };
 }
 
 function serverMessages() {
@@ -384,6 +442,37 @@ describe("keys", () => {
     ],
     ["witness.provider", (key, { witness }) => ({ ...witness, provider: key })],
     ["witness.model", (key, { witness }) => ({ ...witness, model: key })],
+    ["review.reviews[0].target.entityId", (key) => reviewWith({ target: { entityId: key } })],
+    [
+      "review.reviews[0].editDiff.title.after",
+      (key) => reviewWith({ editDiff: { title: { before: "VP of Operations", after: key } } }),
+    ],
+    [
+      "review.reviews[0].editDiff.title.before",
+      (key) => reviewWith({ editDiff: { title: { before: `pasted ${key}`, after: "VP" } } }),
+    ],
+    [
+      "review.reviews[0].seen.fields.name.proposed",
+      (key) => reviewWith({ seen: seenWith({ fields: { name: { proposed: key } } }) }),
+    ],
+    [
+      "review.reviews[0].seen.fields.title.base",
+      (key) => reviewWith({ seen: seenWith({ fields: { title: { proposed: "VP", base: key } } }) }),
+    ],
+    [
+      "review.reviews[0].seen.fields.title.current",
+      (key) =>
+        reviewWith({ seen: seenWith({ fields: { title: { proposed: "VP", current: key } } }) }),
+    ],
+    [
+      "review.reviews[0].seen.target.entityId",
+      (key) => reviewWith({ seen: seenWith({ target: { entityId: key, offered: [] } }) }),
+    ],
+    [
+      "review.reviews[0].seen.target.offered[1]",
+      (key) => reviewWith({ seen: seenWith({ target: { entityId: null, offered: [null, key] } }) }),
+    ],
+    ["review.reviews[0].seen.relinked", (key) => reviewWith({ seen: seenWith({ relinked: key }) })],
   ];
   const cases = placements.flatMap(([where, place]) =>
     Object.entries(FAKE_KEYS).map(([shape, key]) => ({ where, shape, key, place })),
@@ -437,6 +526,30 @@ describe("keys", () => {
     expect(withKey(`${FAKE_KEYS.groq}\n`)).toBe(false);
     expect(withKey(`${FAKE_KEYS.groq}é`)).toBe(false);
     expect(withKey(`Bearer ${FAKE_KEYS.anthropic}`)).toBe(false);
+  });
+
+  it("refuses a key as a field name in a review, where field names can't hold one", () => {
+    for (const key of Object.values(FAKE_KEYS)) {
+      const inDiff = reviewWith({ editDiff: { [key]: { before: null, after: "x" } } });
+      expect(parseClientMessage(frame(inDiff))).toMatchObject({ ok: false });
+      const inSeen = reviewWith({ seen: seenWith({ fields: { [key]: { proposed: "x" } } }) });
+      expect(parseClientMessage(frame(inSeen))).toMatchObject({ ok: false });
+    }
+  });
+
+  it("keeps the guard on ReviewInput, for the web route that parses it on its own", () => {
+    const [item] = clientMessages().review.reviews;
+    const key = FAKE_KEYS.anthropic;
+    const result = ReviewInput.safeParse({ ...item, target: { entityId: key } });
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({
+        code: "custom",
+        path: ["target", "entityId"],
+        params: { reason: "stray_key" },
+      }),
+    ]);
+    expect(JSON.stringify(result.error?.issues)).not.toContain(key);
+    expect(ReviewInput.safeParse(item).success).toBe(true);
   });
 
   it("doesn't mistake ordinary names for keys", () => {
@@ -579,6 +692,98 @@ describe("Phase 4: the open account, parent records, and the second witness", ()
     const long = { ...witness, utterance: { ...witness.utterance, words } };
     expect(frame(long).length).toBeGreaterThan(MAX_MESSAGE_BYTES);
     expect(parseClientMessage(frame(long))).toEqual({ ok: false, reason: "too_large" });
+  });
+});
+
+describe("Phase 5: reviews, snoozes, and the seal", () => {
+  const item = clientMessages().review.reviews[0] as ReviewItem;
+  const accepts = (message: unknown) => parseClientMessage(frame(message)).ok;
+
+  it("takes 1 to 25 reviews in a message", () => {
+    expect(MAX_REVIEWS_PER_MESSAGE).toBe(25);
+    const { review } = clientMessages();
+    const many = (count: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        ...item,
+        reviewId: `01a1c6e4-0a10-7b2c-8d3e-${i.toString(16).padStart(12, "0")}`,
+        mode: "batch",
+        batchId: "01a1c6e4-1b20-7c3d-9e4f-5a6b7c8d9e01",
+      }));
+    expect(accepts({ ...review, reviews: many(25) })).toBe(true);
+    expect(parseClientMessage(frame({ ...review, reviews: many(26) }))).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+    expect(accepts({ ...review, reviews: [] })).toBe(false);
+  });
+
+  it("takes only a person's modes: no policy, no system review, and reopens only to undo", () => {
+    expect(accepts(reviewWith({ mode: "batch", batchId: SNOOZE_ID }))).toBe(true);
+    expect(accepts(reviewWith({ mode: "policy" }))).toBe(false);
+    expect(accepts(reviewWith({ mode: "system" }))).toBe(false);
+    const policy = { id: SNOOZE_ID, version: 1, rule: "notes" };
+    expect(accepts(reviewWith({ policy }))).toBe(false);
+    const undo = { decision: "reopened", target: null, undoes: REVIEW_ID, editDiff: undefined };
+    expect(accepts(reviewWith({ ...undo, reason: "undo" }))).toBe(true);
+    expect(accepts(reviewWith({ ...undo, reason: "flagged" }))).toBe(false);
+  });
+
+  it("leaves who reviewed, and when it may sync, to the writer", () => {
+    const by = { userId: "u_9fK2mQx7Lr", auth: null };
+    expect(accepts(reviewWith({ by }))).toBe(false);
+    expect(accepts(reviewWith({ syncEligibleAt: "2026-11-15T19:16:10.000Z" }))).toBe(false);
+  });
+
+  it("caps record ids like start's, and offers at most four records", () => {
+    const at = (length: number) => "r".repeat(length);
+    expect(MAX_ENTITY_ID_CHARS).toBe(128);
+    expect(accepts(reviewWith({ target: { entityId: at(128) } }))).toBe(true);
+    expect(accepts(reviewWith({ target: { entityId: at(129) } }))).toBe(false);
+    expect(accepts(reviewWith({ target: { entityId: "" } }))).toBe(false);
+    const target = (entityId: string | null, offered: (string | null)[]) =>
+      reviewWith({ seen: seenWith({ target: { entityId, offered } }) });
+    expect(accepts(target(at(129), []))).toBe(false);
+    expect(accepts(target(null, [at(129)]))).toBe(false);
+    expect(accepts(target(null, [null, "a", "b", "c"]))).toBe(true);
+    expect(accepts(target(null, [null, "a", "b", "c", "d"]))).toBe(false);
+    expect(accepts(reviewWith({ seen: seenWith({ relinked: at(128) }) }))).toBe(true);
+    expect(accepts(reviewWith({ seen: seenWith({ relinked: at(129) }) }))).toBe(false);
+  });
+
+  it("refuses missing and extra fields at every level of a review", () => {
+    const { reviewId: _, ...noId } = item;
+    expect(accepts({ ...clientMessages().review, reviews: [noId] })).toBe(false);
+    expect(accepts(reviewWith({ reviewerMs: 2_400 }))).toBe(false);
+    expect(accepts(reviewWith({ seen: seenWith({ note: "checked" }) }))).toBe(false);
+    expect(accepts(reviewWith({ timing: { decisionMs: 1, handlingMs: 2, idleMs: 3 } }))).toBe(
+      false,
+    );
+    expect(accepts(reviewWith({ timing: { decisionMs: 1.5, handlingMs: 2 } }))).toBe(false);
+    expect(accepts(reviewWith({ target: { entityId: null, p: 0.4 } }))).toBe(false);
+    const seenField = { proposed: "Dana", previous: "Dana Li" };
+    expect(accepts(reviewWith({ seen: seenWith({ fields: { name: seenField } }) }))).toBe(false);
+    expect(accepts(reviewWith({ seen: seenWith({ tier: "medium" }) }))).toBe(false);
+    expect(accepts(reviewWith({ input: "mouse" }))).toBe(false);
+    expect(accepts(reviewWith({ surface: "session" }))).toBe(true); // checkReview refuses it
+    expect(accepts({ ...clientMessages().review, extra: true })).toBe(false);
+  });
+
+  it("takes a snooze until a time, or a wake, and leaves the reviewer to the writer", () => {
+    const { snooze } = clientMessages();
+    expect(accepts({ ...snooze, until: null })).toBe(true);
+    expect(accepts({ ...snooze, until: "2026-11-16T09:00:00-05:00" })).toBe(true);
+    expect(accepts({ ...snooze, until: "2026-11-16T14:00:00" })).toBe(false);
+    expect(accepts({ ...snooze, until: "tomorrow" })).toBe(false);
+    expect(accepts({ ...snooze, by: { userId: "u_9fK2mQx7Lr", auth: null } })).toBe(false);
+    expect(accepts({ ...snooze, snoozeId: "snooze-1" })).toBe(false);
+    const { until: _, ...noUntil } = snooze;
+    expect(accepts(noUntil)).toBe(false);
+  });
+
+  it("adds sealed to the error codes, which the server may send", () => {
+    expect(SessionErrorCode.options).toContain("sealed");
+    const sealed = { t: "error", code: "sealed", retryable: false, msgId: uuidv7() };
+    expect(parseServerMessage(frame(sealed))).toEqual({ ok: true, message: sealed });
   });
 });
 

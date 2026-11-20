@@ -1,0 +1,42 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d01",
+  "proposalId": "01a1c6e2-e5dc-79b1-a045-4bf227d9db20",
+  "decision": "approved",
+  "target": {
+    "entityId": "01a0f831-afe8-7fff-84cf-71639949085b"
+  },
+  "mode": "single",
+  "batchId": null,
+  "policy": null,
+  "undoes": null,
+  "reason": null,
+  "seen": {
+    "tier": "none",
+    "fields": {
+      "stage": {
+        "proposed": "proposal",
+        "base": "discovery"
+      }
+    },
+    "target": {
+      "entityId": "01a0f831-afe8-7fff-84cf-71639949085b",
+      "offered": []
+    },
+    "relinked": null,
+    "clip": "available"
+  },
+  "timing": {
+    "decisionMs": 1840.5,
+    "handlingMs": 1840
+  },
+  "input": "keyboard",
+  "surface": "tray",
+  "syncEligibleAt": "2026-11-20T19:16:19.800Z",
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": {
+      "method": "passkey",
+      "signedInAt": "2026-11-20T08:12:40.000Z"
+    }
+  }
+}

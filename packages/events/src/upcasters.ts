@@ -1,4 +1,10 @@
-import type { ProposalCreatedV1, ProposalCreatedV2, TargetV2 } from "@earshot/core";
+import type {
+  ProposalCreatedV1,
+  ProposalCreatedV2,
+  ProposalReviewedV1,
+  ProposalReviewedV2,
+  TargetV2,
+} from "@earshot/core";
 import type { Upcaster } from "./types";
 
 /**
@@ -58,5 +64,48 @@ export const proposalCreatedV1ToV2: Upcaster = {
   },
 };
 
+/**
+ * `proposal.reviewed` v1 → v2 (Phase 5 spec §4.1). A v1 review was a person's decision on one
+ * card, with one time, so:
+ * - `reviewId` is the event's own id, which keeps the upcast deterministic and gives a later
+ *   reopen something to name;
+ * - `decision` and `editDiff` carry over, and `reviewerMs` becomes both of the review clock's
+ *   times, `decisionMs` and `handlingMs`;
+ * - the mode is `single`, and everything v1 never recorded is null: the record chosen, the batch,
+ *   the policy, what was undone and why, what the reviewer saw, the input, the surface, and who
+ *   reviewed. So is `syncEligibleAt`: nothing upcast from v1 is eligible to sync.
+ */
+export const proposalReviewedV1ToV2: Upcaster = {
+  type: "proposal.reviewed",
+  fromVersion: 1,
+  up: (event) => {
+    // The registry validates the event at v1 before it upcasts it.
+    const { proposalId, decision, editDiff, reviewerMs } = event.payload as ProposalReviewedV1;
+    const payload: ProposalReviewedV2 = {
+      reviewId: event.id,
+      proposalId,
+      decision,
+      target: null,
+      ...(editDiff === undefined ? {} : { editDiff }),
+      mode: "single",
+      batchId: null,
+      policy: null,
+      undoes: null,
+      reason: null,
+      seen: null,
+      timing: { decisionMs: reviewerMs, handlingMs: reviewerMs },
+      input: null,
+      surface: null,
+      syncEligibleAt: null,
+      by: null,
+    };
+    return { ...event, schemaVersion: 2, payload };
+  },
+};
+
 /** Every upcaster Earshot ships, in no particular order: the registry chains them by version. */
-export const upcasters: readonly Upcaster[] = [utteranceFinalV1ToV2, proposalCreatedV1ToV2];
+export const upcasters: readonly Upcaster[] = [
+  utteranceFinalV1ToV2,
+  proposalCreatedV1ToV2,
+  proposalReviewedV1ToV2,
+];

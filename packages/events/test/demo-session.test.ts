@@ -113,6 +113,37 @@ describe("demo-session.jsonl: what the replay demo relies on", () => {
     expect(byType("task").review?.editDiff).toHaveProperty("title");
   });
 
+  it("upcasts every review to v2: its event's id, one card at a time, nothing eligible to sync", () => {
+    const stored = events.filter((e) => e.type === "proposal.reviewed");
+    expect(stored.map((e) => e.schemaVersion)).toEqual([1, 1, 1, 1, 1]);
+    const reviews = proposals.map((p) => p.review);
+    expect(reviews.map((r) => r?.reviewId).sort()).toEqual(stored.map((e) => e.id).sort());
+    for (const r of reviews) {
+      expect(r).toMatchObject({
+        mode: "single",
+        target: null,
+        batchId: null,
+        policy: null,
+        undoes: null,
+        reason: null,
+        seen: null,
+        input: null,
+        surface: null,
+        syncEligibleAt: null,
+        by: null,
+      });
+      expect(r?.timing.decisionMs).toBe(r?.timing.handlingMs);
+    }
+    expect(byType("task").review?.timing.handlingMs).toBe(11_200);
+  });
+
+  it("is ended but not sealed, and has nothing snoozed or superseded", () => {
+    expect(session?.sealedAt).toBeNull();
+    for (const p of proposals) {
+      expect(p, p.type).toMatchObject({ supersedes: null, supersededBy: null, snoozedUntil: null });
+    }
+  });
+
   it("stores one utterance at v1, which replays as the biased witness", () => {
     const v1 = events.filter((e) => e.type === "utterance.final" && e.schemaVersion === 1);
     expect(v1).toHaveLength(1);

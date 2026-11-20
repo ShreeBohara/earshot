@@ -1,4 +1,9 @@
-import { eventPayloadContracts, ProposalCreatedV2, UtteranceFinalV2 } from "@earshot/core";
+import {
+  eventPayloadContracts,
+  ProposalCreatedV2,
+  ProposalReviewedV2,
+  UtteranceFinalV2,
+} from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
@@ -7,6 +12,7 @@ import {
   EventValidationError,
   latestVersions,
   proposalCreatedV1ToV2,
+  proposalReviewedV1ToV2,
   UnknownEventError,
   UpcastError,
   type Upcaster,
@@ -18,6 +24,11 @@ import {
   proposal,
   proposalFlagged,
   proposalV2,
+  reopen,
+  review,
+  reviewV2,
+  sealed,
+  snoozed,
   turnCompleted,
   turnMeasured,
   turnWitnessed,
@@ -120,6 +131,70 @@ describe("proposalCreatedV1ToV2", () => {
   });
 });
 
+describe("proposalReviewedV1ToV2", () => {
+  /** What the upcaster should make of a v1 review: v2, its own id as the review id, single. */
+  const expected = (event: ReturnType<typeof envelope>, decision: string, extra = {}) => ({
+    ...event,
+    schemaVersion: 2,
+    payload: {
+      reviewId: event.id,
+      proposalId: uuid(3001),
+      decision,
+      target: null,
+      ...extra,
+      mode: "single",
+      batchId: null,
+      policy: null,
+      undoes: null,
+      reason: null,
+      seen: null,
+      timing: { decisionMs: 1500, handlingMs: 1500 },
+      input: null,
+      surface: null,
+      syncEligibleAt: null,
+      by: null,
+    },
+  });
+
+  it("upcasts an approval: its event id as the review id, and reviewerMs as both timings", () => {
+    const approved = envelope(review(1, "approved"));
+    expect(proposalReviewedV1ToV2.up(approved)).toEqual(expected(approved, "approved"));
+  });
+
+  it("carries an edit's diff over", () => {
+    const editDiff = { title: { before: "Send the deck", after: "Send the revised deck" } };
+    const edited = envelope(review(1, "edited", { editDiff }));
+    expect(proposalReviewedV1ToV2.up(edited)).toEqual(expected(edited, "edited", { editDiff }));
+  });
+
+  it("upcasts a rejection, with no diff and nothing eligible to sync", () => {
+    const rejected = envelope(review(1, "rejected"));
+    const up = proposalReviewedV1ToV2.up(rejected);
+    expect(up).toEqual(expected(rejected, "rejected"));
+    expect(up.payload).not.toHaveProperty("editDiff");
+  });
+
+  it("produces payloads the v2 schema accepts", () => {
+    for (const event of [
+      envelope(review(1, "approved", { reviewerMs: 0 })),
+      envelope(
+        review(1, "edited", { editDiff: { dueDate: { before: null, after: "2026-11-12" } } }),
+      ),
+      envelope(review(1, "rejected", { reviewerMs: Number.MAX_SAFE_INTEGER })),
+    ]) {
+      const result = ProposalReviewedV2.safeParse(proposalReviewedV1ToV2.up(event).payload);
+      expect(result.error?.issues ?? []).toEqual([]);
+    }
+  });
+
+  it("is deterministic and doesn't mutate the event it upcasts", () => {
+    const event = envelope(review(1, "edited", { editDiff: { a: { before: 1, after: 2 } } }));
+    const frozen = deepFreeze(structuredClone(event));
+    expect(proposalReviewedV1ToV2.up(frozen)).toEqual(proposalReviewedV1ToV2.up(event));
+    expect(frozen).toEqual(event);
+  });
+});
+
 describe("defaultRegistry", () => {
   it("upcasts a stored v1 utterance to the latest version", () => {
     const v1 = envelope(utteranceV1(1));
@@ -151,6 +226,34 @@ describe("defaultRegistry", () => {
     expect(() =>
       createEventRegistry({ payloads: eventPayloadContracts, upcasters: [proposalCreatedV1ToV2] }),
     ).toThrow(UpcastError);
+  });
+
+  it("fails when it loads, not on replay, if proposal.reviewed v1 loses its upcaster", () => {
+    expect(() =>
+      createEventRegistry({
+        payloads: eventPayloadContracts,
+        upcasters: [utteranceFinalV1ToV2, proposalCreatedV1ToV2],
+      }),
+    ).toThrow(/proposal.reviewed v1 has no upcaster to v2/);
+  });
+
+  it("upcasts a stored v1 review to v2, and leaves a v2 review as it is", () => {
+    const stored = envelope(review(1, "approved"));
+    expect(defaultRegistry.toLatest(stored)).toMatchObject({
+      schemaVersion: 2,
+      payload: { reviewId: stored.id, mode: "single", syncEligibleAt: null },
+    });
+    const v2 = envelope(reviewV2(1));
+    expect(defaultRegistry.toLatest(v2)).toBe(v2);
+  });
+
+  it("validates a v2 review against v2, and refuses v1's shape at v2", () => {
+    const v1AtV2 = envelope({ ...review(1, "approved"), schemaVersion: 2 });
+    expect(() => defaultRegistry.toLatest(v1AtV2)).toThrow(EventValidationError);
+    const v2AtV1 = envelope({ ...reviewV2(1), schemaVersion: 1 });
+    expect(() => defaultRegistry.toLatest(v2AtV1)).toThrow(EventValidationError);
+    const reopenAtV1 = envelope({ ...reopen(1, uuid(7001)), schemaVersion: 1 });
+    expect(() => defaultRegistry.toLatest(reopenAtV1)).toThrow(EventValidationError);
   });
 
   it("returns an event already at the latest version as is", () => {
@@ -222,6 +325,31 @@ describe("the Phase 4 event types", () => {
       turnWitnessed(1, { outcome: "transcribed" }),
       turnWitnessed(1, { conflicts: -1 }),
       turnWitnessed(1, { reason: "cancelled" }),
+    ]) {
+      expect(() => defaultRegistry.toLatest(envelope(bad))).toThrow(EventValidationError);
+    }
+  });
+});
+
+describe("the Phase 5 event types", () => {
+  const bodies = [snoozed(1), snoozed(1, null), sealed(), sealed({ by: "import" })];
+
+  it.each(bodies)("$type loads at v1, its latest version", (body) => {
+    expect(defaultRegistry.latestVersion(body.type)).toBe(1);
+    const event = envelope(body);
+    expect(defaultRegistry.toLatest(event)).toBe(event);
+  });
+
+  it("validates their payloads, and v2 reviews'", () => {
+    for (const bad of [
+      snoozed(1, "tomorrow"),
+      snoozed(1, null, { by: null }),
+      snoozed(1, null, { snoozeId: "snooze-1" }),
+      sealed({ by: "edge" }),
+      sealed({ sealedAt: "2026-11-10T19:16:40" }),
+      reviewV2(1, "approved", { mode: "auto" }),
+      reviewV2(1, "approved", { timing: { decisionMs: 1.5, handlingMs: 2 } }),
+      reviewV2(1, "approved", { reviewerMs: 1500 }),
     ]) {
       expect(() => defaultRegistry.toLatest(envelope(bad))).toThrow(EventValidationError);
     }

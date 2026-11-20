@@ -8,9 +8,14 @@ import {
   proposalFlagged,
   proposalV2,
   readFixture,
+  reopen,
   review,
+  reviewV2,
   SESSION_ID,
+  sealed,
+  snoozed,
   started,
+  tsFor,
   turnWitnessed,
   utterance,
   uuid,
@@ -19,7 +24,7 @@ import type { PGlite } from "@electric-sql/pglite";
 import { asc, desc, eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { appendEvents, PgEventStore, UnknownSessionError } from "../src/event-store";
-import { rebuildProjections } from "../src/projections";
+import { rebuildProjections, type SessionProjections } from "../src/projections";
 import {
   crmEntities,
   proposals,
@@ -99,9 +104,34 @@ async function rowsOf(db: Db, sessionId: string) {
 }
 
 /**
- * The rows, as A reads them, turned back into the projections' shapes: columns renamed,
- * timestamps as ISO strings, the risk flags decoded, and `status`, `durationMs`, `lastSeq`, and
- * `lastEventAt` derived from the session's row and its last event.
+ * The projections as the tables hold them until migration 0014 (Phase 5 WP3) adds columns for
+ * the rest: no seal on the session; no supersedes, superseded-by, or snooze on a proposal; and of
+ * its latest review, only the diff, the handling time (`reviewer_ms`), the seq, and the time. The
+ * row's status stands for the review's decision.
+ */
+function asStored(projections: SessionProjections) {
+  const { session, utterances: utteranceViews, proposals: proposalViews } = projections;
+  return {
+    session: session && (({ sealedAt: _, ...rest }) => rest)(session),
+    utterances: utteranceViews,
+    proposals: proposalViews.map(
+      ({ supersedes: _s, supersededBy: _b, snoozedUntil: _z, review, ...rest }) => ({
+        ...rest,
+        review: review && {
+          editDiff: review.editDiff,
+          handlingMs: review.timing.handlingMs,
+          seq: review.seq,
+          ts: review.ts,
+        },
+      }),
+    ),
+  };
+}
+
+/**
+ * The rows, as A reads them, turned back into the projections' shapes (`asStored`): columns
+ * renamed, timestamps as ISO strings, the risk flags decoded, and `status`, `durationMs`,
+ * `lastSeq`, and `lastEventAt` derived from the session's row and its last event.
  */
 function readProjections(db: Db, sessionId: string) {
   return withTenant(db, A, async (tx) => {
@@ -170,9 +200,8 @@ function readProjections(db: Db, sessionId: string) {
           row.reviewedSeq === null
             ? null
             : {
-                decision: row.status,
                 editDiff: row.editDiff,
-                reviewerMs: row.reviewerMs,
+                handlingMs: row.reviewerMs,
                 seq: row.reviewedSeq,
                 ts: row.reviewedAt?.toISOString(),
               },
@@ -185,7 +214,7 @@ describe("rebuildProjections", () => {
   it("writes rows that read back as the committed projection snapshot", async () => {
     const db = await fresh();
     expect(await rebuild(db, demoSessionId)).toEqual(snapshot);
-    expect(await readProjections(db, demoSessionId)).toEqual(snapshot);
+    expect(await readProjections(db, demoSessionId)).toEqual(asStored(snapshot));
   });
 
   it("restores identical rows after they're deleted", async () => {
@@ -412,7 +441,9 @@ describe("flushing Phase 4 events: v2 proposals, witness flags, and downgrades",
       proposalV2(1).payload.target,
       { ...(proposalV2(1).payload.target as object), ...asked },
     ]);
-    expect((await readProjections(db, SESSION_ID)).proposals).toEqual(projections.proposals);
+    expect((await readProjections(db, SESSION_ID)).proposals).toEqual(
+      asStored(projections).proposals,
+    );
   });
 
   it("downgrades a linked target in a later flush, with the witness's flag and conflict", async () => {
@@ -446,7 +477,9 @@ describe("flushing Phase 4 events: v2 proposals, witness flags, and downgrades",
     });
     const witnesses = (await rowsOf(db, SESSION_ID)).utterances.map((u) => u.witness);
     expect(witnesses).toEqual(["biased", "unbiased"]);
-    expect((await readProjections(db, SESSION_ID)).proposals).toEqual(projections.proposals);
+    expect((await readProjections(db, SESSION_ID)).proposals).toEqual(
+      asStored(projections).proposals,
+    );
   });
 
   it("fills a pre-Phase 4 row's empty target from the log, upcasting v1", async () => {
@@ -463,7 +496,7 @@ describe("flushing Phase 4 events: v2 proposals, witness flags, and downgrades",
       "linked",
       "linked",
     ]);
-    expect(await readProjections(db, demoSessionId)).toEqual(snapshot);
+    expect(await readProjections(db, demoSessionId)).toEqual(asStored(snapshot));
   });
 
   it("rolls back a flush whose downgrade doesn't list the target it replaces", async () => {
@@ -481,6 +514,65 @@ describe("flushing Phase 4 events: v2 proposals, witness flags, and downgrades",
     expect((await rowsOf(db, SESSION_ID)).proposals.map((row) => row.targetEntityId)).toEqual([
       LINKED,
     ]);
+  });
+});
+
+describe("flushing Phase 5 events: v2 reviews, reopens, snoozes, and the seal", () => {
+  const flush = (db: Db, expectedLastSeq: number, batch: Parameters<typeof appendEvents>[3]) =>
+    withTenant(db, A, async (tx) => {
+      await appendEvents(tx, SESSION_ID, expectedLastSeq, batch);
+      return rebuildProjections(tx, SESSION_ID);
+    });
+  const opening = [
+    draft(1, started()),
+    draft(2, utterance(1)),
+    draft(3, proposal(1)),
+    draft(4, reviewV2(1, "edited")),
+  ];
+
+  it("stores a v2 review's handling time, and a reopen as proposed with its own seq", async () => {
+    const db = await fresh();
+    await flush(db, NO_EVENTS, opening);
+    expect((await rowsOf(db, SESSION_ID)).proposals).toMatchObject([
+      {
+        status: "edited",
+        editDiff: { title: { before: "Send the deck", after: "Send the revised deck" } },
+        reviewerMs: 1500,
+        reviewedSeq: 3,
+      },
+    ]);
+
+    const undo = reopen(1, uuid(7001), { timing: { decisionMs: 400, handlingMs: 600 } });
+    const projections = await flush(db, 3, [
+      draft(5, undo),
+      draft(6, snoozed(1)),
+      draft(7, ended()),
+      draft(8, sealed()),
+    ]);
+    expect((await rowsOf(db, SESSION_ID)).proposals).toMatchObject([
+      {
+        status: "proposed",
+        editDiff: null,
+        reviewerMs: 600,
+        reviewedSeq: 4,
+        reviewedAt: new Date(tsFor(5)),
+      },
+    ]);
+    expect(projections.session?.sealedAt).toBe("2026-11-10T19:16:40.000Z");
+    expect(projections.proposals[0]?.snoozedUntil).toBe("2026-11-11T14:00:00.000Z");
+    expect((await readProjections(db, SESSION_ID)).proposals).toEqual(
+      asStored(projections).proposals,
+    );
+  });
+
+  it("rolls back a flush whose reopen doesn't name the latest review", async () => {
+    const db = await fresh();
+    await flush(db, NO_EVENTS, opening);
+    await expect(flush(db, 3, [draft(5, reopen(1, uuid(7999)))])).rejects.toBeInstanceOf(
+      ProjectionError,
+    );
+    expect(await new PgEventStore(db, A).read(SESSION_ID)).toHaveLength(4);
+    expect((await rowsOf(db, SESSION_ID)).proposals).toMatchObject([{ status: "edited" }]);
   });
 });
 

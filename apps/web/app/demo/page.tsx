@@ -4,7 +4,7 @@ import demoLog from "@earshot/events/fixtures/demo-session.jsonl";
 import { Badge } from "@earshot/ui/components/badge";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@earshot/ui/components/card";
 import { StatePill } from "@earshot/ui/components/state-pill";
-import { CheckIcon, PencilIcon, XIcon } from "lucide-react";
+import { CheckIcon, PencilIcon, ReplaceIcon, XIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DemoReplay } from "@/components/demo/demo-replay";
@@ -73,6 +73,13 @@ function Decision({ status }: { status: DemoProposal["status"] }) {
         <Badge variant="outline" className="h-6 gap-1.5 px-2.5 text-muted-foreground">
           <XIcon aria-hidden="true" data-icon="inline-start" />
           Rejected
+        </Badge>
+      );
+    case "superseded":
+      return (
+        <Badge variant="outline" className="h-6 gap-1.5 px-2.5 text-muted-foreground">
+          <ReplaceIcon aria-hidden="true" data-icon="inline-start" />
+          Replaced by a correction
         </Badge>
       );
   }

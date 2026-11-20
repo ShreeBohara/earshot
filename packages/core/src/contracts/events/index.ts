@@ -24,8 +24,29 @@ import {
   TargetDowngrade,
   WitnessConflict,
 } from "./proposal-flagged";
-import { FieldEdit, ProposalReviewedV1, ReviewDecision } from "./proposal-reviewed";
+import {
+  FieldEdit,
+  LikelyEditTier,
+  ProposalReviewedV1,
+  ProposalReviewedV2,
+  ReopenReason,
+  ReviewDecision,
+  ReviewDecisionV2,
+  Reviewer,
+  ReviewInputKind,
+  ReviewMode,
+  ReviewPolicy,
+  ReviewSeen,
+  ReviewSurface,
+  ReviewTarget,
+  ReviewTiming,
+  SeenField,
+  SeenTarget,
+  SignInMethod,
+} from "./proposal-reviewed";
+import { ProposalSnoozedV1 } from "./proposal-snoozed";
 import { SessionEndedV1 } from "./session-ended";
+import { SealedBy, SessionSealedV1 } from "./session-sealed";
 import {
   ProviderModel,
   SessionMode,
@@ -62,6 +83,12 @@ export const eventPayloadContracts = [
   { type: "proposal.created", schemaVersion: 2, schema: ProposalCreatedV2 },
   { type: "proposal.flagged", schemaVersion: 1, schema: ProposalFlaggedV1 },
   { type: "turn.witnessed", schemaVersion: 1, schema: TurnWitnessedV1 },
+  // Phase 5: reviews that say how they were made (v1 upcasts), snoozes, and the seal, after
+  // which the web Worker writes the session's reviews. `proposalsProjection` folds reviews and
+  // snoozes, and `sessionProjection` the seal.
+  { type: "proposal.reviewed", schemaVersion: 2, schema: ProposalReviewedV2 },
+  { type: "proposal.snoozed", schemaVersion: 1, schema: ProposalSnoozedV1 },
+  { type: "session.sealed", schemaVersion: 1, schema: SessionSealedV1 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
@@ -74,6 +101,7 @@ export {
   FieldNorm,
   FieldValue,
   FlagSource,
+  LikelyEditTier,
   MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
   ProposalCreatedV2,
@@ -81,18 +109,35 @@ export {
   ProposalFieldV2,
   ProposalFlaggedV1,
   ProposalReviewedV1,
+  ProposalReviewedV2,
+  ProposalSnoozedV1,
   ProposalType,
   ProposalTypeV2,
   ProviderModel,
+  ReopenReason,
   ReviewDecision,
+  ReviewDecisionV2,
+  Reviewer,
+  ReviewInputKind,
+  ReviewMode,
+  ReviewPolicy,
+  ReviewSeen,
+  ReviewSurface,
+  ReviewTarget,
+  ReviewTiming,
   RiskFlag,
   RiskFlagV2,
   RiskKind,
   RiskKindV2,
+  SealedBy,
+  SeenField,
+  SeenTarget,
   SessionEndedV1,
   SessionMode,
   SessionProviders,
+  SessionSealedV1,
   SessionStartedV1,
+  SignInMethod,
   TARGET_FIELD,
   TargetBasis,
   TargetCandidate,

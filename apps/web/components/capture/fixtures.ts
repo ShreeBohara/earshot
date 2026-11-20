@@ -136,6 +136,9 @@ const PROPOSAL_PAYLOADS = [
   },
 ] as const;
 
+/** The event types the fixture writes at version 2, as SessionDO does; the rest are at 1. */
+const LATEST_V2 = new Set(["utterance.final", "proposal.created", "proposal.reviewed"]);
+
 /** A session state after the three lines and their proposals, with costs and one review. */
 export function demoState(options: { reviewed?: boolean; lines?: number } = {}) {
   const lineCount = options.lines ?? LINES.length;
@@ -148,7 +151,7 @@ export function demoState(options: { reviewed?: boolean; lines?: number } = {}) 
       sessionId: SESSION_ID,
       seq: seq++,
       type,
-      schemaVersion: type === "utterance.final" || type === "proposal.created" ? 2 : 1,
+      schemaVersion: LATEST_V2.has(type) ? 2 : 1,
       ts: new Date(Date.UTC(2026, 10, 10, 19, 15, seq)).toISOString(),
       payload,
     });
@@ -184,10 +187,32 @@ export function demoState(options: { reviewed?: boolean; lines?: number } = {}) 
     });
   });
   if (options.reviewed) {
+    // As the tray sends a review from Phase 5 on: `proposal.reviewed` v2, one card by keyboard.
     event("proposal.reviewed", {
+      reviewId: "01a1c6e2-d000-7000-8000-000000000001",
       proposalId: PROPOSAL_PAYLOADS[1].proposalId,
       decision: "approved",
-      reviewerMs: 2_400,
+      target: null,
+      mode: "single",
+      batchId: null,
+      policy: null,
+      undoes: null,
+      reason: null,
+      seen: {
+        tier: "quiet",
+        fields: { stage: { proposed: "Proposal" } },
+        target: { entityId: "01a0f831-afe8-7fff-84cf-71639949085b", offered: [] },
+        relinked: null,
+        clip: "none",
+      },
+      timing: { decisionMs: 2_100, handlingMs: 2_400 },
+      input: "keyboard",
+      surface: "tray",
+      syncEligibleAt: "2026-11-10T19:15:41.000Z",
+      by: {
+        userId: "u_9fK2mQx7Lr",
+        auth: { method: "passkey", signedInAt: "2026-11-10T19:00:00.000Z" },
+      },
     });
   }
   return store.getState();

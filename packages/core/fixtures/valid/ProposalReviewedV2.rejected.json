@@ -1,0 +1,39 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d04",
+  "proposalId": "01a1c6e3-2e48-7c08-ad2d-2483bd55a1a3",
+  "decision": "rejected",
+  "target": null,
+  "mode": "single",
+  "batchId": null,
+  "policy": null,
+  "undoes": null,
+  "reason": null,
+  "seen": {
+    "tier": "none",
+    "fields": {
+      "text": {
+        "proposed": "Run a security workshop with their IT team next month"
+      }
+    },
+    "target": {
+      "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+      "offered": []
+    },
+    "relinked": null,
+    "clip": "none"
+  },
+  "timing": {
+    "decisionMs": 4200,
+    "handlingMs": 4200
+  },
+  "input": "touch",
+  "surface": "inbox",
+  "syncEligibleAt": null,
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": {
+      "method": "passkey",
+      "signedInAt": "2026-11-20T08:12:40.000Z"
+    }
+  }
+}
