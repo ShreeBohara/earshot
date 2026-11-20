@@ -709,6 +709,9 @@ importers:
       fake-indexeddb:
         specifier: ^6.2.0
         version: 6.2.8
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
