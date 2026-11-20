@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
     rules: {
       // Event logs import as strings (the replay demo bundles its fixture; no filesystem at run time).
       "*.jsonl": { type: "text" },
+      // So does Markdown: /pilot shows docs/pilot/consent.md word for word.
+      "*.md": { type: "text" },
     },
   },
 };

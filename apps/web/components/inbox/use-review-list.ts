@@ -129,8 +129,8 @@ export interface ReviewListOptions {
   readonly quotes: Readonly<Record<string, string>>;
   /** Where the page's reviews go: the web route, or the session socket. */
   readonly sink: ReviewSink;
-  /** Where the reviews happen, as each records it. */
-  readonly surface: Extract<ReviewSurface, "inbox" | "tray">;
+  /** Where the reviews happen, as each records it: the inbox, the tray, or /pilot (WP7). */
+  readonly surface: Extract<ReviewSurface, "inbox" | "tray" | "pilot">;
   /** Which debriefs' cards can be reviewed now; sealed ones by default (the inbox's rule). */
   readonly reviewable?: (session: InboxSession) => boolean;
   /** The server's clock when the data was read: the first render's, so it matches the server's. */
@@ -168,8 +168,9 @@ export interface ReviewList {
 }
 
 /**
- * The review list's engine (Phase 5 spec WP5, WP6; ADR-0035), shared by the inbox and the capture
- * screen's tray: the page's optimistic changes over the debriefs, the sections and each card's
+ * The review list's engine (Phase 5 spec WP5, WP6; ADR-0035), shared by the inbox, the capture
+ * screen's tray, and the pilot page (WP7): the page's optimistic changes over the debriefs, the
+ * sections and each card's
  * model, roving focus, the review clock, the single-key shortcuts, one message per action (an
  * urgent one per failure), the focus rules, undo with u, and "accept all" with its checkpoint.
  * The page renders; this decides, sends, and moves focus.
