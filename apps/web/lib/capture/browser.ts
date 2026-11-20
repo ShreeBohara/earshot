@@ -10,6 +10,7 @@ import {
   openMicrophone,
 } from "@earshot/voice";
 import { createSessionClient, isIosPlatform } from "@earshot/voice/session";
+import { browserClips } from "../evidence/browser";
 import { playChime, SpokenConfirmations } from "./audio-out";
 import { CaptureController } from "./controller";
 import { browserDeviceKeys } from "./keys";
@@ -54,6 +55,8 @@ export function createBrowserCaptureController(): CaptureController {
     // the device's Groq key, decrypted for each request (Phase 4 WP9).
     witnessSetting: () => (browser ? readWitnessSetting(window.localStorage) : null),
     createWitness: (key) => createGroqWitness({ key }),
+    // Evidence clips (Phase 5 WP9): each turn's audio, encrypted on this device for 24 hours.
+    clips: browserClips(),
   });
 }
 

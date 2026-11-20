@@ -28,6 +28,12 @@
 // arrives), or the rep leaves the capture screen, so the tray keeps reviewing over the socket in
 // the grace before the seal. A review the socket refuses with `sealed`, and every review once the
 // client has closed, goes to the web route (`createReviewRoute`) with the same review id.
+//
+// Evidence clips (Phase 5 WP9; ADR-0036): with clips on for this device, the engine records each
+// turn's audio even without a witness, and each turn's `turn_audio` goes to `clips.keep`, which
+// encrypts it into this browser's clip store for 24 hours. It never goes anywhere else. While a
+// clip plays on this page, a hands-free engine takes no microphone audio, so the clip's sound
+// can't come back as a turn; pressing push-to-talk stops the clip instead.
 import type { EntityRef, LlmProvider, SessionProviders } from "@earshot/core";
 import type { ProviderId, StoredKeyMeta } from "@earshot/keys";
 import {
@@ -47,6 +53,7 @@ import {
   WITNESS_PROVIDER,
   type WitnessRunner,
 } from "@earshot/voice";
+import type { ClipInput } from "@earshot/voice/evidence";
 import {
   type Capture,
   type CaptureEvent,
@@ -155,6 +162,18 @@ export interface CaptureUiState {
  */
 export type CaptureEngine = VoiceEngine & Pick<DebriefEngine, "audioClockMs" | "mode">;
 
+/** Evidence clips on this device (Phase 5 WP9): where each turn's audio is kept, and the player. */
+export interface CaptureClips {
+  /** Whether this device keeps clips (Settings → Capture): read per engine, and per turn. */
+  enabled(): boolean;
+  /** One turn's audio, to keep on this device for 24 hours. Fire and forget: it never throws. */
+  keep(clip: ClipInput): void;
+  /** Whether a clip is playing on this page. */
+  playing(): boolean;
+  /** Stops the clip playing on this page, if any. */
+  stop(): void;
+}
+
 /** Everything the controller touches outside itself, so tests can swap any of it. */
 export interface CaptureDeps {
   readonly fetch: typeof fetch;
@@ -186,6 +205,8 @@ export interface CaptureDeps {
   readonly createWitness?: (key: () => Promise<string | undefined>) => WitnessRunner;
   /** How long `end` waits for the last turn's witness to reach the outbox (target 12 s). */
   readonly witnessEndWaitMs?: number;
+  /** Evidence clips (Phase 5 WP9). Without it, no turn's audio is kept past its witness. */
+  readonly clips?: CaptureClips;
   /** Extra SessionClient options; tests pass WP8's fake socket and clock. */
   readonly clientOptions?: Partial<SessionClientOptions>;
   /** Extra engine options; tests pass a scripted capture source and clock. */
@@ -685,13 +706,17 @@ export class CaptureController {
         return;
       }
     }
+    const mode = this.#state.mode;
+    const clips = this.#deps.clips;
     const engine = this.#deps.createEngine({
       adapter: live.plan.createAdapter(this.#state.turnsSent),
       getCredential: live.plan.getCredential(live.sessionId),
-      mode: this.#state.mode,
+      mode,
       audioClockStartMs: previous?.audioClockMs ?? 0,
-      // Each turn's audio is kept only for a witness that runs.
-      turnAudio: live.witness?.recordsAudio ?? false,
+      // Each turn's audio is kept for a witness that runs, and for the device's evidence clips.
+      turnAudio: (live.witness?.recordsAudio ?? false) || (clips?.enabled() ?? false),
+      // Hands-free hears whatever the speakers play: a clip playing here mustn't become a turn.
+      ...(clips && mode === "hands_free" ? { isMuted: () => clips.playing() } : {}),
       ...this.#deps.engineOptions,
     });
     live.engine = engine;
@@ -759,6 +784,12 @@ export class CaptureController {
 
   #onEngineEvent(live: LiveSession, engine: CaptureEngine, event: VoiceEvent): void {
     if (this.#live !== live) return;
+    if (event.type === "turn_audio") {
+      // From the running engine, or one finishing its last turn as it stops: either way, the turn
+      // is this session's.
+      this.#keepClip(live, event);
+      return;
+    }
     const at = this.#deps.clock();
     if (this.#engine !== engine) {
       // An engine on its way out (replaced by `H`, or stopped by a pause or the end) finishes its
@@ -829,6 +860,17 @@ export class CaptureController {
   }
 
   /**
+   * A turn's audio, kept as its evidence clip while clips are on: the audio itself, or, for a turn
+   * that ran past the cap, the fact that it was too long to keep. A turn with no audio of its own
+   * keeps nothing.
+   */
+  #keepClip(live: LiveSession, event: VoiceEventOf<"turn_audio">): void {
+    const clips = this.#deps.clips;
+    if (!clips || !event.audio || !clips.enabled()) return;
+    clips.keep({ sessionId: live.sessionId, turnId: event.turnId, audio: event.audio });
+  }
+
+  /**
    * The running engine is going out of service and finishes its last turn as it stops: speech
    * still going on ends now, so that turn's latency counts from here.
    */
@@ -846,6 +888,8 @@ export class CaptureController {
     if (pressed || mode !== "push_to_talk" || !this.#engine) return;
     if (!CAPTURE_RUNNING.has(capture.state)) return;
     if (capture.state === "provider_unavailable") this.#capture({ type: "retry" });
+    // The rep is talking, not listening: a clip still playing stops, so it can't ride along.
+    if (this.#deps.clips?.playing()) this.#deps.clips.stop();
     this.#update({ pressed: true });
     this.#engine.pushToTalk(true);
   }
