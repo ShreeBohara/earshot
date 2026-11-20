@@ -1,0 +1,30 @@
+{
+  "name": "@earshot/understanding",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Earshot's understanding step, pure TypeScript with no DOM and no Node APIs: the name toolkit (normalization, Double Metaphone, pg_trgm-compatible trigrams, Jaro-Winkler, initials, token alignment), and later the entity linker, the witness comparison, the value normalizers, and the faithfulness check.",
+  "type": "module",
+  "exports": {
+    "./names": "./src/names/index.ts",
+    "./link": "./src/link/index.ts",
+    "./witness": "./src/witness/index.ts",
+    "./normalize": "./src/normalize/index.ts",
+    "./faithfulness": "./src/faithfulness.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "double-metaphone": "2.0.1"
+  },
+  "devDependencies": {
+    "@earshot/tsconfig": "workspace:*",
+    "@electric-sql/pglite": "catalog:",
+    "@types/node": "catalog:",
+    "esbuild": "^0.28.2",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
