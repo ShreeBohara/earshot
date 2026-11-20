@@ -1,7 +1,7 @@
 import { bothThemes, bothThemesParameters, themePanel } from "@earshot/ui/lib/story-themes";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
-import { demoState, ENTITIES, PROPOSALS, QUOTES } from "./fixtures";
+import { demoState, ENTITIES, PROPOSALS, QUOTES, WITNESS_CONFLICT } from "./fixtures";
 import { ProposalsTray } from "./proposals-tray";
 
 const meta = {
@@ -59,5 +59,23 @@ export const Reviewed: Story = {
   args: { proposals: demoState({ reviewed: true }).projections.proposals, showReview: true },
   play: async ({ canvasElement }) => {
     await expect(within(themePanel(canvasElement)).getByText("Approved")).toBeVisible();
+  },
+};
+
+/**
+ * The second witness heard the name differently (Phase 4 WP9): the link by sound became a
+ * question, and the conflict pill shows both readings. Read-only until Phase 5.
+ */
+export const WitnessConflict: Story = {
+  args: { proposals: [WITNESS_CONFLICT] },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    await expect(
+      panel.getByRole("heading", { name: "Task · Ask: Dana Li or a new record?" }),
+    ).toBeVisible();
+    const conflicts = within(panel.getByRole("list", { name: "Where the transcripts disagree" }));
+    await expect(conflicts.getByText("Heard two ways")).toBeVisible();
+    await expect(conflicts.getByText("“Donna”")).toBeVisible();
+    await expect(panel.getByText("Transcripts disagree on the name")).toBeVisible();
   },
 };

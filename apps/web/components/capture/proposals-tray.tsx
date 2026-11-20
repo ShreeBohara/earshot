@@ -10,6 +10,7 @@ import { CheckIcon, PencilIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useId, useLayoutEffect, ViewTransition } from "react";
 import {
   askCandidates,
+  CONFLICT_COPY,
   fieldLabel,
   PROPOSAL_TYPE_LABELS,
   riskLabel,
@@ -117,6 +118,36 @@ function TargetDetails({
   );
 }
 
+/**
+ * Where the two witnesses disagreed (Phase 4 WP9): a conflict pill, the words the live transcript
+ * has, and what the second witness heard over the same audio. Read-only; Phase 5 resolves it.
+ */
+function ConflictDetails({ conflicts }: { conflicts: ProposalView["conflicts"] }) {
+  if (conflicts.length === 0) return null;
+  return (
+    <ul aria-label={CONFLICT_COPY.list} className="grid gap-1.5 text-xs" data-slot="conflicts">
+      {conflicts.map((conflict) => (
+        <li
+          key={`${conflict.field}:${conflict.biased.evidence.utteranceId}:${conflict.biased.evidence.span[0]}`}
+          className="flex flex-wrap items-center gap-x-2 gap-y-1"
+        >
+          <StatePill state="conflict">{CONFLICT_COPY.pill}</StatePill>
+          <span className="text-muted-foreground">
+            {CONFLICT_COPY.biased}:{" "}
+            <span className="font-mono text-foreground">“{conflict.biased.text}”</span>
+          </span>
+          <span className="text-muted-foreground">
+            {CONFLICT_COPY.unbiased}:{" "}
+            <span className="font-mono text-foreground" data-slot="unbiased-reading">
+              {conflict.unbiased ? `“${conflict.unbiased.text}”` : CONFLICT_COPY.unheard}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function ProposalCard({
   proposal,
   entities,
@@ -171,6 +202,7 @@ function ProposalCard({
         {showReview ? <ReviewStatus status={proposal.status} /> : <StatePill state="proposed" />}
       </header>
       <TargetDetails proposal={proposal} entities={entities} />
+      <ConflictDetails conflicts={proposal.conflicts} />
       {fields.length > 0 ? (
         <dl className="grid gap-2 text-sm">
           {fields.map(([name, field]) => {
@@ -225,9 +257,10 @@ function ProposalCard({
  * The proposals as they arrive: each card slides in over 200 ms with a View Transition (none
  * with reduced motion: capture.css), shows its type, the linker's decision on its record (the
  * record's name; "Ask: Acme Dynamics or Akme Dynamics?" with the candidates and their odds;
- * "New"; "No record"), the words that named it, its fields with the words they came from, and
- * its risk badges, in the proposed state's blue. Read-only: Phase 5 answers the questions.
- * Replays show review status instead.
+ * "New"; "No record"), the words that named it, a conflict pill where the second witness heard
+ * them differently, its fields with the words they came from, and its risk badges, in the
+ * proposed state's blue. Read-only: Phase 5 answers the questions. Replays show review status
+ * instead.
  */
 export function ProposalsTray({
   proposals,

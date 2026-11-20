@@ -17,6 +17,11 @@
 // Keys: the speech-to-text key is decrypted for each mint and dropped; the LLM key is decrypted
 // once at the start (connectEngine reads it synchronously at each turn end), held in memory for
 // this session only, and dropped when it ends. Neither reaches the store, a log, or storage.
+//
+// The second witness (Phase 4 WP9; ADR-0029): with the device's consent and a Groq key here, each
+// turn's audio goes from this browser to Groq Whisper, the Groq key decrypted for each request
+// and dropped, and the transcript goes to SessionDO as `witness`. Otherwise each turn's `witness`
+// says why there's none (off, or no key). `end` waits a little for the last turn's witness.
 import type { EntityRef, LlmProvider, SessionProviders } from "@earshot/core";
 import type { ProviderId, StoredKeyMeta } from "@earshot/keys";
 import {
@@ -32,6 +37,9 @@ import {
   VoiceError,
   type VoiceEvent,
   type VoiceEventOf,
+  WITNESS_MODEL,
+  WITNESS_PROVIDER,
+  type WitnessRunner,
 } from "@earshot/voice";
 import {
   type Capture,
@@ -52,6 +60,8 @@ import {
   type SessionClientOptions,
   type SessionState,
   SessionStore,
+  SessionWitness,
+  type WitnessSetup,
 } from "@earshot/voice/session";
 import type { CreateSessionResponse, VoiceRouteError } from "../voice/types";
 import type { ActivityKind, ActivityRow } from "./activity";
@@ -63,6 +73,7 @@ import type { DeviceKeySource } from "./keys";
 import { LevelMeter } from "./levels";
 import { TurnMarksRecorder } from "./marks";
 import { type ProviderSelection, providerChoices, type SttOption } from "./providers";
+import { type WitnessSetting, witnessStatus } from "./witness";
 
 export type CapturePhase = "setup" | "starting" | "live" | "ending" | "ended";
 
@@ -84,6 +95,13 @@ export type StartProblem =
       readonly error: VoiceRouteError | "network";
       readonly retryAfterSeconds?: number;
     };
+
+/** The session's second witness, for the screen: what runs, and on what. */
+export interface WitnessView {
+  readonly status: "on" | "off" | "no_key";
+  /** `groq` on the device's key, or the development-only scripted fake. */
+  readonly source: "groq" | "fake";
+}
 
 export interface CaptureUiState {
   readonly phase: CapturePhase;
@@ -110,6 +128,8 @@ export interface CaptureUiState {
   readonly providers: SessionProviders | null;
   /** Turns sent so far (each `turn_end`). */
   readonly turnsSent: number;
+  /** The second witness of the session running; null before one starts, or with none set up. */
+  readonly witness: WitnessView | null;
   /** Development fake mode: how long to hold, and the line the next press says. */
   readonly fake: { readonly holdMs: number; readonly nextLine: string | null } | null;
 }
@@ -142,6 +162,15 @@ export interface CaptureDeps {
     setTimeout(callback: () => void, ms: number): unknown;
     clearTimeout(handle: unknown): void;
   };
+  /**
+   * The device's second-witness answer (Settings → Capture): Groq Whisper, off, or not asked yet.
+   * Without it, sessions run no witness and send no `witness` messages at all.
+   */
+  readonly witnessSetting?: () => WitnessSetting | null;
+  /** The Groq witness, on a key read from the device for each request. */
+  readonly createWitness?: (key: () => Promise<string | undefined>) => WitnessRunner;
+  /** How long `end` waits for the last turn's witness to reach the outbox (target 12 s). */
+  readonly witnessEndWaitMs?: number;
   /** Extra SessionClient options; tests pass WP8's fake socket and clock. */
   readonly clientOptions?: Partial<SessionClientOptions>;
   /** Extra engine options; tests pass a scripted capture source and clock. */
@@ -171,6 +200,8 @@ interface SessionPlan {
     readonly focusEntityId: string | null;
   };
   readonly fake: FakeVoice | null;
+  /** The second witness this session runs, or why it runs none; null: no witness messages. */
+  readonly witness: { readonly setup: WitnessSetup; readonly view: WitnessView } | null;
 }
 
 interface LiveSession {
@@ -180,6 +211,8 @@ interface LiveSession {
   readonly plan: SessionPlan;
   readonly keyterms: readonly string[];
   readonly marks: TurnMarksRecorder;
+  /** The session's second witness, shared by every engine it runs. */
+  readonly witness: SessionWitness | null;
   /**
    * The session's latest engine. The one that replaces it (after `H`, a resume, or a microphone
    * retry) starts its audio clock where this one's ended, so utterance times never repeat.
@@ -202,6 +235,8 @@ const LATE_EVENTS_MS = 5_000;
 /** How long an ended session keeps trying to deliver what's still unacknowledged. */
 const MAX_DELIVERY_WAIT_MS = 60_000;
 const END_ACK_TIMEOUT_MS = 6_000;
+/** The last turn's witness: one Groq attempt and its timeout, and a little more. */
+const WITNESS_END_WAIT_MS = 12_000;
 const MAX_LOCAL_ROWS = 100;
 
 const CAPTURE_RUNNING: ReadonlySet<Capture["state"]> = new Set([
@@ -264,6 +299,7 @@ export class CaptureController {
       providers: null,
       turnsSent: 0,
       fake: null,
+      witness: null,
     };
   }
 
@@ -357,6 +393,7 @@ export class CaptureController {
       fake: input.fake
         ? { holdMs: input.fake.holdMs, nextLine: input.fake.scenario.turns[0]?.text ?? null }
         : null,
+      witness: null,
     });
     this.#sessionReady = this.#openSession(generation, input);
     void this.#arm(generation, audioContext);
@@ -381,6 +418,7 @@ export class CaptureController {
           focusEntityId: scenario.focusEntityId ?? null,
         }),
         fake,
+        witness: this.#fakeWitness(fake),
       };
     }
 
@@ -433,6 +471,38 @@ export class CaptureController {
         focusEntityId: created.focusEntityId ?? null,
       }),
       fake: null,
+      witness: this.#groqWitness(keys),
+    };
+  }
+
+  /**
+   * The Groq witness on the device's key, with consent (decision 8); otherwise why there's none.
+   * Null when the app wires no witness at all.
+   */
+  #groqWitness(keys: readonly StoredKeyMeta[]): SessionPlan["witness"] {
+    const { witnessSetting, createWitness } = this.#deps;
+    if (!witnessSetting || !createWitness) return null;
+    const status = witnessStatus(witnessSetting(), keys);
+    const groqKey = keys.find((key) => key.provider === "groq");
+    if (status === "on" && groqKey) {
+      const runner = createWitness(() => this.#deps.keys.reveal("groq", groqKey.label));
+      return { setup: { status: "on", runner }, view: { status: "on", source: "groq" } };
+    }
+    const off = status === "on" ? "no_key" : status;
+    return {
+      setup: { status: off, provider: WITNESS_PROVIDER, model: WITNESS_MODEL },
+      view: { status: off, source: "groq" },
+    };
+  }
+
+  /** Fake mode's scripted witness, when the page asked for one; otherwise none at all. */
+  #fakeWitness(fake: FakeVoice): SessionPlan["witness"] {
+    const runner = fake.createWitness();
+    if (runner) return { setup: { status: "on", runner }, view: { status: "on", source: "fake" } };
+    if (!this.#deps.witnessSetting) return null;
+    return {
+      setup: { status: "off", provider: WITNESS_PROVIDER, model: WITNESS_MODEL },
+      view: { status: "off", source: "fake" },
     };
   }
 
@@ -469,6 +539,7 @@ export class CaptureController {
         onSuspend: () => this.#suspendCapture(),
         ...this.#deps.clientOptions,
       });
+      const witnessSetup = plan.witness?.setup;
       const live: LiveSession = {
         sessionId: created.sessionId,
         store,
@@ -476,6 +547,13 @@ export class CaptureController {
         plan,
         keyterms: plan.keyterms(created),
         marks: new TurnMarksRecorder((turnId, marks) => client.sendMetric(turnId, marks)),
+        witness: witnessSetup
+          ? new SessionWitness({
+              client,
+              setup: () => witnessSetup,
+              ...(this.#deps.clientOptions?.clock ? { clock: this.#deps.clientOptions.clock } : {}),
+            })
+          : null,
         engine: null,
         unsubscribe: () => {},
         turnKey: plan.turnKey,
@@ -496,6 +574,7 @@ export class CaptureController {
         sessionId: created.sessionId,
         entities: begin.entities,
         providers: plan.providers,
+        witness: plan.witness?.view ?? null,
       });
       return live;
     } catch {
@@ -583,6 +662,8 @@ export class CaptureController {
       getCredential: live.plan.getCredential(live.sessionId),
       mode: this.#state.mode,
       audioClockStartMs: previous?.audioClockMs ?? 0,
+      // Each turn's audio is kept only for a witness that runs.
+      turnAudio: live.witness?.recordsAudio ?? false,
       ...this.#deps.engineOptions,
     });
     live.engine = engine;
@@ -592,6 +673,7 @@ export class CaptureController {
     this.#detachBridge = connectEngine(engine, live.client, {
       llm: () => live.plan.llm,
       key: () => live.turnKey,
+      ...(live.witness ? { witness: live.witness } : {}),
     });
     try {
       await engine.start({
@@ -834,6 +916,8 @@ export class CaptureController {
     this.#generation += 1;
     this.#capture({ type: "disarm" });
     await this.#releasing;
+    // The last turn's witness goes out ahead of `end`, which SessionDO would refuse it after.
+    await this.#witnessSent(live);
     try {
       await new Promise<void>((resolve, reject) => {
         const timer = this.#timers.setTimeout(
@@ -858,6 +942,22 @@ export class CaptureController {
     live.turnKey = undefined;
     this.#update({ phase: "ended" });
     this.#stopWhenDelivered(live, 0);
+  }
+
+  /** Resolves once every turn's witness is in the outbox, or after `witnessEndWaitMs`. */
+  #witnessSent(live: LiveSession): Promise<void> {
+    const witness = live.witness;
+    if (!witness) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const timer = this.#timers.setTimeout(
+        resolve,
+        this.#deps.witnessEndWaitMs ?? WITNESS_END_WAIT_MS,
+      );
+      void witness.idle().then(() => {
+        this.#timers.clearTimeout(timer);
+        resolve();
+      });
+    });
   }
 
   /**
@@ -895,6 +995,7 @@ export class CaptureController {
       frozen: null,
       turnsSent: 0,
       fake: null,
+      witness: null,
     });
   }
 
@@ -921,6 +1022,7 @@ export class CaptureController {
     this.#live = null;
     live.unsubscribe();
     live.turnKey = undefined;
+    live.witness?.dispose();
     if (live.silentTimer) this.#timers.clearTimeout(live.silentTimer);
     if (live.stopTimer) this.#timers.clearTimeout(live.stopTimer);
     live.client.stop();

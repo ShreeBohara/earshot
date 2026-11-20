@@ -3,6 +3,7 @@
 // bundle check looks for FAKE_STT_MARKER to make sure.
 import {
   createFakeSttAdapter,
+  createFakeWitness,
   FAKE_STT_MARKER,
   type FakeSttAdapter,
   type FakeSttTurn,
@@ -11,10 +12,12 @@ import {
 import {
   FAKE_STATS_GLOBAL,
   FAKE_TIMING_GLOBAL,
+  FAKE_WITNESS_GLOBAL,
   type FakeScenario,
   type FakeTiming,
   type FakeVoice,
   type FakeVoiceStats,
+  type FakeWitnessScript,
 } from "../fake";
 
 /** Each scripted line is spread over this much audio from the start of its press. */
@@ -39,6 +42,14 @@ function wavTiming(scenario: FakeScenario): FakeTiming | undefined {
     );
   }
   return timing;
+}
+
+/** The second witness's script the e2e test put on the page, if any. */
+function witnessScript(): FakeWitnessScript | undefined {
+  const script = (globalThis as Record<string, unknown>)[FAKE_WITNESS_GLOBAL] as
+    | FakeWitnessScript
+    | undefined;
+  return Array.isArray(script?.turns) ? script : undefined;
 }
 
 export function createFakeVoice(scenario: FakeScenario): FakeVoice {
@@ -78,5 +89,21 @@ export function createFakeVoice(scenario: FakeScenario): FakeVoice {
       return adapter;
     },
     credential: () => fakeCredential("assemblyai"),
+    createWitness: () => {
+      const script = witnessScript();
+      if (!script) return null;
+      // Each press's line as the witness hears it, timed as the fake adapter times the biased
+      // stream's, so the two line up on the session's clock.
+      return createFakeWitness({
+        script: {
+          turns: turns.map((turn, index) => ({
+            text: script.turns[index] ?? turn.text,
+            startMs: turn.startMs,
+            endMs: turn.endMs,
+          })),
+        },
+        lineMs: LINE_MS,
+      });
+    },
   };
 }

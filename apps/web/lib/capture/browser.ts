@@ -6,6 +6,7 @@ import {
   createDebriefEngine,
   createDeepgramFluxAdapter,
   createDeepgramNova3Adapter,
+  createGroqWitness,
   openMicrophone,
 } from "@earshot/voice";
 import { createSessionClient, isIosPlatform } from "@earshot/voice/session";
@@ -13,6 +14,7 @@ import { playChime, SpokenConfirmations } from "./audio-out";
 import { CaptureController } from "./controller";
 import { browserDeviceKeys } from "./keys";
 import type { SttOption } from "./providers";
+import { readWitnessSetting } from "./witness";
 
 function adapterFor(option: SttOption) {
   switch (option.id) {
@@ -48,6 +50,10 @@ export function createBrowserCaptureController(): CaptureController {
     ios: browser && isIosPlatform(navigator),
     speech: new SpokenConfirmations(browser ? window.speechSynthesis : undefined),
     chime: playChime,
+    // The second witness: the device's answer, read as each debrief starts, and Groq Whisper on
+    // the device's Groq key, decrypted for each request (Phase 4 WP9).
+    witnessSetting: () => (browser ? readWitnessSetting(window.localStorage) : null),
+    createWitness: (key) => createGroqWitness({ key }),
   });
 }
 

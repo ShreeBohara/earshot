@@ -1,12 +1,15 @@
 // The capture controller end to end on WP8's fakes: an in-memory SessionDO, the fake adapter, a
 // scripted capture source, and a manual clock. No browser, no network, no provider.
 import type { StoredKeyMeta } from "@earshot/keys";
-import { createDebriefEngine } from "@earshot/voice";
+import { createDebriefEngine, type SttAdapter, type WitnessRunner } from "@earshot/voice";
 import { createSessionClient } from "@earshot/voice/session";
 import {
+  createFakeSttAdapter,
+  createFakeWitness,
   FakeCaptureSource,
   FakePageLifecycle,
   FakeSessionServer,
+  fakeCredential,
   NO_TARGET,
   settle,
 } from "@earshot/voice/testing";
@@ -15,6 +18,7 @@ import { SpokenConfirmations } from "@/lib/capture/audio-out";
 import { CaptureController, type CaptureDeps } from "@/lib/capture/controller";
 import { createFakeVoice } from "@/lib/capture/dev/fake-voice";
 import type { FakeScenario } from "@/lib/capture/fake";
+import type { WitnessSetting } from "@/lib/capture/witness";
 import { ManualClock } from "./support/manual-clock";
 
 const SESSION_ID = "0000000a-0000-7000-8000-0000000ca901";
@@ -43,6 +47,11 @@ function setup(
     sessionStatus?: number;
     /** Hold the microphone prompt open until `grantMicrophone()`. */
     holdMicrophone?: boolean;
+    /** For real mode: the speech-to-text adapter the picked option gets. */
+    adapter?: () => SttAdapter;
+    /** The device's second-witness answer; absent, the app wires no witness. */
+    witnessSetting?: WitnessSetting | null;
+    createWitness?: (key: () => Promise<string | undefined>) => WitnessRunner;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -100,6 +109,7 @@ function setup(
       const next = ticket();
       return Response.json(next);
     }
+    if (url === "/api/voice/token") return Response.json(fakeCredential("assemblyai"));
     throw new Error(`unexpected request ${url}`);
   }) as typeof fetch;
 
@@ -126,8 +136,13 @@ function setup(
     createEngine: createDebriefEngine,
     createClient: createSessionClient,
     createAdapter: () => {
+      if (options.adapter) return options.adapter();
       throw new Error("real adapters aren't used here");
     },
+    ...(options.witnessSetting !== undefined
+      ? { witnessSetting: () => options.witnessSetting ?? null }
+      : {}),
+    ...(options.createWitness ? { createWitness: options.createWitness } : {}),
     clock: () => clock.now(),
     now: () => new Date("2026-11-19T12:00:00.000Z"),
     timeZone: () => "Europe/Lisbon",
@@ -463,5 +478,143 @@ describe("CaptureController before a session", () => {
     expect(t.micOpen()).toBe(false);
     expect(t.routes.map((route) => route.url)).toEqual(["/api/sessions"]);
     expect(JSON.stringify(t.routes)).not.toContain("gsk_canary");
+  });
+});
+
+describe("CaptureController with the second witness", () => {
+  const KEYS: StoredKeyMeta[] = [
+    { provider: "assemblyai", label: "default", last4: "abcd", addedAt: "2026-11-19T00:00:00Z" },
+    { provider: "anthropic", label: "default", last4: "efgh", addedAt: "2026-11-19T00:00:00Z" },
+    { provider: "groq", label: "default", last4: "wxyz", addedAt: "2026-11-19T00:00:00Z" },
+  ];
+  const SELECTION = { stt: "assemblyai:default", llm: "anthropic:default" };
+  const KEY = "gsk_witnesscanary0123456789abcdefghijklmn";
+  const realAdapter = () =>
+    createFakeSttAdapter({
+      script: { turns: [{ text: "Met Dana Lee at Acme Corp", startMs: 0, endMs: 1_200 }] },
+      endpointingMs: 10 * 60_000,
+    });
+
+  async function startReal(t: ReturnType<typeof setup>) {
+    t.controller.start({ selection: SELECTION });
+    await settle(100);
+    await t.clock.advance(200);
+    expect(t.controller.getState().phase).toBe("live");
+  }
+
+  it("with the device's consent and a Groq key, runs the Groq witness on each turn's audio after its turn_end", async () => {
+    const keyReads: (() => Promise<string | undefined>)[] = [];
+    const runner = createFakeWitness({
+      script: { turns: [{ text: "Met Dana Lee at Akme Corp", latencyMs: 640 }] },
+    });
+    const t = setup({
+      keys: KEYS,
+      revealed: KEY,
+      adapter: realAdapter,
+      witnessSetting: "groq",
+      createWitness: (key) => {
+        keyReads.push(key);
+        return runner;
+      },
+    });
+    await startReal(t);
+    expect(t.controller.getState().witness).toEqual({ status: "on", source: "groq" });
+    await talk(t, 1_800);
+    // The microphone carries on after the release: the turn's 200 ms tail comes in.
+    for (let done = 0; done < 320; done += 32) {
+      t.capture.silence(32);
+      await t.clock.advance(32);
+    }
+    await settle(100);
+    // The witness's runner got the turn's audio, from the press on the session's clock.
+    expect(runner.calls).toHaveLength(1);
+    expect(runner.calls[0]?.turnStartMs).toBe(0);
+    expect(runner.calls[0]?.samples).toBeGreaterThanOrEqual(1_800 * 16);
+    const types = t.server.received.map((m) => m.t);
+    expect(types.indexOf("witness")).toBeGreaterThan(types.indexOf("turn_end"));
+    const [witness] = t.server.received.filter((m) => m.t === "witness");
+    expect(witness).toMatchObject({
+      provider: "groq",
+      model: "whisper-large-v3-turbo",
+      outcome: "transcribed",
+      latencyMs: 640,
+      utterance: { text: "Met Dana Lee at Akme Corp", witness: "unbiased" },
+    });
+    expect(
+      t.server.received.some((m) => m.t === "usage" && m.provider === "groq" && m.socketMs === 0),
+    ).toBe(true);
+    // The Groq key is read from the device per request. (This stub reveals one key for every
+    // provider, so the same string is also this turn's LLM key: only turn_end may carry it.)
+    expect(keyReads).toHaveLength(1);
+    await expect(keyReads[0]?.()).resolves.toBe(KEY);
+    for (const message of t.server.received) {
+      if (message.t !== "turn_end") expect(JSON.stringify(message)).not.toContain(KEY);
+    }
+    t.controller.dispose();
+  });
+
+  it("says why there's no witness: off without consent, no_key when the Groq key is gone", async () => {
+    const off = setup({ witnessSetting: null });
+    off.controller.start({ selection: null, fake: createFakeVoice(SCENARIO) });
+    await settle(100);
+    await off.clock.advance(200);
+    expect(off.controller.getState().witness).toEqual({ status: "off", source: "fake" });
+    await talk(off, 1_600);
+    expect(off.server.received.filter((m) => m.t === "witness")).toMatchObject([
+      { outcome: "skipped", reason: "off" },
+    ]);
+    off.controller.dispose();
+
+    const created: unknown[] = [];
+    const noKey = setup({
+      keys: KEYS.filter((key) => key.provider !== "groq"),
+      revealed: KEY,
+      adapter: realAdapter,
+      witnessSetting: "groq",
+      createWitness: (key) => {
+        created.push(key);
+        return createFakeWitness({ script: { turns: [] } });
+      },
+    });
+    await startReal(noKey);
+    expect(noKey.controller.getState().witness).toEqual({ status: "no_key", source: "groq" });
+    await talk(noKey, 1_800);
+    expect(noKey.server.received.filter((m) => m.t === "witness")).toMatchObject([
+      { outcome: "skipped", reason: "no_key" },
+    ]);
+    expect(created).toEqual([]);
+    noKey.controller.dispose();
+  });
+
+  it("holds `end` until the last turn's witness is in the outbox, so SessionDO takes it", async () => {
+    let answer: () => void = () => {};
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    const t = setup({
+      keys: KEYS,
+      revealed: KEY,
+      adapter: realAdapter,
+      witnessSetting: "groq",
+      createWitness: () =>
+        createFakeWitness({
+          script: { turns: [{ text: "Met Dana Lee at Acme Corp" }] },
+          gate: () => answered,
+        }),
+    });
+    await startReal(t);
+    await talk(t, 1_800);
+    const ending = t.controller.end();
+    await settle(100);
+    await t.clock.advance(1_000);
+    expect(t.server.received.some((m) => m.t === "end")).toBe(false); // waiting on Groq
+    answer();
+    await settle(100);
+    await t.clock.advance(1_000);
+    await ending;
+    const types = t.server.received.map((m) => m.t);
+    expect(types.indexOf("witness")).toBeGreaterThan(-1);
+    expect(types.indexOf("witness")).toBeLessThan(types.indexOf("end"));
+    t.controller.dispose();
   });
 });
