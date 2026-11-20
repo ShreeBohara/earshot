@@ -40,8 +40,9 @@ import {
 //
 // - every card shows the markers the manifest built it with, read as a reviewer meets them: in the
 //   accessibility tree (a loud card's description says it "needs a check"; a name note is part of
-//   the card's name) and on screen. So every flagged error is loud and every silent one carries
-//   "matched by sound";
+//   the card's name; a quiet note is text on its field or the card) and on screen. So every
+//   flagged error is loud, every silent one carries "matched by sound", and every quiet card shows
+//   its notes;
 // - at most 2 keys to accept, reject, or choose in a question, and 3 to choose another record for
 //   a link, every key counted;
 // - focus never on <body> after any key;
@@ -80,6 +81,21 @@ const NAMES: ReadonlyMap<string, string> = new Map([
 ]);
 /** The name notes, as a card's heading shows them beside the record. */
 const NAME_NOTES = { sound: "matched by sound", context: "matched in context" } as const;
+/**
+ * The quiet notes, as a card shows them on a field or the record (`QUIET_NOTES` in
+ * lib/capture/copy.ts). A corrected value and a negation can go on to name the value or the words,
+ * so those two match by how they start.
+ */
+const QUIET_NOTES: Readonly<Record<string, RegExp>> = {
+  implied_target: /Open account assumed/,
+  new_entity: /Creates a record/,
+  value_corrected: /Corrected from /,
+  negation: /Said in a negation/,
+  low_confidence: /Low confidence/,
+  weak_support: /Loosely backed by what was said/,
+  date: /Check the date/,
+  number: /Check the number/,
+};
 const LOUD = /needs a check/;
 
 function escapeRegExp(text: string): string {
@@ -162,6 +178,25 @@ async function expectMarkers(card: Locator, proposalId: string, shown: string): 
     await expect
       .soft(card, `${what} has no name note`)
       .not.toHaveAccessibleName(/matched (?:by sound|in context)/);
+  }
+  // Each quiet note the manifest built the card with (`quiet:<kind>@<field>`), on screen and in
+  // the accessibility tree. Without it, a hidden quiet note passed the markers, and shortened the
+  // card's words for the KLM gate too (Codex's review of #61).
+  const quiet = tier.reasons.flatMap((reason) => {
+    const kind = /^quiet:([a-z_]+)@/.exec(reason)?.[1];
+    return kind ? [kind] : [];
+  });
+  if (quiet.length > 0) {
+    const tree = await card.ariaSnapshot();
+    for (const kind of quiet) {
+      const note = QUIET_NOTES[kind];
+      expect.soft(note, `${what}'s quiet note "${kind}" is one the reviewer knows`).toBeDefined();
+      if (!note) continue;
+      expect.soft(shown, `${what} shows its quiet note (${kind})`).toMatch(note);
+      expect
+        .soft(tree, `${what}'s quiet note (${kind}) reaches the accessibility tree`)
+        .toMatch(note);
+    }
   }
   return test.info().errors.length === failedBefore;
 }
