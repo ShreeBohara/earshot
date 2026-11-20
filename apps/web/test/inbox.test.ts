@@ -32,6 +32,7 @@ import {
   type ReviewSink,
   routeSink,
   type SinkResult,
+  singleChange,
   stateOf,
   withLocal,
 } from "@/lib/inbox/sinks";
@@ -729,26 +730,28 @@ function heldSink() {
 }
 
 function change(open: InboxProposal, status: InboxProposal["status"], reviewId: string): Change {
-  return {
-    sessionId: "s1",
-    proposalId: open.proposalId,
-    previous: stateOf(open),
-    next: {
-      status,
-      snoozedUntil: null,
-      review: {
-        reviewId,
-        decision: status === "proposed" ? "reopened" : (status as "approved"),
-        target: null,
-        mode: "single",
-        batchId: null,
-        undoes: null,
-        syncEligibleAt: null,
-        ts: "2026-11-20T15:00:00.000Z",
+  return singleChange(
+    "s1",
+    open.proposalId,
+    {
+      previous: stateOf(open),
+      next: {
+        status,
+        snoozedUntil: null,
+        review: {
+          reviewId,
+          decision: status === "proposed" ? "reopened" : (status as "approved"),
+          target: null,
+          mode: "single",
+          batchId: null,
+          undoes: null,
+          syncEligibleAt: null,
+          ts: "2026-11-20T15:00:00.000Z",
+        },
       },
     },
-    request: { reviews: [], snoozes: [] },
-  };
+    { reviews: [], snoozes: [] },
+  );
 }
 
 describe("the sink's rollback", () => {
@@ -796,7 +799,7 @@ describe("the sink's rollback", () => {
     await store.apply(applied);
     store.reconcile([{ ...a, status: "proposed" }]);
     expect(store.overlay().has(a.proposalId)).toBe(true);
-    store.reconcile([{ ...a, ...applied.next }]);
+    store.reconcile([{ ...a, ...applied.items[0]?.next }]);
     expect(store.overlay().has(a.proposalId)).toBe(false);
   });
 

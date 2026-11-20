@@ -11,28 +11,40 @@ const INPUT_EVENTS = ["keydown", "pointerdown", "wheel", "scroll", "touchstart"]
 
 export interface ReviewClockHandle {
   readonly clock: ReviewClock;
+  /**
+   * The "accept all" checkpoint's own clock (spec §4.8): it runs from opening the checkpoint to
+   * confirming it, on a visible page and pausing after 30 s idle, as a card's does, and every item
+   * of the batch carries its time. The page drives it with one key, `BATCH_CLOCK_KEY`.
+   */
+  readonly batchClock: ReviewClock;
   /** Watches a card for half-visibility; call with null to stop. */
   readonly observe: (proposalId: string, element: HTMLElement | null) => void;
+}
+
+/** The checkpoint's one "card" on the batch clock. */
+export const BATCH_CLOCK_KEY = "accept-all";
+
+function newClock(): ReviewClock {
+  return new ReviewClock(
+    {
+      now: () => performance.now(),
+      setTimeout: (callback, ms) => globalThis.setTimeout(callback, ms),
+      clearTimeout: (handle) =>
+        globalThis.clearTimeout(handle as ReturnType<typeof globalThis.setTimeout>),
+    },
+    { pageVisible: typeof document === "undefined" || document.visibilityState === "visible" },
+  );
 }
 
 /**
  * The page's review clock (lib/inbox/clock.ts), fed by the page: visibility from
  * `visibilitychange`, each card's half-visibility from an IntersectionObserver, and the reviewer's
- * input from the window. The page tells it which card is active and when a decision is made.
+ * input from the window. The page tells it which card is active and when a decision is made, and
+ * drives the checkpoint's clock (`batchClock`) itself; the same page events feed both.
  */
 export function useReviewClock(activeId: string | null): ReviewClockHandle {
-  const [clock] = useState(
-    () =>
-      new ReviewClock(
-        {
-          now: () => performance.now(),
-          setTimeout: (callback, ms) => globalThis.setTimeout(callback, ms),
-          clearTimeout: (handle) =>
-            globalThis.clearTimeout(handle as ReturnType<typeof globalThis.setTimeout>),
-        },
-        { pageVisible: typeof document === "undefined" || document.visibilityState === "visible" },
-      ),
-  );
+  const [clock] = useState(newClock);
+  const [batchClock] = useState(newClock);
   const observer = useRef<IntersectionObserver | null>(null);
   const watched = useRef(new Map<string, HTMLElement>());
 
@@ -41,8 +53,15 @@ export function useReviewClock(activeId: string | null): ReviewClockHandle {
   }, [clock, activeId]);
 
   useEffect(() => {
-    const onVisibility = () => clock.setPageVisible(document.visibilityState === "visible");
-    const onInput = () => clock.input();
+    const onVisibility = () => {
+      const visible = document.visibilityState === "visible";
+      clock.setPageVisible(visible);
+      batchClock.setPageVisible(visible);
+    };
+    const onInput = () => {
+      clock.input();
+      batchClock.input();
+    };
     document.addEventListener("visibilitychange", onVisibility);
     for (const type of INPUT_EVENTS) {
       window.addEventListener(type, onInput, { capture: true, passive: true });
@@ -60,15 +79,16 @@ export function useReviewClock(activeId: string | null): ReviewClockHandle {
     for (const element of watched.current.values()) io.observe(element);
     onVisibility();
     // Mounted: the reviewer is here, and the idle timer starts.
-    clock.input();
+    onInput();
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       for (const type of INPUT_EVENTS) window.removeEventListener(type, onInput, { capture: true });
       io.disconnect();
       observer.current = null;
       clock.dispose();
+      batchClock.dispose();
     };
-  }, [clock]);
+  }, [clock, batchClock]);
 
   const [observe] = useState(() => (proposalId: string, element: HTMLElement | null) => {
     const previous = watched.current.get(proposalId);
@@ -83,5 +103,5 @@ export function useReviewClock(activeId: string | null): ReviewClockHandle {
     }
   });
 
-  return { clock, observe };
+  return { clock, batchClock, observe };
 }

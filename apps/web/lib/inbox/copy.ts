@@ -4,6 +4,7 @@
 // the name note in lib/capture/copy.ts, beside the tray's labels.
 import type { FieldValue, ProposalTypeV2 } from "@earshot/core";
 import { spokenValue } from "@/lib/capture/copy";
+import type { StayReason } from "./batch";
 import type { SinkRefusal } from "./sinks";
 import type { InboxEntity, InboxProposal } from "./types";
 
@@ -140,6 +141,7 @@ export function actionMessage(message: ActionMessage, left: number, shortcuts: b
 const FAILURE_REASONS: Readonly<Record<SinkRefusal, string>> = {
   stale: "it changed since the page loaded. Reload to see it as it is now",
   not_sealed: "its debrief is still finishing. Try again in a minute",
+  sealed: "its debrief is done. Review it in the inbox",
   unavailable: "reviews can't be recorded right now. Try again later",
   invalid: "Earshot couldn't record that review. Reload and try again",
   gone: "its debrief isn't there any more",
@@ -161,6 +163,130 @@ export function failureMessage(
   reason: SinkRefusal,
 ): string {
   return `Couldn't ${FAILURE_VERBS[verb]} the ${what}: ${FAILURE_REASONS[reason]}.`;
+}
+
+// ─── "Accept all from this call" (spec WP6 step 1) ──────────────────────────────────────────────
+
+/** The checkpoint's fixed words. */
+export const BATCH_COPY = {
+  title: "Accept all from this call",
+  accepts: "Will be accepted",
+  stays: "Stays for review",
+  cancel: "Cancel",
+  /** The button's label when nothing is unmarked. */
+  none: "Accept all unmarked",
+  /** "Reviewed"'s word for a batch. */
+  decided: "Accepted together",
+} as const;
+
+function proposalsWord(count: number): string {
+  return count === 1 ? "proposal" : "proposals";
+}
+
+function staysWords(count: number): string {
+  return `${count} ${count === 1 ? "stays" : "stay"} for review.`;
+}
+
+/** The session header's button: "Accept 3 unmarked". */
+export function batchButtonLabel(count: number): string {
+  return count > 0 ? `Accept ${count} unmarked` : BATCH_COPY.none;
+}
+
+/** Why the button is disabled: nothing in the debrief can join a batch. */
+export function batchNoneReason(reasons: readonly StayReason[]): string {
+  const marked = reasons.every(
+    (reason) => reason === "loud" || reason === "quiet" || reason === "name_note",
+  );
+  return marked
+    ? "Every card here is marked, so each needs a look."
+    : "Nothing here can be accepted as it stands.";
+}
+
+/** The checkpoint's summary, which the confirm button is described by. */
+export function batchSummary(accepts: number, stays: number): string {
+  return `${accepts} will be accepted. ${stays > 0 ? staysWords(stays) : "Nothing stays for review."}`;
+}
+
+/** Why a card stays out of the batch, in a few words, from what the card shows. */
+export function stayWords(
+  reason: StayReason,
+  card: {
+    readonly firstPerson: { readonly lead: string } | null;
+    readonly notes: readonly string[];
+    readonly fields: readonly { readonly notes: readonly string[] }[];
+    readonly nameNote: string | null;
+  },
+): string {
+  switch (reason) {
+    case "loud":
+      return card.firstPerson ? `Needs a check: ${card.firstPerson.lead}` : "Needs a check";
+    case "quiet": {
+      const note = card.notes[0] ?? card.fields.find((field) => field.notes.length > 0)?.notes[0];
+      return note ? `Has a note: ${note}` : "Has a note";
+    }
+    case "name_note":
+      return card.nameNote ? `Record ${card.nameNote}` : "Record matched loosely";
+    case "no_record":
+      return "No record to add it to";
+    case "saving":
+      return "Your last review of it is still saving";
+  }
+}
+
+/** The one polite message for a batch: "Accepted 3. 2 stay for review. Press U to undo." */
+export function batchMessage(
+  accepted: number,
+  stays: number,
+  left: number,
+  shortcuts: boolean,
+): string {
+  const undo = shortcuts ? " Press U to undo." : "";
+  return `Accepted ${accepted}. ${stays > 0 ? staysWords(stays) : leftWords(left)}${undo}`;
+}
+
+/** A batch undone: its cards back for review. */
+export function batchRestoredMessage(count: number, left: number): string {
+  return `Back for review: ${count} ${proposalsWord(count)}. ${leftWords(left)}`;
+}
+
+const BATCH_FAILURE_REASONS: Readonly<Record<SinkRefusal, string>> = {
+  stale: "one of them changed since the page loaded. Reload to see them as they are now",
+  not_sealed: "their debrief is still finishing. Try again in a minute",
+  sealed: "their debrief is done. Review them in the inbox",
+  unavailable: "reviews can't be recorded right now. Try again later",
+  invalid: "Earshot couldn't record those reviews. Reload and try again",
+  gone: "their debrief isn't there any more",
+  signed_out: "you're signed out. Sign in again and try once more",
+  failed: "Earshot couldn't reach the server. Try again",
+};
+
+/**
+ * The one urgent message for a batch, or its undo, that didn't all land. `landed` of `total` did:
+ * a batch longer than one request goes in several, and a refusal stops the rest, so the earlier
+ * parts stand and the message says so.
+ */
+export function batchFailureMessage(
+  verb: "accept" | "undo",
+  total: number,
+  landed: number,
+  reason: SinkRefusal,
+): string {
+  const why = BATCH_FAILURE_REASONS[reason];
+  const doing = verb === "accept" ? "accept" : "bring back";
+  if (landed === 0) {
+    return total === 1
+      ? `Couldn't ${doing} the proposal: ${FAILURE_REASONS[reason]}.`
+      : `Couldn't ${doing} the ${total} proposals: ${why}.`;
+  }
+  const done = verb === "accept" ? "Accepted" : "Brought back";
+  const rest = total - landed;
+  return `${done} ${landed} of ${total}. Couldn't ${doing} the other ${rest}: ${rest === 1 ? FAILURE_REASONS[reason] : why}.`;
+}
+
+/** "Reviewed"'s row for a batch: "3 proposals: task for Sean Murphy, …". */
+export function batchRowWords(cards: readonly string[]): string {
+  const count = cards.length;
+  return `${count} ${proposalsWord(count)}: ${cards.join(", ")}`;
 }
 
 /** What a decided proposal's row in "Reviewed" says it was. */
