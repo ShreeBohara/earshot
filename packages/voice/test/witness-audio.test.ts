@@ -84,6 +84,57 @@ describe("TurnAudioRecorder", () => {
     expect(second.audio()).toMatchObject({ startMs: 550, durationMs: 300 });
   });
 
+  it("splits a hands-free turn's recording just past its last word, handing the rest to the next turn's", () => {
+    const recorder = new TurnAudioRecorder(); // a 200 ms tail
+    const first = recorder.open(1_000 * MS).recording;
+    recorder.write(ramp(400, 0));
+    recorder.write(ramp(900, 400 * MS));
+    // The turn's last word ended at 1,900 ms; the end of turn came at 2,300 ms, by when the rep
+    // was 300 ms into the next sentence.
+    const { recording, completed } = recorder.split(1_900 * MS);
+    expect(recording).toBe(first);
+    expect(completed).toEqual([]);
+    expect(first.complete).toBe(true);
+    expect(first.audio()).toMatchObject({ startMs: 1_000, durationMs: 1_100 });
+    expect(first.audio().pcm?.length).toBe(1_100 * MS);
+    expect(first.audio().pcm?.at(-1)).toBe(1_100 * MS - 1);
+    const next = recorder.current;
+    expect(next?.startSample).toBe(2_100 * MS);
+    expect(next?.audio().durationMs).toBe(200);
+    // Sample for sample, the next turn's audio goes on from where the first one's stops.
+    expect(next?.audio().pcm?.[0]).toBe(1_100 * MS);
+    recorder.write(ramp(500, 1_300 * MS));
+    const pcm = Array.from(next?.audio().pcm ?? []);
+    expect(pcm).toHaveLength(700 * MS);
+    expect(pcm.every((sample, i) => sample === (1_100 * MS + i) % 30_000)).toBe(true);
+  });
+
+  it("splits where the capture stands when the tail would pass it, and never before the start", () => {
+    const late = new TurnAudioRecorder();
+    late.open(0);
+    late.write(ramp(1_000));
+    expect(late.split(900 * MS).recording?.audio().durationMs).toBe(1_000);
+    expect(late.current?.startSample).toBe(1_000 * MS);
+    expect(late.current?.samples).toBe(0);
+
+    const stale = new TurnAudioRecorder();
+    stale.open(5_000 * MS);
+    stale.write(ramp(600));
+    expect(stale.split(1_000 * MS).recording?.audio().durationMs).toBe(0);
+    expect(stale.current?.startSample).toBe(5_000 * MS);
+    expect(stale.current?.samples).toBe(600 * MS);
+  });
+
+  it("hands nothing on from a recording past the cap: the next starts where the capture is", () => {
+    const recorder = new TurnAudioRecorder({ maxMs: 1_000 });
+    recorder.open(0);
+    recorder.write(ramp(1_500));
+    const { recording } = recorder.split(500 * MS);
+    expect(recording?.audio()).toEqual({ startMs: 0, durationMs: 700, pcm: null });
+    expect(recorder.current?.startSample).toBe(1_500 * MS);
+    expect(recorder.current?.samples).toBe(0);
+  });
+
   it("cuts a hands-free turn's recording with no tail, and drops one with no turn", () => {
     const recorder = new TurnAudioRecorder();
     recorder.open(0);

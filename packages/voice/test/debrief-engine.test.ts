@@ -775,4 +775,43 @@ describe("each turn's audio for the second witness (turnAudio)", () => {
     expect(second?.startMs).toBe(firstEnd);
     expect(second?.pcm?.length).toBe((second?.durationMs ?? 0) * 16);
   });
+
+  it("splits a hands-free turn just past its last word when the next sentence starts before the end of turn lands", async () => {
+    const script = {
+      turns: [
+        { text: "Acme renewed for two years", startMs: 1_000, endMs: 2_600 },
+        { text: "Initech wants a demo", startMs: 2_900, endMs: 4_400 },
+      ],
+    };
+    // Each end of turn comes 1 s after the turn's last word: turn 1's, 700 ms into turn 2.
+    const h = harness({
+      turnAudio: true,
+      fake: { script, timeline: "absolute", endpointingMs: 1_000 },
+    });
+    const sent = tapSent(h);
+    await h.start();
+    await h.engine.setHandsFree(true);
+    h.vad.speechStart();
+    await h.talk(3_700);
+    expect(h.story()).toEqual(["final 1 Acme renewed for two years", "turn_end 1 provider_eot"]);
+    const firstWordsEnd = h.of("final")[0]?.utterance.endMs ?? Number.NaN;
+    expect(firstWordsEnd).toBeLessThanOrEqual(2_600);
+    // To the last word's end and its 200 ms tail, not to where the end of turn found the capture
+    // (3,600 ms, well into turn 2).
+    const split = firstWordsEnd + 200;
+    expect(h.of("turn_audio")[0]?.audio).toMatchObject({ startMs: 0, durationMs: split });
+    await h.talk(1_800);
+    expect(h.story().slice(-2)).toEqual([
+      "final 2 Initech wants a demo",
+      "turn_end 2 provider_eot",
+    ]);
+    const secondWordsEnd = h.of("final")[1]?.utterance.endMs ?? Number.NaN;
+    const second = h.of("turn_audio")[1]?.audio;
+    expect(second).toMatchObject({ startMs: split, durationMs: secondWordsEnd + 200 - split });
+    // "Initech", from 2,900 ms, is the second turn's to check: its audio, sample for sample.
+    expect(split).toBeLessThan(2_900);
+    expect(Array.from(second?.pcm?.subarray(0, 1_000 * 16) ?? [])).toEqual(
+      sent.slice(split * 16, (split + 1_000) * 16),
+    );
+  });
 });

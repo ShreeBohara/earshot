@@ -89,6 +89,34 @@ export class TurnAudioRecording {
     this.#complete = true;
   }
 
+  /**
+   * Completes it `keep` samples in and hands back the audio it took past that point, for the next
+   * recording; null when it dropped its audio at the cap, so there's none to hand back.
+   */
+  splitAt(keep: number): Int16Array | null {
+    this.#complete = true;
+    const kept = Math.max(0, Math.min(Math.round(keep), this.#samples));
+    const past = this.#samples - kept;
+    this.#samples = kept;
+    if (this.#tooLong) return null;
+    const carried = new Int16Array(past);
+    let left = past; // samples still to move, taken from the end
+    while (left > 0) {
+      const last = this.#chunks.pop();
+      if (!last) break;
+      if (last.length <= left) {
+        left -= last.length;
+        carried.set(last, left);
+      } else {
+        const stays = last.length - left;
+        carried.set(last.subarray(stays), 0);
+        this.#chunks.push(last.subarray(0, stays));
+        left = 0;
+      }
+    }
+    return carried;
+  }
+
   /** The audio, joined; `pcm` is null when it ran past the cap. */
   audio(): TurnAudio {
     let pcm: Int16Array | null = null;
@@ -169,6 +197,34 @@ export class TurnAudioRecorder {
     if (recording.release(this.#tailSamples)) return [recording];
     this.#tails.push(recording);
     return [];
+  }
+
+  /**
+   * A hands-free turn's end at the provider's end of turn. That lands a silence wait and a network
+   * hop after the turn's last word, and the rep may be into the next sentence by then, whose
+   * opening words are the next turn's. So the open recording completes `tailMs` past
+   * `lastWordSample` (the end of the turn's last word on the session's clock), or where it stands
+   * if that's sooner, and the next turn's opens at that sample, holding what the open one took past
+   * it. One that dropped its audio at the cap has nothing to hand on: the next opens where the
+   * capture is. Any tail still running ends, as on `open`.
+   */
+  split(lastWordSample: number): {
+    recording: TurnAudioRecording | undefined;
+    completed: TurnAudioRecording[];
+  } {
+    const completed = this.#finishTails();
+    const recording = this.#open;
+    if (!recording) return { recording: undefined, completed };
+    const end = recording.startSample + recording.samples;
+    const at = Math.min(
+      end,
+      Math.max(recording.startSample, Math.round(lastWordSample) + this.#tailSamples),
+    );
+    const carried = recording.splitAt(at - recording.startSample);
+    const next = new TurnAudioRecording(carried === null ? end : at, this.#maxSamples);
+    if (carried !== null) next.write(carried);
+    this.#open = next;
+    return { recording, completed };
   }
 
   /** Completes the open recording now, without a tail: a hands-free turn's end. */

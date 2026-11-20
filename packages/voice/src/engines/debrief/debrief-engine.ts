@@ -421,12 +421,23 @@ export class DebriefEngine implements VoiceEngine {
 
   /**
    * Hands-free: the recording that ran since the last turn ended becomes this turn's audio, and
-   * the next turn's starts here while the engine still streams.
+   * the next turn's starts while the engine still streams. Given the end of the turn's last word
+   * (`lastWordSample`, at the provider's end of turn, once every final is in), the split goes just
+   * past that word rather than where the capture is: the rep may have started the next sentence
+   * while the end of turn was on its way, and those words are the next turn's to check. Without it
+   * (leaving hands-free, whose finals may still be coming), the audio ends where it stands.
    */
-  #claimStreamAudio(turn: Turn): void {
+  #claimStreamAudio(turn: Turn, lastWordSample?: number): void {
     if (!this.#recorder || turn.audio) return;
+    const streaming = this.#mode === "hands_free" && this.#streaming;
+    if (streaming && lastWordSample !== undefined && this.#recorder.current) {
+      const { recording, completed } = this.#recorder.split(lastWordSample);
+      this.#attachRecording(turn, recording);
+      this.#onRecorded(completed);
+      return;
+    }
     this.#attachRecording(turn, this.#recorder.cut());
-    if (this.#mode === "hands_free" && this.#streaming) this.#startRecording();
+    if (streaming) this.#startRecording();
   }
 
   #onRecorded(completed: readonly TurnAudioRecording[]): void {
@@ -544,7 +555,13 @@ export class DebriefEngine implements VoiceEngine {
       this.#committedSample,
       turn.endSample ?? this.#lastFinalEndSample,
     );
-    if (this.#mode === "hands_free") this.#claimStreamAudio(turn);
+    if (this.#mode === "hands_free") {
+      // At the provider's end of turn its finals are all in, the latest being the turn's last word.
+      this.#claimStreamAudio(
+        turn,
+        trigger === "provider_eot" ? this.#lastFinalEndSample : undefined,
+      );
+    }
     this.#emit({ type: "turn_end", turnId: turn.id, trigger });
     if (this.#recorder) {
       turn.ended = true;
