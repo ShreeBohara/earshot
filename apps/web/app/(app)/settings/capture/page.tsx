@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import { WitnessSettings } from "@/components/capture/witness-settings";
+import { ClipsSettings } from "@/components/evidence/clips-settings";
 import { SettingsSection } from "@/components/settings-section";
 import { requireViewer } from "@/lib/auth/viewer";
 import { WITNESS_COPY } from "@/lib/capture/witness";
+import { CLIPS_COPY } from "@/lib/evidence/copy";
 
 export const metadata: Metadata = { title: "Capture · Settings · Earshot" };
 
-/** How this device captures debriefs: for now, the second witness (Phase 4 WP9). */
+/**
+ * How this device captures debriefs: the second witness (Phase 4 WP9), and evidence clips (Phase 5
+ * WP9), each turn's audio kept here for 24 hours to replay while reviewing.
+ */
 export default async function CaptureSettingsPage() {
   await requireViewer("/settings/capture");
   return (
@@ -25,6 +30,10 @@ export default async function CaptureSettingsPage() {
         description="A second, independent transcript of each turn, without the CRM's names to bias it, so a name the live transcript snapped to a CRM spelling gets caught."
       >
         <WitnessSettings />
+      </SettingsSection>
+
+      <SettingsSection id="evidence-clips" title={CLIPS_COPY.name}>
+        <ClipsSettings labelledBy="evidence-clips" />
       </SettingsSection>
     </div>
   );

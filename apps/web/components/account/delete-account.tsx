@@ -16,6 +16,7 @@ import { Input } from "@earshot/ui/components/input";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { authClient, describeAuthError } from "@/lib/auth/client";
+import { clearBrowserClips } from "@/lib/evidence/browser";
 import { REAUTH_HREF, ReauthNote } from "./reauth-note";
 
 const NOT_FRESH = new Set(["SESSION_NOT_FRESH", "SESSION_EXPIRED"]);
@@ -56,6 +57,8 @@ export function DeleteAccount({
       });
       return;
     }
+    // The account is gone: so is its debriefs' audio on this device (Phase 5 WP9).
+    await clearBrowserClips();
     window.location.assign("/?deleted=1");
   }
 

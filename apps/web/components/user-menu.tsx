@@ -15,6 +15,8 @@ import { LogOutIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { useTransition } from "react";
 import { signOut } from "@/app/actions/session";
+import { clearBrowserClips, signOutClearingClips } from "@/lib/evidence/browser";
+import { useCaptureController } from "./capture/session-provider";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -27,9 +29,14 @@ function initials(name: string): string {
   );
 }
 
-/** The header's account menu: who's signed in, Settings, and Sign out. */
+/**
+ * The header's account menu: who's signed in, Settings, and Sign out. Signing out leaves nothing of
+ * the debriefs' audio on this device (Phase 5 WP9): capture stops, every evidence clip and its key
+ * are deleted, then the sign-out runs.
+ */
 export function UserMenu({ name, email }: { name: string; email: string }) {
   const [signingOut, startSignOut] = useTransition();
+  const capture = useCaptureController();
 
   return (
     <DropdownMenu>
@@ -53,7 +60,18 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
           <SettingsIcon aria-hidden="true" />
           Settings
         </DropdownMenuLinkItem>
-        <DropdownMenuItem disabled={signingOut} onClick={() => startSignOut(() => signOut())}>
+        <DropdownMenuItem
+          disabled={signingOut}
+          onClick={() =>
+            startSignOut(() =>
+              signOutClearingClips({
+                stopCapture: () => capture.dispose(),
+                clearClips: () => clearBrowserClips(),
+                signOut,
+              }),
+            )
+          }
+        >
           <LogOutIcon aria-hidden="true" />
           {signingOut ? "Signing out…" : "Sign out"}
         </DropdownMenuItem>

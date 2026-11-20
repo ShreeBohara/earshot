@@ -11,6 +11,7 @@ import type { WitnessView } from "@/lib/capture/controller";
 import type { FakeVoice, FakeVoiceSetup } from "@/lib/capture/fake";
 import { defaultSelection, type ProviderSelection, providerChoices } from "@/lib/capture/providers";
 import { WITNESS_COPY, witnessPromptDue } from "@/lib/capture/witness";
+import { ClipsNotice, useClipsNotice } from "../evidence/clips-notice";
 import {
   CaptureNotice,
   FakeEdgeNotice,
@@ -96,6 +97,7 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
   const [picked, setPicked] = useState<ProviderSelection | null>(null);
   const [fakeVoice, setFakeVoice] = useState<FakeVoice | null>(null);
   const [witnessSetting, saveWitnessSetting] = useWitnessSetting();
+  const clipsNotice = useClipsNotice();
   const mounts = useRef(0);
 
   // Leaving the screen: an ended debrief's client stops waiting for the seal (spec WP6 step 3).
@@ -160,7 +162,11 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
   const error = ui.capture.context.error;
   const errorKind = error ? captureErrorKind(error) : null;
 
-  const start = () => controller.start({ selection: fakeMode ? null : selection, fake: fakeVoice });
+  const start = () => {
+    controller.start({ selection: fakeMode ? null : selection, fake: fakeVoice });
+    // A debrief started with the clips notice on screen: it's been seen.
+    if (clipsNotice.due) clipsNotice.seen();
+  };
   const holdMs = ui.fake?.holdMs ?? fakeVoice?.holdMs ?? 1_600;
   const nextLine = ui.fake
     ? ui.fake.nextLine
@@ -243,6 +249,7 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
           {!fakeMode && witnessPromptDue(witnessSetting, keys) ? (
             <WitnessPrompt onAnswer={saveWitnessSetting} />
           ) : null}
+          {clipsNotice.due ? <ClipsNotice onDismiss={clipsNotice.seen} /> : null}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <Button size="lg" onClick={start} disabled={!canStart}>
               {ui.phase === "starting" ? "Starting…" : "Start debrief"}
