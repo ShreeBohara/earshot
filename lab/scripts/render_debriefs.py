@@ -12,6 +12,9 @@ Each script in packages/evals/debriefs/ becomes lab/.cache/wavs/<hash>.wav, mono
 - The hash covers everything that shapes the audio: the turns and their pauses, the voice and
   speed, this renderer's version, the model files' SHA-256s, and the audio packages' versions.
   A script whose WAV is already there isn't rendered again, and then the model isn't loaded.
+- A script with `noise: { kind, snrDb }` gets car, street, or cafe noise mixed under its speech
+  at that SNR (debrief_noise.py, Phase 4 WP10b); the spec joins the hash. A script without it,
+  or with kind "none", renders exactly as before, to the same hash.
 
 The model files are downloaded on first use from the URLs pinned in kokoro_files.json, and
 checked against the pinned size and SHA-256 before anything reads them. espeak-ng needs no apt
@@ -49,6 +52,16 @@ from pathlib import Path
 from typing import Any, Protocol, cast
 
 import numpy as np
+from debrief_noise import (
+    MAX_SNR_DB,
+    MIN_SNR_DB,
+    NOISE_KINDS,
+    NOISE_VERSION,
+    BabbleBank,
+    Noise,
+    limit_peak,
+    scaled_noise,
+)
 from numpy.typing import NDArray
 
 # scipy ships no type stubs, and scipy-stubs isn't worth a dependency for one call.
@@ -109,6 +122,7 @@ class Script:
     voice: str
     speed: float
     turns: tuple[Turn, ...]
+    noise: Noise | None = None
 
 
 @dataclass(frozen=True)
@@ -181,7 +195,32 @@ def load_script(path: Path) -> Script:
         voice=voice,
         speed=float(speed),
         turns=tuple(turns),
+        noise=_load_noise(record.get("noise"), where),
     )
+
+
+def _load_noise(raw: object, where: str) -> Noise | None:
+    """The script's background noise, or None for none (absent, or kind "none")."""
+    if raw is None:
+        return None
+    noise_where = f"{where} noise"
+    spec = _object(raw, noise_where)
+    kind = _get(spec, "kind", str, noise_where)
+    if kind == "none":
+        return None
+    if kind not in NOISE_KINDS:
+        raise RenderError(f"{noise_where}: kind must be none, {', '.join(NOISE_KINDS)}")
+    snr = spec.get("snrDb")
+    if (
+        not isinstance(snr, int | float)
+        or isinstance(snr, bool)
+        or not math.isfinite(snr)
+        or not MIN_SNR_DB <= snr <= MAX_SNR_DB
+    ):
+        raise RenderError(
+            f"{noise_where}: snrDb must be a number from {MIN_SNR_DB} to {MAX_SNR_DB}"
+        )
+    return Noise(kind=kind, snr_db=float(snr))
 
 
 def load_scripts(directory: Path, only: Iterable[str] | None = None) -> list[Script]:
@@ -204,7 +243,7 @@ def render_hash(
     script: Script, *, model_sha256: Mapping[str, str], packages: Mapping[str, str]
 ) -> str:
     """32 hex digits of SHA-256 over everything that shapes the audio, as canonical JSON."""
-    payload = {
+    payload: JsonObject = {
         "renderer": RENDERER_VERSION,
         "rates": [SOURCE_RATE, TARGET_RATE],
         "tailMs": TAIL_MS,
@@ -214,8 +253,26 @@ def render_hash(
         "speed": script.speed,
         "turns": [{"text": t.text, "pauseBeforeMs": t.pause_before_ms} for t in script.turns],
     }
+    # Only when there is noise, so every quiet script keeps the hash it had before noise existed.
+    if script.noise is not None:
+        payload["noise"] = {
+            "kind": script.noise.kind,
+            "snrDb": script.noise.snr_db,
+            "version": NOISE_VERSION,
+        }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:32]
+
+
+def audio_key(script: Script) -> str:
+    """Canonical text of what shapes a script's speech (not its id, title, or expectations):
+    the noise's seed, so the noise depends only on what the hash covers."""
+    payload = {
+        "voice": script.voice,
+        "speed": script.speed,
+        "turns": [{"text": t.text, "pauseBeforeMs": t.pause_before_ms} for t in script.turns],
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def _round_half_up(value: float) -> int:
@@ -266,10 +323,17 @@ def to_pcm16(audio: NDArray[np.float64]) -> PcmArray:
     return (np.clip(audio, -1.0, 1.0) * 32767.0).astype(np.int16)
 
 
-def assemble(script: Script, synthesizer: Synthesizer) -> tuple[PcmArray, list[TimedTurn]]:
-    """The whole fixture at 48 kHz, and where each turn's speech sits in it."""
+def assemble(
+    script: Script, synthesizer: Synthesizer, bank: BabbleBank | None = None
+) -> tuple[PcmArray, list[TimedTurn]]:
+    """The whole fixture at 48 kHz, and where each turn's speech sits in it.
+
+    With noise, the noise is mixed in at 24 kHz before upsampling, and the mix is scaled down if
+    its peak would clip. `bank` keeps babble voices synthesized across scripts.
+    """
     parts: list[FloatArray] = []
     timed: list[TimedTurn] = []
+    spans: list[tuple[int, int]] = []
     cursor = 0
     for index, turn in enumerate(script.turns):
         pause = turn.pause_before_ms * SOURCE_RATE // 1000
@@ -289,10 +353,32 @@ def assemble(script: Script, synthesizer: Synthesizer) -> tuple[PcmArray, list[T
                 text=turn.text,
             )
         )
+        spans.append((cursor, cursor + speech.size))
         cursor += speech.size
-    parts.append(np.zeros(TAIL_MS * SOURCE_RATE // 1000, dtype=np.float32))
+    tail = TAIL_MS * SOURCE_RATE // 1000
+    parts.append(np.zeros(tail, dtype=np.float32))
     audio24 = np.concatenate(parts).astype(np.float32)
-    return to_pcm16(upsample_2x(audio24)), timed
+    if script.noise is None:
+        return to_pcm16(upsample_2x(audio24)), timed
+    active = np.zeros(audio24.size, dtype=np.bool_)
+    for start, end in spans:
+        active[start:end] = True
+    speech64 = audio24.astype(np.float64)
+    try:
+        noise = scaled_noise(
+            speech64,
+            active,
+            script.noise,
+            audio_key=audio_key(script),
+            voice=script.voice,
+            rate=SOURCE_RATE,
+            tail=tail,
+            bank=bank or BabbleBank(synthesizer, SOURCE_RATE),
+        )
+    except ValueError as error:
+        raise RenderError(f"{script.id} noise: {error}") from error
+    mixed = (speech64 + noise).astype(np.float32)
+    return to_pcm16(limit_peak(upsample_2x(mixed))), timed
 
 
 def write_wav(path: Path, pcm: PcmArray, sample_rate: int = TARGET_RATE) -> None:
@@ -364,6 +450,7 @@ def render(
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     voice: Synthesizer | None = None
+    bank: BabbleBank | None = None
     entries: dict[str, JsonObject] = {}
     statuses: dict[str, str] = {}
     for script in scripts:
@@ -377,8 +464,9 @@ def render(
         else:
             if voice is None:
                 voice = synthesizer()
+                bank = BabbleBank(voice, SOURCE_RATE)
             started = time.monotonic()
-            pcm, turns = assemble(script, voice)
+            pcm, turns = assemble(script, voice, bank)
             timing = timing_document(script, digest, int(pcm.size), turns)
             write_wav(wav_path, pcm)
             write_json(timing_path, timing)
