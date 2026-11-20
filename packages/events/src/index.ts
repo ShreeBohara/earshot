@@ -43,15 +43,17 @@ export {
   latestVersions,
   type PayloadDefinition,
   type ProposalCreatedEvent,
+  type ProposalFlaggedEvent,
   type ProposalReviewedEvent,
   type SessionEndedEvent,
   type SessionEvent,
   type SessionStartedEvent,
   type TurnCompletedEvent,
   type TurnMeasuredEvent,
+  type TurnWitnessedEvent,
   type TypedEvent,
   type Upcaster,
   type UsageRecordedEvent,
   type UtteranceFinalEvent,
 } from "./types";
-export { upcasters, utteranceFinalV1ToV2 } from "./upcasters";
+export { proposalCreatedV1ToV2, upcasters, utteranceFinalV1ToV2 } from "./upcasters";

@@ -269,6 +269,16 @@
       "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c114",
       "type": "contact",
       "targetEntityId": null,
+      "target": {
+        "decision": "new",
+        "entityId": null,
+        "kind": null,
+        "basis": null,
+        "p": null,
+        "mention": null,
+        "company": null,
+        "candidates": []
+      },
       "status": "approved",
       "fields": {
         "company": {
@@ -322,6 +332,7 @@
           "kind": "new_entity"
         }
       ],
+      "conflicts": [],
       "seq": 2,
       "ts": "2026-11-10T19:15:08.450Z",
       "review": {
@@ -336,6 +347,16 @@
       "proposalId": "01a1c6e2-e5dc-79b1-a045-4bf227d9db20",
       "type": "deal_update",
       "targetEntityId": "01a0f831-afe8-7fff-84cf-71639949085b",
+      "target": {
+        "decision": "linked",
+        "entityId": "01a0f831-afe8-7fff-84cf-71639949085b",
+        "kind": null,
+        "basis": "exact",
+        "p": null,
+        "mention": null,
+        "company": null,
+        "candidates": []
+      },
       "status": "approved",
       "fields": {
         "stage": {
@@ -355,6 +376,7 @@
         }
       },
       "riskFlags": [],
+      "conflicts": [],
       "seq": 5,
       "ts": "2026-11-10T19:15:21.180Z",
       "review": {
@@ -369,6 +391,16 @@
       "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
       "type": "task",
       "targetEntityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+      "target": {
+        "decision": "linked",
+        "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+        "kind": null,
+        "basis": "exact",
+        "p": null,
+        "mention": null,
+        "company": null,
+        "candidates": []
+      },
       "status": "edited",
       "fields": {
         "dueDate": {
@@ -408,6 +440,7 @@
           "kind": "date"
         }
       ],
+      "conflicts": [],
       "seq": 7,
       "ts": "2026-11-10T19:15:26.510Z",
       "review": {
@@ -427,6 +460,16 @@
       "proposalId": "01a1c6e3-1674-7aa3-b29d-03636b6dc056",
       "type": "note",
       "targetEntityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+      "target": {
+        "decision": "linked",
+        "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+        "kind": null,
+        "basis": "exact",
+        "p": null,
+        "mention": null,
+        "company": null,
+        "candidates": []
+      },
       "status": "approved",
       "fields": {
         "body": {
@@ -446,6 +489,7 @@
         }
       },
       "riskFlags": [],
+      "conflicts": [],
       "seq": 9,
       "ts": "2026-11-10T19:15:33.620Z",
       "review": {
@@ -460,6 +504,16 @@
       "proposalId": "01a1c6e3-2e48-7c08-ad2d-2483bd55a1a3",
       "type": "commitment",
       "targetEntityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+      "target": {
+        "decision": "linked",
+        "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+        "kind": null,
+        "basis": "exact",
+        "p": null,
+        "mention": null,
+        "company": null,
+        "candidates": []
+      },
       "status": "rejected",
       "fields": {
         "counterpart": {
@@ -498,6 +552,7 @@
           "kind": "low_confidence"
         }
       ],
+      "conflicts": [],
       "seq": 11,
       "ts": "2026-11-10T19:15:39.720Z",
       "review": {

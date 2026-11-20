@@ -9,6 +9,7 @@ import {
   isSessionCloseCode,
   KEY_SHAPES,
   MAX_ENTITY_ALIASES,
+  MAX_ENTITY_ID_CHARS,
   MAX_ENTITY_NAME_CHARS,
   MAX_MESSAGE_BYTES,
   MAX_SESSION_ENTITIES,
@@ -38,6 +39,7 @@ const FAKE_KEYS = {
 const SESSION_ID = "01a1c6e2-9320-7deb-a57a-ba62dc02df02";
 const TURN_ID = "01a1c6e2-c1a0-7d2e-8f31-6b4a9c0d2e1f";
 const UTTERANCE_ID = "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104";
+const UNBIASED_UTTERANCE_ID = "01a1c6f0-2b10-7c4e-9a3d-5e6f7a8b9c0d";
 
 const entity = (n: number) => ({
   id: `6f1d2c3b-4a5e-4f60-8a7b-${n.toString(16).padStart(12, "0")}`,
@@ -103,6 +105,24 @@ function clientMessages() {
         proposalMs: 12_331,
         paintMs: 12_374.2,
       },
+    },
+    witness: {
+      t: "witness",
+      msgId: uuidv7(),
+      turnId: TURN_ID,
+      provider: "groq",
+      model: "whisper-large-v3-turbo",
+      outcome: "transcribed",
+      utterance: {
+        utteranceId: UNBIASED_UTTERANCE_ID,
+        text: "Met Dana Li at Akme.",
+        confidence: 0.81,
+        words: [{ w: "Met", startMs: 1210, endMs: 1390, confidence: 0.9 }],
+        startMs: 1210,
+        endMs: 2880,
+        witness: "unbiased",
+      },
+      latencyMs: 640,
     },
     ack: { t: "ack", seq: 4 },
     end: { t: "end", msgId: uuidv7(), endedAt: "2026-11-15T19:15:40.000Z" },
@@ -339,6 +359,31 @@ describe("keys", () => {
     ],
     ["usage.provider", (key, { usage }) => ({ ...usage, provider: key })],
     ["usage.model", (key, { usage }) => ({ ...usage, model: key })],
+    [
+      "start.entities[0].parentId",
+      (key, { start }) => ({ ...start, entities: [{ ...entity(1), parentId: key }] }),
+    ],
+    // Not one of the entities either, but the key is what the parse reports.
+    ["start.focusEntityId", (key, { start }) => ({ ...start, focusEntityId: key })],
+    [
+      "witness.utterance.text",
+      (key, { witness }) => ({
+        ...witness,
+        utterance: { ...witness.utterance, text: `the key was ${key}` },
+      }),
+    ],
+    [
+      "witness.utterance.words[0].w",
+      (key, { witness }) => ({
+        ...witness,
+        utterance: {
+          ...witness.utterance,
+          words: [{ w: key, startMs: 1210, endMs: 1390, confidence: 0.9 }],
+        },
+      }),
+    ],
+    ["witness.provider", (key, { witness }) => ({ ...witness, provider: key })],
+    ["witness.model", (key, { witness }) => ({ ...witness, model: key })],
   ];
   const cases = placements.flatMap(([where, place]) =>
     Object.entries(FAKE_KEYS).map(([shape, key]) => ({ where, shape, key, place })),
@@ -403,6 +448,137 @@ describe("keys", () => {
     ];
     const entities = names.map((name, n) => ({ ...entity(n), name }));
     expect(parseClientMessage(frame({ ...start, entities })).ok).toBe(true);
+  });
+});
+
+describe("Phase 4: the open account, parent records, and the second witness", () => {
+  const withEntities = (overrides: Record<string, unknown> = {}) => {
+    const { start } = clientMessages();
+    return {
+      ...start,
+      entities: [
+        { ...entity(1), name: "Acme Dynamics", aliases: ["Acme"] },
+        { ...entity(2), kind: "contact", name: "Dana Lee", aliases: [], parentId: entity(1).id },
+        { ...entity(3), kind: "deal", name: "Acme renewal", aliases: [], parentId: entity(1).id },
+      ],
+      ...overrides,
+    };
+  };
+
+  it("takes each record's parent and the open account in start", () => {
+    const start = withEntities({ focusEntityId: entity(1).id });
+    expect(parseClientMessage(frame(start))).toEqual({ ok: true, message: start });
+    expect(parseClientMessage(frame(withEntities())).ok).toBe(true);
+  });
+
+  it("refuses an open account that isn't one of start's entities", () => {
+    const outside = withEntities({ focusEntityId: entity(9).id });
+    expect(parseClientMessage(frame(outside))).toEqual({ ok: false, reason: "invalid" });
+    const issues = ClientMessage.safeParse(outside).error?.issues;
+    expect(issues).toEqual([expect.objectContaining({ path: ["focusEntityId"] })]);
+    const noEntities = { ...clientMessages().start, entities: [], focusEntityId: entity(1).id };
+    expect(parseClientMessage(frame(noEntities))).toMatchObject({ reason: "invalid" });
+  });
+
+  it("caps parent and focus ids at the entity id's length, and refuses empty ones", () => {
+    expect(MAX_ENTITY_ID_CHARS).toBe(128);
+    const { start } = clientMessages();
+    const withParent = (parentId: string) =>
+      parseClientMessage(frame({ ...start, entities: [{ ...entity(1), parentId }] })).ok;
+    expect(withParent("p".repeat(MAX_ENTITY_ID_CHARS))).toBe(true);
+    expect(withParent("p".repeat(MAX_ENTITY_ID_CHARS + 1))).toBe(false);
+    expect(withParent("")).toBe(false);
+    const longId = "i".repeat(MAX_ENTITY_ID_CHARS + 1);
+    const longFocus = { ...start, entities: [{ ...entity(1), id: longId }], focusEntityId: longId };
+    expect(parseClientMessage(frame(longFocus)).ok).toBe(false);
+    expect(parseClientMessage(frame({ ...start, focusEntityId: "" })).ok).toBe(false);
+    // The contract itself takes any non-empty parent id, as it takes any length of name.
+    const contact = { ...entity(2), kind: "contact", parentId: "p".repeat(500) };
+    expect(EntityRef.safeParse(contact).success).toBe(true);
+    expect(EntityRef.safeParse({ ...contact, parentId: "" }).success).toBe(false);
+  });
+
+  it("accepts a witness that failed or was skipped, with its reason and no utterance", () => {
+    const { witness } = clientMessages();
+    const { utterance: _, ...base } = witness;
+    for (const [outcome, reason] of [
+      ["failed", "timeout"],
+      ["failed", "rate_limited"],
+      ["failed", "provider_error"],
+      ["skipped", "off"],
+      ["skipped", "no_key"],
+      ["skipped", "too_long"],
+    ] as const) {
+      const message = { ...base, outcome, reason };
+      expect(parseClientMessage(frame(message))).toEqual({ ok: true, message });
+    }
+    const { latencyMs: __, ...noLatency } = { ...base, outcome: "skipped", reason: "off" };
+    expect(parseClientMessage(frame(noLatency)).ok).toBe(true);
+  });
+
+  it("refuses a witness utterance labelled biased, or with no witness", () => {
+    const { witness } = clientMessages();
+    const labelled = (label: unknown) => ({
+      ...witness,
+      utterance: { ...witness.utterance, witness: label },
+    });
+    expect(parseClientMessage(frame(labelled("biased")))).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+    const { witness: _, ...unlabelled } = witness.utterance;
+    expect(parseClientMessage(frame({ ...witness, utterance: unlabelled })).ok).toBe(false);
+  });
+
+  it("ties the utterance to a transcribed witness, and the reason to the others", () => {
+    const { witness } = clientMessages();
+    const { utterance, ...base } = witness;
+    const refused = [
+      base, // transcribed, with no utterance
+      { ...witness, reason: "timeout" }, // transcribed, with a reason
+      { ...base, outcome: "failed" }, // failed, with no reason
+      { ...witness, outcome: "failed", reason: "timeout" }, // failed, with an utterance
+      { ...base, outcome: "skipped", reason: "cancelled" }, // not a reason
+      { ...base, outcome: "compared", reason: "off" }, // the event's word, not the message's
+    ];
+    for (const message of refused) {
+      expect(parseClientMessage(frame(message))).toEqual({ ok: false, reason: "invalid" });
+    }
+    expect(utterance.witness).toBe("unbiased");
+  });
+
+  it("checks the witness's turn, names, and latency", () => {
+    const { witness } = clientMessages();
+    const accepts = (overrides: Record<string, unknown>) =>
+      parseClientMessage(frame({ ...witness, ...overrides })).ok;
+    expect(accepts({ turnId: "turn-1" })).toBe(false);
+    expect(accepts({ msgId: "6f1d2c3b-4a5e-4f60-8a7b-9c8d7e6f5a4b" })).toBe(false);
+    expect(accepts({ provider: "" })).toBe(false);
+    expect(accepts({ model: "m".repeat(129) })).toBe(false);
+    expect(accepts({ latencyMs: -1 })).toBe(false);
+    expect(accepts({ latencyMs: 640.5 })).toBe(false);
+    expect(accepts({ latencyMs: 0 })).toBe(true);
+    expect(accepts({ audio: "UklGRg==" })).toBe(false);
+  });
+
+  it("caps the witness's text like any utterance, and its frame like any message", () => {
+    const { witness } = clientMessages();
+    const withText = (text: string) => ({ ...witness, utterance: { ...witness.utterance, text } });
+    expect(parseClientMessage(frame(withText("a".repeat(MAX_UTTERANCE_TEXT_CHARS)))).ok).toBe(true);
+    expect(parseClientMessage(frame(withText("a".repeat(MAX_UTTERANCE_TEXT_CHARS + 1))))).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+    // Word timings have no count cap of their own; the frame's 64 KiB holds them.
+    const words = Array.from({ length: 1_200 }, (_, i) => ({
+      w: "word",
+      startMs: 1210 + i * 10,
+      endMs: 1215 + i * 10,
+      confidence: 0.9,
+    }));
+    const long = { ...witness, utterance: { ...witness.utterance, words } };
+    expect(frame(long).length).toBeGreaterThan(MAX_MESSAGE_BYTES);
+    expect(parseClientMessage(frame(long))).toEqual({ ok: false, reason: "too_large" });
   });
 });
 

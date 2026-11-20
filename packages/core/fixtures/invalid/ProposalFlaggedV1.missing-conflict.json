@@ -1,0 +1,23 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c201",
+  "source": "witness",
+  "flags": [
+    {
+      "kind": "witness_conflict",
+      "field": "target"
+    }
+  ],
+  "target": {
+    "decision": "ask",
+    "candidates": [
+      {
+        "entityId": "01a0f831-ad20-7c4f-9e5a-1b2c3d4e5f60",
+        "p": 0.62
+      },
+      {
+        "entityId": null,
+        "p": 0.3
+      }
+    ]
+  }
+}

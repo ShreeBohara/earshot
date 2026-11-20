@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15). Amended for Phase 3 (2026-11-15) with three new event types; see "Phase 3 event types" below.
+Accepted (2026-11-15). Amended for Phase 3 (2026-11-15) with three new event types; see "Phase 3 event types" below. Amended for Phase 4 (2026-11-19) with `proposal.created` v2 and its upcaster, and two new event types; see "Phase 4 event types" below and ADR-0027.
 
 ## Context and problem
 
@@ -114,6 +114,22 @@ Phase 3 needs durable records for the cost meter and the latency gate, so `Sessi
 - **`@earshot/events`** adds the three types to `SessionEvent` and `latestVersions`, and `@earshot/events/testing` gains builders for them (`usageRecorded`, `turnCompleted`, `turnMeasured`).
 - **Ids and times.** Envelope ids are UUIDv7s from `uuidv7()` in `@earshot/core`, minted by `SessionDO`. Envelope `ts` always comes from the Durable Object's clock; client times stay in payloads, such as `startedAt` and `endedAt`.
 - **Later.** Folding `turn.measured` into `sessions.metrics` is optional work for the Phase 3 flush. It changes `SessionView`, so it would regenerate the demo snapshot on purpose.
+
+## Phase 4 event types
+
+Phase 4's entity linker and second witness change one payload and add two (ADR-0027 has the shapes and the reasons):
+
+| Type, version | What changes |
+| --- | --- |
+| `proposal.created` 2 | `target` replaces `targetEntityId`: the linker's decision, its probability, the words that named the record, and the candidates. Adds the `meeting` type, seven risk kinds, `norm` on each field, `supersedes`, and `linker`. |
+| `proposal.flagged` 1 | Flags added after the card appeared, a witness conflict, and an optional downgrade of the target to "ask". |
+| `turn.witnessed` 1 | How a turn's second witness ended. |
+
+- **The second upcaster.** `proposal.created` v1 → v2 turns `targetEntityId` into a target `linked` on an `exact` basis. With no target, the decision is `new` when v1 flagged `new_entity`, and `none` otherwise. Fields and flags are unchanged. A registry built without it fails when it loads.
+- **Projections.** `proposalsProjection` folds v2 targets and `proposal.flagged`: flags are added once each, conflicts are appended, and a downgrade sets "ask" and keeps the old target first among the candidates. A downgrade that doesn't list the old target fails the replay. `sessionProjection` treats both new types like `turn.completed`.
+- **Postgres.** Migration 0012 adds `proposals.target` and `proposals.conflicts`, which `rebuildProjections` writes. `target_entity_id` holds `target.entityId`, and flags on the target are stored as `kind:target`.
+- **Stored events.** Nothing stored changes. `demo-session.jsonl` is byte-for-byte the same. Its committed projections were regenerated on purpose: each proposal gained its upcast `target` and an empty `conflicts`, and nothing else changed.
+- **Writers.** `SessionDO` writes `proposal.created` v1 until Phase 4's WP8, and every reader upcasts it.
 
 ## Consequences
 

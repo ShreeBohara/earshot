@@ -1,11 +1,13 @@
 import type {
   EventEnvelope,
-  ProposalCreatedV1,
+  ProposalCreatedV2,
+  ProposalFlaggedV1,
   ProposalReviewedV1,
   SessionEndedV1,
   SessionStartedV1,
   TurnCompletedV1,
   TurnMeasuredV1,
+  TurnWitnessedV1,
   UsageRecordedV1,
   UtteranceFinalV2,
 } from "@earshot/core";
@@ -23,12 +25,14 @@ export type TypedEvent<T extends string, V extends number, P> = Omit<
 
 export type SessionStartedEvent = TypedEvent<"session.started", 1, SessionStartedV1>;
 export type UtteranceFinalEvent = TypedEvent<"utterance.final", 2, UtteranceFinalV2>;
-export type ProposalCreatedEvent = TypedEvent<"proposal.created", 1, ProposalCreatedV1>;
+export type ProposalCreatedEvent = TypedEvent<"proposal.created", 2, ProposalCreatedV2>;
 export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 1, ProposalReviewedV1>;
 export type SessionEndedEvent = TypedEvent<"session.ended", 1, SessionEndedV1>;
 export type UsageRecordedEvent = TypedEvent<"usage.recorded", 1, UsageRecordedV1>;
 export type TurnCompletedEvent = TypedEvent<"turn.completed", 1, TurnCompletedV1>;
 export type TurnMeasuredEvent = TypedEvent<"turn.measured", 1, TurnMeasuredV1>;
+export type ProposalFlaggedEvent = TypedEvent<"proposal.flagged", 1, ProposalFlaggedV1>;
+export type TurnWitnessedEvent = TypedEvent<"turn.witnessed", 1, TurnWitnessedV1>;
 
 /**
  * A validated event at the latest schema version of its type. Replay upcasts every stored event
@@ -42,18 +46,22 @@ export type SessionEvent =
   | SessionEndedEvent
   | UsageRecordedEvent
   | TurnCompletedEvent
-  | TurnMeasuredEvent;
+  | TurnMeasuredEvent
+  | ProposalFlaggedEvent
+  | TurnWitnessedEvent;
 
 /** The latest schema version of each event type. A test checks it against the default registry. */
 export const latestVersions = {
   "session.started": 1,
   "utterance.final": 2,
-  "proposal.created": 1,
+  "proposal.created": 2,
   "proposal.reviewed": 1,
   "session.ended": 1,
   "usage.recorded": 1,
   "turn.completed": 1,
   "turn.measured": 1,
+  "proposal.flagged": 1,
+  "turn.witnessed": 1,
 } as const satisfies { [E in SessionEvent as E["type"]]: E["schemaVersion"] };
 
 /** A payload schema and the event type and schema version it belongs to. */

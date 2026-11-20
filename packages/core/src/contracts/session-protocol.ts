@@ -10,6 +10,7 @@ import { EventEnvelope } from "./event-envelope";
 import { SessionProviders } from "./events/session-started";
 import { Timestamp } from "./events/shared";
 import { CaptureMode } from "./events/turn-measured";
+import { WitnessReason } from "./events/turn-witnessed";
 import { UtteranceFinalV2 } from "./events/utterance-final";
 
 /** The protocol version that `hello` and `welcome` carry. */
@@ -44,6 +45,11 @@ export function isIanaTimeZone(value: string): boolean {
 export const MAX_SESSION_ENTITIES = 250;
 /** The longest entity name or alias a `start` message may carry, in UTF-16 code units. */
 export const MAX_ENTITY_NAME_CHARS = 200;
+/**
+ * The longest record id a `start` message may carry, in UTF-16 code units: an entity's `id` and
+ * `parentId`, and `focusEntityId`.
+ */
+export const MAX_ENTITY_ID_CHARS = 128;
 /** The most aliases one entity in a `start` message may carry. */
 export const MAX_ENTITY_ALIASES = 20;
 /** Bounds on the length of `turn_end.key`. */
@@ -114,13 +120,21 @@ const SocketUtterance = UtteranceFinalV2.extend({
   text: UtteranceFinalV2.shape.text.max(MAX_UTTERANCE_TEXT_CHARS),
 });
 
+/**
+ * `utterance.final` v2 from the unbiased witness, capped like the biased stream's. Only the
+ * `witness` message carries one.
+ */
+const UnbiasedSocketUtterance = SocketUtterance.extend({ witness: z.literal("unbiased") });
+
 const EntityName = z.string().min(1).max(MAX_ENTITY_NAME_CHARS);
+const EntityId = z.string().min(1).max(MAX_ENTITY_ID_CHARS);
 
 /** `EntityRef`, with its lengths capped for the socket. */
 const SocketEntityRef = EntityRef.extend({
-  id: EntityRef.shape.id.max(128),
+  id: EntityId,
   name: EntityName,
   aliases: z.array(EntityName).max(MAX_ENTITY_ALIASES),
+  parentId: EntityId.optional(),
 });
 
 const Hello = z.strictObject({
@@ -130,23 +144,39 @@ const Hello = z.strictObject({
   lastSeq: LastSeq,
 });
 
-const Start = z.strictObject({
-  t: z.literal("start"),
-  msgId: MsgId,
-  mode: z.literal("debrief"),
-  engine: z.literal("cascaded"),
-  providers: SessionProviders,
-  /** When capture started, by the client's clock; `session.started` keeps it. */
-  startedAt: Timestamp,
-  /** The CRM records the session may mention, from `POST /api/sessions`. */
-  entities: z.array(SocketEntityRef).max(MAX_SESSION_ENTITIES),
-  /**
-   * The rep's IANA time zone (for example `America/Chicago`), so the extractor resolves "by
-   * Thursday" against the rep's calendar rather than UTC. Optional: without it, dates resolve in
-   * UTC.
-   */
-  timeZone: z.string().max(MAX_TIME_ZONE_CHARS).refine(isIanaTimeZone).optional(),
-});
+const Start = z
+  .strictObject({
+    t: z.literal("start"),
+    msgId: MsgId,
+    mode: z.literal("debrief"),
+    engine: z.literal("cascaded"),
+    providers: SessionProviders,
+    /** When capture started, by the client's clock; `session.started` keeps it. */
+    startedAt: Timestamp,
+    /** The CRM records the session may mention, from `POST /api/sessions`. */
+    entities: z.array(SocketEntityRef).max(MAX_SESSION_ENTITIES),
+    /**
+     * The rep's IANA time zone (for example `America/Chicago`), so the extractor resolves "by
+     * Thursday" against the rep's calendar rather than UTC. Optional: without it, dates resolve in
+     * UTC.
+     */
+    timeZone: z.string().max(MAX_TIME_ZONE_CHARS).refine(isIanaTimeZone).optional(),
+    /**
+     * The account open in Earshot, if any: the linker's context for short mentions and for a
+     * proposal that names no record. It must be one of `entities`.
+     */
+    focusEntityId: EntityId.optional(),
+  })
+  .superRefine((start, ctx) => {
+    const focus = start.focusEntityId;
+    if (focus !== undefined && !start.entities.some((entity) => entity.id === focus)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["focusEntityId"],
+        message: "the focus account must be one of start.entities",
+      });
+    }
+  });
 
 const Utterance = z.strictObject({
   t: z.literal("utterance"),
@@ -174,6 +204,37 @@ const Usage = z.strictObject({
   audioMs: z.int().nonnegative(),
   socketMs: z.int().nonnegative(),
 });
+
+/** The `witness` message's fields shared by every outcome. */
+const witnessShape = {
+  t: z.literal("witness"),
+  msgId: MsgId,
+  /** The turn the unbiased transcript is of. `SessionDO` takes one witness per turn. */
+  turnId: TurnId,
+  /** The unbiased witness's provider and model, such as `groq` and `whisper-large-v3-turbo`. */
+  provider: Name,
+  model: Name,
+  /** How long the witness took, by the client's clock, in whole ms. */
+  latencyMs: z.int().nonnegative().optional(),
+};
+
+/**
+ * A turn's second witness (Phase 4 spec §4.2): the browser re-transcribed the turn's audio on its
+ * own provider key, without keyterms, and sends the unbiased utterance, or why there's none. The
+ * audio and the key go from the browser to the provider; neither rides on this message.
+ */
+const Witness = z.discriminatedUnion("outcome", [
+  z.strictObject({
+    ...witnessShape,
+    outcome: z.literal("transcribed"),
+    utterance: UnbiasedSocketUtterance,
+  }),
+  z.strictObject({
+    ...witnessShape,
+    outcome: z.enum(["failed", "skipped"]),
+    reason: WitnessReason,
+  }),
+]);
 
 const Metric = z.strictObject({
   t: z.literal("metric"),
@@ -341,7 +402,17 @@ const STRAY_KEY = "stray_key";
  * a key into a stored event.
  */
 export const ClientMessage = z
-  .discriminatedUnion("t", [Hello, Start, Utterance, TurnEnd, Usage, Metric, ClientAck, End])
+  .discriminatedUnion("t", [
+    Hello,
+    Start,
+    Utterance,
+    TurnEnd,
+    Usage,
+    Witness,
+    Metric,
+    ClientAck,
+    End,
+  ])
   .superRefine((message, ctx) => {
     const turnKey = message.t === "turn_end" ? message.key : undefined;
     const path = findStrayKey(message, turnKey);

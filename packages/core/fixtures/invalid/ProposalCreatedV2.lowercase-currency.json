@@ -1,0 +1,54 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c206",
+  "type": "deal_update",
+  "target": {
+    "decision": "linked",
+    "entityId": "01a0f831-afe8-7fff-84cf-71639949085b",
+    "kind": "deal",
+    "basis": "exact",
+    "p": 0.98,
+    "mention": {
+      "quote": "the Acme deal",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [4, 17],
+        "audioMs": [400, 1300],
+        "confidence": 0.94
+      }
+    },
+    "company": null,
+    "candidates": [
+      {
+        "entityId": "01a0f831-afe8-7fff-84cf-71639949085b",
+        "p": 0.98
+      }
+    ]
+  },
+  "fields": {
+    "amount": {
+      "value": 55000,
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [25, 39],
+        "audioMs": [1700, 2600],
+        "confidence": 0.89
+      },
+      "norm": {
+        "llmValue": 50000,
+        "currency": "usd"
+      }
+    }
+  },
+  "riskFlags": [
+    {
+      "kind": "number",
+      "field": "amount"
+    },
+    {
+      "kind": "value_mismatch",
+      "field": "amount"
+    }
+  ],
+  "supersedes": null,
+  "linker": "linker.v1"
+}

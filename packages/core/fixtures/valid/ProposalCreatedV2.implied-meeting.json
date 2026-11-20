@@ -1,0 +1,67 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c204",
+  "type": "meeting",
+  "target": {
+    "decision": "linked",
+    "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+    "kind": "company",
+    "basis": "focus",
+    "p": null,
+    "mention": null,
+    "company": null,
+    "candidates": []
+  },
+  "fields": {
+    "title": {
+      "value": "Security review",
+      "evidence": {
+        "utteranceId": "01a1c6e2-e118-77dc-97e5-3339cf89cd64",
+        "span": [10, 25],
+        "audioMs": [700, 1800],
+        "confidence": 0.92
+      }
+    },
+    "date": {
+      "value": "2026-11-13",
+      "evidence": {
+        "utteranceId": "01a1c6e2-e118-77dc-97e5-3339cf89cd64",
+        "span": [29, 40],
+        "audioMs": [2000, 2700],
+        "confidence": 0.9
+      },
+      "norm": {
+        "readings": ["2026-11-13", "2026-11-20"]
+      }
+    },
+    "time": {
+      "value": "14:00",
+      "evidence": {
+        "utteranceId": "01a1c6e2-e118-77dc-97e5-3339cf89cd64",
+        "span": [44, 50],
+        "audioMs": [2900, 3300],
+        "confidence": 0.88
+      }
+    },
+    "attendees": {
+      "value": "Dana Lee",
+      "evidence": {
+        "utteranceId": "01a1c6e2-e118-77dc-97e5-3339cf89cd64",
+        "span": [56, 64],
+        "audioMs": [3600, 4100],
+        "confidence": 0.86
+      }
+    }
+  },
+  "riskFlags": [
+    {
+      "kind": "implied_target",
+      "field": "target"
+    },
+    {
+      "kind": "ambiguous_value",
+      "field": "date"
+    }
+  ],
+  "supersedes": null,
+  "linker": "linker.v1"
+}

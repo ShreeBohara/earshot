@@ -23,6 +23,10 @@ import { workspaceId } from "./workspaces";
  * `proposalId`, `created_at` the `proposal.created` event's `ts`, and `updated_at` the latest
  * review's `ts`, or `created_at` before any review.
  *
+ * `target` is the entity linker's decision (`TargetV2`, migration 0012), after any downgrade by
+ * the second witness, and `target_entity_id` holds its `entityId`. Flags on the target are in
+ * `risk_flags` as `kind:target`.
+ *
  * `target_entity_id` references `crm_entities` through a foreign key that lives in migration
  * 0004 instead of here: it needs `ON DELETE SET NULL (target_entity_id)`, which Drizzle can't
  * express, so deleting an entity clears the target without touching `workspace_id`.
@@ -36,9 +40,13 @@ export const proposals = pgTable(
     /** For example `note`, `task`, `contact`, or `deal_update`. */
     type: text().notNull(),
     targetEntityId: uuid("target_entity_id"),
+    /** The linker's decision on the target. Null on rows from before Phase 4, until a rebuild. */
+    target: jsonb().$type<Record<string, unknown>>(),
     fields: jsonb().$type<Record<string, unknown>>().notNull(),
     /** Each flag as its `kind`, or as `kind:field` when it's about one field (`date:dueDate`). */
     riskFlags: text("risk_flags").array().notNull().default(sql`'{}'::text[]`),
+    /** Where the two witnesses disagreed, from `proposal.flagged`, in order. */
+    conflicts: jsonb().$type<Record<string, unknown>[]>().notNull().default(sql`'[]'::jsonb`),
     status: text().notNull().default("proposed"),
     /** What the reviewer changed, when the status is `edited`. */
     editDiff: jsonb("edit_diff").$type<Record<string, unknown>>(),

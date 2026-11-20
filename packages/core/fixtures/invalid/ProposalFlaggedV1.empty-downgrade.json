@@ -1,0 +1,31 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c201",
+  "source": "witness",
+  "flags": [
+    {
+      "kind": "witness_conflict",
+      "field": "target"
+    }
+  ],
+  "target": {
+    "decision": "ask",
+    "candidates": []
+  },
+  "conflict": {
+    "field": "target",
+    "biased": {
+      "text": "Atmos Industrial",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [24, 40],
+        "audioMs": [2100, 3050],
+        "confidence": 0.79
+      }
+    },
+    "unbiased": {
+      "text": "Atmo Systems",
+      "utteranceId": "01a1c6f0-2b10-7c4e-9a3d-5e6f7a8b9c0d",
+      "audioMs": [2080, 3010]
+    }
+  }
+}

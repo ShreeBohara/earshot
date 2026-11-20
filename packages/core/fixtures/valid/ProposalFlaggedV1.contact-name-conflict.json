@@ -1,0 +1,28 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c203",
+  "source": "witness",
+  "flags": [
+    {
+      "kind": "witness_conflict",
+      "field": "name"
+    }
+  ],
+  "target": null,
+  "conflict": {
+    "field": "name",
+    "biased": {
+      "text": "Dana Lee",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [48, 56],
+        "audioMs": [4420, 4960],
+        "confidence": 0.85
+      }
+    },
+    "unbiased": {
+      "text": "Dana Li",
+      "utteranceId": "01a1c6f0-2b10-7c4e-9a3d-5e6f7a8b9c0d",
+      "audioMs": [4400, 4950]
+    }
+  }
+}

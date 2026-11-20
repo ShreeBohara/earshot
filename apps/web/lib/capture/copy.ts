@@ -1,6 +1,6 @@
 // What the capture screen says about each code. Codes come from the voice engine, the session
 // socket, and the client; none of them ever carries a provider's own message or a key.
-import type { ProposalType, SessionErrorCode, TurnOutcome } from "@earshot/core";
+import type { ProposalTypeV2, SessionErrorCode, TurnOutcome } from "@earshot/core";
 import type { VoiceErrorCode } from "@earshot/voice";
 import type { ClientIssueCode } from "@earshot/voice/session";
 
@@ -79,31 +79,33 @@ export const SESSION_ISSUE_COPY: Readonly<Record<SessionErrorCode | ClientIssueC
   desynced: "The live view stopped updating. Reload to catch up; nothing is lost.",
 };
 
-export const PROPOSAL_TYPE_LABELS: Readonly<Record<ProposalType, string>> = {
+export const PROPOSAL_TYPE_LABELS: Readonly<Record<ProposalTypeV2, string>> = {
   note: "Note",
   task: "Task",
   contact: "Contact",
   deal_update: "Deal update",
   commitment: "Commitment",
+  meeting: "Meeting",
 };
 
-const PROPOSAL_TYPE_PHRASES: Readonly<Record<ProposalType, string>> = {
+const PROPOSAL_TYPE_PHRASES: Readonly<Record<ProposalTypeV2, string>> = {
   note: "a note",
   task: "a task",
   contact: "a contact",
   deal_update: "a deal update",
   commitment: "a commitment",
+  meeting: "a meeting",
 };
 
 /** "a contact", "a contact and a task", "a contact, a task, and a note". */
-export function listProposals(types: readonly ProposalType[]): string {
+export function listProposals(types: readonly ProposalTypeV2[]): string {
   const phrases = types.map((type) => PROPOSAL_TYPE_PHRASES[type]);
   if (phrases.length <= 2) return phrases.join(" and ");
   return `${phrases.slice(0, -1).join(", ")}, and ${phrases.at(-1)}`;
 }
 
 /** What a finished turn did, for the activity feed and spoken confirmations. */
-export function turnOutcomeText(outcome: TurnOutcome, types: readonly ProposalType[]): string {
+export function turnOutcomeText(outcome: TurnOutcome, types: readonly ProposalTypeV2[]): string {
   switch (outcome) {
     case "proposals":
       return types.length > 0 ? `Proposed ${listProposals(types)}.` : "Proposed changes.";

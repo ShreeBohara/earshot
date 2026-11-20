@@ -1,0 +1,9 @@
+{
+  "turnId": "01a1c6e2-c1a0-7d2e-8f31-6b4a9c0d2e1f",
+  "outcome": "compared",
+  "provider": "groq",
+  "model": "whisper-large-v3-turbo",
+  "utteranceIds": ["01a1c6f0-2b10-7c4e-9a3d-5e6f7a8b9c0d"],
+  "conflicts": 1,
+  "latencyMs": 640
+}

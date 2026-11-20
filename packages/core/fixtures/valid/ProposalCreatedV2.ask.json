@@ -1,0 +1,50 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c202",
+  "type": "deal_update",
+  "target": {
+    "decision": "ask",
+    "entityId": null,
+    "kind": "deal",
+    "basis": null,
+    "p": 0.48,
+    "mention": {
+      "quote": "the Atmos deal",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [12, 26],
+        "audioMs": [900, 1700],
+        "confidence": 0.84
+      }
+    },
+    "company": null,
+    "candidates": [
+      {
+        "entityId": "01a0f831-afe8-7fff-84cf-71639949085b",
+        "p": 0.48
+      },
+      {
+        "entityId": "01a0f831-aff0-7a1b-8c2d-3e4f5a6b7c8d",
+        "p": 0.41
+      }
+    ]
+  },
+  "fields": {
+    "stage": {
+      "value": "proposal",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [31, 66],
+        "audioMs": [1900, 3900],
+        "confidence": 0.95
+      }
+    }
+  },
+  "riskFlags": [
+    {
+      "kind": "ambiguous_target",
+      "field": "target"
+    }
+  ],
+  "supersedes": null,
+  "linker": "linker.v1"
+}

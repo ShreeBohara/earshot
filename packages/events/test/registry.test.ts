@@ -1,4 +1,4 @@
-import { eventPayloadContracts, UtteranceFinalV2 } from "@earshot/core";
+import { eventPayloadContracts, ProposalCreatedV2, UtteranceFinalV2 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
@@ -6,6 +6,7 @@ import {
   defaultRegistry,
   EventValidationError,
   latestVersions,
+  proposalCreatedV1ToV2,
   UnknownEventError,
   UpcastError,
   type Upcaster,
@@ -14,11 +15,16 @@ import {
 import {
   deepFreeze,
   envelope,
+  proposal,
+  proposalFlagged,
+  proposalV2,
   turnCompleted,
   turnMeasured,
+  turnWitnessed,
   usageRecorded,
   utterance,
   utteranceV1,
+  uuid,
 } from "./helpers";
 
 describe("utteranceFinalV1ToV2", () => {
@@ -43,12 +49,108 @@ describe("utteranceFinalV1ToV2", () => {
   });
 });
 
+describe("proposalCreatedV1ToV2", () => {
+  const unknownTarget = {
+    kind: null,
+    basis: null,
+    p: null,
+    mention: null,
+    company: null,
+    candidates: [],
+  };
+  /** A v1 proposal of `type`, with `targetEntityId` and `riskFlags` set. */
+  const v1 = (type: string, targetEntityId: string | null, riskFlags: unknown[] = []) => {
+    const body = proposal(1, type);
+    Object.assign(body.payload, { targetEntityId, riskFlags });
+    return envelope(body);
+  };
+  /** What the upcaster should make of `event`: v2, with `target`, and fields and flags as they were. */
+  const expected = (event: ReturnType<typeof v1>, target: Record<string, unknown>) => {
+    const { targetEntityId: _, ...rest } = event.payload;
+    return {
+      ...event,
+      schemaVersion: 2,
+      payload: { ...rest, target, supersedes: null, linker: null },
+    };
+  };
+
+  it("links a v1 target on an exact basis, since v1 matched only exact names and aliases", () => {
+    const linked = v1("task", uuid(6001), [{ kind: "date", field: "title" }]);
+    expect(proposalCreatedV1ToV2.up(linked)).toEqual(
+      expected(linked, {
+        ...unknownTarget,
+        decision: "linked",
+        entityId: uuid(6001),
+        basis: "exact",
+      }),
+    );
+  });
+
+  it("makes a new contact's missing target new, from its new_entity flag", () => {
+    const newContact = v1("contact", null, [{ kind: "new_entity" }]);
+    expect(proposalCreatedV1ToV2.up(newContact)).toEqual(
+      expected(newContact, { ...unknownTarget, decision: "new", entityId: null }),
+    );
+  });
+
+  it("makes a note with no target none", () => {
+    const note = v1("note", null, [{ kind: "low_confidence" }]);
+    expect(proposalCreatedV1ToV2.up(note)).toEqual(
+      expected(note, { ...unknownTarget, decision: "none", entityId: null }),
+    );
+  });
+
+  it("produces payloads the v2 schema accepts", () => {
+    for (const event of [
+      v1("task", uuid(6001)),
+      v1("contact", null, [{ kind: "new_entity" }]),
+      v1("note", null),
+      v1("deal_update", "hubspot:deal:42", [{ kind: "new_entity" }, { kind: "witness_conflict" }]),
+    ]) {
+      const result = ProposalCreatedV2.safeParse(proposalCreatedV1ToV2.up(event).payload);
+      expect(result.error?.issues ?? []).toEqual([]);
+    }
+  });
+
+  it("doesn't mutate the event it upcasts", () => {
+    const event = v1("task", uuid(6001), [{ kind: "date", field: "title" }]);
+    const frozen = deepFreeze(structuredClone(event));
+    proposalCreatedV1ToV2.up(frozen);
+    expect(frozen).toEqual(event);
+  });
+});
+
 describe("defaultRegistry", () => {
   it("upcasts a stored v1 utterance to the latest version", () => {
     const v1 = envelope(utteranceV1(1));
     const latest = defaultRegistry.toLatest(v1);
     expect(latest.schemaVersion).toBe(2);
     expect(latest.payload).toEqual({ ...v1.payload, witness: "biased" });
+  });
+
+  it("upcasts a stored v1 proposal to v2, and leaves a v2 proposal as it is", () => {
+    const stored = envelope(proposal(1));
+    const latest = defaultRegistry.toLatest(stored);
+    expect(latest).toMatchObject({ schemaVersion: 2, payload: { target: { decision: "none" } } });
+    expect(latest.payload).not.toHaveProperty("targetEntityId");
+    const v2 = envelope(proposalV2(1));
+    expect(defaultRegistry.toLatest(v2)).toBe(v2);
+  });
+
+  it("validates a v2 proposal against v2, and refuses v1's shape at v2", () => {
+    const v1AtV2 = envelope({ ...proposal(1), schemaVersion: 2 });
+    expect(() => defaultRegistry.toLatest(v1AtV2)).toThrow(EventValidationError);
+    const v2AtV1 = envelope({ ...proposalV2(1), schemaVersion: 1 });
+    expect(() => defaultRegistry.toLatest(v2AtV1)).toThrow(EventValidationError);
+  });
+
+  it("fails when it loads, not on replay, if proposal.created v1 loses its upcaster", () => {
+    expect(() =>
+      createEventRegistry({ payloads: eventPayloadContracts, upcasters: [utteranceFinalV1ToV2] }),
+    ).toThrow(/proposal.created v1 has no upcaster to v2/);
+    expect(() =>
+      createEventRegistry({ payloads: eventPayloadContracts, upcasters: [proposalCreatedV1ToV2] }),
+    ).toThrow(UpcastError);
   });
 
   it("returns an event already at the latest version as is", () => {
@@ -97,6 +199,29 @@ describe("the Phase 3 event types", () => {
       turnCompleted(1, { attempts: 0.5 }),
       turnMeasured(1, { mode: "ptt" }),
       turnMeasured(1, { totalMs: -1 }),
+    ]) {
+      expect(() => defaultRegistry.toLatest(envelope(bad))).toThrow(EventValidationError);
+    }
+  });
+});
+
+describe("the Phase 4 event types", () => {
+  const bodies = [proposalFlagged(1), turnWitnessed(1)];
+
+  it.each(bodies)("$type loads at v1, its latest version", (body) => {
+    expect(defaultRegistry.latestVersion(body.type)).toBe(1);
+    const event = envelope(body);
+    expect(defaultRegistry.toLatest(event)).toBe(event);
+  });
+
+  it("validates their payloads", () => {
+    for (const bad of [
+      proposalFlagged(1, { flags: [] }),
+      proposalFlagged(1, { source: "linker" }),
+      proposalFlagged(1, { target: { decision: "linked", candidates: [] } }),
+      turnWitnessed(1, { outcome: "transcribed" }),
+      turnWitnessed(1, { conflicts: -1 }),
+      turnWitnessed(1, { reason: "cancelled" }),
     ]) {
       expect(() => defaultRegistry.toLatest(envelope(bad))).toThrow(EventValidationError);
     }

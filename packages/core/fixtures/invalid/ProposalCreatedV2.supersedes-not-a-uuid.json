@@ -1,0 +1,70 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c201",
+  "type": "task",
+  "target": {
+    "decision": "linked",
+    "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+    "kind": "company",
+    "basis": "sound",
+    "p": 0.91,
+    "mention": {
+      "quote": "Akme Dynamics",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [29, 42],
+        "audioMs": [2310, 3120],
+        "confidence": 0.71
+      }
+    },
+    "company": null,
+    "candidates": [
+      {
+        "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+        "p": 0.91
+      },
+      {
+        "entityId": "01a0f831-ac10-7b3e-8d4f-0a1b2c3d4e5f",
+        "p": 0.06
+      }
+    ]
+  },
+  "fields": {
+    "title": {
+      "value": "Send the revised quote",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [47, 69],
+        "audioMs": [3400, 4800],
+        "confidence": 0.93
+      }
+    },
+    "dueDate": {
+      "value": "2026-11-13",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [70, 81],
+        "audioMs": [4800, 5400],
+        "confidence": 0.9
+      },
+      "norm": {
+        "llmValue": "2026-11-12"
+      }
+    }
+  },
+  "riskFlags": [
+    {
+      "kind": "link_uncertain",
+      "field": "target"
+    },
+    {
+      "kind": "date",
+      "field": "dueDate"
+    },
+    {
+      "kind": "value_mismatch",
+      "field": "dueDate"
+    }
+  ],
+  "supersedes": "p-7",
+  "linker": "linker.v1"
+}

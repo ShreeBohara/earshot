@@ -1,0 +1,33 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c207",
+  "type": "note",
+  "target": {
+    "decision": "none",
+    "entityId": null,
+    "kind": "company",
+    "basis": null,
+    "p": null,
+    "mention": null,
+    "company": null,
+    "candidates": []
+  },
+  "fields": {
+    "body": {
+      "value": "They liked the demo.",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [0, 20],
+        "audioMs": [1200, 2500],
+        "confidence": 0.94
+      }
+    }
+  },
+  "riskFlags": [
+    {
+      "kind": "unsupported",
+      "field": "target"
+    }
+  ],
+  "supersedes": null,
+  "linker": "linker.v1"
+}

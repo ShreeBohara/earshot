@@ -1,0 +1,43 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c201",
+  "type": "task",
+  "fields": {
+    "title": {
+      "value": "Send the revised quote",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [47, 69],
+        "audioMs": [3400, 4800],
+        "confidence": 0.93
+      }
+    },
+    "dueDate": {
+      "value": "2026-11-13",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [70, 81],
+        "audioMs": [4800, 5400],
+        "confidence": 0.9
+      },
+      "norm": {
+        "llmValue": "2026-11-12"
+      }
+    }
+  },
+  "riskFlags": [
+    {
+      "kind": "link_uncertain",
+      "field": "target"
+    },
+    {
+      "kind": "date",
+      "field": "dueDate"
+    },
+    {
+      "kind": "value_mismatch",
+      "field": "dueDate"
+    }
+  ],
+  "supersedes": null,
+  "linker": "linker.v1"
+}

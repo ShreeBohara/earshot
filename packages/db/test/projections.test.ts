@@ -5,10 +5,13 @@ import {
   draft,
   ended,
   proposal,
+  proposalFlagged,
+  proposalV2,
   readFixture,
   review,
   SESSION_ID,
   started,
+  turnWitnessed,
   utterance,
   uuid,
 } from "@earshot/events/testing";
@@ -153,12 +156,14 @@ function readProjections(db: Db, sessionId: string) {
         proposalId: row.id,
         type: row.type,
         targetEntityId: row.targetEntityId,
+        target: row.target,
         status: row.status,
         fields: row.fields,
         riskFlags: row.riskFlags.map((flag) => {
           const [kind, field] = flag.split(":");
           return field === undefined ? { kind } : { kind, field };
         }),
+        conflicts: row.conflicts,
         seq: row.seq,
         ts: row.createdAt.toISOString(),
         review:
@@ -353,6 +358,129 @@ describe("rebuildProjections", () => {
     });
     await expect(failing).rejects.toBeInstanceOf(ProjectionError);
     expect(await new PgEventStore(db, A).read(SESSION_ID)).toHaveLength(2);
+  });
+});
+
+describe("flushing Phase 4 events: v2 proposals, witness flags, and downgrades", () => {
+  /** A CRM record in A's mirror that v2 proposals link to: `uuid(6001)`, as the builders use. */
+  const LINKED = uuid(6001);
+  const downgrade = proposalFlagged(1, {
+    target: {
+      decision: "ask",
+      candidates: [
+        { entityId: uuid(6003), p: 0.55 },
+        { entityId: LINKED, p: 0.35 },
+        { entityId: null, p: 0.1 },
+      ],
+    },
+  });
+
+  /** One flush, as `SessionDO`'s consumer runs it: append a batch and rebuild, in one transaction. */
+  const flush = (db: Db, expectedLastSeq: number, batch: Parameters<typeof appendEvents>[3]) =>
+    withTenant(db, A, async (tx) => {
+      await appendEvents(tx, SESSION_ID, expectedLastSeq, batch);
+      return rebuildProjections(tx, SESSION_ID);
+    });
+
+  async function withLinkedEntity(): Promise<Db> {
+    const db = await fresh();
+    await db.insert(crmEntities).values({
+      id: LINKED,
+      workspaceId: A.workspaceId,
+      kind: "company",
+      externalId: "c-akme",
+      name: "Acme Dynamics",
+    });
+    return db;
+  }
+
+  it("writes each v2 target, its entity id, and its target flags", async () => {
+    const db = await withLinkedEntity();
+    const asked = { decision: "ask", entityId: null, basis: null, p: 0.48 };
+    const projections = await flush(db, NO_EVENTS, [
+      draft(1, started()),
+      draft(2, utterance(1)),
+      draft(3, proposalV2(1)),
+      draft(4, proposalV2(2, asked)),
+    ]);
+    const rows = (await rowsOf(db, SESSION_ID)).proposals;
+    expect(rows.map((row) => [row.targetEntityId, row.riskFlags, row.conflicts])).toEqual([
+      [LINKED, ["link_uncertain:target"], []],
+      [null, ["link_uncertain:target"], []],
+    ]);
+    expect(rows.map((row) => row.target)).toEqual([
+      proposalV2(1).payload.target,
+      { ...(proposalV2(1).payload.target as object), ...asked },
+    ]);
+    expect((await readProjections(db, SESSION_ID)).proposals).toEqual(projections.proposals);
+  });
+
+  it("downgrades a linked target in a later flush, with the witness's flag and conflict", async () => {
+    const db = await withLinkedEntity();
+    await flush(db, NO_EVENTS, [
+      draft(1, started()),
+      draft(2, utterance(1)),
+      draft(3, proposalV2(1)),
+    ]);
+    const projections = await flush(db, 2, [
+      draft(4, utterance(2, "Met Dana Li at Atmo.", "unbiased")),
+      draft(5, downgrade),
+      draft(6, turnWitnessed(1)),
+    ]);
+
+    const [row] = (await rowsOf(db, SESSION_ID)).proposals;
+    expect(row).toMatchObject({
+      targetEntityId: null,
+      target: {
+        decision: "ask",
+        entityId: null,
+        candidates: [
+          { entityId: LINKED, p: 0.35 },
+          { entityId: uuid(6003), p: 0.55 },
+          { entityId: null, p: 0.1 },
+        ],
+      },
+      riskFlags: ["link_uncertain:target", "witness_conflict:target"],
+      conflicts: [proposalFlagged(1).payload.conflict],
+      status: "proposed",
+    });
+    const witnesses = (await rowsOf(db, SESSION_ID)).utterances.map((u) => u.witness);
+    expect(witnesses).toEqual(["biased", "unbiased"]);
+    expect((await readProjections(db, SESSION_ID)).proposals).toEqual(projections.proposals);
+  });
+
+  it("fills a pre-Phase 4 row's empty target from the log, upcasting v1", async () => {
+    const db = await fresh();
+    await rebuild(db, demoSessionId);
+    // Migration 0012 leaves `target` null on the rows it finds, until the next rebuild.
+    await db.update(proposals).set({ target: null }).where(eq(proposals.sessionId, demoSessionId));
+    await rebuild(db, demoSessionId);
+    const rows = (await rowsOf(db, demoSessionId)).proposals;
+    expect(rows.map((row) => (row.target as { decision: string } | null)?.decision)).toEqual([
+      "new",
+      "linked",
+      "linked",
+      "linked",
+      "linked",
+    ]);
+    expect(await readProjections(db, demoSessionId)).toEqual(snapshot);
+  });
+
+  it("rolls back a flush whose downgrade doesn't list the target it replaces", async () => {
+    const db = await withLinkedEntity();
+    await flush(db, NO_EVENTS, [
+      draft(1, started()),
+      draft(2, utterance(1)),
+      draft(3, proposalV2(1)),
+    ]);
+    const unlisted = proposalFlagged(1, {
+      target: { decision: "ask", candidates: [{ entityId: uuid(6003), p: 0.6 }] },
+    });
+    await expect(flush(db, 2, [draft(4, unlisted)])).rejects.toBeInstanceOf(ProjectionError);
+    expect(await new PgEventStore(db, A).read(SESSION_ID)).toHaveLength(3);
+    expect((await rowsOf(db, SESSION_ID)).proposals.map((row) => row.targetEntityId)).toEqual([
+      LINKED,
+    ]);
   });
 });
 
