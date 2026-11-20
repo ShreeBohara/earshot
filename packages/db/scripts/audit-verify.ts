@@ -1,21 +1,29 @@
 // Checks an account export's audit chains and checkpoints offline (docs/adr/0033): the links, the
-// hashes over the canonical texts, that each text says what its row says, and every signature.
+// hashes over the canonical texts, that each text says what its row says, every signature, and
+// that every entry is signed.
 //
 //   pnpm --filter @earshot/db db:audit-verify <export.json> [--keys <keys.json>]
+//     [--allow-unsigned-tail] [--allow-development-key]
+//
+// Exit codes: 0 when everything verifies and every entry is signed (it prints "OK" then, and only
+// then); 2 when --allow-unsigned-tail accepts entries after the last signed checkpoint and the
+// chain is otherwise intact; 1 for anything else.
 //
 // By default the public keys come from the export itself. For a check that doesn't trust the file
 // for its own keys, save `GET /api/audit/keys` (its `{ "keys": [...] }`) and pass it with --keys.
-// It reads the files and prints counts, seqs, and ids; it connects to nothing and needs no secret.
-// Relative paths are resolved against the directory pnpm was run from.
-
+// Checkpoints signed with the development key don't count unless --allow-development-key says
+// so: anyone can make them. It reads the files and prints counts, seqs, UUIDs, and key ids, with
+// every string from a file escaped; it connects to nothing and needs no secret. Relative paths are
+// resolved against the directory pnpm was run from.
 import { realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AuditPublicKey } from "@earshot/keys/server";
-import { type AuditVerification, verifyAuditExport } from "../src/audit-chain";
+import { type AuditPublicKey, isAuditPublicKey } from "@earshot/keys/server";
+import { type AuditVerification, escapeControls, verifyAuditExport } from "../src/audit-chain";
 
-const USAGE = "Usage: pnpm --filter @earshot/db db:audit-verify <export.json> [--keys <keys.json>]";
+const USAGE =
+  "Usage: pnpm --filter @earshot/db db:audit-verify <export.json> [--keys <keys.json>] [--allow-unsigned-tail] [--allow-development-key]";
 
 export interface AuditVerifyCli {
   readonly argv: readonly string[];
@@ -25,16 +33,25 @@ export interface AuditVerifyCli {
   readonly err: (line: string) => void;
 }
 
-function count(n: number, noun: string): string {
-  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+type Args = {
+  file: string;
+  keys?: string;
+  allowUnsignedTail: boolean;
+  allowDevelopmentKey: boolean;
+};
+
+function count(n: number, noun: string, plural = `${noun}s`): string {
+  return `${n} ${n === 1 ? noun : plural}`;
 }
 
-/** The export's path and the keys file's, or a reason the arguments don't make sense. */
-function parseArgs(argv: readonly string[]): { file: string; keys?: string } | string {
+/** The arguments, or a reason they don't make sense. Arguments are never echoed. */
+function parseArgs(argv: readonly string[]): Args | string {
   // pnpm may pass a bare "--" through.
   const args = argv.filter((arg) => arg !== "--");
   let file: string | undefined;
   let keys: string | undefined;
+  let allowUnsignedTail = false;
+  let allowDevelopmentKey = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i] ?? "";
     if (arg === "--keys") {
@@ -42,6 +59,10 @@ function parseArgs(argv: readonly string[]): { file: string; keys?: string } | s
       if (!next || next.startsWith("--")) return "--keys needs a file.";
       keys = next;
       i++;
+    } else if (arg === "--allow-unsigned-tail") {
+      allowUnsignedTail = true;
+    } else if (arg === "--allow-development-key") {
+      allowDevelopmentKey = true;
     } else if (arg.startsWith("--")) {
       return "Unknown option.";
     } else if (file === undefined) {
@@ -51,7 +72,12 @@ function parseArgs(argv: readonly string[]): { file: string; keys?: string } | s
     }
   }
   if (!file) return "Give the export file to check.";
-  return keys === undefined ? { file } : { file, keys };
+  return {
+    file,
+    ...(keys === undefined ? {} : { keys }),
+    allowUnsignedTail,
+    allowDevelopmentKey,
+  };
 }
 
 function parseKeys(text: string): AuditPublicKey[] | string {
@@ -69,26 +95,33 @@ function parseKeys(text: string): AuditPublicKey[] | string {
   if (!Array.isArray(list)) {
     return 'The keys file must hold { "keys": [...] }, as /api/audit/keys answers, or a list of keys.';
   }
-  return list as AuditPublicKey[];
+  if (!list.every(isAuditPublicKey)) {
+    return "The keys file holds something other than well-formed public keys.";
+  }
+  return list;
 }
 
-function report(result: AuditVerification, out: (line: string) => void): void {
+/** One line per workspace. Every string from the file goes through escapeControls. */
+function report(result: AuditVerification, args: Args, out: (line: string) => void): void {
   for (const workspace of result.workspaces) {
+    const id = escapeControls(workspace.workspaceId);
     const head = workspace.head ? `head at seq ${workspace.head.seq}` : "no entries";
     const signed =
-      workspace.signedThrough === null
-        ? "no valid checkpoint"
-        : `signed through seq ${workspace.signedThrough}${
-            workspace.head && workspace.head.seq > workspace.signedThrough
-              ? ` (${count(workspace.head.seq - workspace.signedThrough, "later entry")} not signed yet)`
-              : ""
-          }`;
+      workspace.head === null
+        ? "nothing to sign"
+        : workspace.signedThrough === null
+          ? `no checkpoint signs it (${count(workspace.unsignedTail, "entry", "entries")} unsigned)`
+          : workspace.unsignedTail > 0
+            ? `signed through seq ${workspace.signedThrough} (${count(workspace.unsignedTail, "later entry", "later entries")} unsigned)`
+            : "signed through its head";
     out(
-      `Workspace ${workspace.workspaceId}: ${count(workspace.entries, "entry")}, ${head}; ${count(workspace.checkpoints, "checkpoint")}, ${signed}.`,
+      `Workspace ${id}: ${count(workspace.entries, "entry", "entries")}, ${head}; ${count(workspace.checkpoints, "checkpoint")}, ${signed}.`,
     );
     if (workspace.developmentSignatures > 0) {
       out(
-        `  ${count(workspace.developmentSignatures, "checkpoint")} signed with the development key, which anyone can sign with: they prove nothing.`,
+        args.allowDevelopmentKey
+          ? `  ${count(workspace.developmentSignatures, "checkpoint")} signed with the development key counted, as --allow-development-key asked; anyone can make them, so they prove nothing.`
+          : `  ${count(workspace.developmentSignatures, "checkpoint")} signed with the development key didn't count: anyone can make them. --allow-development-key counts them, for a development export.`,
       );
     }
   }
@@ -99,7 +132,11 @@ function report(result: AuditVerification, out: (line: string) => void): void {
   );
 }
 
-/** Runs the check and returns the exit code: 0 when everything verifies, 1 otherwise. */
+/**
+ * Runs the check and returns the exit code: 0 only when the result is ok (every link, hash, and
+ * signature holds and every entry is signed), 2 for an intact chain whose unsigned tail
+ * --allow-unsigned-tail accepted, 1 otherwise.
+ */
 export async function main({ argv, readText, out, err }: AuditVerifyCli): Promise<number> {
   const args = parseArgs(argv);
   if (typeof args === "string") {
@@ -111,8 +148,7 @@ export async function main({ argv, readText, out, err }: AuditVerifyCli): Promis
   try {
     exported = JSON.parse(await readText(args.file));
   } catch (error) {
-    const reason = error instanceof SyntaxError ? "isn't JSON" : "can't be read";
-    err(`The export file ${reason}.`);
+    err(`The export file ${error instanceof SyntaxError ? "isn't JSON" : "can't be read"}.`);
     return 1;
   }
 
@@ -133,15 +169,34 @@ export async function main({ argv, readText, out, err }: AuditVerifyCli): Promis
     keys = parsed;
   }
 
-  const result = await verifyAuditExport(exported, keys);
-  report(result, out);
+  const result = await verifyAuditExport(exported, {
+    ...(keys ? { keys } : {}),
+    allowUnsignedTail: args.allowUnsignedTail,
+    allowDevelopmentKey: args.allowDevelopmentKey,
+  });
+  report(result, args, out);
   if (result.ok) {
-    out("OK: every link, hash, canonical text, and signature checks out.");
+    out(
+      "OK: every link, hash, canonical text, and signature checks out, and every entry is signed.",
+    );
     return 0;
+  }
+  if (result.problems.length === 0) {
+    // Only --allow-unsigned-tail gets here: intact, with entries no checkpoint signs.
+    out(
+      `Chain intact, ${count(result.unsignedEntries, "entry", "entries")} unsigned: every link, hash, canonical text, and signature checks out, but no checkpoint signs the newest entries, so anyone with the database could have changed or dropped them.`,
+    );
+    return 2;
   }
   err(`FAILED: ${count(result.problems.length, "problem")}.`);
   for (const problem of result.problems) {
-    err(`  ${problem.workspaceId ? `Workspace ${problem.workspaceId}: ` : ""}${problem.message}`);
+    const where = problem.workspaceId ? `Workspace ${escapeControls(problem.workspaceId)}: ` : "";
+    err(`  ${where}${escapeControls(problem.message)}`);
+  }
+  if (result.intact && result.problems.every((problem) => problem.kind === "unsigned_tail")) {
+    err(
+      "The chain is otherwise intact. For an export taken between checkpoints, --allow-unsigned-tail reports it as intact with unsigned entries instead.",
+    );
   }
   return 1;
 }

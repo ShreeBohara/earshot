@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  type AuditPublicKey,
   type AuditSigner,
   DEV_AUDIT_SIGNING_KEY,
   findSecretFragment,
@@ -24,6 +25,7 @@ import { main as auditVerify } from "../scripts/audit-verify";
 import { buildAccountExport } from "../src/account";
 import {
   AuditHeadError,
+  escapeControls,
   exportAuditChain,
   recordAudit,
   verifyAuditExport,
@@ -340,6 +342,29 @@ describe("the chain", { timeout: 120_000 }, () => {
   });
 });
 
+/**
+ * Whether printed text holds a character that steers a terminal or reorders text: C0 (other than
+ * the newlines between lines), DEL, C1, line separators, or bidi controls. Written out here, apart
+ * from escapeControls, so the test doesn't trust the code it tests.
+ */
+function hasRawControl(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code === 0x0a) continue;
+    if (
+      code < 0x20 ||
+      (code >= 0x7f && code <= 0x9f) ||
+      code === 0x2028 ||
+      code === 0x2029 ||
+      (code >= 0x202a && code <= 0x202e) ||
+      (code >= 0x2066 && code <= 0x2069)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 describe("verifying an export offline", { timeout: 120_000 }, () => {
   let template: PGlite;
   let db: Db;
@@ -359,8 +384,8 @@ describe("verifying an export offline", { timeout: 120_000 }, () => {
     await db.$client.close();
   });
 
-  /** An export with two review requests, each with its checkpoint, as the route writes it. */
-  async function exportFile(keys = [signer.publicKey]): Promise<string> {
+  /** Two review requests, each with its checkpoint, as WP3's writers will record them. */
+  async function recordReviews(reviewSigner: AuditSigner): Promise<void> {
     // The seeded checkpoint carries a placeholder signature; a real deployment's never would.
     await db.delete(auditCheckpoints);
     for (const batch of [
@@ -389,14 +414,32 @@ describe("verifying an export offline", { timeout: 120_000 }, () => {
     ]) {
       await withTenant(db, A, async (tx) => {
         const { head } = await recordAudit(tx, batch);
-        await writeCheckpoint(tx, signer, head, "review");
+        await writeCheckpoint(tx, reviewSigner, head, "review");
       });
     }
-    const exported = await buildAccountExport(db, A.userId, new Date(), { auditKeys: keys });
+  }
+
+  /**
+   * An export as the route writes it, after two review requests: signed through its head by
+   * `exportSigner` (this file's key by default; null for an export with no signing key).
+   */
+  async function exportFile(
+    options: {
+      readonly reviewSigner?: AuditSigner;
+      readonly exportSigner?: AuditSigner | null;
+      readonly keys?: AuditPublicKey[];
+    } = {},
+  ): Promise<string> {
+    await recordReviews(options.reviewSigner ?? signer);
+    const exportSigner = options.exportSigner === undefined ? signer : options.exportSigner;
+    const exported = await buildAccountExport(db, A.userId, new Date(), {
+      auditKeys: options.keys ?? [signer.publicKey],
+      ...(exportSigner ? { signer: exportSigner } : {}),
+    });
     return `${JSON.stringify(exported, null, 2)}\n`;
   }
 
-  async function run(file: string, keysFile?: string) {
+  async function run(file: string, flags: string[] = [], keysFile?: string) {
     const out: string[] = [];
     const err: string[] = [];
     const files: Record<string, string> = {
@@ -404,7 +447,7 @@ describe("verifying an export offline", { timeout: 120_000 }, () => {
       ...(keysFile ? { "keys.json": keysFile } : {}),
     };
     const code = await auditVerify({
-      argv: ["export.json", ...(keysFile ? ["--keys", "keys.json"] : [])],
+      argv: ["export.json", ...flags, ...(keysFile ? ["--keys", "keys.json"] : [])],
       readText: async (path) => {
         const text = files[path];
         if (text === undefined) throw new Error("ENOENT");
@@ -416,31 +459,95 @@ describe("verifying an export offline", { timeout: 120_000 }, () => {
     return { code, out: out.join("\n"), err: err.join("\n") };
   }
 
-  it("passes on an export: links, hashes, canonical texts, and signatures", async () => {
+  it("passes on an export signed through its head: links, hashes, canonical texts, and signatures", async () => {
     const file = await exportFile();
     const result = await verifyAuditExport(JSON.parse(file));
     expect(result.problems).toEqual([]);
-    expect(result.ok).toBe(true);
-    expect(result.keySource).toBe("export");
+    expect(result).toMatchObject({
+      ok: true,
+      intact: true,
+      unsignedEntries: 0,
+      keySource: "export",
+    });
     expect(result.workspaces).toEqual([
       {
         workspaceId: A.workspaceId,
         entries: 5, // the seeded entry, three reviews, and account.exported
-        checkpoints: 2,
+        checkpoints: 3, // two review requests and the export's own
         head: { seq: 5, entryHash: expect.stringMatching(/^[0-9a-f]{64}$/) },
-        signedThrough: 4,
+        signedThrough: 5,
+        unsignedTail: 0,
         developmentSignatures: 0,
       },
     ]);
+    const checkpoints = (
+      JSON.parse(file) as {
+        workspaces: { tables: { audit_checkpoints: { request: string; chainSeq: number }[] } }[];
+      }
+    ).workspaces[0]?.tables.audit_checkpoints;
+    expect(checkpoints?.map((c) => [c.request, c.chainSeq])).toEqual([
+      ["review", 2],
+      ["review", 4],
+      ["export", 5],
+    ]);
 
-    const run1 = await run(file);
-    expect(run1).toMatchObject({ code: 0, err: "" });
-    expect(run1.out).toContain("signed through seq 4 (1 later entry not signed yet)");
-    expect(run1.out).toContain("OK: every link, hash, canonical text, and signature checks out.");
+    const printed = await run(file);
+    expect(printed).toMatchObject({ code: 0, err: "" });
+    expect(printed.out).toContain("signed through its head");
+    expect(printed.out).toMatch(/^OK: every link, hash, canonical text, and signature checks out/m);
 
     // With the keys saved from /api/audit/keys instead of the file's own.
     const keysFile = JSON.stringify({ keys: [signer.publicKey] });
-    expect(await run(file, keysFile)).toMatchObject({ code: 0 });
+    expect(await run(file, [], keysFile)).toMatchObject({ code: 0 });
+  });
+
+  it("fails on entries no checkpoint signs; --allow-unsigned-tail says the chain is intact and exits 2", async () => {
+    // An export from a deployment with no signing key: its own entry is after the last checkpoint.
+    const file = await exportFile({ exportSigner: null });
+
+    const strict = await verifyAuditExport(JSON.parse(file));
+    expect(strict).toMatchObject({ ok: false, intact: true, unsignedEntries: 1 });
+    expect(strict.problems).toEqual([
+      expect.objectContaining({ workspaceId: A.workspaceId, kind: "unsigned_tail", seq: 5 }),
+    ]);
+    expect(strict.workspaces[0]).toMatchObject({ signedThrough: 4, unsignedTail: 1 });
+    const failed = await run(file);
+    expect(failed.code).toBe(1);
+    expect(failed.err).toContain("FAILED: 1 problem.");
+    expect(failed.err).toContain("Entry 5 isn't signed by any checkpoint");
+    expect(failed.err).toContain("--allow-unsigned-tail");
+    expect(failed.out).toContain("signed through seq 4 (1 later entry unsigned)");
+    expect(failed.out).not.toMatch(/^OK/m);
+
+    const accepted = await verifyAuditExport(JSON.parse(file), { allowUnsignedTail: true });
+    expect(accepted).toMatchObject({ ok: false, intact: true, unsignedEntries: 1, problems: [] });
+    const intact = await run(file, ["--allow-unsigned-tail"]);
+    expect(intact).toMatchObject({ code: 2, err: "" });
+    expect(intact.out).toContain("Chain intact, 1 entry unsigned");
+    expect(intact.out).not.toMatch(/^OK/m);
+
+    // Accepting an unsigned tail accepts nothing else.
+    const tampered = file.replace('"mode": "batch"', '"mode": "batcx"');
+    expect((await run(tampered, ["--allow-unsigned-tail"])).code).toBe(1);
+  });
+
+  it("counts nothing as signed in a workspace no checkpoint signs", async () => {
+    await db.delete(auditCheckpoints);
+    const exported = await buildAccountExport(db, A.userId, new Date(), {
+      auditKeys: [signer.publicKey],
+    });
+    const result = await verifyAuditExport(JSON.parse(JSON.stringify(exported)));
+    expect(result.workspaces[0]).toMatchObject({ signedThrough: null, unsignedTail: 2 });
+    expect(result.problems).toEqual([
+      expect.objectContaining({
+        kind: "unsigned_tail",
+        seq: 1,
+        message: expect.stringMatching(/^Entries 1 to 2 aren't signed/),
+      }),
+    ]);
+    expect((await run(JSON.stringify(exported))).out).toContain(
+      "no checkpoint signs it (2 entries unsigned)",
+    );
   });
 
   it("fails with one byte changed anywhere the chain or a signature covers", async () => {
@@ -499,6 +606,7 @@ describe("verifying an export offline", { timeout: 120_000 }, () => {
       const result = await run(changeOneByte(from, at, last));
       expect(result.code, what).toBe(1);
       expect(result.err, what).toMatch(/^FAILED: \d+ problems?\./);
+      expect(result.out, what).not.toMatch(/^OK/m);
     }
   });
 
@@ -507,7 +615,7 @@ describe("verifying an export offline", { timeout: 120_000 }, () => {
       workspaces: { tables: { audit_log: { chainSeq: number }[] } }[];
       audit: { keys: { retiredAt?: string }[] };
     };
-    const log = exported.workspaces[0]?.tables.audit_log ?? [];
+    expect(exported.workspaces[0]?.tables.audit_log).toHaveLength(5);
 
     const reordered = structuredClone(exported);
     const [x, y] = [
@@ -524,44 +632,151 @@ describe("verifying an export offline", { timeout: 120_000 }, () => {
       expect.arrayContaining([expect.objectContaining({ kind: "gap", seq: 2 })]),
     );
 
+    // Signatures that don't count leave the whole chain unsigned, too.
     const other = await testSigner();
     const wrongKeys = await verifyAuditExport(exported, [other.signer.publicKey]);
-    expect(new Set(wrongKeys.problems.map((p) => p.kind))).toEqual(new Set(["unknown_kid"]));
+    expect(new Set(wrongKeys.problems.map((p) => p.kind))).toEqual(
+      new Set(["unknown_kid", "unsigned_tail"]),
+    );
+    expect(wrongKeys.ok).toBe(false);
 
     const retired = structuredClone(exported);
     for (const key of retired.audit.keys) key.retiredAt = "2000-01-01T00:00:00.000Z";
     expect(new Set((await verifyAuditExport(retired)).problems.map((p) => p.kind))).toEqual(
-      new Set(["signed_after_retirement"]),
+      new Set(["signed_after_retirement", "unsigned_tail"]),
     );
-    expect(log.length).toBe(5);
   });
 
-  it("says when the development key signed, and refuses what isn't an export", async () => {
+  it("doesn't count the development key's signatures unless asked, whatever kid it's listed under", async () => {
     const devState = await loadAuditSigningKey({}, { development: true });
     if (!("signer" in devState)) throw new Error("no dev signer");
-    await db.delete(auditCheckpoints);
-    await withTenant(db, A, async (tx) => {
-      const { head } = await recordAudit(tx, [{ action: "proposal.approved" }]);
-      await writeCheckpoint(tx, devState.signer, head, "review");
-    });
-    const exported = await buildAccountExport(db, A.userId, new Date(), {
-      auditKeys: [devState.signer.publicKey],
-    });
-    const result = await verifyAuditExport(JSON.parse(JSON.stringify(exported)));
-    expect(result.ok).toBe(true);
-    expect(result.workspaces[0]?.developmentSignatures).toBe(1);
-    const printed = await run(JSON.stringify(exported));
-    expect(printed.out).toContain("signed with the development key");
+    const dev = devState.signer;
+    const file = await exportFile({ reviewSigner: dev, exportSigner: dev, keys: [dev.publicKey] });
 
-    for (const bad of [
-      null,
-      [],
-      { format: "something-else" },
-      { ...exported, audit: { form: 2, keys: [] } },
-    ]) {
-      expect((await verifyAuditExport(bad)).ok, JSON.stringify(bad).slice(0, 40)).toBe(false);
+    const strict = await verifyAuditExport(JSON.parse(file));
+    expect(strict).toMatchObject({ ok: false, intact: true, unsignedEntries: 5 });
+    expect(strict.workspaces[0]).toMatchObject({ signedThrough: null, developmentSignatures: 3 });
+    expect(strict.problems).toEqual([
+      expect.objectContaining({
+        kind: "unsigned_tail",
+        message: expect.stringContaining("the development key's don't count"),
+      }),
+    ]);
+    const failed = await run(file);
+    expect(failed.code).toBe(1);
+    expect(failed.out).toContain("3 checkpoints signed with the development key didn't count");
+
+    expect((await verifyAuditExport(JSON.parse(file), { allowDevelopmentKey: true })).ok).toBe(
+      true,
+    );
+    const counted = await run(file, ["--allow-development-key"]);
+    expect(counted.code).toBe(0);
+    expect(counted.out).toContain("counted, as --allow-development-key asked");
+    expect(counted.out).toMatch(/^OK: /m);
+
+    // Anyone holding the development key can sign under a kid of their choosing; its public half
+    // still gives it away.
+    const relabeledState = await loadAuditSigningKey(
+      {
+        EARSHOT_AUDIT_SIGNING_KEY: JSON.stringify({
+          ...(JSON.parse(DEV_AUDIT_SIGNING_KEY) as Record<string, string>),
+          kid: "audit-2026-11-20-beef",
+        }),
+      },
+      { development: true },
+    );
+    if (!("signer" in relabeledState)) throw new Error("no relabeled signer");
+    const relabeled = relabeledState.signer;
+    const disguised = await exportFile({
+      reviewSigner: relabeled,
+      exportSigner: relabeled,
+      keys: [relabeled.publicKey],
+    });
+    const caught = await verifyAuditExport(JSON.parse(disguised));
+    expect(caught.ok).toBe(false);
+    expect(caught.workspaces[0]?.developmentSignatures).toBe(3);
+  });
+
+  it("refuses what isn't an export, ids that aren't UUIDs, and malformed keys, and escapes what it prints", async () => {
+    for (const bad of [null, [], { format: "something-else" }]) {
+      expect((await verifyAuditExport(bad)).ok, JSON.stringify(bad)).toBe(false);
     }
     expect((await run("{not json")).code).toBe(1);
+
+    const file = await exportFile();
+    // Clear the screen, retitle the window, recolour (a C1 CSI), and reverse the text after it.
+    const ESCAPES = "\u001b[2J\u001b]0;pwned\u0007\u009b31m\u202e";
+    type Editable = {
+      audit: { keys: Record<string, unknown>[] };
+      workspaces: { id: string; tables: { audit_checkpoints: Record<string, unknown>[] } }[];
+    };
+    const edited = (edit: (exported: Editable) => void): string => {
+      const exported = JSON.parse(file) as Editable;
+      edit(exported);
+      return JSON.stringify(exported);
+    };
+    const checkpointAt = (exported: Editable, index: number): Record<string, unknown> => {
+      const checkpoint = exported.workspaces[0]?.tables.audit_checkpoints[index];
+      if (!checkpoint) throw new Error(`no checkpoint ${index}`);
+      return checkpoint;
+    };
+    const variants: [string, string, RegExp][] = [
+      [
+        "a workspace id",
+        edited((e) => {
+          const workspace = e.workspaces[0];
+          if (workspace) workspace.id = `${A.workspaceId}${ESCAPES}`;
+        }),
+        /A workspace's id isn't a UUID, so the file was refused\./,
+      ],
+      [
+        "a checkpoint id",
+        edited((e) => {
+          checkpointAt(e, 0).id = `x${ESCAPES}`;
+        }),
+        /A checkpoint's id isn't a UUID, so the file was refused\./,
+      ],
+      [
+        "a public key's kid",
+        edited((e) => {
+          const key = e.audit.keys[0];
+          if (key) key.kid = `audit${ESCAPES}`;
+        }),
+        /The export's audit keys aren't well-formed public keys\./,
+      ],
+      [
+        "a checkpoint's kid, which reaches a message",
+        edited((e) => {
+          checkpointAt(e, 1).kid = `audit${ESCAPES}`;
+        }),
+        /isn't among the keys/,
+      ],
+    ];
+    for (const [what, crafted, message] of variants) {
+      const printed = await run(crafted);
+      expect(printed.code, what).toBe(1);
+      expect(printed.err, what).toMatch(message);
+      expect(hasRawControl(printed.out + printed.err), what).toBe(false);
+    }
+    // The kid that reached a message is there, escaped and quoted.
+    const shown = await run(variants[3]?.[1] ?? "");
+    expect(shown.err).toContain(String.raw`"audit\u001b[2J\u001b]0;pwned\u0007\u009b31m\u202e"`);
+
+    // A keys file whose kid carries escapes is refused without echoing it.
+    const badKeys = JSON.stringify({ keys: [{ ...signer.publicKey, kid: `audit${ESCAPES}` }] });
+    const refused = await run(file, [], badKeys);
+    expect(refused.code).toBe(1);
+    expect(refused.err).toContain("well-formed public keys");
+    expect(hasRawControl(refused.out + refused.err)).toBe(false);
+  });
+
+  it("escapes control characters, line separators, and bidi marks, and nothing else", () => {
+    expect(
+      escapeControls("a\u0000b\u001b[31m\u007f\u0085\u009b\u2028\u2029\u202e\u2066\u200f"),
+    ).toBe(String.raw`a\u0000b\u001b[31m\u007f\u0085\u009b\u2028\u2029\u202e\u2066\u200f`);
+    expect(escapeControls("Ünïcødé ✓ 😀 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")).toBe(
+      "Ünïcødé ✓ 😀 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    );
   });
 
   it("refuses bad arguments without echoing them", async () => {

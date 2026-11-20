@@ -1,7 +1,7 @@
 // Account lifecycle on the owner connection: the personal workspace a user gets at sign-up, the
 // export of everything a user's workspaces hold, and the deletes that run before the user row
 // goes (docs/adr/0006, docs/adr/0019).
-import type { AuditPublicKey } from "@earshot/keys/server";
+import type { AuditPublicKey, AuditSigner } from "@earshot/keys/server";
 import {
   and,
   asc,
@@ -20,7 +20,7 @@ import type {
   PgTransaction,
   SelectedFields,
 } from "drizzle-orm/pg-core";
-import { AUDIT_FORM_VERSION, exportAuditChain } from "./audit-chain";
+import { AUDIT_FORM_VERSION, exportAuditChain, recordAudit, writeCheckpoint } from "./audit-chain";
 import {
   account,
   auditCheckpoints,
@@ -246,7 +246,10 @@ async function readTenantTables<
  * reads, so the export includes the entry and a failed export leaves none.
  *
  * `auditKeys` are the deployment's public signing keys (`/api/audit/keys`), carried in the export
- * so its chains and checkpoints verify offline.
+ * so its chains and checkpoints verify offline. With a `signer`, each workspace's head, its
+ * `account.exported` entry included, is signed as an `export` checkpoint in the same
+ * transaction, so the exported chain is signed through its end. Without one (no signing key is
+ * configured) the export still works, and its newest entries show as unsigned when checked.
  */
 export async function buildAccountExport<
   TQueryResult extends PgQueryResultHKT,
@@ -256,7 +259,10 @@ export async function buildAccountExport<
   db: AnyPgDatabase<TQueryResult, TFullSchema, TSchema>,
   userId: string,
   now: Date = new Date(),
-  { auditKeys = [] }: { readonly auditKeys?: readonly AuditPublicKey[] } = {},
+  {
+    auditKeys = [],
+    signer,
+  }: { readonly auditKeys?: readonly AuditPublicKey[]; readonly signer?: AuditSigner } = {},
 ): Promise<AccountExport> {
   const [profile] = await db
     .select({
@@ -323,14 +329,10 @@ export async function buildAccountExport<
       db,
       { userId, workspaceId: membership.workspaceId },
       async (tx) => {
-        await tx.insert(auditLog).values({
-          workspaceId: membership.workspaceId,
-          actorUserId: userId,
-          action: "account.exported",
-          subjectType: "user",
-          subjectId: userId,
-          at: now,
-        });
+        const { head } = await recordAudit(tx, [
+          { action: "account.exported", subjectType: "user", subjectId: userId },
+        ]);
+        if (signer) await writeCheckpoint(tx, signer, head, "export", now);
         return readTenantTables(tx);
       },
     );

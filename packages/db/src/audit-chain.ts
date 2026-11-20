@@ -9,8 +9,9 @@
 import {
   type AuditPublicKey,
   type AuditSigner,
-  DEV_AUDIT_KID,
   fromHex,
+  isAuditPublicKey,
+  isDevelopmentAuditKey,
   signCheckpoint,
   toBase64Url,
   toHex,
@@ -130,9 +131,10 @@ export class AuditHeadError extends Error {
 
 /**
  * Signs `head` with `signer` and stores the checkpoint, in the transaction's workspace. One per
- * review request: each web request with reviews, each flush message carrying review events, each
- * policy change. Refuses (AuditHeadError) a head from another workspace or one that doesn't match
- * the stored row, so a checkpoint never vouches for a hash the chain doesn't hold.
+ * review request (each web request with reviews, each flush message carrying review events, each
+ * policy change) and per account export. Refuses (AuditHeadError) a head from another workspace or
+ * one that doesn't match the stored row, so a checkpoint never vouches for a hash the chain
+ * doesn't hold.
  */
 export async function writeCheckpoint<
   TQueryResult extends PgQueryResultHKT,
@@ -296,7 +298,8 @@ export type AuditProblemKind =
   | "checkpoint_head"
   | "unknown_kid"
   | "bad_signature"
-  | "signed_after_retirement";
+  | "signed_after_retirement"
+  | "unsigned_tail";
 
 export interface AuditProblem {
   /** Null for a fault with the file as a whole. */
@@ -304,7 +307,10 @@ export interface AuditProblem {
   readonly seq?: number;
   readonly checkpointId?: string;
   readonly kind: AuditProblemKind;
-  /** One sentence, naming seqs and ids only, never a row's contents. */
+  /**
+   * One sentence, naming seqs, ids (checked to be UUIDs), and key ids (quoted, with controls
+   * escaped), never a row's contents.
+   */
   readonly message: string;
 }
 
@@ -314,17 +320,45 @@ export interface AuditWorkspaceReport {
   readonly checkpoints: number;
   /** The newest row, as exported. */
   readonly head: { readonly seq: number; readonly entryHash: string } | null;
-  /** The highest seq a valid checkpoint signs, or null if none does. */
+  /**
+   * The highest seq signed by a valid checkpoint that counts, or null if none does. Checkpoints
+   * signed with the development key count only with `allowDevelopmentKey`.
+   */
   readonly signedThrough: number | null;
-  /** Checkpoints signed with the committed development key, which prove nothing. */
+  /** Entries after `signedThrough` up to the head: chained, but signed by no checkpoint that counts. */
+  readonly unsignedTail: number;
+  /** Valid checkpoints signed with the development key, which anyone can make. */
   readonly developmentSignatures: number;
 }
 
+export interface AuditVerifyOptions {
+  /** The public keys to check signatures with. The export's own `audit.keys` by default. */
+  readonly keys?: readonly AuditPublicKey[];
+  /**
+   * Accept entries after the last signed checkpoint, as in an export taken between checkpoints:
+   * they're no longer problems, and the result says the chain is intact with N entries unsigned.
+   * It's still not `ok`.
+   */
+  readonly allowUnsignedTail?: boolean;
+  /** Count checkpoints signed with the committed development key, as for a development export. */
+  readonly allowDevelopmentKey?: boolean;
+}
+
 export interface AuditVerification {
+  /**
+   * True only when the chain holds and every workspace with entries is signed through its head by
+   * a valid checkpoint from a deployment key (or from the development key, if allowed). An
+   * unsigned tail is never ok, accepted or not.
+   */
   readonly ok: boolean;
+  /** Every link, hash, canonical text, and checkpoint holds, whether or not it's all signed. */
+  readonly intact: boolean;
+  /** Entries no checkpoint that counts signs, across workspaces. */
+  readonly unsignedEntries: number;
   /** Where the public keys came from: the export itself, or the caller. */
   readonly keySource: "export" | "supplied";
   readonly workspaces: readonly AuditWorkspaceReport[];
+  /** What fails the check: integrity faults, and unsigned tails unless `allowUnsignedTail`. */
   readonly problems: readonly AuditProblem[];
 }
 
@@ -333,6 +367,47 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const HEX_64 = /^[0-9a-f]{64}$/;
+/** Ids as Postgres writes them. An export's workspace and checkpoint ids must look like this. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID.test(value);
+}
+
+/** Characters that steer a terminal or reorder text: C0, DEL, C1, line separators, bidi marks. */
+function isControl(code: number): boolean {
+  return (
+    code < 0x20 ||
+    (code >= 0x7f && code <= 0x9f) ||
+    code === 0x061c ||
+    code === 0x200e ||
+    code === 0x200f ||
+    code === 0x2028 ||
+    code === 0x2029 ||
+    (code >= 0x202a && code <= 0x202e) ||
+    (code >= 0x2066 && code <= 0x2069)
+  );
+}
+
+/**
+ * `text` with every control character (C0, DEL, C1), line and paragraph separator, and
+ * bidirectional mark, embedding, override, or isolate written as `\uXXXX`. Everything an export
+ * or a keys file supplies goes through this before it's printed, so a crafted file can't move the
+ * cursor, recolour, erase, or reorder a terminal's output. Scans by code unit, with no regex.
+ */
+export function escapeControls(text: string): string {
+  let out = "";
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    out += isControl(code) ? `\\u${code.toString(16).padStart(4, "0")}` : text.charAt(i);
+  }
+  return out;
+}
+
+/** A string from a file, for a message: JSON-quoted, with every control character escaped. */
+function quoted(text: string): string {
+  return escapeControls(JSON.stringify(text));
+}
 
 /** Equality of two JSON values: objects regardless of key order, arrays in order. */
 function jsonEqual(a: unknown, b: unknown): boolean {
@@ -382,7 +457,7 @@ function isEntry(value: unknown): value is AuditEntryExport {
 function isCheckpoint(value: unknown): value is AuditCheckpointExport {
   return (
     isRecord(value) &&
-    typeof value.id === "string" &&
+    isUuid(value.id) &&
     typeof value.workspaceId === "string" &&
     Number.isSafeInteger(value.chainSeq) &&
     typeof value.entryHash === "string" &&
@@ -390,16 +465,6 @@ function isCheckpoint(value: unknown): value is AuditCheckpointExport {
     typeof value.signedAt === "string" &&
     typeof value.kid === "string" &&
     typeof value.signature === "string"
-  );
-}
-
-function isPublicKey(value: unknown): value is AuditPublicKey {
-  return (
-    isRecord(value) &&
-    typeof value.kid === "string" &&
-    value.alg === "Ed25519" &&
-    typeof value.x === "string" &&
-    (value.retiredAt === undefined || typeof value.retiredAt === "string")
   );
 }
 
@@ -427,69 +492,123 @@ function canonicalMatches(entry: AuditEntryExport): "ok" | "form" | "mismatch" {
   return jsonEqual(parsed, expected) ? "ok" : "mismatch";
 }
 
+type ExportedWorkspace = {
+  readonly id: string;
+  readonly entries: readonly unknown[];
+  readonly checkpoints: readonly unknown[];
+};
+
 /**
- * Checks an account export's audit chains and checkpoints, offline (docs/adr/0033). For each
- * workspace: seqs run from 1 with no gap or repeat; each row links to the one before
- * (`prevHash`); each `entryHash` is SHA-256 of `prevHash`'s bytes and the canonical text as
- * UTF-8; each canonical text parses to its own row's columns; and each checkpoint names a row
- * with the hash it signed and carries a valid Ed25519 signature from a key in `keys`.
- *
- * `keys` defaults to the export's own `audit.keys`. Keys saved separately from `/api/audit/keys`
- * make a stronger check: whoever could rewrite the file could rewrite the keys in it too.
- *
- * It proves the rows weren't changed by anyone without the signing key, as far as the newest
- * checkpoint; rows after it are reported as unsigned, and only an earlier export or another
- * outside copy of the head shows whether rows were dropped from the end.
+ * The export's workspaces, with ids checked before anything else reads them, or why the file is
+ * refused. Refusals name no value from the file.
  */
-export async function verifyAuditExport(
+function parseExport(
   json: unknown,
-  keys?: readonly AuditPublicKey[],
-): Promise<AuditVerification> {
-  const problems: AuditProblem[] = [];
-  const reports: AuditWorkspaceReport[] = [];
-  const fail = (problem: AuditProblem) => problems.push(problem);
-
-  const audit = isRecord(json) && isRecord(json.audit) ? json.audit : undefined;
-  const exportedKeys = Array.isArray(audit?.keys) ? audit.keys.filter(isPublicKey) : [];
-  const usedKeys = keys ?? exportedKeys;
-  const keySource = keys ? "supplied" : "export";
-
+): { workspaces: ExportedWorkspace[]; keys: AuditPublicKey[] } | AuditProblem {
+  const refuse = (kind: AuditProblemKind, message: string): AuditProblem => ({
+    workspaceId: null,
+    kind,
+    message,
+  });
   if (
     !isRecord(json) ||
     json.format !== "earshot.account-export" ||
     !Array.isArray(json.workspaces)
   ) {
-    fail({
+    return refuse("malformed", "This isn't an Earshot account export.");
+  }
+  const audit = isRecord(json.audit) ? json.audit : undefined;
+  if (audit?.form !== AUDIT_FORM_VERSION) {
+    return refuse("form", `The export's audit section isn't form ${AUDIT_FORM_VERSION}.`);
+  }
+  if (!Array.isArray(audit.keys) || !audit.keys.every(isAuditPublicKey)) {
+    return refuse("malformed", "The export's audit keys aren't well-formed public keys.");
+  }
+  const workspaces: ExportedWorkspace[] = [];
+  for (const workspace of json.workspaces) {
+    if (!isRecord(workspace) || !isUuid(workspace.id)) {
+      return refuse("malformed", "A workspace's id isn't a UUID, so the file was refused.");
+    }
+    const tables = isRecord(workspace.tables) ? workspace.tables : undefined;
+    const entries = tables?.audit_log;
+    const checkpoints = tables?.audit_checkpoints;
+    if (!Array.isArray(entries) || !Array.isArray(checkpoints)) {
+      return refuse("malformed", "A workspace lacks its audit_log or audit_checkpoints table.");
+    }
+    if (!checkpoints.every((checkpoint) => isRecord(checkpoint) && isUuid(checkpoint.id))) {
+      return refuse("malformed", "A checkpoint's id isn't a UUID, so the file was refused.");
+    }
+    workspaces.push({ id: workspace.id, entries, checkpoints });
+  }
+  return { workspaces, keys: audit.keys };
+}
+
+function entryRange(from: number, to: number): string {
+  return to > from ? `Entries ${from} to ${to} aren't` : `Entry ${from} isn't`;
+}
+
+/**
+ * Checks an account export's audit chains and checkpoints, offline (docs/adr/0033). The file must
+ * be well formed first: an Earshot export of form 1, well-formed public keys, and UUIDs for every
+ * workspace and checkpoint id; anything else is refused before it's read further. Then, per
+ * workspace: seqs run from 1 with no gap or repeat; each row links to the one before
+ * (`prevHash`); each `entryHash` is SHA-256 of `prevHash`'s bytes and the canonical text as
+ * UTF-8; each canonical text parses to its own row's columns; each checkpoint names a row with
+ * the hash it signed and carries a valid Ed25519 signature from a listed key, within that key's
+ * retirement; and the newest row is signed.
+ *
+ * `ok` holds only when every workspace with entries is signed through its head by a checkpoint
+ * that counts: one from a deployment key, or from the development key with `allowDevelopmentKey`.
+ * Entries after the last such checkpoint are an unsigned tail: anyone with the database could have
+ * changed or dropped them. Each one is a problem, unless `allowUnsignedTail` accepts an export
+ * taken between checkpoints, and then the result is intact but still not `ok`.
+ *
+ * The keys come from the export itself unless `keys` supplies them. Keys saved separately from
+ * `/api/audit/keys` make a stronger check: whoever could rewrite the file could rewrite its keys.
+ * The second argument may also be a key list, as `verifyAuditExport(json, keys)`.
+ */
+export async function verifyAuditExport(
+  json: unknown,
+  options: AuditVerifyOptions | readonly AuditPublicKey[] = {},
+): Promise<AuditVerification> {
+  const {
+    keys,
+    allowUnsignedTail = false,
+    allowDevelopmentKey = false,
+  } = Array.isArray(options)
+    ? { keys: options as readonly AuditPublicKey[] }
+    : (options as AuditVerifyOptions);
+  const keySource = keys ? "supplied" : "export";
+  const refused = (problem: AuditProblem): AuditVerification => ({
+    ok: false,
+    intact: false,
+    unsignedEntries: 0,
+    keySource,
+    workspaces: [],
+    problems: [problem],
+  });
+
+  const parsed = parseExport(json);
+  if (!("workspaces" in parsed)) return refused(parsed);
+  if (keys && !keys.every(isAuditPublicKey)) {
+    return refused({
       workspaceId: null,
       kind: "malformed",
-      message: "This isn't an Earshot account export.",
+      message: "The keys given aren't well-formed public keys.",
     });
-    return { ok: false, keySource, workspaces: reports, problems };
   }
-  if (audit?.form !== AUDIT_FORM_VERSION) {
-    fail({
-      workspaceId: null,
-      kind: "form",
-      message: `The export's audit section isn't form ${AUDIT_FORM_VERSION}.`,
-    });
-    return { ok: false, keySource, workspaces: reports, problems };
-  }
+  const usedKeys = keys ?? parsed.keys;
 
-  for (const workspace of json.workspaces) {
-    const workspaceId =
-      isRecord(workspace) && typeof workspace.id === "string" ? workspace.id : null;
-    const tables = isRecord(workspace) && isRecord(workspace.tables) ? workspace.tables : undefined;
-    const rawEntries = tables?.audit_log;
-    const rawCheckpoints = tables?.audit_checkpoints;
-    if (!workspaceId || !Array.isArray(rawEntries) || !Array.isArray(rawCheckpoints)) {
-      fail({
-        workspaceId,
-        kind: "malformed",
-        message: "A workspace is missing its audit_log or audit_checkpoints table.",
-      });
-      continue;
-    }
+  const problems: AuditProblem[] = [];
+  const tails: AuditProblem[] = [];
+  const reports: AuditWorkspaceReport[] = [];
+  const fail = (problem: AuditProblem) => problems.push(problem);
 
+  for (const {
+    id: workspaceId,
+    entries: rawEntries,
+    checkpoints: rawCheckpoints,
+  } of parsed.workspaces) {
     const entries: AuditEntryExport[] = [];
     for (const entry of rawEntries) {
       if (isEntry(entry)) entries.push(entry);
@@ -565,7 +684,8 @@ export async function verifyAuditExport(
       expected = seq + 1;
     }
 
-    // The checkpoints: each names a row with the hash it signed, under a valid signature.
+    // The checkpoints: each names a row with the hash it signed, under a valid signature from a
+    // listed key. Only those that count move signedThrough.
     let signedThrough: number | null = null;
     let developmentSignatures = 0;
     let checkpointCount = 0;
@@ -589,6 +709,14 @@ export async function verifyAuditExport(
         });
         continue;
       }
+      if (!usedKeys.some((key) => key.kid === checkpoint.kid)) {
+        fail({
+          ...at,
+          kind: "unknown_kid",
+          message: `Checkpoint ${checkpoint.id} is signed by key ${quoted(checkpoint.kid)}, which isn't among the keys.`,
+        });
+        continue;
+      }
       const verdict = await verifyCheckpoint(usedKeys, {
         workspaceId: checkpoint.workspaceId,
         seq: checkpoint.chainSeq,
@@ -598,29 +726,58 @@ export async function verifyAuditExport(
         signature: checkpoint.signature,
       });
       if (!verdict.ok) {
-        const kind = verdict.reason === "malformed" ? "bad_signature" : verdict.reason;
-        const messages: Record<typeof kind, string> = {
-          unknown_kid: `Checkpoint ${checkpoint.id} is signed by key ${JSON.stringify(checkpoint.kid)}, which isn't among the keys.`,
-          bad_signature: `Checkpoint ${checkpoint.id}'s signature doesn't verify.`,
-          signed_after_retirement: `Checkpoint ${checkpoint.id} was signed after its key was retired.`,
-        };
-        fail({ ...at, kind, message: messages[kind] });
+        fail({
+          ...at,
+          kind: verdict.reason === "signed_after_retirement" ? verdict.reason : "bad_signature",
+          message:
+            verdict.reason === "signed_after_retirement"
+              ? `Checkpoint ${checkpoint.id} was signed after its key was retired.`
+              : `Checkpoint ${checkpoint.id}'s signature doesn't verify.`,
+        });
         continue;
       }
-      if (checkpoint.kid === DEV_AUDIT_KID) developmentSignatures++;
-      signedThrough = Math.max(signedThrough ?? 0, checkpoint.chainSeq);
+      const development = isDevelopmentAuditKey(verdict.key);
+      if (development) developmentSignatures++;
+      if (!development || allowDevelopmentKey) {
+        signedThrough = Math.max(signedThrough ?? 0, checkpoint.chainSeq);
+      }
     }
 
     const last = entries.at(-1);
+    const headSeq = last?.chainSeq ?? 0;
+    const unsignedTail = Math.max(0, headSeq - (signedThrough ?? 0));
+    if (unsignedTail > 0) {
+      const from = headSeq - unsignedTail + 1;
+      tails.push({
+        workspaceId,
+        seq: from,
+        kind: "unsigned_tail",
+        message: `${entryRange(from, headSeq)} signed by any checkpoint${
+          developmentSignatures > 0 && !allowDevelopmentKey
+            ? " from a deployment key (the development key's don't count)"
+            : ""
+        }, so anyone with the database could have changed or dropped ${headSeq > from ? "them" : "it"}.`,
+      });
+    }
     reports.push({
       workspaceId,
       entries: entries.length,
       checkpoints: checkpointCount,
       head: last ? { seq: last.chainSeq, entryHash: last.entryHash } : null,
       signedThrough,
+      unsignedTail,
       developmentSignatures,
     });
   }
 
-  return { ok: problems.length === 0, keySource, workspaces: reports, problems };
+  const intact = problems.length === 0;
+  const unsignedEntries = reports.reduce((sum, report) => sum + report.unsignedTail, 0);
+  return {
+    ok: intact && unsignedEntries === 0,
+    intact,
+    unsignedEntries,
+    keySource,
+    workspaces: reports,
+    problems: allowUnsignedTail ? problems : [...problems, ...tails],
+  };
 }
