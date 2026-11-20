@@ -48,7 +48,12 @@ function compare(a: string, b: string): number {
 
 /** An in-list spelling as a stream writes it: words only, so a deal's " - " is a space. */
 function spoken(term: string): string {
-  return term.replace(/\s+-\s+/g, " ");
+  // Splitting on whitespace and dropping lone hyphens is linear; /\s+-\s+/g backtracks on long
+  // runs of spaces.
+  return term
+    .split(/\s+/)
+    .filter((word) => word !== "-")
+    .join(" ");
 }
 
 /**
