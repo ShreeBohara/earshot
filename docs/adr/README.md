@@ -32,3 +32,4 @@ Earshot records architectural decisions as short MADR files, one per decision. S
 | [0025](0025-llm-adapters-on-ai-sdk-7.md) | LLM adapters on AI SDK 7: providers built per call, per-turn keys, one batch tool, evidence by quotation, AI Gateway optional | Accepted (2026-11-15) |
 | [0026](0026-eval-harness-v0.md) | Eval harness v0: synthetic debrief scripts, Kokoro rendered in CI, Chrome's fake microphone, cassettes, and $0 CI | Proposed (2026-11-19); WP11's second half completes it |
 | [0027](0027-contracts-and-the-understanding-pipeline.md) | Contracts and the understanding pipeline: proposals name the record, a deterministic linker resolves it, and the second witness can downgrade it | Proposed (2026-11-19); Phase 4 WP8 completes it |
+| [0028](0028-entity-linking.md) | Entity linking: a fixed confusable-name set and its metrics first, then a calibrated linker that links, asks, or proposes a new record | Proposed (2026-11-19); Phase 4 WP4 and WP5 complete it |
