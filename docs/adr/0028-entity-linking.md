@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-19). Phase 4 WP3 drafted the problem and the metrics, and committed the measurement they rest on: the confusable-name set `confusable.v1`, its harness, and linker v0's baseline. The linker (WP4) and the witness threshold with gate G1a (WP5) fill in the decision. Until then, the sections on the linker are the plan in spec §4.4. Builds on ADR-0027 (contracts and the pipeline) and ADR-0026 (eval harness v0).
+Proposed (2026-11-19). Phase 4 WP3 drafted the problem and the metrics, and committed the measurement they rest on: the confusable-name set `confusable.v1`, its harness, and linker v0's baseline. WP4 (2026-11-20) wrote linker v1, fit it on the calibration split, and recorded its biased-only numbers. WP5 adds the witness threshold θ_d, refits, and runs gate G1a; until then, G1's status below is for the biased witness alone. Builds on ADR-0027 (contracts and the pipeline) and ADR-0026 (eval harness v0).
 
 ## Context and problem
 
@@ -173,16 +173,103 @@ Where v0 goes wrong:
 
 So G1 is reachable on this set, with about 3 points of slack.
 
-### The linker (WP4, to be written)
+### The linker (WP4)
 
-The plan, in spec §4.4:
+**Where it runs.** `@earshot/understanding/link`: pure TypeScript, no DOM, no Node APIs, so `SessionDO` can link in memory (WP8 wires it in). It bundles for workerd with its parameters inside; a test runs the bundle on its own.
 
-- candidates from five sources;
-- 13 features, scored by an L2 logistic regression fit on the calibration split;
-- link, ask, or new by τ_link, δ, and τ_new, chosen on calibration for a wrong-account rate of 1.5% or less and new-when-existing of 5% or less, then frozen in `link/params.v1.json` with the calibration set's hash;
-- the ablation table.
+**The API** is spec §5 WP4's, with one optional field:
 
-WP5 adds θ_d, refits on calibration, and runs the test split once, for G1a.
+```ts
+const index = buildLinkIndex(entities); // once per session, and again when the object wakes
+link(
+  mention: { text: string; kind: EntityKind | null; companyText?: string | null },
+  ctx: { index; focusEntityId: string | null; recent: readonly string[];
+         turnMentions: readonly MentionInput[]; params: LinkerParams;
+         kinds?: readonly EntityKind[] }, // the kinds the proposal type allows; all when absent
+): { decision; entityId; p; basis; candidates; features? } // features: tests and evals only
+```
+
+`kinds` carries spec §4.4's "filtered to the kinds the proposal type allows", which the spec's signature has no other way to pass. `p` is the linked record's probability; for "new", the probability no candidate claims; for "ask", the best candidate's, so the risk–coverage sweep can admit it (WP3's finding); null for "none". `candidates` holds at most 4, most likely first: the top 3 records, plus "new" (a null id) for an ask below τ_link that may be new. `basis` is "exact", "sound", or "context": context when the words alone wouldn't have linked the same record (scored again without the context features), and for a deal named only by its company (spec §4.3). `isLinkUncertain` marks links that aren't exact with p below 0.97.
+
+**The index** holds, per record:
+
+- forms: the name and aliases in matching form, and for a deal the way it's said. The CRM writes "Atmos Industrial - Onboarding package", which nobody says (WP3's finding), so a deal is indexed as its company's name or alias followed by its tail ("atmos onboarding package"), and as its company alone, for a deal named by its company;
+- per word, its Double Metaphone codes, and a key for its homophone set;
+- trigram sets, a company's initials and abbreviation aliases, how many records share each form, and the parent map;
+- the words that tell it from its sound-alike siblings (records of its kind whose name, alias, or company starts with the same sound): those not every sibling shares ("Labs" against "Logistics"; a deal's tail).
+
+It builds in about 4–8 ms for the demo CRM's 250 records in Node, around the 5 ms target (the first, cold build is the slow one).
+
+**Candidates** come from six sources, the spec's five with "shared token codes" split in two: an exact form; a shared Double Metaphone code ("Nite" and "Knight"); the homophone list ("Sean" SN and "Shawn" XN share no code, so ten items in the set depend on it; the list moved from the evals to `@earshot/understanding/names`, unchanged, so the product and the ground truth share it); pg_trgm `similarity` or `word_similarity` at 0.2 or more; initials or an abbreviation alias ("MSC", "M. S. C."); and the open account's family, for a one-word mention. They're filtered to the allowed kinds, and the top 8 by a prefilter score are kept. On calibration the gold record was among the candidates for all 199 mentions whose gold is a CRM record.
+
+**Features.** The spec's 13, as §4.4 defines them, with these readings:
+
+- `phonFull` compares the codes run together two ways (word by word, each homophone as its set's first spelling; and the words written as one, for "Yara Under Hill"), against each form and each proper prefix of its words, since a rep may stop early ("Summit Ridge").
+- `tailCover` counts a record's distinguishing words heard in the mention, splits and joins included; for a deal, its tail's words. Where siblings share every word (true homophones), every word counts.
+- `parentCtx` is signed: 1 when a company said in the turn sounds like the record's parent, falling to −1 as it sounds less like it, and 0 when no company was said. A contact at a company nobody named is evidence against it.
+- `tieCount` counts ties among candidates of the same kind.
+
+The first fits got two things wrong, and two changes fixed them. Both are departures from the spec's list:
+
+1. **A 14th feature, `rivalContext`:** a candidate tied with this one on `phonFull` has more context (the company said names its parent, it's in the open account's family, or it was linked earlier). A per-candidate model can't otherwise tell the two ways a homophone loses: as the sibling of a record context picked out, or in a group nothing separates. The first is far commoner in the set, so without the feature every member of an unseparated group scored about 0.1. "Northwind" or "MSC" alone then summed under τ_new and came out "new", a duplicate of a record the CRM has.
+2. **Spelling can't separate sound-alikes.** Among candidates tied on `phonFull`, `exact`, `trgm`, and `jw` take the group's best. This section's own premise is that a keyterm-biased stream writes whichever homophone spelling it likes. Without the change the model trusted the spelling, and linked 4 of the test split's 18 class D items, wrongly.
+
+**The model** is an L2 logistic regression fit by Newton's method (Decision 4), deterministic, λ = 1, the bias unpenalized. The penalty applies to standardized features (each column centred and scaled), and the weights are mapped back to the raw features. On the raw columns, the same λ made rare binary features pay many times more for the same effect. The fit came out underconfident: a perfect, unique exact match scored 0.906, and the grid's loosest thresholds decided 83% of the test split. The candidates' probabilities are scaled to sum to 1 when they sum past it, because they're rival answers that the model scores one at a time. "MSC" then reads 50/50 rather than 79/79.
+
+**The decision rule** is §4.4's, with one change. "New" needs the candidates' total p below τ_new, not p1 alone. With one candidate the two agree. On a tie they part: three homophones at 0.25 each have a low p1, yet the mention almost surely names one of them. Ties ask, as the spec's tests require. A deal is never new, and neither is a mention whose kind is unknown. With no candidate at all, the decision is new where it may be, and none otherwise.
+
+**The fit** (`pnpm --filter @earshot/evals linker:fit`, `src/linking/fit.ts`) reads the calibration split only; a test shows the test split can't change it:
+
+- **Classes E2 and G stay out of the model.** Their biased readings are, by construction, correct-looking links: a CRM name written exactly, or the open account's sibling. To a single-witness model they're label noise that only the second witness can explain. The threshold search counts them as asks, as an ideal witness would leave them. WP5 refits on every class with the real witness.
+- **Thresholds come from out-of-fold probabilities**: five folds, stratified by class. In-sample probabilities would set them too loose.
+- **The grid is spec §4.4's**: τ_link 0.70–0.98 by 0.02, δ 0.05–0.40 and τ_new 0.10–0.40 by 0.05, 840 points. It maximizes coverage subject to a wrong-account rate of at most 1.5% and new-when-existing of at most 5%.
+
+**Fitted** on 228 mentions, 1,401 candidate rows, 199 positive:
+
+- thresholds τ_link = 0.72, δ = 0.40, τ_new = 0.40;
+- weights: `phonFull` 12.7, `kindMatch` 6.0, `rivalContext` −5.5, `recent` 5.0, `phonHead` 3.2, `tieCount` −2.6, `trgm` 2.5, `parentCtx` 2.1, `focus` 2.1, `tailCover` 1.6, `initials` 0.9, `exact` 0.6, `aliasShared` 0.4, `jw` −0.4, and a bias of −22.8.
+
+Every one of the 840 grid points met both limits: out of fold, coverage 86.3%, 1 wrong link, and no duplicates. So coverage alone chose the thresholds, which sit at the top of δ's and τ_new's ranges and near τ_link's floor. Everything is frozen in `link/params.v1.json`, with the calibration split's SHA-256 (`155e430c…`) and the date. `linker:fit --check`, and a test, refit and compare.
+
+### Linker v1's numbers (WP4, biased witness only)
+
+Test split, 360 items. v1 has no second witness yet, so its final decisions are its biased-only ones:
+
+| | v0 | v1 | Oracle, biased only | Oracle, two witnesses |
+|---|---|---|---|---|
+| Coverage | 60.0% (216) | 93.3% (336) | 95.0% (342) | 88.3% (318) |
+| Wrong-account rate | 21.3% (46) | 5.4% (18) | 5.3% (18) | 0.0% (0) |
+| Bound (95%, one-sided) | 26.4% | 7.8% | 7.7% | 0.9% |
+| New-when-existing | 15.3% (33) | 0.0% (0) | 0.0% (0) | 0.0% (0) |
+| Accuracy on decided | 63.4% | 94.6% | 94.7% | 100% |
+| AURC | 0.213 | 0.055 | 0.053 | 0.000 |
+| ECE (links) | n/a | 0.075 | 0.060 | 0.000 |
+
+Per class, v1 decides:
+
+| A | B | C | D | E1 | E2 | F | G |
+|---|---|---|---|---|---|---|---|
+| 72/72 linked right | 79/79 linked right | 129/130 linked right | 0/18 (all ask) | 24/29 new (5 ask) | 14/14 linked wrong | 14/14 new | 4/4 linked wrong |
+
+- **Every wrong link is in E2 or G.** Those are exactly the oracle's biased-only errors, the ones only the second witness can catch. v1 makes no wrong link and no duplicate of its own.
+- **G1's thresholds, biased only:** wrong-account 5.4% fails the 2.0%; coverage 93.3% and new-when-existing 0.0% pass. G1 itself is judged after WP5.
+- **With an ideal witness**, turning every E2 and G item into an ask, v1 would decide 88.3% with no wrong link and no duplicate. The oracle's ideal is 90.0%; its real two-witness run loses 1.7 points of that to false conflicts.
+- **ECE** is 0.063 without E2 and G. The reliability table runs underconfident in the middle, at p 0.85–0.93.
+- **Calibration split** (in sample for the model): coverage 92.1%, wrong-account 5.9% (13: 10 in E2, 2 in G, and 1 E1 name linked), new-when-existing 0.0%. `baselines/linking-v1.json` records both splits.
+
+**Ablations** (spec WP4 step 8; `eval:linking --linker v1` prints them). Each variant is refit on calibration without the signal, then scored on the test split, biased only:
+
+| Variant | Removes | τ_link / δ / τ_new | Coverage | Wrong-account | Own wrong links (not E2, G) | New-when-existing |
+|---|---|---|---|---|---|---|
+| v1 | nothing | 0.72 / 0.40 / 0.40 | 93.3% | 5.4% | 0 | 0.0% |
+| Without sound | both sound sources, and every feature or tie built on codes or the homophone list | 0.76 / 0.40 / 0.20 | 44.2% | 6.3% | 5 | 3.8% |
+| Without trigrams | the trigram source, `trgm` | 0.72 / 0.40 / 0.40 | 93.3% | 5.4% | 0 | 0.0% |
+| Without context | the family source, `parentCtx`, `focus`, `recent`, `rivalContext` | 0.72 / 0.40 / 0.40 | 63.6% | 4.8% | 0 | 0.0% |
+| Without the open account | the family source, `focus` | 0.70 / 0.40 / 0.40 | 90.3% | 4.6% | 0 | 0.3% |
+
+Sound carries the linker, and context separates the homophones. Trigrams add nothing on this set: its mishearings keep their codes by construction (see Consequences). They stay, because they're cheap, and because real speech-to-text errors that change a code are what they're for. WP6's mined set will say whether that holds.
+
+**Speed.** 1,000 mentions against the 250 records take about 0.2 s in Node, including the index (target: under 1 s). That's about 0.13 ms per mention at the median and 0.5 ms at p95, against the understanding step's 20 ms budget.
 
 ## Consequences
 
@@ -192,6 +279,8 @@ WP5 adds θ_d, refits on calibration, and runs the test split once, for G1a.
 - Every label is re-derived by a test, and the file reproduces byte for byte.
 - v0's numbers say plainly why Phase 3's matcher can't stay: one decision in five is a wrong account.
 - The ceiling shows the gate is reachable, and how much the second witness is worth: 5.3 points of wrong-account rate, at about 7 points of coverage.
+- Linker v1 comes within 1.7 points of the oracle's biased-only coverage, and makes no wrong link or duplicate of its own on the test split. What's left for the second witness is exactly E2 and G.
+- The linker is testable at $0 and deterministic: the parameters are a reproducible fit, and a test refits them.
 
 **Bad, and what the simulated set can't tell**
 
@@ -206,15 +295,22 @@ WP5 adds θ_d, refits on calibration, and runs the test split once, for G1a.
   WP10's generated debriefs add disfluency and implied targets.
 - **Class G's "ask" is reachable only through the second witness.** A wrong open account with nothing else to contradict it looks the same as class C's open-account cue.
 - **The keyterm rule and its cap are copied from the web app.** If the web app changes, the simulator doesn't follow, and v1 shouldn't.
+- **The fit's limits never bound.** With E2 and G counted as asks, every grid point met the 1.5% and 5% limits on calibration. So the thresholds maximize coverage at the grid's edges (δ and τ_new at their tops, τ_link near its floor) rather than spending a risk budget. WP5's refit with the witness, and real speech in WP6, may move them.
+- **The fit uses class labels to leave E2 and G out.** That's legitimate on the calibration split, but it means v1's probabilities assume a faithful biased reading: an exact CRM name scores near 0.97 even when a snap put it there. The witness, not p, is what guards against snaps.
+- **Near-miss new names ask.** A new name one sound away from a CRM name ("Opal Strant Studios", "Owen Moran") lands at p 0.55–0.66: no link, but not "new" either. That's the safe side, and it's where real mishearings, which can change a sound, will sit too.
+- **The features lean on the set's cues.** `recent` (5.0) and `kindMatch` (6.0) weigh heavily because in the set an earlier link always decides, and the extractor's kind is always right. Real sessions will be noisier. Recalibration on real speech is Phase 8's.
+- **Three departures from spec §4.4:** a 14th feature (`rivalContext`); spelling shared among sound-alikes; and "new" on the candidates' total p rather than p1. The ablation and fixture tests pin down what each one fixes.
 
 ## More information
 
 - **Spec:** `reports/Earshot Phase 4 build spec.md`, Decisions 3 to 5, §4.4, §4.5, WP3 to WP5, and §6.
 - **Code:**
+  - `packages/understanding/src/link/` (the linker: index, candidates, features, model, decide, link, params) and `packages/understanding/src/names/homophones.ts`;
   - `packages/evals/src/channel/` (the simulator);
-  - `packages/evals/src/linking/` (schema, generator, oracle, decoys, metrics, report, gate, linkers);
-  - `packages/evals/scripts/{gen-confusable,eval-linking}.ts`.
-- **Data:** `packages/evals/linking/confusable.v1.jsonl` and `packages/evals/baselines/linking-v0.json`.
+  - `packages/evals/src/linking/` (schema, generator, oracle, decoys, metrics, report, gate, linkers, the fit, and the ablations);
+  - `packages/evals/scripts/{gen-confusable,eval-linking,fit-linker}.ts`.
+- **Data:** `packages/evals/linking/confusable.v1.jsonl`, `packages/understanding/src/link/params.v1.json`, and `packages/evals/baselines/linking-{v0,v1}.json`.
 - **Commands:**
   - `pnpm --filter @earshot/evals linking:gen` (regenerate; only for a new version);
-  - `pnpm --filter @earshot/evals eval:linking --split test` (or `calibration`, `--linker oracle`, `--check`, `--summary <file>`, `--json <file>`, `--write-baseline`).
+  - `pnpm --filter @earshot/evals linker:fit` (refit v1 on calibration; `--check` compares with the committed parameters);
+  - `pnpm --filter @earshot/evals eval:linking --split test` (or `calibration`; `--linker v1` or `oracle`; `--check`, `--summary [file]`, `--json <file>`, `--write-baseline`).
