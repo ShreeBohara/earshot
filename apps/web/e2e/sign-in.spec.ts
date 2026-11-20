@@ -18,7 +18,10 @@ for (const colorScheme of ["light", "dark"] as const) {
 
 test("an expired or reused link explains itself", async ({ page }) => {
   await page.goto("/sign-in?error=INVALID_TOKEN");
-  await expect(page.getByRole("alert")).toContainText("expired or was already used");
+  // By its words: once the page hydrates, Next's route announcer is a role="alert" too.
+  await expect(
+    page.getByRole("alert").filter({ hasText: "expired or was already used" }),
+  ).toBeVisible();
   expect(await seriousViolations(page)).toEqual([]);
 });
 
