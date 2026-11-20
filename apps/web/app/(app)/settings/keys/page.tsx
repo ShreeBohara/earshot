@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DeviceKeysPanel, DeviceKeysProvider } from "@/components/keys/device-keys";
+import { HomeScreenHint } from "@/components/keys/home-screen-hint";
 import { VaultKeysPanel } from "@/components/keys/vault-keys";
 import { SettingsSection } from "@/components/settings-section";
 import { isFreshSession } from "@/lib/auth/fresh";
@@ -42,6 +43,7 @@ export default async function KeysSettingsPage() {
             </>
           }
         >
+          <HomeScreenHint />
           <DeviceKeysPanel />
         </SettingsSection>
 

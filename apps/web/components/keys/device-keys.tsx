@@ -20,6 +20,7 @@ import {
 } from "react";
 import { formatDate, formatRelative } from "@/lib/format";
 import { checkKey } from "@/lib/keys/client";
+import { requestPersistenceOnce } from "@/lib/keys/device-storage";
 import { describeProblem } from "@/lib/keys/reasons";
 import type { KeyProblem } from "@/lib/keys/types";
 import {
@@ -106,6 +107,8 @@ export function DeviceKeysProvider({ children }: { children: ReactNode }) {
         if (!store) return false;
         try {
           await store.put(provider, label, key);
+          // A key is kept on this device now: ask the browser, once, to keep the site's storage.
+          void requestPersistenceOnce();
           await store.markValidated(provider, label);
           await refresh(store);
           return true;
