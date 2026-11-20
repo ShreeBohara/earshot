@@ -10,7 +10,10 @@
 @import "@earshot/tokens/tokens.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-@source "../../../apps/**/*.{ts,tsx}";
+/* The web app's components, for Storybook (the app's own build finds them by itself). From
+ * src/styles/, the repository's apps/ is four levels up; three pointed at packages/apps, which
+ * doesn't exist, so classes only the web app used went missing from its stories. */
+@source "../../../../apps/web/{app,components,lib}/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 
 @theme inline {
