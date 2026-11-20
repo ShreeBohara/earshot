@@ -8,7 +8,8 @@ import { signInAsNewUser } from "../support/sign-in";
 export const CARDS = {
   /** A question: Dana Li (48%), Dana Lee (41%), or a new record. Loud. */
   dana: "Contact · Ask: Dana Li, Dana Lee, or a new record?",
-  pierAmount: "Deal update · Pier Logistics - Expansion",
+  /** Linked in context, below 0.97: quiet, with the name note beside the record. */
+  pierAmount: "Deal update · Pier Logistics - Expansion, matched in context",
   pierTask: "Task · Pier Logistics",
   danaLee: "Contact · Dana Lee",
   acmeStage: "Deal update · Acme Dynamics - Expansion",
