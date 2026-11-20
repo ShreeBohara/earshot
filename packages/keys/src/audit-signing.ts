@@ -40,11 +40,27 @@ export const DEV_AUDIT_SIGNING_KEY = JSON.stringify({
 const DEV_AUDIT_X = "nUcmyW3nIkJwBDLwcrjjGoh0BeaNfV6zifT2u4vcMyA";
 
 /**
- * Whether a public key is the development key, by its public half or its reserved id. A
- * verifier counts its signatures as unsigned by default: anyone can make them, under any kid.
+ * Whether a public key is the development key, by its reserved id or by its public half's
+ * decoded bytes, never its text: base64url has more than one spelling of the same 32 bytes (the
+ * last character's unused bits), so a string comparison would let a re-spelled copy of this
+ * publicly known key pass as a deployment's. A verifier counts its signatures as unsigned by
+ * default: anyone can make them, under any kid.
  */
 export function isDevelopmentAuditKey(key: { readonly kid: string; readonly x: string }): boolean {
-  return key.x === DEV_AUDIT_X || key.kid === DEV_AUDIT_KID;
+  if (key.kid === DEV_AUDIT_KID) return true;
+  let bytes: Bytes;
+  try {
+    bytes = fromBase64Url(key.x);
+  } catch {
+    return false;
+  }
+  return sameBytes(bytes, fromBase64Url(DEV_AUDIT_X));
+}
+
+function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
 }
 
 /** A key id: letters, digits, `.`, `_`, and `-`, at most 64 characters, starting alphanumeric. */
@@ -84,6 +100,21 @@ export function fromBase64Url(value: string): Bytes {
   const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
   const binary = atob(padded);
   return Uint8Array.from(binary, (char) => char.charCodeAt(0)) as Bytes;
+}
+
+/**
+ * Whether `value` is 32 bytes in canonical base64url: 43 characters, no padding, and the last
+ * character's unused bits zero, so it's the one spelling `toBase64Url` writes for those bytes.
+ * Every key Earshot reads (the signing secret's `d` and `x`, retired keys, keys in a file) must
+ * pass, so one key can't be listed under two spellings.
+ */
+export function isCanonicalKey32(value: string): boolean {
+  if (!KEY_32.test(value)) return false;
+  try {
+    return toBase64Url(fromBase64Url(value)) === value;
+  } catch {
+    return false;
+  }
 }
 
 /** Lowercase hex. */
@@ -172,9 +203,14 @@ function parsePrivateJwk(raw: string): PrivateJwk {
     );
   }
   const { d, x, kid } = value;
-  if (typeof d !== "string" || !KEY_32.test(d) || typeof x !== "string" || !KEY_32.test(x)) {
+  if (
+    typeof d !== "string" ||
+    !isCanonicalKey32(d) ||
+    typeof x !== "string" ||
+    !isCanonicalKey32(x)
+  ) {
     throw new AuditKeyError(
-      `${AUDIT_SIGNING_KEY_ENV} must hold "d" and "x", each 32 bytes in base64url.`,
+      `${AUDIT_SIGNING_KEY_ENV} must hold "d" and "x", each 32 bytes in canonical base64url.`,
     );
   }
   if (typeof kid !== "string" || !KID.test(kid)) {
@@ -258,7 +294,7 @@ export async function loadAuditSigningKey(
       };
     }
     const jwk = parsePrivateJwk(raw);
-    const isDev = jwk.x === DEV_AUDIT_X;
+    const isDev = isDevelopmentAuditKey(jwk);
     if (isDev && !development) {
       throw new AuditKeyError(
         `${AUDIT_SIGNING_KEY_ENV} is the development-only key, which anyone can sign with; generate a new one (pnpm --filter @earshot/keys audit-key:new).`,
@@ -325,7 +361,7 @@ export function parseRetiredAuditKeys(raw: string | undefined): AuditPublicKey[]
       entry.kty !== "OKP" ||
       entry.crv !== "Ed25519" ||
       typeof entry.x !== "string" ||
-      !KEY_32.test(entry.x) ||
+      !isCanonicalKey32(entry.x) ||
       typeof entry.kid !== "string" ||
       !KID.test(entry.kid)
     ) {
@@ -369,7 +405,7 @@ export function isAuditPublicKey(value: unknown): value is AuditPublicKey {
     KID.test(value.kid) &&
     value.alg === AUDIT_SIGNING_ALG &&
     typeof value.x === "string" &&
-    KEY_32.test(value.x) &&
+    isCanonicalKey32(value.x) &&
     (value.status === "active" || value.status === "retired") &&
     (value.retiredAt === undefined ||
       (typeof value.retiredAt === "string" && !Number.isNaN(Date.parse(value.retiredAt)))) &&

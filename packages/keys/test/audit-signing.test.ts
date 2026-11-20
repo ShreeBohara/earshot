@@ -13,6 +13,7 @@ import {
   fromHex,
   generateAuditSigningKey,
   isAuditPublicKey,
+  isCanonicalKey32,
   isDevelopmentAuditKey,
   loadAuditSigningKey,
   parseRetiredAuditKeys,
@@ -32,6 +33,17 @@ async function testKey(now = AT) {
   const key = await generateAuditSigningKey(now);
   const d = (JSON.parse(key.secret) as { d: string }).d;
   return { ...key, d };
+}
+
+/**
+ * The same 32 bytes under another base64url spelling: a 43-character value carries 2 unused bits
+ * in its last character, and decoders ignore them, so flipping the lowest one changes the text
+ * and not the key.
+ */
+function respell(canonical: string): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const last = alphabet.indexOf(canonical.charAt(canonical.length - 1));
+  return canonical.slice(0, -1) + alphabet.charAt(last ^ 1);
 }
 
 async function signerOf(state: AuditSigningState) {
@@ -113,6 +125,41 @@ describe("loadAuditSigningKey", () => {
         )
       ).status,
     ).toBe("development");
+  });
+
+  it("refuses the development key re-spelled under another kid, outside development", async () => {
+    const dev = JSON.parse(DEV_AUDIT_SIGNING_KEY) as { d: string; x: string };
+    expect(fromBase64Url(respell(dev.x))).toEqual(fromBase64Url(dev.x));
+    expect(fromBase64Url(respell(dev.d))).toEqual(fromBase64Url(dev.d));
+    for (const secret of [
+      { x: respell(dev.x), d: dev.d },
+      { x: dev.x, d: respell(dev.d) },
+      { x: respell(dev.x), d: respell(dev.d) },
+    ]) {
+      const state = await loadAuditSigningKey(
+        {
+          EARSHOT_AUDIT_SIGNING_KEY: JSON.stringify({
+            kty: "OKP",
+            crv: "Ed25519",
+            ...secret,
+            kid: "audit-2026-11-20-beef",
+          }),
+        },
+        { development: false },
+      );
+      expect(state.status, JSON.stringify(secret)).toBe("invalid");
+    }
+    // A deployment key re-spelled is refused too: one key, one spelling.
+    const key = await testKey();
+    const jwk = JSON.parse(key.secret) as { d: string; x: string; kid: string };
+    const respelled = await loadAuditSigningKey(
+      { EARSHOT_AUDIT_SIGNING_KEY: JSON.stringify({ ...jwk, x: respell(jwk.x) }) },
+      { development: false },
+    );
+    expect(respelled).toEqual({
+      status: "invalid",
+      message: expect.stringContaining("canonical base64url"),
+    });
   });
 
   it("refuses malformed values without quoting them", async () => {
@@ -398,6 +445,30 @@ describe("public keys from a file", () => {
       true,
     );
     expect(isDevelopmentAuditKey({ kid: key.kid, x: JSON.parse(key.publicJwk).x })).toBe(false);
+  });
+
+  it("name the development key by its bytes, so another spelling under another kid can't pass as a deployment's", async () => {
+    const dev = JSON.parse(DEV_AUDIT_SIGNING_KEY) as { x: string };
+    const respelled = respell(dev.x);
+    expect(respelled).not.toBe(dev.x);
+    expect(isDevelopmentAuditKey({ kid: "audit-2026-11-20-beef", x: respelled })).toBe(true);
+    // And a file can't list it that way at all: every x must be canonical.
+    const listed = { kid: "audit-2026-11-20-beef", alg: "Ed25519", x: respelled, status: "active" };
+    expect(isAuditPublicKey(listed)).toBe(false);
+    expect(isAuditPublicKey({ ...listed, x: dev.x })).toBe(true);
+  });
+});
+
+describe("isCanonicalKey32", () => {
+  it("accepts only the one spelling toBase64Url writes for 32 bytes", () => {
+    const bytes = new Uint8Array(32).map((_, i) => (i * 37 + 11) & 0xff);
+    const canonical = toBase64Url(bytes);
+    expect(isCanonicalKey32(canonical)).toBe(true);
+    expect(isCanonicalKey32(respell(canonical))).toBe(false);
+    expect(isCanonicalKey32(`${canonical}=`)).toBe(false);
+    expect(isCanonicalKey32(canonical.slice(0, -1))).toBe(false);
+    expect(isCanonicalKey32(canonical.replace(/^./, "+"))).toBe(false);
+    expect(isCanonicalKey32(toBase64Url(new Uint8Array(31)))).toBe(false);
   });
 });
 
