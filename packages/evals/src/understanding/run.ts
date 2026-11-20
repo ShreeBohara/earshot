@@ -22,7 +22,9 @@ import type {
   LlmProvider,
   ProposalCreatedV2,
   ProposalFlaggedV1,
+  TurnCompletedV1,
   TurnOutcome,
+  UsageRecordedV1,
   UtteranceFinalV2,
 } from "@earshot/core";
 import { evalSession, evalTurnId } from "../generate";
@@ -54,6 +56,12 @@ export interface TurnRun {
   readonly outcome?: TurnOutcome;
   /** Why the extraction failed, as fixed codes; null when it didn't. Every run sets it. */
   readonly failure?: { readonly code: ExtractionFailure; readonly detail: string } | null;
+  /**
+   * `turn.completed` as SessionDO appends it, and the turn's `usage.recorded` (null when no call
+   * reported tokens). Every run sets them; the pilot set's logs are built from them (Phase 5 WP7).
+   */
+  readonly completed?: TurnCompletedV1;
+  readonly usage?: UsageRecordedV1 | null;
 }
 
 export interface ScriptRun {
@@ -164,6 +172,8 @@ export async function runScriptWith(
       misses: (options.misses?.() ?? 0) - missesBefore,
       outcome: result.completed.outcome,
       failure: result.failure,
+      completed: result.completed,
+      usage: result.usage,
     };
     turns.push(turn);
     options.onTurn?.(turn, index);
@@ -172,16 +182,25 @@ export async function runScriptWith(
   return { script, provider: inner.provider, turns };
 }
 
-/** Runs one script on one provider's understanding cassette, at $0. */
+/**
+ * Runs one script on one provider's understanding cassette, at $0. `now` is the extractor's clock
+ * for its latency: the wall clock unless given, so the pilot set's builder passes a fixed one and
+ * its logs come out the same byte for byte (Phase 5 WP7).
+ */
 export function runScript(
   provider: LlmProvider,
   script: DebriefScript,
   cassette: Cassette,
   labels: ErrorLabels,
+  options: { readonly now?: () => number } = {},
 ): Promise<ScriptRun> {
   const fetch = createCassetteFetch(cassette);
   return runScriptWith(script, {
-    extractor: createProposalExtractor({ provider, fetch: fetch as typeof globalThis.fetch }),
+    extractor: createProposalExtractor({
+      provider,
+      fetch: fetch as typeof globalThis.fetch,
+      ...(options.now ? { now: options.now } : {}),
+    }),
     apiKey: SCENARIO_API_KEY,
     // The cassette's drafts are the ground truth with its seeded errors, by construction.
     drafts: (index) => understandingDrafts(script, index, labels),

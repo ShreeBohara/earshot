@@ -20,11 +20,14 @@ export function InboxShortcutsDialog({
   open,
   onOpenChange,
   shortcuts,
+  settingsLink = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Whether this device has them on. */
   shortcuts: boolean;
+  /** Whether to point to Settings → Review: not on /pilot, which no one signs in to (WP7). */
+  settingsLink?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,16 +57,18 @@ export function InboxShortcutsDialog({
             Using NVDA? Its browse mode keeps letters and numbers for itself. Press NVDA+Space to
             switch to focus mode so these keys reach the inbox, or Tab to each card’s buttons.
           </p>
-          <p>
-            Turn single-key shortcuts {shortcuts ? "off" : "on"} in{" "}
-            <CaptureLink
-              href="/settings/review"
-              className="rounded-sm text-foreground underline underline-offset-4 outline-none focus-visible:focus-ring"
-            >
-              Settings → Review
-            </CaptureLink>
-            .
-          </p>
+          {settingsLink ? (
+            <p>
+              Turn single-key shortcuts {shortcuts ? "off" : "on"} in{" "}
+              <CaptureLink
+                href="/settings/review"
+                className="rounded-sm text-foreground underline underline-offset-4 outline-none focus-visible:focus-ring"
+              >
+                Settings → Review
+              </CaptureLink>
+              .
+            </p>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

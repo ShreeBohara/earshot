@@ -79,6 +79,11 @@ export interface ProposalCardProps {
   cardRef: Ref<HTMLElement>;
   /** Base UI's menu returns focus to its trigger; the page says when focus has moved on instead. */
   menuFinalFocus: () => boolean;
+  /**
+   * A line saying why the card has no audio to play, where none ever exists: the pilot's written
+   * debriefs (WP7). Evidence clips (WP9) bring the other cases.
+   */
+  audioNote?: string;
 }
 
 function ActionKey({ shortcuts, children }: { shortcuts: boolean; children: string }) {
@@ -112,6 +117,7 @@ export function ProposalCard({
   actions,
   cardRef,
   menuFinalFocus,
+  audioNote,
 }: ProposalCardProps) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -232,6 +238,12 @@ export function ProposalCard({
             </div>
           ))}
         </dl>
+      ) : null}
+
+      {audioNote && !editing ? (
+        <p className="text-muted-foreground text-xs" data-slot="no-audio">
+          {audioNote}
+        </p>
       ) : null}
 
       {model.notes.length > 0 && !editing ? (
