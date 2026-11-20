@@ -180,6 +180,8 @@ The time is the reviewer's own: the server renders it in UTC, saying so, and the
 - One region speaks, once per action; failures interrupt, nothing else does.
 - Each review carries what the pilot and Phase 6 need (`seen`, `timing`, `input`, `surface`), from one clock with fake-clock tests.
 - The page's own reviews show at once and survive refusals: the card comes back with a message, and nothing queued behind it is sent.
+- "Accept all" can't take a card the writers would refuse: its set is `checkReview`'s, tested card by card on a fixture with every tier, and the checkpoint says what stays and why before anything is written.
+- The inbox and the tray are one engine: the same keys, focus rules, messages, undo, and timings, so the tray's reviews carry what the pilot and Phase 6 need too, and a fix lands in both.
 
 **Bad**
 
@@ -195,6 +197,10 @@ The time is the reviewer's own: the server renders it in UTC, saying so, and the
 - `seen.fields[].base` is the CRM's value when the card was shown, not when the proposal was made, until WP12's history can tell them apart.
 - An undo or a reopen records zero timing.
 - Optimism means a review can be lost if the tab closes in the instant it's sent; the page asks first while anything is on its way.
+- A batch longer than one request (25 cards, or 64 KiB) isn't atomic: refused partway, the part that landed stays accepted, and the message says how many. Real debriefs make a handful of proposals, so one request holds a batch in practice.
+- The batch takes the name note's cards out too (quiet), so on the 200 debriefs about half of all proposals can be accepted together (54.2% are unmarked), and a debrief whose cards are all marked gets a disabled button.
+- The header's count is the server's at each full render, and the inbox's own while it's open; elsewhere it can lag a session that sealed since (the tray's reviews only count once sealed). The count reads every sealed debrief, where the inbox's first page reads 20.
+- After the seal the tray's reviews go to the route, which takes them once Postgres holds the seal: right after it, a review can come back "still finishing", and zero-setup development, which has no flush, never gets that far.
 
 ## More information
 
@@ -203,4 +209,5 @@ The time is the reviewer's own: the server renders it in UTC, saying so, and the
 - The metrics and gates: `packages/evals/src/understanding/{tiers,metrics,gate,report}.ts`, tested in `packages/evals/test/{tiers,understanding}.test.ts`; the baseline in `packages/evals/baselines/understanding.json`. Run `pnpm --filter @earshot/evals eval:understanding`.
 - The writers: `TIER_OF` in `apps/edge/src/session-do.ts`, `writeSessionReviews` in `packages/db/src/reviews.ts`, `apps/web/lib/reviews/routes.ts`, and `packages/voice/src/testing/fake-session-server.ts`.
 - The copy: `apps/web/lib/inbox/voice.ts` and `apps/web/lib/capture/copy.ts`, tested in `apps/web/test/inbox-voice.test.ts`; the tray in `apps/web/components/capture/proposals-tray.tsx`.
+- "Accept all", the tray, and navigation (WP6): spec decisions 3 and 7, §4.2's writers table, §4.8, and WP6. `apps/web/lib/inbox/{batch,count,count-store}.ts`, `apps/web/components/inbox/{use-review-list.ts,accept-all.tsx}`, `apps/web/components/capture/proposals-tray.tsx`, `apps/web/lib/capture/controller.ts`, and `apps/web/components/inbox-nav-link.tsx`. Tested in `apps/web/test/inbox-batch.test.ts` (the set against `checkReview` on every tier, the batch's reviews and undo, splitting and a batch refused partway, focus, copy), `apps/web/test/tray-reviews.test.ts` (the tray's sink over the in-memory SessionDO, and the hand-over at the seal), `apps/web/test/capture-controller.test.ts` (the client after `end`), `apps/web/test/inbox-load.test.ts` (the count on PGlite), stories with axe, and the e2e `apps/web/e2e/inbox/accept-all.spec.ts` and `apps/web/e2e/capture/tray-review.spec.ts`.
 - The inbox (WP5): spec decision 7, §4.8, and WP5; research sections 3 and 4. `apps/web/app/(app)/inbox/page.tsx`, `apps/web/app/api/inbox/route.ts`, `apps/web/components/inbox/`, and `apps/web/lib/inbox/{load,read,groups,card,focus,keys,clock,sinks,review,edit,time,copy}.ts`; Settings → Review in `apps/web/app/(app)/settings/review/page.tsx`. Tested in `apps/web/test/inbox.test.ts` (grouping, focus, keys, the card, the sink's rollback, the clock on a fake clock) and `apps/web/test/inbox-load.test.ts` (the loader and `GET /api/inbox` on PGlite); stories with axe in `apps/web/components/inbox/*.stories.tsx`; and the Playwright `inbox` project (`apps/web/e2e/inbox/`, in CI's `ui` job): keyboard and pointer review, the shortcuts' scope and switch, focus never on `<body>`, and axe (WCAG 2.2 AA, serious and critical) in light and dark in every state.
