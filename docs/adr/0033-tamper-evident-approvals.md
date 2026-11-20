@@ -31,7 +31,7 @@ Phase 5 lets a rep approve CRM writes from an inbox, and Phase 6 will sync what 
 
 1. `pg_advisory_xact_lock(hashtextextended('earshot.audit:' || workspace_id, 0))`: one writer per workspace until its transaction ends.
 2. Reads the workspace's head (highest `chain_seq`) as the owner, so the tenant role's RLS doesn't decide what it sees. Under `READ COMMITTED`, the read after the lock takes a fresh snapshot and sees the row the last holder committed; a writer at a stricter isolation level would collide on the unique key instead of forking the chain.
-3. Sets `chain_seq` to the head's plus 1, `prev_hash` to the head's `entry_hash` (32 zero bytes for the first row), and `at` to `now()`, overwriting whatever the insert sent.
+3. Sets `chain_seq` to the head's plus 1, `prev_hash` to the head's `entry_hash` (32 zero bytes for the first row), and `at` to `greatest(clock_timestamp(), head's at)`: the clock, read once the lock is held, and never earlier than the row before. It overwrites whatever the insert sent. So along each workspace's chain `at` never runs backwards: not for a writer that waited for the lock (the transaction's `now()` would have been its start), nor if the clock steps back.
 4. Sets `entry_hash = sha256(prev_hash || convert_to(audit_entry_canonical(NEW), 'UTF8'))`.
 
 Existing writers (the vault, the demo CRM, the account export, the vault rotation) chain without changes. Drizzle sends `DEFAULT` for the three columns (`$defaultFn(() => sql\`default\`)`), which is NULL until the trigger fills it, so inserts can leave them out and `NOT NULL` still holds.
@@ -59,9 +59,9 @@ If a later Postgres ever rendered jsonb differently, `audit_chain_verify` would 
 
 ### Checkpoints
 
-`audit_checkpoints`: `id`, `workspace_id`, `chain_seq`, `entry_hash`, `signed_at`, `kid`, `signature` (64 bytes), and `request` (`review`, `flush`, or `policy`). A tenant table with RLS (`tenant_isolation`) and only `SELECT` and `INSERT` for the app, like `audit_log`. `(workspace_id, chain_seq)` references the chain row, so even the owner can't delete a checkpointed row without deleting its checkpoint first, while deleting a workspace removes both.
+`audit_checkpoints`: `id`, `workspace_id`, `chain_seq`, `entry_hash`, `signed_at`, `kid`, `signature` (64 bytes), and `request` (`review`, `flush`, `policy`, or `export`). A tenant table with RLS (`tenant_isolation`) and only `SELECT` and `INSERT` for the app, like `audit_log`. `(workspace_id, chain_seq)` references the chain row, so even the owner can't delete a checkpointed row without deleting its checkpoint first, while deleting a workspace removes both.
 
-One checkpoint per review request: each web request with reviews and each flush message carrying review events (WP3), and each policy change (WP11). The signed text is exactly
+One checkpoint per review request: each web request with reviews and each flush message carrying review events (WP3), and each policy change (WP11). And one per account export, which the spec didn't list: the export writes its `account.exported` entry, then signs that head as an `export` checkpoint in the same transaction, so a file the rep downloads is signed through its last entry. Without it every export would end in an unsigned entry, its own, and couldn't pass the check below. With no signing key the export still downloads, unsigned at its end. The signed text is exactly
 
 ```json
 {"v":1,"wid":"<uuid>","seq":<n>,"head":"<64 hex>","ts":"<ISO, ms, Z>","kid":"<kid>"}
@@ -82,7 +82,7 @@ Writers take any session lock first, then the audit lock, and insert audit rows 
 - **The secret,** `EARSHOT_AUDIT_SIGNING_KEY`, on both Workers: a private JWK, `{"kty":"OKP","crv":"Ed25519","d":…,"x":…,"kid":"audit-2026-11-20-a1b2"}`.
 - **Importing it in workerd** (spec Appendix B, #1): workerd's WebCrypto imports an Ed25519 private JWK and signs RFC 8032's test vector to the published answer, so PKCS#8 isn't needed. Unlike Node, workerd doesn't check a JWK's `x` against its `d` on import, so `loadAuditSigningKey` signs a probe and verifies it with `x`; a mismatched key is refused before it can sign anything that `/api/audit/keys` would fail to verify.
 - **The loader,** `loadAuditSigningKey(env, { development })` in `@earshot/keys/server`, returns `configured`, `development`, `missing`, or `invalid` (with a message that names the variable, never the value). It never throws for a bad value. The key is imported non-extractable, and nothing returns, logs, or throws it. The web app's redacting logger scrubs the value whole and its `d` alone, which survives JSON escaping.
-- **Development** uses a committed key (`DEV_AUDIT_KID`, `audit-development`), as the ticket secret has a development value. The caller decides "development" the way it does for the ticket secret: `next dev` in the web app, `DEPLOY_ENV=development` in the edge Worker. Anywhere else the development key is refused as `invalid`, and `db:audit-verify` warns about checkpoints it signed, since anyone can produce them.
+- **Development** uses a committed key (`DEV_AUDIT_KID`, `audit-development`), as the ticket secret has a development value. The caller decides "development" the way it does for the ticket secret: `next dev` in the web app, `DEPLOY_ENV=development` in the edge Worker. Anywhere else the development key is refused as `invalid`. Since anyone can sign with it, `db:audit-verify` counts its checkpoints as unsigned unless asked (`--allow-development-key`), and recognizes it by its public half (`isDevelopmentAuditKey`), so listing it under another kid doesn't disguise it.
 - **The script,** `pnpm --filter @earshot/keys audit-key:new`, prints a new secret value and its public JWK, and writes no file.
 - **Public keys:** `GET /api/audit/keys` answers `{ keys: [{ kid, alg: "Ed25519", x, status, retiredAt? }] }`, without sign-in, `cache-control: public, max-age=300`. The active key comes from the secret's public half, the retired ones from the public variable `EARSHOT_AUDIT_RETIRED_KEYS`, a JSON array of public JWKs, each with an optional `retiredAt`. An entry holding a private key (`d`) is refused; then the route answers 500 and serves nothing, never a partial list.
 - **Rotation:**
@@ -95,17 +95,20 @@ Writers take any session lock first, then the audit lock, and insert audit rows 
 
 ### The export and the check
 
-`GET /api/account/export` now carries, per workspace, `tables.audit_log` as the chain in seq order (each row with `prevHash`, `entryHash`, `at` exactly as hashed, and `canonical`) and `tables.audit_checkpoints` (hashes in hex, signatures in base64url), plus a top-level `audit: { form: 1, keys }` with the public keys. A broken key configuration never blocks an export: it carries whatever public keys there are. The format version stays 1: everything added is additive.
+`GET /api/account/export` now carries, per workspace, `tables.audit_log` as the chain in seq order (each row with `prevHash`, `entryHash`, `at` exactly as hashed, and `canonical`) and `tables.audit_checkpoints` (hashes in hex, signatures in base64url), plus a top-level `audit: { form: 1, keys }` with the public keys. With a signing key, each workspace's head is signed as an `export` checkpoint (above). A broken key configuration never blocks an export: it carries whatever public keys there are. The format version stays 1: everything added is additive.
 
-`pnpm --filter @earshot/db db:audit-verify <file> [--keys <keys.json>]` (`verifyAuditExport`, pure) checks, per workspace:
+`pnpm --filter @earshot/db db:audit-verify <file> [--keys <keys.json>] [--allow-unsigned-tail] [--allow-development-key]` (`verifyAuditExport`, pure) first refuses a file that isn't well formed: an Earshot export of form 1, well-formed public keys (`isAuditPublicKey`), and UUIDs for every workspace and checkpoint id. Then it checks, per workspace:
 
 - seqs run from 1 with no gap or repeat;
 - each row links to the one before;
 - each `entryHash` is SHA-256 of `prevHash`'s bytes and the canonical text as UTF-8;
 - each canonical text parses to its own row's columns;
-- each checkpoint names a row with the hash it signed, under a valid signature from a key in the list, within that key's retirement.
+- each checkpoint names a row with the hash it signed, under a valid signature from a key in the list, within that key's retirement;
+- the head is signed: `signedThrough`, the highest seq a valid checkpoint that counts signs, reaches the newest row. Development-key checkpoints count only with `allowDevelopmentKey`.
 
-It reports how far the chain is signed. By default the keys come from the export itself; `--keys` takes the keys saved separately from `/api/audit/keys`, which is stronger, since whoever could rewrite the file could rewrite its keys too. It passes on an export and fails with one byte changed in any covered field. Row and checkpoint ids, a checkpoint's `request`, and the rest of the export aren't covered.
+Entries after `signedThrough` are the workspace's `unsignedTail`: chained but signed by nothing, so anyone with the database could have changed or dropped them. The result is `ok` only when the chain holds and every workspace with entries has no unsigned tail. Each tail is a problem, unless `allowUnsignedTail` accepts an export taken between checkpoints: then the result is `intact` with N `unsignedEntries`, and still not `ok`. The command prints "OK" and exits 0 only when the result is `ok`. It exits 2 for an intact chain whose unsigned tail `--allow-unsigned-tail` accepted, and says so ("Chain intact, N entries unsigned"). It exits 1 for anything else.
+
+By default the keys come from the export itself; `--keys` takes the keys saved separately from `/api/audit/keys`, which is stronger, since whoever could rewrite the file could rewrite its keys too. It passes on an export from the route and fails with one byte changed in any covered field. Row ids, a checkpoint's `request`, and the rest of the export aren't covered. Everything it prints from a file goes through `escapeControls`, which writes C0, DEL, C1, line separators, and bidirectional marks as `\uXXXX`, and key ids are also JSON-quoted. With ids checked as UUIDs, a crafted file can't move the cursor, recolour, or reorder the output.
 
 ### The sign-in method
 
@@ -123,7 +126,7 @@ The hook does see the endpoint (spec Appendix B, #2): Better Auth runs database 
 
 ### What it proves
 
-Edits, deletions, and reordering by anyone with database access but not the signing key, as far as the newest checkpoint: tamper-evident, not non-repudiation. Rows after the newest checkpoint are only chained. Only an earlier copy of the head shows whether rows were dropped from the end. An operator holding both the database and the key can rewrite history and re-sign it; only an outside witness stops that: an export the rep kept, the browser's saved head (cut), or a published head.
+Tamper-evident up to the last signed checkpoint, not non-repudiation. Edits, deletions, and reordering by anyone with database access but not the signing key show, as far as the newest checkpoint from a deployment key. Rows after it are only chained, and anyone with the database could rewrite or drop them, which is why the check fails on them unless told to accept them. An export from the route signs its own head, so it's signed to its end when a key is configured. Only an earlier copy of the head shows whether signed rows were later dropped from the end along with their checkpoints. An operator holding both the database and the key can rewrite history and re-sign it; only an outside witness stops that: an export the rep kept, the browser's saved head (cut), or a published head.
 
 ### Cut: the browser's saved head (WP2 step 8)
 
@@ -135,7 +138,8 @@ Cut first, per the spec's list; exports remain the outside witness. It would go 
 
 - The database chains every row, including the existing writers', and nothing the app sends can choose a seq, a hash, or a time.
 - One signature per request and one hash per row, all server-side: the rep never sees a prompt, and the inbox's 4 s median is untouched.
-- An export verifies offline with a file and public keys, and fails on any changed byte the chain or a signature covers.
+- An export verifies offline with a file and public keys. It fails on any changed byte the chain or a signature covers, and on any entry no deployment key signed, unless told to accept an unsigned tail, and then it still isn't "OK".
+- Each workspace's `at` never runs backwards along its chain.
 - workerd imports the JWK, so one secret per Worker holds the whole key, and a mismatched key is refused at load.
 - Rotation keeps old checkpoints verifiable, and a retired key can't vouch for anything signed after its retirement.
 - Each session says how its user signed in, set by the server from the endpoint, never by a request.
@@ -144,10 +148,12 @@ Cut first, per the spec's list; exports remain the outside witness. It would go 
 
 - The canonical text relies on Postgres rendering jsonb the same way across versions. It's pinned by tests and was byte-identical on PostgreSQL 17.4 and 18.6, but Neon's version is checked only at the first deploy, and a change would raise false alarms until canonical texts are stored.
 - The audit lock serializes a workspace's writers until each commits, so a slow transaction that writes audit rows delays the next review in that workspace.
-- `audit_log`'s foreign key from migration 0004 sets `actor_user_id` to NULL when a membership is deleted, which changes the row's canonical text: once workspaces have more than one member, a member leaving would make their rows fail the check. Phase 5 workspaces have one member, whose workspace is deleted with their account, so it can't happen yet. Before members arrive: store canonical texts at insert time, or keep departed actors.
-- `at` is the inserting transaction's start, so a writer that waited for the lock can carry an earlier time than the row before it.
-- Rows after the newest checkpoint, such as key changes, demo CRM loads, and the export's own entry, are chained but not signed until the next review request.
-- The development key's private half is public by design, so anything it signed proves nothing; the check says so.
+- **Must fix before team workspaces:** migration 0004's foreign key sets `audit_log.actor_user_id` to NULL when a membership is deleted (`ON DELETE SET NULL (actor_user_id)`). That changes the row's canonical text, so once a workspace has more than one member, a member leaving would make every row they wrote fail the check, a false alarm. It can't happen in Phase 5: each workspace has one member, whose workspace is deleted with their account. Two remedies, either before workspaces gain members:
+  - store each row's canonical text at insert time, hash that, and check it against the row semantically (`canonical::jsonb`), allowing a cleared actor;
+  - keep departed actors: stop clearing the column, for instance with a tombstone membership, so the text never changes.
+- Rows after the newest checkpoint, such as key changes and demo CRM loads, are chained but not signed until the next review request or export, and the check fails on them until then.
+- The development key's private half is public by design, so anything it signed proves nothing. The check counts it only when asked, so a development export fails by default.
+- Exports from a deployment without a signing key end in an unsigned entry, so they fail the check by default (they pass only as "intact" with `--allow-unsigned-tail`).
 - Neither CI deploy step passes `EARSHOT_AUDIT_SIGNING_KEY` yet. The user generates and sets it at the first deploy (spec §9), when the steps gain it, and WP3 wires it into the edge Worker.
 
 ## More information
