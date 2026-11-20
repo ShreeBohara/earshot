@@ -529,6 +529,64 @@ describe("importSessionLog", () => {
     expect(rows.every((row) => row.targetEntityId === null)).toBe(true);
   });
 
+  it("leaves a sample unsealed when asked, ended now, for development's Finishing", async () => {
+    const db = await fresh();
+    const zenyth = readFixture("samples/zenyth-finishing.jsonl");
+    await withTenant(db, A, (tx) => loadDemoCrm(tx));
+    const result = await withTenant(db, A, (tx) =>
+      importSessionLog(tx, zenyth, { mapDemoIds: true, now: NOW, seal: false }),
+    );
+    expect(result).toMatchObject({ created: true, proposals: 2 });
+    const events = await new PgEventStore(db, A).read(result.sessionId);
+    expect(events.at(-1)).toMatchObject({
+      type: "session.ended",
+      payload: { endedAt: NOW.toISOString() },
+    });
+    expect(events.some((event) => event.type === "session.sealed")).toBe(false);
+    const [session] = await db.select().from(sessions).where(eq(sessions.id, result.sessionId));
+    expect(session).toMatchObject({ endedAt: NOW, sealedAt: null });
+    // The repair path takes it from there, once it's been finishing for long enough.
+    const later = new Date(NOW.getTime() + 11 * 60_000);
+    expect(
+      await withTenant(db, A, (tx) =>
+        unsealedSessions(tx, { endedBefore: NOW, startedBefore: NOW, limit: 20 }),
+      ),
+    ).not.toContain(result.sessionId);
+    expect(
+      await withTenant(db, A, (tx) =>
+        unsealedSessions(tx, {
+          endedBefore: new Date(later.getTime() - 10 * 60_000),
+          startedBefore: later,
+          limit: 20,
+        }),
+      ),
+    ).toContain(result.sessionId);
+    expect(
+      await withTenant(db, A, (tx) => sealSessionLog(tx, result.sessionId, { now: later, newId })),
+    ).toBe("sealed");
+  });
+
+  it("keeps a sealed log sealed even when asked not to seal", async () => {
+    const db = await fresh();
+    const log = fromJsonl(readFixture("samples/pier-logistics.jsonl"));
+    const sealedLog = toJsonl([
+      ...log,
+      {
+        ...(log.at(-1) as (typeof log)[number]),
+        id: uuid(0x5ea1),
+        seq: log.length,
+        type: "session.sealed",
+        schemaVersion: 1,
+        payload: { sealedAt: NOW.toISOString(), by: "import" },
+      },
+    ]);
+    const result = await withTenant(db, A, (tx) =>
+      importSessionLog(tx, sealedLog, { now: NOW, seal: false }),
+    );
+    const [session] = await db.select().from(sessions).where(eq(sessions.id, result.sessionId));
+    expect(session?.sealedAt).toEqual(NOW);
+  });
+
   it("refuses a log that doesn't replay, writing nothing", async () => {
     const db = await fresh();
     const broken = `${toJsonl(fromJsonl(pier).slice(1))}`;

@@ -45,6 +45,7 @@ describe("proxy.ts", () => {
     const runsOn = (url: string) => unstable_doesMiddlewareMatch({ config, url });
     for (const url of [
       "/home",
+      "/inbox",
       "/onboarding",
       "/settings",
       "/settings/account",

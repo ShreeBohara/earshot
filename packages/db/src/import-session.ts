@@ -30,6 +30,13 @@ export interface ImportSessionOptions {
   readonly mapDemoIds?: boolean;
   /** The seal's time, when the log doesn't end in one. Defaults to now. */
   readonly now?: Date;
+  /**
+   * False leaves the session unsealed, as a debrief whose seal hasn't come yet, for development's
+   * "Finishing" state (the inbox can't review it until the repair path seals it). A log that never
+   * ended then ends at `now`, as if it had just ended; a log that's sealed already stays sealed.
+   * Defaults to true.
+   */
+  readonly seal?: boolean;
 }
 
 export interface ImportedSession {
@@ -108,7 +115,8 @@ function rewrite(
  * written). If it doesn't end, `session.ended` is added at its last event's time; if it isn't
  * sealed, `session.sealed { by: "import" }` is added. Then the projections are rebuilt, so the
  * session appears in the inbox like any other. A sample the workspace already holds is left as it
- * is (`created: false`).
+ * is (`created: false`). With `seal: false`, the session is left ended but unsealed, ending now if
+ * the log didn't end (see `ImportSessionOptions.seal`).
  */
 export async function importSessionLog<
   TQueryResult extends PgQueryResultHKT,
@@ -189,10 +197,15 @@ export async function importSessionLog<
     });
     nextSeq += 1;
   };
+  const seal = options.seal ?? true;
   if (started.status !== "ended") {
-    await closing("session.ended", { endedAt: started.lastEventAt, costUsd: started.costUsd ?? 0 });
+    await closing("session.ended", {
+      // Unsealed, it just ended: the repair path leaves it alone for its first 10 minutes.
+      endedAt: seal ? started.lastEventAt : now,
+      costUsd: started.costUsd ?? 0,
+    });
   }
-  if (started.sealedAt === null) {
+  if (seal && started.sealedAt === null) {
     await closing("session.sealed", { sealedAt: now, by: "import" });
   }
   await appendEvents(tx, sessionId, NO_EVENTS, drafts);

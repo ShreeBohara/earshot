@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/settings/account", label: "Account" },
   { href: "/settings/keys", label: "Keys" },
   { href: "/settings/capture", label: "Capture" },
+  { href: "/settings/review", label: "Review" },
   { href: "/settings/data", label: "Data" },
 ] as const;
 

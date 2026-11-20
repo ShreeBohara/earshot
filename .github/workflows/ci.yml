@@ -111,9 +111,12 @@ jobs:
         run: pnpm --filter @earshot/ui test:storybook
       - name: Capture worklet, fake microphone, VAD, and the Debrief engine end to end (Vitest browser mode)
         run: pnpm --filter @earshot/voice test:browser
-      - name: Sign-in, the /demo replay at 8×, Settings → Keys, the demo CRM, and the capture screen (next dev with in-process PGlite, the e2e edge Worker's cassettes, Chrome's fake microphone; no secrets, no providers)
+      # The review inbox is the `inbox` project (Phase 5 spec WP5, gate G3a): the sample debriefs
+      # reviewed by keyboard, the shortcuts' scope and switch, focus never on <body>, and axe in
+      # every state in both themes.
+      - name: Sign-in, the /demo replay at 8×, Settings → Keys, the demo CRM, the capture screen, and the review inbox (next dev with in-process PGlite, the e2e edge Worker's cassettes, Chrome's fake microphone, the sample debriefs; no secrets, no providers)
         working-directory: apps/web
-        run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/demo.spec.ts e2e/keys.spec.ts e2e/capture
+        run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/demo.spec.ts e2e/keys.spec.ts e2e/capture e2e/inbox
       # The fake-mic eval's subset (spec WP11 step 6; gate G3): its smoke test, then five of the
       # thirty debriefs. All thirty run in the eval workflow. No secrets, no providers.
       - name: Eval WAVs (Kokoro, from the cache, or rendered on a miss)
