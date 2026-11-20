@@ -21,6 +21,10 @@ import { workspaceId, workspaceMembers } from "./workspaces";
 /**
  * One capture session: a debrief, a conversation, or a local-mode run. Not to be confused
  * with Better Auth's `session` table, which holds sign-in sessions.
+ *
+ * `focus_entity_id` references `crm_entities` through a foreign key that lives in migration 0014
+ * instead of here: like `proposals.target_entity_id`, it needs `ON DELETE SET NULL
+ * (focus_entity_id)`, which Drizzle can't express.
  */
 export const sessions = pgTable(
   "sessions",
@@ -35,6 +39,16 @@ export const sessions = pgTable(
     providers: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
+    /**
+     * When `session.sealed` says the session was sealed (migration 0014, docs/adr/0032): Postgres
+     * holds its whole log, and from then on the web Worker writes its reviews. Null until then.
+     */
+    sealedAt: timestamp("sealed_at", { withTimezone: true }),
+    /**
+     * The account open in Earshot when the session was created (`POST /api/sessions`), which
+     * `start` names as `focusEntityId`. Null for none, or once that record is deleted.
+     */
+    focusEntityId: uuid("focus_entity_id"),
     costUsd: numeric("cost_usd", { precision: 10, scale: 4 }).notNull().default("0"),
     /** Latency and usage measurements. */
     metrics: jsonb().$type<Record<string, unknown>>().notNull().default({}),

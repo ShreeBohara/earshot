@@ -3,6 +3,7 @@ import {
   type ProjectionStates,
   type ProposalView,
   type ReplayOptions,
+  type ReviewView,
   replay,
   type SessionView,
   type UtteranceView,
@@ -51,11 +52,13 @@ export type SessionProjections = ProjectionStates<typeof defaultProjections>;
  * missing cost is stored as `cost_usd` 0, rounded like any cost to four decimal places. The
  * `target` column keeps the linker's decision as the events have it, entity id included.
  *
- * Phase 5's review fields (the review id, mode, batch, policy, and sync time), snoozes,
- * supersedes, and the seal have no columns until migration 0014 (Phase 5 WP3): until then a row
- * keeps the latest review's decision as its status, its diff, its handling time as
- * `reviewer_ms`, and its seq and time, a reopen included. A `superseded` status needs 0014's
- * check constraint too; no writer supersedes a proposal before Phase 5's corrections.
+ * Phase 5's review fields (migration 0014, docs/adr/0032): each row holds its latest review whole
+ * in `review` (the `ReviewView` without its seq and time, which `reviewed_seq` and `reviewed_at`
+ * hold), with the fields the inbox and Phase 6 query by in columns of their own (`review_id`,
+ * `review_mode`, `batch_id`, `policy_id`, `sync_eligible_at`), and its snooze and supersedes.
+ * The status is the latest decision, `proposed` after a reopen, and `superseded` once a
+ * correction replaces the proposal. The session's row gets `sealed_at` from `session.sealed`.
+ * The rest of the session's row (its user, metrics, and focus account) isn't the log's to say.
  */
 export async function rebuildProjections<
   TQueryResult extends PgQueryResultHKT,
@@ -144,6 +147,15 @@ async function writeProposals(
         seq: excluded(proposals.seq),
         reviewedSeq: excluded(proposals.reviewedSeq),
         reviewedAt: excluded(proposals.reviewedAt),
+        review: excluded(proposals.review),
+        reviewId: excluded(proposals.reviewId),
+        reviewMode: excluded(proposals.reviewMode),
+        batchId: excluded(proposals.batchId),
+        policyId: excluded(proposals.policyId),
+        syncEligibleAt: excluded(proposals.syncEligibleAt),
+        snoozedUntil: excluded(proposals.snoozedUntil),
+        supersedes: excluded(proposals.supersedes),
+        supersededBy: excluded(proposals.supersededBy),
         createdAt: excluded(proposals.createdAt),
         updatedAt: excluded(proposals.updatedAt),
       },
@@ -164,6 +176,7 @@ async function writeProposals(
 
 function proposalRow(view: ProposalView, sessionId: string, mirrored: ReadonlySet<string>) {
   const target = view.targetEntityId?.toLowerCase();
+  const review = view.review;
   return {
     id: view.proposalId,
     workspaceId: currentWorkspace,
@@ -178,15 +191,30 @@ function proposalRow(view: ProposalView, sessionId: string, mirrored: ReadonlySe
     ),
     conflicts: view.conflicts,
     status: view.status,
-    editDiff: view.review?.editDiff ?? null,
+    editDiff: review?.editDiff ?? null,
     // The review clock's handling time: v1's `reviewerMs`, which upcasts to both of v2's times.
-    reviewerMs: view.review?.timing.handlingMs ?? null,
+    reviewerMs: review?.timing.handlingMs ?? null,
     seq: view.seq,
-    reviewedSeq: view.review?.seq ?? null,
-    reviewedAt: view.review ? timestamptz(view.review.ts) : null,
+    reviewedSeq: review?.seq ?? null,
+    reviewedAt: review ? timestamptz(review.ts) : null,
+    review: review ? storedReview(review) : null,
+    reviewId: review?.reviewId ?? null,
+    reviewMode: review?.mode ?? null,
+    batchId: review?.batchId ?? null,
+    policyId: review?.policy?.id ?? null,
+    syncEligibleAt: review?.syncEligibleAt ? timestamptz(review.syncEligibleAt) : null,
+    snoozedUntil: view.snoozedUntil === null ? null : timestamptz(view.snoozedUntil),
+    supersedes: view.supersedes,
+    supersededBy: view.supersededBy,
     createdAt: timestamptz(view.ts),
-    updatedAt: timestamptz(view.review?.ts ?? view.ts),
+    updatedAt: timestamptz(review?.ts ?? view.ts),
   };
+}
+
+/** A review as the `review` column keeps it: every field but its seq and time. */
+function storedReview(review: ReviewView): Record<string, unknown> {
+  const { seq: _seq, ts: _ts, ...rest } = review;
+  return rest;
 }
 
 /** The proposals' target entities that the workspace's CRM mirror has, as stored ids. */
@@ -219,6 +247,7 @@ async function writeSessionSummary(
       providers: view.providers,
       startedAt: timestamptz(view.startedAt),
       endedAt: view.endedAt === null ? null : timestamptz(view.endedAt),
+      sealedAt: view.sealedAt === null ? null : timestamptz(view.sealedAt),
       costUsd: String(view.costUsd ?? 0),
     })
     .where(eq(sessions.id, sessionId))

@@ -27,6 +27,13 @@ import { workspaceId } from "./workspaces";
  * the second witness, and `target_entity_id` holds its `entityId`. Flags on the target are in
  * `risk_flags` as `kind:target`.
  *
+ * From migration 0014 (Phase 5 WP3, docs/adr/0032) a row holds the latest review whole (`review`,
+ * every field of `proposal.reviewed` v2 as the projection keeps it, a reopen included), with the
+ * fields the inbox and Phase 6's sync query by in columns of their own: `review_id`,
+ * `review_mode`, `batch_id`, `policy_id`, and `sync_eligible_at`. It also holds the snooze
+ * (`snoozed_until`) and the corrections that replace proposals (`supersedes`, `superseded_by`,
+ * with the status `superseded`).
+ *
  * `target_entity_id` references `crm_entities` through a foreign key that lives in migration
  * 0004 instead of here: it needs `ON DELETE SET NULL (target_entity_id)`, which Drizzle can't
  * express, so deleting an entity clears the target without touching `workspace_id`.
@@ -60,6 +67,27 @@ export const proposals = pgTable(
     /** The seq and `ts` of the latest `proposal.reviewed` event; null until the first review. */
     reviewedSeq: integer("reviewed_seq"),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    /**
+     * The latest review, a reopen included, as `@earshot/events`' `ReviewView` keeps it, without
+     * its seq and time (`reviewed_seq`, `reviewed_at`). Null until the first review.
+     */
+    review: jsonb().$type<Record<string, unknown>>(),
+    /** The latest review's `reviewId`: what an undo names, and what Phase 6 re-reads. */
+    reviewId: uuid("review_id"),
+    /** The latest review's mode: `single`, `batch`, `policy`, or `system`. */
+    reviewMode: text("review_mode"),
+    /** The "accept all" the latest review belonged to, when its mode is `batch`. */
+    batchId: uuid("batch_id"),
+    /** The approval policy behind the latest review, when its mode is `policy`. */
+    policyId: uuid("policy_id"),
+    /** When the latest review, an approval or an edit, may sync to the CRM. */
+    syncEligibleAt: timestamp("sync_eligible_at", { withTimezone: true }),
+    /** Hidden from the inbox until then, from the latest `proposal.snoozed`. */
+    snoozedUntil: timestamp("snoozed_until", { withTimezone: true }),
+    /** The proposal this one replaces (a correction); null otherwise. */
+    supersedes: uuid(),
+    /** The proposal that replaced this one; set exactly when the status is `superseded`. */
+    supersededBy: uuid("superseded_by"),
     ...timestamps(),
   },
   (t) => [
@@ -74,10 +102,14 @@ export const proposals = pgTable(
     index("proposals_workspace_id_target_entity_id_idx").on(t.workspaceId, t.targetEntityId),
     check(
       "proposals_status_check",
-      sql`${t.status} in ('proposed', 'approved', 'edited', 'rejected', 'synced', 'failed')`,
+      sql`${t.status} in ('proposed', 'approved', 'edited', 'rejected', 'superseded', 'synced', 'failed')`,
     ),
     check("proposals_seq_check", sql`${t.seq} >= 0`),
     check("proposals_reviewed_seq_check", sql`${t.reviewedSeq} >= 0`),
+    check(
+      "proposals_review_mode_check",
+      sql`${t.reviewMode} in ('single', 'batch', 'policy', 'system')`,
+    ),
   ],
 );
 
