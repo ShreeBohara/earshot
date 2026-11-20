@@ -4,10 +4,12 @@
 // with no DOM types: the edge Worker imports it, and test/no-dom.test.ts checks that.
 //
 // Prices are list prices in US dollars from spec Appendix A, checked 2026-11-15. Deepgram's are
-// promotional, with no end date shown. Refresh the table, and its date, before Phase 8.
+// promotional, with no end date shown. Phase 4 (WP9) added the second witness's row, Groq
+// Whisper, from the Phase 4 spec's Appendix A, checked 2026-11-20. Refresh the table, and its
+// date, before Phase 8.
 
 /** The date of this table, `usage.recorded.priceTable`. */
-export const PRICE_TABLE_DATE = "2026-11-15";
+export const PRICE_TABLE_DATE = "2026-11-20";
 
 /** What a speech-to-text provider bills: the time its socket is open, or the audio sent. */
 export type BillingBasis = "socket" | "audio";
@@ -21,6 +23,11 @@ export interface SttPrice {
   /** The keyterm add-on per hour. Earshot sends keyterms on every session. */
   readonly keytermUsdPerHour: number;
   readonly billedOn: BillingBasis;
+  /**
+   * The least time billed for one request, whatever its length: Groq bills 10 s per
+   * transcription. A `usage` message for such a provider reports one request.
+   */
+  readonly minBilledMsPerRequest?: number;
   readonly checkedAt: string;
   readonly source: string;
   readonly note?: string;
@@ -91,6 +98,20 @@ export const STT_PRICES: readonly SttPrice[] = [
     note:
       "Promotional: $0.0065/min (was $0.0077). Whether the keyterm add-on applies to Flux, and " +
       "whether Deepgram bills socket or audio time, aren't stated; both are priced at the upper bound.",
+  },
+  {
+    kind: "stt",
+    provider: "groq",
+    model: "whisper-large-v3-turbo",
+    usdPerHour: 0.04,
+    keytermUsdPerHour: 0,
+    billedOn: "audio",
+    minBilledMsPerRequest: 10_000,
+    checkedAt: "2026-11-20",
+    source: "console.groq.com/docs/speech-to-text (Phase 4 spec Appendix A)",
+    note:
+      "The second witness (Phase 4 WP9): one batch request per turn, billed on the audio sent with " +
+      "a 10 s minimum per request. No keyterms: the witness is the unbiased one.",
   },
   {
     kind: "stt",
@@ -184,14 +205,18 @@ const isCount = (value: number | undefined) =>
 /** Rounds to a billionth of a dollar, so sums don't drift on floating-point noise. */
 const roundUsd = (usd: number) => Math.round(usd * 1e9) / 1e9;
 
-/** The cost of one speech-to-text socket, by what its provider bills. */
+/**
+ * The cost of one speech-to-text socket, or one request to a batch provider, by what its provider
+ * bills: socket time or audio, at least the row's minimum per request.
+ */
 export function priceStt(usage: SttUsageInput): PriceResult {
   if (!isCount(usage.audioMs) || !isCount(usage.socketMs)) {
     return { ok: false, reason: "invalid_usage" };
   }
   const price = findSttPrice(usage.provider, usage.model);
   if (!price) return { ok: false, reason: "unknown_model" };
-  const billedMs = price.billedOn === "audio" ? usage.audioMs : usage.socketMs;
+  const measuredMs = price.billedOn === "audio" ? usage.audioMs : usage.socketMs;
+  const billedMs = Math.max(measuredMs, price.minBilledMsPerRequest ?? 0);
   const usdPerHour = price.usdPerHour + (usage.keyterms === false ? 0 : price.keytermUsdPerHour);
   return {
     ok: true,

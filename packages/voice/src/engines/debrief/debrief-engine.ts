@@ -56,6 +56,11 @@ import {
   type HandsFreeVadFactory,
   loadHandsFreeVad,
 } from "../../vad/hands-free";
+import {
+  TurnAudioRecorder,
+  type TurnAudioRecorderOptions,
+  type TurnAudioRecording,
+} from "../../witness/turn-audio";
 
 const SAMPLES_PER_MS = TARGET_SAMPLE_RATE / 1000;
 
@@ -110,6 +115,12 @@ export interface DebriefEngineOptions {
   readonly preRollMs?: number;
   readonly maxConnectAttempts?: number;
   readonly ringSeconds?: number;
+  /**
+   * Keep each turn's audio for the second witness (Phase 4 WP9) and emit it as `turn_audio` after
+   * the turn's `turn_end`: from the press to the release plus 200 ms, capped at 120 s. Off by
+   * default, so an engine with no witness keeps no audio past the replay ring.
+   */
+  readonly turnAudio?: boolean | TurnAudioRecorderOptions;
 }
 
 interface Turn {
@@ -117,6 +128,11 @@ interface Turn {
   finals: number;
   /** The stream position where the turn's audio ended, once it has. */
   endSample?: number;
+  /** Its audio for the second witness, when the engine records it. */
+  audio?: TurnAudioRecording;
+  /** Its `turn_end` went out; its `turn_audio` follows once the audio is complete. */
+  ended?: boolean;
+  audioSent?: boolean;
 }
 
 interface Finalizing {
@@ -169,6 +185,9 @@ export class DebriefEngine implements VoiceEngine {
   readonly #listeners = new Set<(event: VoiceEvent) => void>();
   readonly #speech: SpeechStream;
   readonly #preRoll: PcmRingBuffer;
+  /** Each turn's audio for the second witness, when `turnAudio` is on. */
+  readonly #recorder: TurnAudioRecorder | undefined;
+  readonly #recordingTurns = new Map<TurnAudioRecording, Turn>();
 
   #state: EngineState = "idle";
   #mode: CaptureMode;
@@ -253,6 +272,9 @@ export class DebriefEngine implements VoiceEngine {
     this.#lastFinalEndSample = this.#speech.start;
     this.#committedSample = this.#speech.start;
     this.#preRoll = new PcmRingBuffer(Math.max(1, this.#settings.preRollSamples));
+    const turnAudio = options.turnAudio ?? false;
+    this.#recorder =
+      turnAudio === false ? undefined : new TurnAudioRecorder(turnAudio === true ? {} : turnAudio);
   }
 
   get state(): EngineState {
@@ -369,6 +391,10 @@ export class DebriefEngine implements VoiceEngine {
     // Muted audio (the agent speaking) never reaches the provider, not even as the pre-roll a
     // hands-free wake replays: the ring keeps silence in its place, so its timing still lines up.
     this.#preRoll.write(muted ? new Int16Array(frame.pcm.length) : frame.pcm);
+    // The witness's recordings take the frame first: sending it can end a hands-free turn, whose
+    // audio is cut there, and the next turn's must start after this frame, as the clock does.
+    // Muted audio is skipped, as the speech stream skips it, so the two stay on one clock.
+    if (this.#recorder && !muted) this.#onRecorded(this.#recorder.write(frame.pcm));
     if (this.#gate !== "closed" && !muted) {
       this.#speech.append(frame.pcm);
       if (frame.rms >= this.#settings.voicedRms) this.#lastVoicedSample = this.#speech.end;
@@ -377,16 +403,60 @@ export class DebriefEngine implements VoiceEngine {
     if (frame.flush) this.#onDrained();
   }
 
+  // ---- the second witness's audio ----
+
+  /** Starts a recording where the next gated sample lands on the session's clock. */
+  #startRecording(): TurnAudioRecording | undefined {
+    if (!this.#recorder) return undefined;
+    const { recording, completed } = this.#recorder.open(this.#speech.end);
+    this.#onRecorded(completed);
+    return recording;
+  }
+
+  #attachRecording(turn: Turn, recording: TurnAudioRecording | undefined): void {
+    if (!recording || turn.audio) return;
+    turn.audio = recording;
+    this.#recordingTurns.set(recording, turn);
+  }
+
+  /**
+   * Hands-free: the recording that ran since the last turn ended becomes this turn's audio, and
+   * the next turn's starts here while the engine still streams.
+   */
+  #claimStreamAudio(turn: Turn): void {
+    if (!this.#recorder || turn.audio) return;
+    this.#attachRecording(turn, this.#recorder.cut());
+    if (this.#mode === "hands_free" && this.#streaming) this.#startRecording();
+  }
+
+  #onRecorded(completed: readonly TurnAudioRecording[]): void {
+    for (const recording of completed) {
+      const turn = this.#recordingTurns.get(recording);
+      if (turn) this.#emitTurnAudio(turn);
+    }
+  }
+
+  /** `turn_audio`, once, after the turn's `turn_end` and once its audio is complete. */
+  #emitTurnAudio(turn: Turn): void {
+    if (!this.#recorder || !turn.ended || turn.audioSent) return;
+    if (turn.audio && !turn.audio.complete) return; // its tail is still coming in
+    turn.audioSent = true;
+    if (turn.audio) this.#recordingTurns.delete(turn.audio);
+    this.#emit({ type: "turn_audio", turnId: turn.id, audio: turn.audio?.audio() ?? null });
+  }
+
   // ---- push-to-talk ----
 
   #press(): void {
     if (this.#gate === "draining") this.#onDrained(); // a quick re-press finishes the last release
     this.#currentTurn ??= this.#newTurn();
+    if (!this.#currentTurn.audio) this.#attachRecording(this.#currentTurn, this.#startRecording());
     this.#gate = "open";
     this.#syncWant();
   }
 
   #release(): void {
+    if (this.#recorder) this.#onRecorded(this.#recorder.release());
     this.#gate = "draining";
     this.#capture?.flush();
     this.#clearTimer("flush");
@@ -474,7 +544,12 @@ export class DebriefEngine implements VoiceEngine {
       this.#committedSample,
       turn.endSample ?? this.#lastFinalEndSample,
     );
+    if (this.#mode === "hands_free") this.#claimStreamAudio(turn);
     this.#emit({ type: "turn_end", turnId: turn.id, trigger });
+    if (this.#recorder) {
+      turn.ended = true;
+      this.#emitTurnAudio(turn);
+    }
   }
 
   #newTurn(): Turn {
@@ -499,16 +574,25 @@ export class DebriefEngine implements VoiceEngine {
     this.#gate = "closed";
     const turn = this.#currentTurn;
     this.#currentTurn = undefined;
-    if (turn && (turn.finals > 0 || this.#providerTurnOpen)) this.#beginFinalize(turn, "manual");
-    else this.#committedSample = Math.max(this.#committedSample, this.#speech.end);
+    if (turn && (turn.finals > 0 || this.#providerTurnOpen)) {
+      this.#claimStreamAudio(turn); // the audio ends here, with the streaming
+      this.#beginFinalize(turn, "manual");
+    } else {
+      this.#recorder?.drop();
+      this.#committedSample = Math.max(this.#committedSample, this.#speech.end);
+    }
     this.#syncWant();
   }
 
   /** Starts streaming: on arming hands-free, or when the VAD hears speech after a silence. */
   #wake(withPreRoll: boolean): void {
+    // The next turn's audio starts here, with the pre-roll the speech stream replays first.
+    this.#startRecording();
     // Waking on the agent's own voice while muted must not replay it either.
     if (withPreRoll && !this.#isMuted()) {
-      this.#speech.append(this.#preRoll.read(this.#preRoll.end - this.#settings.preRollSamples));
+      const preRoll = this.#preRoll.read(this.#preRoll.end - this.#settings.preRollSamples);
+      this.#speech.append(preRoll);
+      if (this.#recorder) this.#onRecorded(this.#recorder.write(preRoll));
     }
     this.#clearTimer("silence");
     this.#streaming = true;
@@ -523,6 +607,7 @@ export class DebriefEngine implements VoiceEngine {
     const turn = this.#currentTurn;
     this.#currentTurn = undefined;
     if (turn && turn.finals > 0) this.#emitTurnEnd(turn, "manual");
+    this.#recorder?.drop(); // 20 s of quiet with no turn to give it to
     // The silence before now is done with: waking replays the pre-roll, not 20 s of quiet.
     this.#committedSample = Math.max(this.#committedSample, this.#speech.end);
     this.#syncWant();
@@ -833,10 +918,15 @@ export class DebriefEngine implements VoiceEngine {
       this.#streaming = false;
       const turn = this.#currentTurn;
       this.#currentTurn = undefined;
-      if (turn && (turn.finals > 0 || this.#providerTurnOpen)) this.#beginFinalize(turn, "manual");
+      if (turn && (turn.finals > 0 || this.#providerTurnOpen)) {
+        this.#claimStreamAudio(turn);
+        this.#beginFinalize(turn, "manual");
+      }
     }
     await this.#waitForTurnEnd(this.#settings.flushTimeoutMs + this.#settings.finalizeTimeoutMs);
     if (this.#gate === "draining") this.#onDrained();
+    // Capture is ending: every recording ends where it stands, tails included.
+    if (this.#recorder) this.#onRecorded(this.#recorder.finish());
     this.#endAllWaitingTurns();
     this.#gate = "closed";
     for (const key of TIMER_NAMES) this.#clearTimer(key);
