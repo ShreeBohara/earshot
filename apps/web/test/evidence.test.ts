@@ -413,6 +413,43 @@ describe("the page's evidence hub", () => {
     expect(purges).toHaveLength(2);
   });
 
+  it("rereads the cards' clips when the page comes back into view, for what another tab kept", async () => {
+    const backend = memoryClipBackend();
+    const here = await ClipStore.open({ backend });
+    const otherTab = await ClipStore.open({ backend });
+    const hub = new EvidenceHub({
+      openStore: async () => here,
+      player: fakePlayer().player,
+      setting: () => "on",
+      now: () => STARTED + 10_000,
+      timers: {
+        setInterval: () => 0,
+        clearInterval: () => {},
+        setTimeout: () => 0,
+        clearTimeout: () => {},
+      },
+    });
+    const page = fakePage();
+    hub.start(page);
+    hub.watch(SESSION);
+    await settle();
+    expect(hub.index(SESSION_ID)).toEqual({ status: "ready", clips: [] });
+    // Kept by another tab's store: this page's store says nothing of it.
+    await otherTab.put({
+      sessionId: SESSION_ID,
+      turnId: TURN,
+      audio: { startMs: 2_000, durationMs: 4_000, pcm: new Int16Array(64_000) },
+    });
+    await settle();
+    expect(hub.index(SESSION_ID)).toEqual({ status: "ready", clips: [] });
+    page.show("hidden");
+    page.show("visible");
+    await settle();
+    await settle();
+    const index = hub.index(SESSION_ID);
+    expect(index.status === "ready" && index.clips).toHaveLength(1);
+  });
+
   it("reads a watched session's clips, and again after each turn is kept", async () => {
     const { hub, store } = await hubWithStore();
     const stop = hub.watch(SESSION);

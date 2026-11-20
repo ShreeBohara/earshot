@@ -144,17 +144,21 @@ export class EvidenceHub {
    * the cards' clock on each minute. Returns the cleanup.
    */
   start(page: VisibilityTarget): () => void {
-    const purge = () => {
+    const purge = (reread: boolean) => {
       this.#tick();
       void this.store().then(
-        (store) => store.purge(),
+        async (store) => {
+          // A purge that deletes anything rereads the cards' clips itself; coming back into view
+          // rereads them anyway, since another tab may have kept or cleared clips meanwhile.
+          if ((await store.purge()) === 0 && reread) await this.#reloadAll();
+        },
         () => {},
       );
     };
     const onVisibility = () => {
-      if (page.visibilityState === "visible") purge();
+      if (page.visibilityState === "visible") purge(true);
     };
-    purge();
+    purge(false);
     page.addEventListener("visibilitychange", onVisibility);
     const ticking = this.#timers.setInterval(() => this.#tick(), TICK_MS);
     return () => {
