@@ -162,7 +162,7 @@ const reviewed = (review: ReviewInput): EventBody => ({
 });
 
 /** The proposals as the projection folds the log: what both writers check against. */
-function fold(bodies: readonly EventBody[]): ProposalView[] {
+function fold(bodies: readonly EventBody[]): readonly ProposalView[] {
   const log = bodies.map((body, seq) => ({
     id: uuid(1000 + seq),
     sessionId: SESSION_ID,
@@ -409,14 +409,16 @@ function batchChange(
     surface: "inbox",
     batchId: uuid(0xba7c),
   });
-  const padded = options.pad
-    ? reviews.map((review) => ({
-        ...review,
-        seen: {
-          ...review.seen,
-          fields: { title: { proposed: "x".repeat(options.pad as number) } },
-        },
-      }))
+  const padded: ReviewInput[] = options.pad
+    ? reviews.map(
+        (review): ReviewInput => ({
+          ...review,
+          seen: {
+            ...(review.seen as NonNullable<ReviewInput["seen"]>),
+            fields: { title: { proposed: "x".repeat(options.pad as number) } },
+          },
+        }),
+      )
     : reviews;
   const at = new Date(NOW);
   const items: ChangeItem[] = cards.map((card, index) => ({
