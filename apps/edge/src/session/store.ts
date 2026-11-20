@@ -7,6 +7,9 @@
 //   tickets      every ticket `jti` that opened a socket, so a ticket opens one socket
 //   utterances   which turn each utterance belongs to (`utterance.final` doesn't say), and a
 //                guard against the same utterance being final twice
+//   turns        each completed turn: the seq of its `turn.completed`, what its proposals' linker
+//                read (so the second witness is compared in the same context, Phase 4 WP9, even
+//                after the object hibernates), and the witness message that settled it
 //
 // All methods are synchronous: SQLite-backed Durable Object storage runs queries synchronously,
 // and `transactionSync` makes a message's writes atomic.
@@ -22,6 +25,8 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS utterances (utterance_id TEXT PRIMARY KEY, turn_id TEXT NOT NULL,
     seq INTEGER NOT NULL)`,
   "CREATE INDEX IF NOT EXISTS utterances_turn_seq ON utterances (turn_id, seq)",
+  `CREATE TABLE IF NOT EXISTS turns (turn_id TEXT PRIMARY KEY, completed_seq INTEGER NOT NULL,
+    links TEXT NOT NULL, witness_msg TEXT)`,
 ];
 
 /** Every setting `meta` holds. Values are strings; numbers are stored in decimal. */
@@ -64,6 +69,16 @@ export interface NewEvent {
   readonly type: string;
   readonly schemaVersion: number;
   readonly payload: Record<string, unknown>;
+}
+
+/** A completed turn, as `turns` holds it. */
+export interface CompletedTurn {
+  /** The seq of its `turn.completed`. */
+  readonly completedSeq: number;
+  /** What its proposals' linker read, as JSON: `@earshot/agent`'s `ProposalLink[]`. */
+  readonly links: string;
+  /** The `witness` message that settled the turn, once one has. */
+  readonly witnessMsg: string | null;
 }
 
 /** A handled client message: the seq of the last event it appended, and the error it got. */
@@ -336,6 +351,37 @@ export class SessionStore {
       )
       .toArray()
       .map((row) => JSON.parse(row.payload) as Record<string, unknown>);
+  }
+
+  /**
+   * Records a completed turn and what its linking read. Call in the transaction that appended its
+   * `turn.completed`. A turn id seen before keeps its first record.
+   */
+  addTurn(turnId: string, completedSeq: number, links: string): void {
+    this.#sql.exec(
+      "INSERT INTO turns (turn_id, completed_seq, links) VALUES (?, ?, ?) ON CONFLICT (turn_id) DO NOTHING",
+      turnId,
+      completedSeq,
+      links,
+    );
+  }
+
+  /** A completed turn, if one by that id was recorded. */
+  turn(turnId: string): CompletedTurn | undefined {
+    if (!this.#hasTables) return undefined;
+    const row = this.#sql
+      .exec<{ completed_seq: number; links: string; witness_msg: string | null }>(
+        "SELECT completed_seq, links, witness_msg FROM turns WHERE turn_id = ?",
+        turnId,
+      )
+      .toArray()[0];
+    if (!row) return undefined;
+    return { completedSeq: row.completed_seq, links: row.links, witnessMsg: row.witness_msg };
+  }
+
+  /** Records the witness that settled a turn. Call in the transaction that appended its events. */
+  markWitnessed(turnId: string, msgId: string): void {
+    this.#sql.exec("UPDATE turns SET witness_msg = ? WHERE turn_id = ?", msgId, turnId);
   }
 
   /** Forgets the in-memory copies, after `deleteAll()` removed the tables under them. */

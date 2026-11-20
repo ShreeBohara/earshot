@@ -12,6 +12,11 @@ export const SESSION_LIMITS = Object.freeze({
   turnWindowMs: 10 * 60_000,
   /** How long after `start` the session accepts speech (`utterance`, `turn_end`). */
   captureMs: 30 * 60_000,
+  /**
+   * How far a second witness's utterance may run outside its turn's own words, the span of the
+   * turn's biased utterances (Phase 4 spec §4.2). Past it, the witness is refused.
+   */
+  witnessWindowMs: 1_000,
 });
 
 export const FLUSH_TIMING = Object.freeze({

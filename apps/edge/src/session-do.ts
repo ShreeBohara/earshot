@@ -13,6 +13,12 @@
 //   in Earshot and the session's earlier links as context. The link index is built lazily, once
 //   per instance: after every wake, from the stored entities. Extraction reads only the biased
 //   witness's utterances.
+// - `witness` (Phase 4 WP9) brings a turn's second, unbiased transcript, which the browser made on
+//   its own provider key. It's compared with the turn's proposals as soon as both exist, with the
+//   link context the turn kept (`turns`): right away for a finished turn, or right after
+//   extraction, in the session's order, for one still running. Each conflict appends
+//   `proposal.flagged` (a flag, and a downgrade to "ask" for a decided target), then
+//   `turn.witnessed` says how the witness ended.
 // - The log flushes to Postgres through a Queue (WP7), and the object deletes itself a day after
 //   Postgres confirms the whole session; `purge()` deletes it at once, for account deletion.
 //
@@ -20,6 +26,7 @@
 // subclass that picks its dependencies: the agent, the flush sink, and the price table.
 
 import { DurableObject } from "cloudflare:workers";
+import { type ProposalLink, type WitnessTurnResult, witnessTurn } from "@earshot/agent";
 import {
   type ClientMessage,
   type ClientMessageOf,
@@ -145,6 +152,42 @@ function readRecent(stored: string | undefined): string[] {
   }
 }
 
+/** A turn's link context, as `turns.links` stores it, or none. */
+function readLinks(stored: string): ProposalLink[] {
+  try {
+    const links: unknown = JSON.parse(stored);
+    return Array.isArray(links) ? (links as ProposalLink[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** The span of a turn's biased utterances on the session's clock, or null when it has none. */
+function turnWindow(
+  utterances: readonly UtteranceFinalV2[],
+): { readonly startMs: number; readonly endMs: number } | null {
+  if (utterances.length === 0) return null;
+  return {
+    startMs: Math.min(...utterances.map((utterance) => utterance.startMs)),
+    endMs: Math.max(...utterances.map((utterance) => utterance.endMs)),
+  };
+}
+
+/** Whether an utterance and its words lie within `slackMs` of a turn's window. */
+function withinWindow(
+  utterance: UtteranceFinalV2,
+  window: { readonly startMs: number; readonly endMs: number },
+  slackMs: number,
+): boolean {
+  const lo = window.startMs - slackMs;
+  const hi = window.endMs + slackMs;
+  const inside = (start: number, end: number) => start >= lo && end <= hi;
+  return (
+    inside(utterance.startMs, utterance.endMs) &&
+    (utterance.words ?? []).every((word) => inside(word.startMs, word.endMs))
+  );
+}
+
 /** How many of a turn's targets the linker linked, asked about, made new, or left without one. */
 function countDecisions(
   proposals: TurnResult["proposals"],
@@ -186,8 +229,15 @@ export class SessionRuntime extends DurableObject<Env> {
   readonly #log: Logger;
   /** Turns and `end` run one at a time, in arrival order. */
   #chain: Promise<unknown> = Promise.resolve();
-  /** msgIds of `turn_end` and `end` messages running or queued, so a resend starts nothing. */
+  /**
+   * msgIds of `turn_end`, `witness`, and `end` messages running or queued, so a resend starts
+   * nothing.
+   */
   readonly #inflight = new Set<string>();
+  /** Turns whose `turn_end` is queued or running here, by turn id. */
+  readonly #runningTurns = new Set<string>();
+  /** Turns with a witness waiting for them here: turn id to the witness's msgId. */
+  readonly #witnessing = new Map<string, string>();
   readonly #controllers = new Set<AbortController>();
   readonly #buckets = new Map<string, RateBucket>();
   #flushing: Promise<void> | null = null;
@@ -375,6 +425,8 @@ export class SessionRuntime extends DurableObject<Env> {
         return this.#turnEnd(message);
       case "usage":
         return this.#usage(message);
+      case "witness":
+        return this.#witness(message);
       case "metric":
         return this.#metric(message);
       case "end":
@@ -510,10 +562,12 @@ export class SessionRuntime extends DurableObject<Env> {
     }
     store.transaction(() => store.set("turn_starts", JSON.stringify([...starts, now])));
     this.#inflight.add(message.msgId);
+    this.#runningTurns.add(message.turnId);
     try {
       await this.#serially(() => this.#runTurn(message));
     } finally {
       this.#inflight.delete(message.msgId);
+      this.#runningTurns.delete(message.turnId);
     }
   }
 
@@ -615,9 +669,15 @@ export class SessionRuntime extends DurableObject<Env> {
     ];
     try {
       this.#commit(message.msgId, events, {
-        during: () => {
+        during: (appended) => {
           if (usage) this.#addToMeter(usage);
           store.set("link_recent", JSON.stringify(result.recent));
+          // What each proposal's linker read, for the second witness's comparison (WP9).
+          store.addTurn(
+            message.turnId,
+            appended.at(-1)?.seq ?? store.lastSeq,
+            JSON.stringify(result.links),
+          );
         },
         error: result.error,
       });
@@ -665,6 +725,161 @@ export class SessionRuntime extends DurableObject<Env> {
     };
     this.#commit(message.msgId, [{ type: "usage.recorded", schemaVersion: 1, payload: usage }], {
       during: () => this.#addToMeter(usage),
+    });
+  }
+
+  /**
+   * A turn's second witness (Phase 4 spec §4.2, WP9). It's refused for a turn that never ended
+   * here, a second witness for the same turn, an utterance id already in the log, and an utterance
+   * whose times fall more than 1 s outside the turn's own words. A witness for a finished turn is
+   * compared at once; one for a turn still running waits for it in the session's order, its ack
+   * coming when its events are written. A resend gets the same answer and changes nothing.
+   */
+  async #witness(message: ClientMessageOf<"witness">): Promise<void> {
+    const store = this.#store;
+    if (this.#answered(message.msgId) || this.#inflight.has(message.msgId)) return;
+    if (store.getNumber("started_seq") === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    if (store.get("ended_seq") !== undefined) {
+      this.#refuse(message.msgId, "already_ended", false);
+      return;
+    }
+    const refusal = this.#witnessRefusal(message);
+    if (refusal) {
+      this.#log.warn("witness refused", { reason: refusal });
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    if (!this.#runningTurns.has(message.turnId)) {
+      this.#settleWitness(message);
+      return;
+    }
+    // Its turn's extraction is queued or running: compare right after it, before anything queued
+    // later (the session's `end` included).
+    this.#inflight.add(message.msgId);
+    this.#witnessing.set(message.turnId, message.msgId);
+    try {
+      await this.#serially(async () => this.#settleWitness(message));
+    } finally {
+      this.#inflight.delete(message.msgId);
+      this.#witnessing.delete(message.turnId);
+    }
+  }
+
+  /** Why a witness can't be taken, as a fixed code for the log, or undefined. */
+  #witnessRefusal(
+    message: ClientMessageOf<"witness">,
+  ): "unknown_turn" | "second_witness" | "utterance_reused" | "outside_window" | undefined {
+    const store = this.#store;
+    const turn = store.turn(message.turnId);
+    if (!turn && !this.#runningTurns.has(message.turnId)) return "unknown_turn";
+    if ((turn && turn.witnessMsg !== null) || this.#witnessing.has(message.turnId)) {
+      return "second_witness";
+    }
+    if (message.outcome !== "transcribed") return undefined;
+    const { utterance } = message;
+    if (store.utteranceSeq(utterance.utteranceId) !== undefined) return "utterance_reused";
+    // Every utterance of the turn arrived before its turn_end, so the window is whole now.
+    const window = turnWindow(this.#biasedUtterances(message.turnId));
+    if (!window || !withinWindow(utterance, window, SESSION_LIMITS.witnessWindowMs)) {
+      return "outside_window";
+    }
+    return undefined;
+  }
+
+  /** A turn's utterances from the biased stream: its transcript, which proposals quote. */
+  #biasedUtterances(turnId: string): UtteranceFinalV2[] {
+    // Validated as `utterance.final` v2 when they arrived.
+    return (this.#store.turnUtterances(turnId) as unknown as UtteranceFinalV2[]).filter(
+      (utterance) => utterance.witness !== "unbiased",
+    );
+  }
+
+  /**
+   * Writes a witness's events after its turn's: the unbiased utterance, a `proposal.flagged` for
+   * each conflict, then `turn.witnessed`; or `turn.witnessed` alone for a witness that failed or
+   * was skipped.
+   */
+  #settleWitness(message: ClientMessageOf<"witness">): void {
+    const store = this.#store;
+    if (this.#isPurged() || store.done(message.msgId)) return;
+    if (store.get("ended_seq") !== undefined) {
+      this.#refuse(message.msgId, "already_ended", false);
+      return;
+    }
+    const turn = store.turn(message.turnId);
+    if (!turn || turn.witnessMsg !== null) {
+      // Its turn ended without a record (a failure that wrote nothing), or another witness won.
+      this.#log.warn("witness refused", { reason: turn ? "second_witness" : "unknown_turn" });
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    const events: NewEvent[] = [];
+    let result: WitnessTurnResult = { flagged: [], compared: 0, unavailable: 0 };
+    if (message.outcome === "transcribed") {
+      events.push({
+        type: "utterance.final",
+        schemaVersion: 2,
+        payload: { ...message.utterance },
+      });
+      try {
+        result = witnessTurn({
+          links: readLinks(turn.links),
+          utterances: this.#biasedUtterances(message.turnId),
+          unbiased: message.utterance,
+          session: { index: this.#index(), focusEntityId: store.get("focus_entity_id") ?? null },
+        });
+      } catch (error) {
+        // A bug: the witness is still recorded, with nothing flagged.
+        this.#log.error("witness comparison failed", { cause: errorName(error) });
+      }
+      for (const flagged of result.flagged) {
+        events.push({
+          type: "proposal.flagged",
+          schemaVersion: 1,
+          payload: toStorable(flagged) as unknown as Record<string, unknown>,
+        });
+      }
+    }
+    events.push({
+      type: "turn.witnessed",
+      schemaVersion: 1,
+      payload: {
+        turnId: message.turnId,
+        outcome: message.outcome === "transcribed" ? "compared" : message.outcome,
+        provider: message.provider,
+        model: message.model,
+        utteranceIds: message.outcome === "transcribed" ? [message.utterance.utteranceId] : [],
+        conflicts: result.flagged.length,
+        latencyMs: message.latencyMs ?? null,
+        reason: message.outcome === "transcribed" ? null : message.reason,
+      },
+    });
+    try {
+      this.#commit(message.msgId, events, {
+        during: (appended) => {
+          if (message.outcome === "transcribed" && appended[0]) {
+            store.addUtterance(message.utterance.utteranceId, message.turnId, appended[0].seq);
+          }
+          store.markWitnessed(message.turnId, message.msgId);
+        },
+      });
+    } catch (error) {
+      // An event the registry refused: a bug in the comparison. Don't run it again.
+      this.#log.error("witness not recorded", { cause: errorName(error) });
+      this.#commit(message.msgId, [], { error: { code: "internal", retryable: false } });
+      return;
+    }
+    // Counts and codes only: never a name or a word.
+    this.#log.info("turn witnessed", {
+      outcome: message.outcome,
+      reason: message.outcome === "transcribed" ? null : message.reason,
+      compared: result.compared,
+      unavailable: result.unavailable,
+      conflicts: result.flagged.length,
+      downgrades: result.flagged.filter((flagged) => flagged.target !== null).length,
     });
   }
 
