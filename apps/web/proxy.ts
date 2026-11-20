@@ -23,5 +23,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/home/:path*", "/onboarding/:path*", "/settings/:path*"],
+  matcher: ["/home/:path*", "/inbox/:path*", "/onboarding/:path*", "/settings/:path*"],
 };
