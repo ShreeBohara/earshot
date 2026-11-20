@@ -33,7 +33,7 @@
     "rivalContext": -5.499268490079506
   },
   "bias": -22.75544170367004,
-  "sources": ["exact", "sound", "homophone", "trigram", "initials", "family"],
+  "sources": ["exact", "trigram", "initials", "family"],
   "thresholds": {
     "tauLink": 0.72,
     "delta": 0.4,
