@@ -5,8 +5,12 @@ import { defineConfig, devices } from "@playwright/test";
 // health check in smoke.spec.ts needs a deployed stack; run e2e/sign-in.spec.ts, e2e/demo.spec.ts
 // (the /demo replay, at the test-only 8×), and e2e/keys.spec.ts locally.
 //
-// e2e/inbox/ is the review inbox (Phase 5 WP5) over the sample debriefs Settings → Data loads:
-// keyboard, focus, and axe in every state. Like the capture tests, it needs next dev.
+// e2e/inbox/ is the review inbox (Phase 5 WP5) over the test debriefs Settings → Data loads under
+// next dev: keyboard, focus, and axe in every state. Like the capture tests, it needs next dev.
+//
+// e2e/pilot/ is the pilot page (Phase 5 WP7): consent first, a participant's run by keyboard to
+// the download, the results file's fields, axe, and a network check that the page requests
+// nothing but static files; and "Load sample debriefs" bringing pilot.v1 into the inbox.
 //
 // e2e/capture/ drives the capture screen in its development-only fake mode: Chrome's fake
 // microphone, the fake speech-to-text adapter, and the edge Worker's e2e entry, whose cassettes
@@ -44,15 +48,22 @@ export default defineConfig({
     // Matched on e2e/capture/ itself: the checkout's own path may contain "capture" too.
     {
       name: "smoke",
-      testIgnore: /[\\/]e2e[\\/](?:capture|eval|inbox)[\\/]/,
+      testIgnore: /[\\/]e2e[\\/](?:capture|eval|inbox|pilot)[\\/]/,
       use: { ...devices["Desktop Chrome"] },
     },
-    // e2e/inbox/ reviews the sample debriefs in the inbox (Phase 5 WP5): keys, focus, and axe in
+    // e2e/inbox/ reviews the test debriefs in the inbox (Phase 5 WP5): keys, focus, and axe in
     // every state, on the zero-setup server with no keys and no providers.
     {
       name: "inbox",
       testMatch: /[\\/]e2e[\\/]inbox[\\/][^\\/]+\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"] },
+    },
+    // e2e/pilot/ runs /pilot as a participant would, keyboard first, and checks it calls no server
+    // (Phase 5 WP7). WP8's scripted reviewer joins it.
+    {
+      name: "pilot",
+      testMatch: /[\\/]e2e[\\/]pilot[\\/][^\\/]+\.spec\.ts$/,
+      use: { ...devices["Desktop Chrome"], acceptDownloads: true },
     },
     {
       name: "capture",
