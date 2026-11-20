@@ -10,7 +10,11 @@ import { defineConfig, devices } from "@playwright/test";
 //
 // e2e/pilot/ is the pilot page (Phase 5 WP7): consent first, a participant's run by keyboard to
 // the download, the results file's fields, axe, and a network check that the page requests
-// nothing but static files; and "Load sample debriefs" bringing pilot.v1 into the inbox.
+// nothing but static files; and "Load sample debriefs" bringing pilot.v1 into the inbox. Its
+// scripted reviewer (WP8, gates G1a and G2a) is the `reviewer` project: /pilot?p=ci by keyboard on
+// a fake clock with the manifest's right answers, every card's markers, keys per decision, focus,
+// axe in every state it reaches, and the KLM estimate per card against
+// packages/evals/baselines/pilot-klm.json (EARSHOT_PILOT_KLM=record records it, on purpose).
 //
 // e2e/capture/ drives the capture screen in its development-only fake mode: Chrome's fake
 // microphone, the fake speech-to-text adapter, and the edge Worker's e2e entry, whose cassettes
@@ -59,10 +63,18 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     // e2e/pilot/ runs /pilot as a participant would, keyboard first, and checks it calls no server
-    // (Phase 5 WP7). WP8's scripted reviewer joins it.
+    // (Phase 5 WP7).
     {
       name: "pilot",
       testMatch: /[\\/]e2e[\\/]pilot[\\/][^\\/]+\.spec\.ts$/,
+      testIgnore: /[\\/]e2e[\\/]pilot[\\/]scripted-reviewer\.spec\.ts$/,
+      use: { ...devices["Desktop Chrome"], acceptDownloads: true },
+    },
+    // The scripted reviewer (Phase 5 WP8): the pilot's path in CI at $0, so later packages can't
+    // make cards slower, keys more numerous, or markers invisible.
+    {
+      name: "reviewer",
+      testMatch: /[\\/]e2e[\\/]pilot[\\/]scripted-reviewer\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"], acceptDownloads: true },
     },
     {

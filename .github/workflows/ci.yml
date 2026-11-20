@@ -115,10 +115,18 @@ jobs:
       # reviewed by keyboard, the shortcuts' scope and switch, focus never on <body>, and axe in
       # every state in both themes. The pilot page is the `pilot` project (WP7): consent first, a
       # participant's run by keyboard to the results file, axe, a network check that it requests
-      # only static files, and "Load sample debriefs" bringing pilot.v1 into the inbox.
-      - name: Sign-in, the /demo replay at 8×, Settings → Keys, the demo CRM, the capture screen, the review inbox, and the pilot page (next dev with in-process PGlite, the e2e edge Worker's cassettes, Chrome's fake microphone, the sample debriefs; no secrets, no providers)
+      # only static files, and "Load sample debriefs" bringing pilot.v1 into the inbox. The
+      # scripted reviewer is the `reviewer` project (WP8, gates G1a and G2a): /pilot?p=ci by
+      # keyboard on a fake clock with the manifest's right answers. It fails on a seeded error
+      # without its marker (loud for a flagged one, the name note for a silent one, in the
+      # accessibility tree and on screen), more than 2 keys to accept, reject, or answer a question
+      # or 3 to choose another record, focus on <body>, an axe violation in any state it reaches,
+      # or a KLM estimate more than 10% above packages/evals/baselines/pilot-klm.json, and writes
+      # its report (the KLM median against 4.0 s, the keys per decision, and the flag-follower
+      # bound) to the job summary. $0: the static page, and nothing else.
+      - name: Sign-in, the /demo replay at 8×, Settings → Keys, the demo CRM, the capture screen, the review inbox, the pilot page, and its scripted reviewer (next dev with in-process PGlite, the e2e edge Worker's cassettes, Chrome's fake microphone, the sample debriefs; no secrets, no providers)
         working-directory: apps/web
-        run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/demo.spec.ts e2e/keys.spec.ts e2e/capture e2e/inbox e2e/pilot
+        run: pnpm exec playwright test e2e/sign-in.spec.ts e2e/demo.spec.ts e2e/keys.spec.ts e2e/capture e2e/inbox e2e/pilot e2e/pilot/scripted-reviewer.spec.ts
       # The fake-mic eval's subset (spec WP11 step 6; gate G3): its smoke test, then five of the
       # thirty debriefs. All thirty run in the eval workflow. No secrets, no providers.
       - name: Eval WAVs (Kokoro, from the cache, or rendered on a miss)

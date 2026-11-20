@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 5 WP7 built the pilot kit (below): `pilot.v1` and its builder, `/pilot`, the results file, `pilot:analyze`, and Settings → Data's sample debriefs switched to the set. WP7b wrote the paperwork first (`docs/pilot/consent.md`, `pre-registration.md`, `protocol.md`). WP8 adds the scripted reviewer and the KLM proxy to this record.
+Proposed (2026-11-20). Phase 5 WP7 built the pilot kit (below): `pilot.v1` and its builder, `/pilot`, the results file, `pilot:analyze`, and Settings → Data's sample debriefs switched to the set. WP7b wrote the paperwork first (`docs/pilot/consent.md`, `pre-registration.md`, `protocol.md`). WP8 added the scripted reviewer and the KLM proxy (below): the `reviewer` Playwright project, `klm.ts` and `reviewer.ts` in `@earshot/evals/pilot`, and `baselines/pilot-klm.json`. The KLM median misses the spec's 4.0 s target (6.49 s); until the cards or the target change, which is the owner's call, the gate holds the median at its baseline.
 
 ## Context and problem
 
@@ -28,6 +28,13 @@ What the kit has to work around:
 - **Progress:** **`sessionStorage`, written only after "I agree" (chosen)**: a reload keeps the place, closing the tab keeps nothing; `localStorage` (outlives the tab, so something is kept); nothing (a reload loses the session).
 - **The consent text:** **docs/pilot/consent.md bundled as text and read into blocks at build time (chosen)**, so the two can't differ; a copy in the page with a test comparing them.
 - **Sample debriefs:** **Settings → Data's "Load sample debriefs" loads `pilot.v1`, and WP3's two debriefs stay as a development-only control for the inbox's end-to-end tests (chosen)**; rewriting the inbox's e2e against the set (its names come from a seeded draw, and WP3's seven cards hold one of every tier on purpose); keeping WP3's two as the samples (the spec moves them to the set, and WP16's screen-reader passes want the pilot's cards in the inbox).
+- **The scripted reviewer's oracle (WP8):** **the manifest's seeded errors and right answers, each answer's digit from the manifest's order of candidates, checked on the page before it's pressed (chosen)**; reading the answer off the page (it would agree with whatever the page shows, so a reordered chooser or a lost marker would pass).
+- **Where a card's words come from:** **its visible text in the page when its deciding key is pressed, without its buttons and key labels (chosen)**; the card model's fields, counted in Node (a change to the component, such as one that hides the name note or adds a line, wouldn't show); a hand-picked subset, such as the heading and the values (it leaves out the evidence a careful reviewer reads, and it's the one subset that passes 4.0 s).
+- **Lines every card shows alike:** **counted, the no-audio line included (chosen)**: participants see it on every card; leaving out what every card repeats would model habituation, but needs a rule the page doesn't mark for what "alike" is, and would take 1.39 s off each unmarked card's estimate.
+- **Time:** **Playwright's fake clock, paused before the page loads, and advanced by each card's estimate key by key (chosen)**: the page's own review clock then records the estimate as `handlingMs`, and `pilot:analyze` gives the KLM median back from the run's results file; real time (CI's speed would be in every number); a fake clock that flows, with jumps (the time between steps leaks in).
+- **axe under a paused clock:** **a second walk of the same path, on a fake clock that flows (chosen)**: axe-core settles each rule through `setTimeout`, which a paused clock fires only as the reviewer spends time; resuming the clock around each axe pass (the active card's review clock would count it, so the exact `handlingMs` check couldn't hold); pumping the clock during axe (it adds fake time in proportion to CI's speed).
+- **The median while the set misses 4.0 s:** **held at the baseline's median, and the miss reported in every run (chosen)**, as WP4 held loud at an interim ceiling when its floor passed 15%; a hard 4.0 s (every PR fails until the cards change); reported only (the median could creep up within each card's 10%).
+- **Which markers:** **every card's, against the manifest's tiers, in the accessibility tree and on screen, the seeded ones first by name (chosen)**; the 8 seeded only (an unseeded question losing its loud marker would pass); class names or data attributes (a note hidden from sight but still in the markup would pass).
 
 ## Decision
 
@@ -94,6 +101,33 @@ The tier mix, reported and never tuned (spec §8):
 - **Catch rate:** final decisions, pooled as x of 8 per participant with a two-sided 95% Clopper–Pearson interval (36 of 40 gives 76.3–97.2%), flagged and silent apart, each participant's count, and "caught after accepting" (an accept that missed, then a fix); the flag-follower bound beside it.
 - **Checks:** a file for another set, or that isn't a results file, is left out and named; an order other than the manifest's, reviews of cards outside the set, and practice reviews are reported.
 
+### The scripted reviewer and the KLM proxy (WP8)
+
+`apps/web/e2e/pilot/scripted-reviewer.spec.ts`, the `reviewer` Playwright project in CI's `ui` job, is the pilot's path at $0 (gates G1a and G2a), so later packages can't make cards slower, keys more numerous, or markers invisible. Two tests walk the same path: consent, the practice, the 40 cards in CI's order (s01 to s10), and the results file, each card decided where focus is. Focus moves on by itself after each decision, so no decision needs j.
+
+- **The oracle** (`pilotOracle`, `packages/evals/src/pilot/reviewer.ts`) comes from the manifest alone: a flagged error is answered "New" on the digit of its place among the question's records, a silent one with c and the right record's digit in the correction panel (2 in all eight), and every other card is accepted by key: a for a linked card, 1 for a question no error was seeded in, r for "no record" (pilot.v1 has none). Before each digit the reviewer checks the page shows the answer there, "A new record" or the right record's name, so a reordered list fails rather than choosing wrong. The results file then has all 8 seeded errors caught by their right answers.
+- **Markers,** on every card, against the manifest's tiers: loud as "needs a check" in the card's accessible description and "Needs a check" on screen; a name note as the end of the card's accessible name and on screen. A flagged error's loud marker and a silent error's "matched by sound" are checked first, by name. On screen means rendered and not clipped into a box of a pixel or less, so text kept for screen readers alone doesn't count. The checks are soft: a run where markers vanish names every card that lost one.
+- **Keys per decision:** every key pressed between one decision and the next counts. At most 2 to accept, reject, or choose in a question, and 3 to choose another record for a link (`KEY_BUDGET`). As built: 30 accepts and 9 question choices with 1 key each, and 4 record choices with 2 (c, then the digit).
+- **Focus** is checked after every key, never `<body>`; after the last decision it's on "All caught up".
+- **The KLM estimate per card** (`klm.ts`): M 1.35 s + words ÷ rate + K 0.28 s × keys, the rate 3.97 words a second on a loud card (238 a minute) and 7.93 on any other (twice that, an assumption). **Words** are what the card shows a reviewer: the words of its visible text when its deciding key is pressed, so a fix counts the open correction panel too, without its buttons (the action toolbar, and the panel's "Use this record" and "Close") or key labels, which keys pay for. A word is a run of characters between whitespace with at least one letter or digit (`countWords`).
+- **Time.** The first test pauses Playwright's clock before the page loads, and spends each card's estimate key by key: the reading before each key (M with the first), then K. So the page's own review clock records each card's estimate as its `handlingMs`, to the millisecond (40 of 40), and `pilot:analyze` on the run's results file gives the KLM median back.
+- **axe** (WCAG 2.2 AA tags, serious and critical), in light and dark, in every state the second test reaches, told apart by the screen, the correction panel, a toast still showing (one on its way out is gone by the time axe reads the page), "All caught up", and the saved file: 9 states as built. That test spends the same time on each card, on a clock that flows, because axe-core settles each rule through `setTimeout`, and leaves the markers to the first, so a lost marker fails one test, not two.
+- **The gate** (`checkKlm`): no card more than 10% above `packages/evals/baselines/pilot-klm.json` and none in another tier than recorded, and the median at most 4.0 s or, while the committed set misses that, at most the baseline's median. A baseline from another set or model, or for other cards, fails until it's re-recorded.
+- **The baseline** is recorded on purpose from the committed set, by the scripted reviewer itself: `CI=1 EARSHOT_PILOT_KLM=record pnpm --filter @earshot/web exec playwright test e2e/pilot/scripted-reviewer.spec.ts`, then review the diff and commit it. It holds each card's heading, tier, keys, words, and estimate; a unit test holds it to the manifest and to its own arithmetic. Biome leaves the file alone, so a re-record writes the same bytes.
+- **The report** (`reviewerMarkdown`), in the run's output and CI's job summary: the median against 4.0 s, the slowest card, the keys per decision by kind, the markers, the flag-follower bound, the review clock, and the 40 cards.
+- **The flag-follower bound:** a reviewer who accepts everything unmarked or quiet catches only the loud seeded errors, 4 of 8 (`flagFollowerBound`, from the cards as shown).
+- **What makes it fail, as the spec asks:** adding `hidden` to the name note's `<span>` in `apps/web/components/inbox/proposal-card.tsx` fails the timed test on all 8 cards with a name note, the four silent errors by name ("the silent error s02 … carries its name note"). `className="sr-only"` in its place, still in the accessibility tree but gone from the screen, fails it too, on the on-screen half. Either change also fails five of the inbox's own e2e tests, which find cards by names that end in a name note. WP7's sample-debriefs test isn't among them: it counts the note's `data-slot`, which a hidden note keeps.
+
+As built on pilot.v1:
+
+| | |
+|---|---|
+| Median estimate | 6.49 s; the 4.0 s target is not met |
+| Slowest card | 20.02 s: s08's commitment, a loud question with 73 words |
+| Unmarked cards | 24 to 43 words, median 35, of which about 9 are quotes (each field's "Heard" words and the words that named the record) and 11 the no-audio line |
+| Without the no-audio line | median 5.10 s |
+| Without it and the quotes | median 3.71 s |
+
 ## Consequences
 
 **Good**
@@ -104,6 +138,8 @@ The tier mix, reported and never tuned (spec §8):
 - The cards are the inbox's, through the inbox's own engine, so G1b times the real review, and a change to the card shows up in both.
 - Flagged and silent errors are measured apart, which is what tells whether the quiet name note is noticed (spec §8's risk).
 - Settings → Data's samples are now the pilot's 40 cards, so the inbox can be tried, and screen-reader-checked (WP16), on exactly what participants see.
+- A later package that makes a pilot card longer, a decision take more keys, or a marker vanish fails `ui` with the card named, at $0.
+- The pilot's timing path runs end to end in CI: the page's review clock and `pilot:analyze` give back the model's numbers exactly.
 
 **Bad**
 
@@ -115,11 +151,16 @@ The tier mix, reported and never tuned (spec §8):
 - **The network check runs on `next dev`,** whose page is rendered on request; the built page is prerendered static (`next build` lists `/pilot` as static), which the check doesn't load.
 - **The shortcuts follow the device's switch** (Settings → Review, in `localStorage` on the same origin): leave it on, the default, on the pilot laptop.
 - **The page carries the set:** its 43 cards travel as props in the prerendered HTML, 105 KB against `/demo`'s 79 KB.
+- **The KLM median misses 4.0 s, by 62%** (6.49 s). Each card shows every field's value and the words it was heard as, the words that named its record, and the no-audio line, which alone is 1.39 s of each unmarked card's estimate. Without the line and the quotes the median would be 3.71 s, but whether cards should show less is a design decision, and the owner's, not a change to the count. Until then the gate holds the median at its baseline, so it can't get worse, and G1a's KLM half is reported as not met.
+- **The estimate is a model.** KLM's error is about 21%, scanning at twice reading speed is an assumption, and words count everything shown, repeated lines included, with no allowance for habituation. It guards against regressions; the pilot measures.
+- **Every card's tier is held to the manifest's,** so a change to `tierOf` that moves a pilot card fails the reviewer until the set's tiers, which pilot.v1's hash covers, and the baseline are reconsidered.
+- **Two walks of the same path:** the timed one doesn't run axe, and the axe one doesn't check the clock.
 
 ## More information
 
 - Spec: Phase 5 build spec, decision 13, §4.8, WP7, WP7b, WP8, §6 (G1, G2), §8.
-- `packages/evals/src/pilot/`: `build.ts` (the builder), `set.ts` (the manifest and results shapes, and the set's hash), `latin.ts` (the orders), `analyze.ts` and `stats.ts` (the analysis), `describe.ts` (what `pilot:gen` prints).
+- `packages/evals/src/pilot/`: `build.ts` (the builder), `set.ts` (the manifest and results shapes, and the set's hash), `latin.ts` (the orders), `analyze.ts` and `stats.ts` (the analysis), `describe.ts` (what `pilot:gen` prints), `klm.ts` (the KLM estimate, words, the gate, and the baseline's shape), `reviewer.ts` (the oracle, the key budgets, the flag-follower bound, and the report).
+- `packages/evals/baselines/pilot-klm.json`: the KLM baseline, recorded on purpose.
 - `apps/web/app/pilot/page.tsx`, `components/pilot/`, `lib/pilot/` (the data, the local sink and progress, the results file, the consent text, `?p=`).
-- Tests: `packages/evals/test/pilot-set.test.ts` (the rebuild, the seeded errors, the tiers, the hashes, the orders), `pilot-analyze.test.ts` (hand-made results files), `apps/web/test/pilot.test.ts`, and the `pilot` Playwright project (`e2e/pilot/`).
+- Tests: `packages/evals/test/pilot-set.test.ts` (the rebuild, the seeded errors, the tiers, the hashes, the orders), `pilot-analyze.test.ts` (hand-made results files), `pilot-klm.test.ts` (words, the estimate, the gate, the committed baseline, the oracle, the key budgets, the report), `apps/web/test/pilot.test.ts`, the `pilot` Playwright project (`e2e/pilot/`), and the `reviewer` project (`e2e/pilot/scripted-reviewer.spec.ts`).
 - Related: ADR-0031 (the 200 debriefs and their cassettes), ADR-0032 (reviews and the writers' rules), ADR-0035 (the inbox, the tiers, "accept all").

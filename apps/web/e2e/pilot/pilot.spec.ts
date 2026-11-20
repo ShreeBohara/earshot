@@ -1,14 +1,14 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { analyzePilot, PilotResults } from "@earshot/evals/pilot";
 import { expect, type Page, test } from "@playwright/test";
-import { expectFocusOffBody, settled } from "../inbox/support";
-import { seriousViolations } from "../support/axe";
+import { expectFocusOffBody } from "../inbox/support";
 import {
   decideFocused,
+  expectNoViolations,
+  expectOnlyStaticFiles,
   focusedCard,
   MANIFEST,
   openPilot,
-  type Seen,
   watchNetwork,
 } from "./support";
 
@@ -18,46 +18,6 @@ import {
 // §4.8's fields and nothing else, which pilot:analyze reads; axe in both themes; and a page that
 // requests nothing but static files: no API route, no server action, no write.
 test.setTimeout(240_000);
-
-const ORIGIN = new URL(process.env.BASE_URL ?? "http://localhost:3100").origin;
-
-/** axe in both themes, once the page has stopped moving, leaving it in the light one. */
-async function expectNoViolations(page: Page, state: string): Promise<void> {
-  for (const colorScheme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme });
-    await settled(page);
-    expect(await seriousViolations(page), `${state} (${colorScheme})`).toEqual([]);
-  }
-  await page.emulateMedia({ colorScheme: "light" });
-}
-
-/**
- * The network check: every request a GET for the page itself or a static file of the build (its
- * scripts, styles, fonts, and icon), on the page's own origin. No fetch or XHR to anything, so no
- * API route, no server action (a POST), and nothing sent anywhere. Two things are `next dev`'s
- * own and absent from the built page: its hot-reload socket, the only socket allowed, and the
- * font files it serves from `/__nextjs_font/` until they're in `/_next/static/media/`.
- */
-function expectOnlyStaticFiles(requests: readonly Seen[], sockets: readonly string[]): void {
-  const problems = requests.filter((request) => {
-    const url = new URL(request.url);
-    if (url.protocol === "blob:" || url.protocol === "data:") return false;
-    if (request.method !== "GET" || url.origin !== ORIGIN) return true;
-    if (request.type === "document") return url.pathname !== "/pilot";
-    if (!["script", "stylesheet", "font", "image"].includes(request.type)) return true;
-    const devFont = request.type === "font" && url.pathname.startsWith("/__nextjs_font/");
-    return !(
-      url.pathname.startsWith("/_next/static/") ||
-      url.pathname === "/favicon.ico" ||
-      devFont
-    );
-  });
-  expect(problems, "requests other than the page and its static files").toEqual([]);
-  expect(requests.some((request) => request.type === "document")).toBe(true);
-  for (const socket of sockets) {
-    expect(["/_next/hmr", "/_next/webpack-hmr"]).toContain(new URL(socket).pathname);
-  }
-}
 
 async function storage(page: Page): Promise<{ session: string[]; local: string[] }> {
   return page.evaluate(() => ({

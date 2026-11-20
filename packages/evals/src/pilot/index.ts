@@ -1,7 +1,8 @@
-// @earshot/evals/pilot: the pilot kit's pure parts (Phase 5 spec WP7; ADR-0039): the set's name,
-// seed, manifest, and results-file shapes, the participants' orders, the statistics, and the
-// pre-registered analysis. The builder (build.ts) runs the 200 debriefs through the agent, so it
-// isn't exported here: scripts/gen-pilot.ts and the tests import it directly.
+// @earshot/evals/pilot: the pilot kit's pure parts (Phase 5 spec WP7, WP8; ADR-0039): the set's
+// name, seed, manifest, and results-file shapes, the participants' orders, the statistics, the
+// pre-registered analysis, and the scripted reviewer's oracle, key budgets, KLM estimate, and
+// baseline gate. The builder (build.ts) runs the 200 debriefs through the agent, so it isn't
+// exported here: scripts/gen-pilot.ts and the tests import it directly.
 export {
   analyzeParticipant,
   analyzePilot,
@@ -17,7 +18,41 @@ export {
   readResultsFile,
 } from "./analyze";
 export { pilotSetMarkdown, recordWords } from "./describe";
+export {
+  checkKlm,
+  countWords,
+  DecisionKind,
+  KLM,
+  KLM_BASELINE_PATH,
+  KLM_KEY_MS,
+  KLM_MEDIAN_TARGET_MS,
+  KLM_RECORD_COMMAND,
+  KLM_REGRESSION,
+  KlmBaseline,
+  KlmCard,
+  type KlmCheck,
+  type KlmInput,
+  klmBaseline,
+  klmBaselineText,
+  klmMedianMs,
+  klmMs,
+  klmSeconds,
+  klmSteps,
+} from "./klm";
 export { balancedLatinRectangle, williamsRow } from "./latin";
+export {
+  CHOICE_KEYS,
+  DECISION_KINDS,
+  type Decision,
+  flagFollowerBound,
+  KEY_BUDGET,
+  keyDistribution,
+  type OracleAnswer,
+  overBudget,
+  pilotOracle,
+  type ReviewerReport,
+  reviewerMarkdown,
+} from "./reviewer";
 export {
   CI_PARTICIPANT,
   MANIFEST_FORMAT,
