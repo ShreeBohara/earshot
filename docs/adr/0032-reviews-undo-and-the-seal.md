@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 5 WP1 built the contracts: `proposal.reviewed` v2 and its upcaster, `proposal.snoozed` and `session.sealed` v1, the writers' review rules, the projections that fold them, the `review` and `snooze` messages, the `sealed` error code, and the `am` and `sat` ticket claims. WP3 builds the seal and the two writers (`SessionDO`'s handling of the new messages, the web Worker's route, and migration 0014), and completes this record. Amends ADR-0020 (see its "Phase 5 event types").
+Proposed (2026-11-20). Phase 5 WP1 built the contracts: `proposal.reviewed` v2 and its upcaster, `proposal.snoozed` and `session.sealed` v1, the writers' review rules, the projections that fold them, the `review` and `snooze` messages, the `sealed` error code, and the `am` and `sat` ticket claims. WP3 built the seal and the two writers: `SessionDO`'s `review` and `snooze`, the seal and its refusals, the reopen after a flag, `sealNow` and the edge Worker's `sealSessions`, the flush consumer's audit rows, the web Worker's review route, the repair path, migration 0014, tickets that carry the sign-in, sample sessions, and the client's `sendReview` and `sendSnooze`. Amends ADR-0020 (see its "Phase 5 event types") and ADR-0024 (its "Phase 5: the seal").
 
 ## Context and problem
 
@@ -89,21 +89,61 @@ The tier function is passed in. Until WP4's `tierOf` (`@earshot/understanding/ti
 - **`snooze`** carries `snoozeId`, `proposalId`, and `until`.
 - **`sealed`** joins the error codes: the session takes no more writes, ever, and the client sends reviews to the web route instead, with the same review ids. Not retryable.
 - **Keys.** Both messages are held to the frame cap and refused if anything in them is shaped like a key, as every client message is outside `turn_end.key`. `ReviewInput` carries the same check itself, so the web route, which parses it on its own, refuses key-shaped strings too.
-- **Tickets** gain two optional claims, still version 1: `am`, how the web session that minted the ticket signed in, and `sat`, when, in Unix seconds. They come together, `sat` can't be later than the ticket's `iat` plus the clock skew (which also catches milliseconds), and they're written after `exp`, so a ticket without them signs to exactly the bytes it did before. `SessionDO` will record them as each socket review's `by.auth`.
-- **Until WP3,** `SessionDO` and the voice package's fake don't handle `review` or `snooze`, as `witness` waited from Phase 4's WP1 to its WP9. No client sends them before WP3.
+- **Tickets** gain two optional claims, still version 1: `am`, how the web session that minted the ticket signed in, and `sat`, when, in Unix seconds. They come together, `sat` can't be later than the ticket's `iat` plus the clock skew (which also catches milliseconds), and they're written after `exp`, so a ticket without them signs to exactly the bytes it did before. `SessionDO` records them as each socket review's `by.auth` (WP3, below).
 
-### Storage until migration 0014
+### Storage: migration 0014 (WP3)
 
-`rebuildProjections` writes what the Phase 4 tables can hold: the status (a reopen stores `proposed`), the latest review's diff, its `handlingMs` as `reviewer_ms` (v1's `reviewerMs` for every stored review, so no row changes), and its seq and time. Migration 0014 (WP3) adds `review_id`, `review_mode`, `batch_id`, `policy_id`, `sync_eligible_at`, `snoozed_until`, `supersedes`, `superseded_by`, and `sessions.sealed_at`, and `superseded` to the allowed statuses. No writer supersedes a proposal before then.
+`sessions` gains `sealed_at` (from `session.sealed`) and `focus_entity_id` (the account open when `POST /api/sessions` created the session, with a foreign key to the workspace's `crm_entities` that clears the column when the record goes, as `proposals.target_entity_id` does). `proposals` gains `review` (the latest review whole, `ReviewView` without its seq and time), and in columns of their own the fields the inbox and Phase 6 query by: `review_id`, `review_mode` (checked), `batch_id`, `policy_id`, and `sync_eligible_at`; plus `snoozed_until`, `supersedes`, and `superseded_by`. The status check is dropped and recreated with `superseded`. Every column is nullable: rows from before fill at their session's next rebuild. `rebuildProjections` writes them all, so the rows read back as the replay exactly: `packages/db/test/projections.test.ts` compares them with the committed demo snapshot in full again, as it did before WP1.
 
-### The seal and the two writers (WP3)
+### The seal (WP3)
 
-The design WP3 builds, from the spec's decision 1 and §4.3:
+**When.** `end` sets `seal_due_ms` 60 s ahead. Each client write that follows it and appends something (a review, a snooze, usage, a metric) moves it to 60 s after that write, never past 30 minutes after `end` (`SEAL_TIMING`, targets). A session `SessionDO` ended itself after idling gets the same grace. The alarm, once it's due, appends `session.sealed { by: "session" }` in the session's serial queue (so after any turn, witness, or `end` queued before it), re-checking the grace first, since a write that arrived while the task waited restarts it; then it flushes at once, after any flush already under way. An object that ended before Phase 5 has no `seal_due_ms`: its grace runs from `end`, long over, so it seals at its next alarm.
 
-- `SessionDO` takes reviews from `start` until it seals: 60 s after `end`, or after the last state-changing message that followed it, whichever is later, and at most 30 minutes after `end` (targets). `session.sealed` is the last event it ever writes, flushed at once; after it, every client message but `hello` and `ack` is refused with `sealed`.
-- Seqs are contiguous, so once Postgres holds `session.sealed` it holds the whole log. Only then does the web Worker append reviews and snoozes, one `withTenant` transaction per request: the session's advisory lock, a log that must hold the seal (else 409 `not_sealed`), `replay`, `checkReviews`, the append, and `rebuildProjections`.
-- Neither can claim a seq the other holds: `SessionDO` writes nothing after the seal, and the web Worker writes nothing before Postgres has it. A redelivered flush message for a range Postgres already holds takes the existing "stale, the ids match" path, even with web reviews after it.
-- Sessions that ended before Phase 5, or whose seal never came, are sealed by a repair path (`sealSessions`), with `by: "web"` when the object holds nothing.
+**After.** `session.sealed` is the last event the object ever writes. Every client message but `hello` and `ack` is refused with `sealed`, not retryable, except a resend of a message answered before the seal, which gets its first answer as any resend does. Cleanup waits for Postgres to confirm a log that ends in the seal, then runs a day later, as before; a confirmation of the log up to `session.ended` is no longer enough.
+
+**`sealNow()`**, for the repair path: `gone` when the object holds no log (never started, cleaned up, or purged), `live` while it's capturing, `sealed` when it was sealed before, and `sealing` when this call wrote the seal (it skips the grace). The edge Worker's default entrypoint fans it out as `sealSessions(ids)`, at most 500 lowercase session UUIDs a call, ten at a time, answering a bad argument rather than throwing, like `purgeSessions`.
+
+### The socket writer: `SessionDO` (WP3)
+
+- **`review`**, from `start` until the seal: reviews whose `reviewId` the log already holds are skipped (a `writes` table maps each review and snooze id to its seq and proposal; an id reused for another proposal is refused), so the same review under a new msgId gets the first one's seq. The rest are completed (`by` is the pinned user with the socket's `am` and `sat` as `auth`; `syncEligibleAt` is the object's clock plus `UNDO_WINDOW_MS` for an approval or an edit) and checked together with `checkReviews` against the proposals the log folds to, then appended in one transaction, or refused together with `bad_message`. Refusals log a fixed reason and a position, never an id or a value.
+- **A ticket without `am` and `sat`** (minted by a web app from before WP3, during the deploy window the protocol allows) records `by.auth: null`: unknown, not unauthenticated, since the ticket itself proves the web app signed the user in. The review's mode (`single` or `batch`) still tells it apart from machine reviews, whose `auth` is null too.
+- **`snooze`** follows the same rules with `checkSnooze`, and needs no signing key: it approves nothing.
+- **Failing closed:** without a usable `EARSHOT_AUDIT_SIGNING_KEY` (development uses the committed development key, as `loadAuditSigningKey` allows only there), `review` is refused with `internal`, not retryable, since the flush couldn't store it with its audit row.
+- **A flag after an approval** (decision 15): when a witness's `proposal.flagged` lands on an approved or edited proposal, the same transaction appends, right after that flag, a reopen with `mode: "system"`, `reason: "flagged"`, `undoes` the latest review, no sign-in, input, or time, the `session` surface, and as `seen` the proposal as the flag left it. It's checked with `checkReview` (`from: "session"`) first. It's written whether or not a signing key is set: without one no approval could have been taken over the socket, and an approval in doubt mustn't stand.
+
+### The flush consumer's part (WP3)
+
+For the review events an append writes, whichever path writes them (the batch itself, the rest of a stale batch, or a gap repaired from the object), the consumer records an audit row each, in the session's user's name as the `actor_insert` policy requires, and one checkpoint (`request: "flush"`), in the append's own transaction (`recordReviewAudit` in `@earshot/db`). Nothing on the "stale, the ids match" path, so a redelivery adds no rows. Without a signer a message carrying reviews is retried, and stores nothing, until the key is fixed; messages without reviews flush as before.
+
+### The web writer: `POST /api/sessions/:id/reviews` (WP3)
+
+`{ reviews?: ReviewInput[], snoozes?: SnoozeInput[] }`, 1 to 25 in all and at most 64 KiB (`ReviewRouteRequest` in `@earshot/core`, which refuses anything shaped like a key, as the socket does). Same-site only, as the key routes are. Reviews need the signing key: without a usable one the route answers 503 `audit_unavailable` before touching the database; snooze-only requests don't. Each review records the viewer's sign-in method and when that sign-in session began, and `syncEligibleAt` from the route's clock. Then one `withTenant` transaction (`writeSessionReviews` in `@earshot/db`):
+
+1. the session's advisory lock, the one `appendEvents` takes;
+2. the log; without `session.sealed`, 409 `not_sealed`, even when `ended_at` is set;
+3. `replay`, then each review and snooze whose id the log holds is answered as `recorded: "before"` with its seq, and the rest are checked with `checkReviews` and `checkSnooze` (a proposal may appear once per request);
+4. the append after the log's last seq;
+5. `rebuildProjections`;
+6. an audit row per review appended, and one checkpoint (`request: "review"`), last.
+
+Answers: 200 `{ sessionId, reviews, snoozes, lastSeq }` with each item's seq; 409 `stale` (with the item's kind and position) for a proposal decided, reopened, or replaced since its card loaded; 400 `invalid_request` for anything else; 404 for a session that isn't the viewer's own; 413 `too_large`; 503; 500. Nothing from the request is quoted.
+
+**The lock order.** Session first, then the workspace's audit lock, everywhere: the trigger takes the audit lock at the first audit insert and holds it until commit, and no writer takes a session lock after an audit insert. Both writers run `rebuildProjections` before the audit rows rather than after (§4.3 listed it last): the rebuild reads and rewrites the session's rows and doesn't depend on the audit rows, so the reorder changes nothing but how long the audit lock is held, which is now just the inserts and the checkpoint's signature.
+
+### Why the two writers can't race
+
+`SessionDO` writes nothing after `session.sealed`, and the web Worker writes nothing until Postgres holds it, under the same advisory lock the flush's appends take, so no seq can be claimed twice. A redelivered flush message for a range Postgres already holds takes the "stale, the ids match" path even with the web Worker's reviews after it, and is acked; a redelivery of the seal's own message does the same. `apps/edge/test/node/flush.test.ts` runs exactly that against PGlite: a sealed log flushed, a web review written, then the original message and the seal's message redelivered, both acked with no conflict and no extra audit row.
+
+### Tickets, sessions, and the repair path (WP3)
+
+- `POST /api/sessions` and `/ticket` sign each ticket with the viewer's `signInMethod` (Better Auth's session row, `unknown` before migration 0013) and the session's `createdAt` in whole seconds. A sign-in time ahead of the route's clock is claimed at the ticket's own time, so a clock difference can't fail the ticket.
+- `POST /api/sessions` stores the focus account; `/ticket` answers for an ended session until it's sealed, since the tray still reviews over the socket then; `/api/voice/token` still refuses an ended session.
+- **The repair path** (`repairUnsealedSessions`, for WP5's inbox loader): at most 20 of the viewer's sessions with events and no seal, ended more than 10 minutes ago or never ended and started more than 2 hours ago (targets), oldest first; `sealSessions` asks their objects; for `gone`, `sealSessionLog` seals Postgres's copy under the session's lock, with `session.ended` first, at the last event's time and with the usage it recorded as its cost, if the log never ended. `live`, `sealing`, and `sealed` are left alone. An unreachable edge Worker skips the load.
+
+### Sample sessions and the client (WP3)
+
+- `importSessionLog(tx, jsonl, { mapDemoIds })` loads a sealed log into the workspace as the user's session: every id derived from the workspace and the original (so a sample loads into any number of workspaces, and loading it twice adds nothing), records named by the demo CRM's dataset ids pointed at the workspace's rows, and `session.ended` and `session.sealed { by: "import" }` added if missing. Settings → Data loads two fixtures (`packages/events/fixtures/samples/`); WP7 switches it to `pilot.v1`.
+- `SessionClient.sendReview(reviews)` splits a batch by count (25) and by frame bytes (64 KiB), in order, and resolves with one delivery per message; a review no frame can hold is reported `too_large`, unsent. A message refused with `sealed`, and every message once the client has closed for good, goes to the route (`createReviewRoute`, which retries `not_sealed` briefly) with the same review ids. `sendSnooze` does the same for one snooze. The voice package's in-memory SessionDO takes both and can `seal()`.
 
 ## Consequences
 
@@ -116,12 +156,16 @@ The design WP3 builds, from the spec's decision 1 and §4.3:
 - Both writers share one set of rules, tested at $0, and the fold refuses the worst violations again, so a writer that skips them can't commit a log that won't replay.
 - The sync boundary is in each approval (`syncEligibleAt`), not in a page that can close.
 - Tickets without the sign-in claims are unchanged, so old and new web apps both work against the new edge.
+- One event makes "sealed" and "Postgres holds the whole log" the same fact, so the two writers never need a flag kept in step, and the redelivery a second writer would break is tested.
+- Reviews never reach Postgres without their audit rows: both writers fail closed without a signing key, and a redelivery writes no second row.
 
 **Bad**
 
 - The fold now fails on more writer bugs: a misnamed or doubled reopen, a review or snooze of a superseded proposal, a bad supersede, a seal before the end or twice. Each stops that session's replay until it's fixed with a new event or an upcaster.
 - Many cross-field rules live in code (`checkReview`), not in the schema, in either language, so the lab's Pydantic models accept reviews the writers would refuse.
-- Until migration 0014, Postgres rows hold only part of a v2 review; the projection and the log hold the rest.
+- Each proposal row repeats its latest review whole (`review`, jsonb) beside the columns the inbox queries, so a row grows with what the reviewer saw.
+- The seal delays the inbox: an ended session shows as "Finishing" for at least a minute after the tray's last write, plus its flush. Whether 60 s is enough for late usage and metrics on real networks, and whether the seal's alarm keeps the object from hibernating, are left for the first deploy (spec Appendix B, #8 and #9).
+- The whole path from the tray through the flush to the inbox needs both Workers on one Postgres, so CI tests each half (workerd and PGlite) and the first deploy checks the whole.
 - `ReviewView` dropped `reviewerMs`, so its readers changed, and the `reviewer_ms` column keeps a name that now means the handling time.
 - `anyFlagTier` marks more than WP4's tiers will (a lone `self_correction`, for one), so "accept all" takes less until WP4 lands.
 - A v2 review is several times the size of a v1 review, mostly `seen`, which grows logs and flush messages.
@@ -131,5 +175,8 @@ The design WP3 builds, from the spec's decision 1 and §4.3:
 - Spec: `reports/Earshot Phase 5 build spec.md`, decisions 1–3, 15, and 16, §4.1 to §4.3, WP1, and WP3.
 - Contracts: `packages/core/src/contracts/events/{proposal-reviewed,proposal-snoozed,session-sealed}.ts`; `ReviewInput`, `SnoozeInput`, `review`, `snooze`, and `sealed` in `session-protocol.ts`; `am` and `sat` in `session-ticket.ts`.
 - Upcaster, rules, and projections: `packages/events/src/{upcasters,review-rules}.ts` and `packages/events/src/projections/{proposals,session}.ts`.
-- Storage: `packages/db/src/projections.ts`.
+- Storage: `packages/db/migrations/0014_seal_and_reviews.sql` and `packages/db/src/projections.ts`.
+- The writers: `apps/edge/src/session-do.ts` (`review`, `snooze`, the seal, `sealNow`, the reopen), `apps/edge/src/flush.ts` and `queue.ts` (audit rows at flush, `sealSessions`), `packages/db/src/reviews.ts` (`recordReviewAudit`, `writeSessionReviews`, `sealSessionLog`, `unsealedSessions`), `apps/web/lib/reviews/{routes,repair}.ts`, and `packages/db/src/import-session.ts`.
+- The client: `packages/voice/src/session/{client,reviews}.ts`; the route's contract in `packages/core/src/contracts/review-route.ts`.
+- Tests: `apps/edge/test/sessions/{seal,reviews}.test.ts`, `apps/edge/test/node/flush.test.ts`, `packages/db/test/{reviews,projections}.test.ts` and `pgtap/95_seal_and_reviews.sql`, `apps/web/test/review-routes.test.ts`, and `packages/voice/test/session-reviews.test.ts`.
 - Regenerate the demo snapshot on purpose with `pnpm --filter @earshot/events test -u`, and review the diff.
