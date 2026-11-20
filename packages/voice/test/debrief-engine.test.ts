@@ -614,3 +614,53 @@ describe("hands-free", () => {
     expect(h.vad.calls).toEqual(["load", "start"]);
   });
 });
+
+describe("the session audio clock", () => {
+  it("starts at audioClockStartMs: finals, words, partials, and socket offsets are on it", async () => {
+    // 90 s: past the ring's 60 s, so even the first sample lands partway into the ring.
+    const h = harness({ audioClockStartMs: 90_000 });
+    expect(h.engine.audioClockMs).toBe(90_000);
+    await h.start();
+    await press(h, 1_800);
+    expect(h.story()).toEqual(["final 1 Acme renewed for two years", "turn_end 1 ptt_release"]);
+    const utterance = h.of("final")[0]?.utterance;
+    // The script's first turn, spread from the start of the press, which is at 90,000 ms.
+    expect(utterance).toMatchObject({ startMs: 90_000, endMs: 91_541 });
+    expect(utterance?.words?.map((word) => [word.w, word.startMs, word.endMs])).toEqual([
+      ["Acme", 90_000, 90_237],
+      ["renewed", 90_296, 90_711],
+      ["for", 90_770, 90_948],
+      ["two", 91_007, 91_185],
+      ["years", 91_244, 91_541],
+    ]);
+    expect(h.of("partial")[0]).toMatchObject({ text: "Acme", startMs: 90_000, endMs: 90_237 });
+    expect(h.fake.stats().baseOffsetsMs).toEqual([90_000]);
+    // The press's 1,800 ms, and the 12 ms of silence that padded its flushed remainder to 20 ms.
+    expect(h.engine.audioClockMs).toBe(91_812);
+    expect(() => harness({ audioClockStartMs: -1 })).toThrow(RangeError);
+  });
+
+  it("replays after drops from the right place on it: the press's start, then the last turn's end", async () => {
+    const h = harness({
+      audioClockStartMs: 90_000,
+      fake: { faults: { dropAtMs: [91_200, 92_600] } },
+    });
+    await h.start();
+    h.engine.pushToTalk(true);
+    await h.talk(1_216); // the first drop: the next socket replays the press from 90,000 ms
+    await h.talk(600);
+    h.engine.pushToTalk(false);
+    await h.clock.advance(0);
+    await press(h, 1_600); // the second drop: the next socket starts where turn 1's audio ended
+    expect(h.story()).toEqual([
+      "usage fake",
+      "final 1 Acme renewed for two years",
+      "turn_end 1 ptt_release",
+      "usage fake",
+      "final 2 Send the proposal Friday",
+      "turn_end 2 ptt_release",
+    ]);
+    // Turn 1 was 1,816 ms of audio from 90,000 ms; nothing is replayed from before either.
+    expect(h.fake.stats().baseOffsetsMs).toEqual([90_000, 90_000, 91_816]);
+  });
+});

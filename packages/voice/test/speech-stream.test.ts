@@ -52,6 +52,17 @@ describe("PcmRingBuffer", () => {
     expect(ring.read(2, 1)).toHaveLength(0);
   });
 
+  it("numbers from a later start index, holding nothing before it, and wraps from there", () => {
+    const ring = new PcmRingBuffer(10, 25);
+    expect([ring.start, ring.end]).toEqual([25, 25]);
+    ring.write(ramp(25, 4));
+    expect([...ring.read(0)]).toEqual([25, 26, 27, 28]);
+    ring.write(ramp(29, 9));
+    expect([ring.start, ring.end]).toEqual([28, 38]);
+    expect([...ring.read(0)]).toEqual([28, 29, 30, 31, 32, 33, 34, 35, 36, 37]);
+    expect(() => new PcmRingBuffer(10, -1)).toThrow(RangeError);
+  });
+
   it("holds 60 s of 16 kHz PCM16 in about 1.9 MB", () => {
     const stream = new SpeechStream();
     expect(RING_SECONDS).toBe(60);
@@ -120,6 +131,16 @@ describe("SpeechStream", () => {
     const result = stream.take(0, false);
     expect(result.skipped).toBe(32_000);
     expect(result.messages.reduce((sum, message) => sum + message.length, 0)).toBe(15_360);
+  });
+
+  it("starts at a later sample of the session clock, and never replays from before it", () => {
+    const stream = new SpeechStream({ startSample: 48_000 });
+    expect([stream.start, stream.end]).toEqual([48_000, 48_000]);
+    stream.append(ramp(48_000, 2_048));
+    const result = stream.take(0, false);
+    expect(result.messages).toHaveLength(2);
+    expect(result.messages[0]?.[0]).toBe(48_000 % 32_768);
+    expect(result.cursor).toBe(50_048);
   });
 
   it("converts between samples and session audio ms at 16 kHz", () => {

@@ -5,7 +5,9 @@
 // Audio. Capture runs for the whole armed session; pressing push-to-talk gates what enters the
 // speech stream (spec decision 11). The stream's sample index is the session's audio clock, and
 // its last 60 s stay in a ring buffer. Each socket sends from a cursor into the stream, so a
-// reconnect replays from the end of the last final simply by starting its cursor there.
+// reconnect replays from the end of the last final simply by starting its cursor there. An engine
+// that replaces another in the same session starts its stream where the old one's ended
+// (`audioClockStartMs`, from the old engine's `audioClockMs`), so the clock never starts over.
 //
 // Turns. In push-to-talk, a turn is one press. On release the engine flushes the worklet's
 // partial frame, sends the remainder (padded to 20 ms) and the provider's force-finalize, and
@@ -66,6 +68,12 @@ export interface DebriefEngineOptions {
    */
   readonly getCredential: (signal: AbortSignal) => Promise<TempCredential>;
   readonly mode?: CaptureMode;
+  /**
+   * Where the speech stream starts on the session's audio clock, in ms (default 0), rounded up
+   * to a whole sample. An engine that replaces another in the same session passes the old one's
+   * `audioClockMs`, so its utterance and word times come after the old engine's, never on top.
+   */
+  readonly audioClockStartMs?: number;
   /** The built pcm16-capture worklet. */
   readonly workletUrl?: string | URL;
   /** Where frames come from. Defaults to the AudioWorklet graph; tests pass a scripted source. */
@@ -187,7 +195,7 @@ export class DebriefEngine implements VoiceEngine {
   /** After giving up, the socket stays down until the rep acts again. */
   #suspended = false;
   /** The stream position of the next sample the current socket hasn't sent. */
-  #cursor = 0;
+  #cursor: number;
 
   #currentTurn: Turn | undefined;
   /**
@@ -200,9 +208,9 @@ export class DebriefEngine implements VoiceEngine {
   #pendingFinalize = false;
   #providerTurnOpen = false;
   #lastVoicedSample = Number.NEGATIVE_INFINITY;
-  #lastFinalEndSample = 0;
+  #lastFinalEndSample: number;
   /** Audio before this belongs to turns that have ended; it's never replayed. */
-  #committedSample = 0;
+  #committedSample: number;
   readonly #turnWaiters = new Set<() => void>();
   readonly #socketWaiters = new Set<() => void>();
 
@@ -238,7 +246,12 @@ export class DebriefEngine implements VoiceEngine {
     this.#speech = new SpeechStream({
       ringSeconds: options.ringSeconds ?? 60,
       messageSamples: Math.round(options.adapter.limits.chunkMs * SAMPLES_PER_MS),
+      startSample: audioClockStartSample(options.audioClockStartMs ?? 0),
     });
+    // Audio before the stream's start was an earlier engine's: no socket here sends or replays it.
+    this.#cursor = this.#speech.start;
+    this.#lastFinalEndSample = this.#speech.start;
+    this.#committedSample = this.#speech.start;
     this.#preRoll = new PcmRingBuffer(Math.max(1, this.#settings.preRollSamples));
   }
 
@@ -248,6 +261,15 @@ export class DebriefEngine implements VoiceEngine {
 
   get mode(): CaptureMode {
     return this.#mode;
+  }
+
+  /**
+   * The end of the speech stream on the session's audio clock, in ms: where an engine replacing
+   * this one in the same session starts (`audioClockStartMs`). It's a whole number of samples, so
+   * it can be fractional. Read it once `stop()` has resolved; until then it can still move.
+   */
+  get audioClockMs(): number {
+    return this.#speech.end / SAMPLES_PER_MS;
   }
 
   on(listener: (event: VoiceEvent) => void): () => void {
@@ -892,6 +914,14 @@ export class DebriefEngine implements VoiceEngine {
     if (handle !== undefined) this.#clock.clearTimeout(handle);
     delete this.#timers[key];
   }
+}
+
+/** A start on the session's audio clock, in ms, as a sample index: rounded up, never earlier. */
+function audioClockStartSample(ms: number): number {
+  if (!Number.isFinite(ms) || ms < 0) {
+    throw new RangeError("audioClockStartMs must be a non-negative number");
+  }
+  return Math.ceil(ms * SAMPLES_PER_MS);
 }
 
 function voiceCodeFor(code: SttErrorCode): VoiceErrorCode {

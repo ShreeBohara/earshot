@@ -2,7 +2,8 @@
 // the last 60 s kept for replay (spec WP4 step 3). Only gated audio enters it: audio captured
 // while push-to-talk is held, or while hands-free mode is streaming. Its sample index is the
 // session's audio clock, so a word at sample 48,000 is at 3,000 ms of session audio, and every
-// transcript time in `utterance.final` is on this clock.
+// transcript time in `utterance.final` is on this clock. A stream that takes over from an earlier
+// one in the same session starts at that one's end rather than at 0, so the clock never repeats.
 //
 // A socket reads from the stream through a cursor, the index of its next unsent sample. Live
 // audio and replay after a reconnect are the same operation: send from the cursor to the end.
@@ -30,6 +31,8 @@ export interface SpeechStreamOptions {
   readonly ringSeconds?: number;
   readonly messageSamples?: number;
   readonly minMessageSamples?: number;
+  /** Where the stream starts on the session's audio clock, in samples. Defaults to 0. */
+  readonly startSample?: number;
 }
 
 export interface TakeResult {
@@ -54,10 +57,13 @@ export class SpeechStream {
     if (this.minMessageSamples > this.messageSamples) {
       throw new RangeError("minMessageSamples can't exceed messageSamples");
     }
-    this.#ring = new PcmRingBuffer((options.ringSeconds ?? RING_SECONDS) * TARGET_SAMPLE_RATE);
+    this.#ring = new PcmRingBuffer(
+      (options.ringSeconds ?? RING_SECONDS) * TARGET_SAMPLE_RATE,
+      options.startSample ?? 0,
+    );
   }
 
-  /** The stream's length in samples: the session audio clock. */
+  /** The stream's end in samples: the session audio clock. */
   get end(): number {
     return this.#ring.end;
   }
