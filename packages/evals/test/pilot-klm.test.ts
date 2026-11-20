@@ -326,6 +326,7 @@ describe("the report", () => {
         decision: card.decision,
         keys: card.keys,
       })),
+      markers: { checked: 43, missing: [] },
       focus: { keys: 45, last: "All caught up" },
       clock: { exact: 40, analyzedMedianMs: baseline.medianMs },
       attempt: 0,
@@ -336,6 +337,9 @@ describe("the report", () => {
       "No card more than 10% above `packages/evals/baselines/pilot-klm.json`:** yes",
     );
     expect(text).toContain("| Accept | at most 2 | 31 with 1 key |");
+    expect(text).toContain(
+      "Every card showed the markers the manifest built it with, in the accessibility tree and on screen (43 cards",
+    );
     expect(text).toContain("**4 of 8**");
     expect(text).toContain("on 40 of 40 cards");
     expect(text.match(/^\| \d+ \| s\d\d \|/gm)).toHaveLength(40);
@@ -352,12 +356,15 @@ describe("the report", () => {
       klm: checkKlm(slower, baseline, manifest),
       recorded: false,
       decisions: [{ proposalId: first.proposalId, decision: "accept", keys: ["j", "j", "a"] }],
+      markers: { checked: 43, missing: ["s02 Note · Atlas Freight"] },
       focus: { keys: 3, last: "All caught up" },
       clock: { exact: 39, analyzedMedianMs: null },
       attempt: 1,
     });
     expect(failing).toContain("attempt 2");
+    expect(failing).toContain("**1 of 43 cards lost a marker:** s02 Note · Atlas Freight.");
     expect(failing).toContain("### Problems");
+    expect(failing).toContain("- s02 Note · Atlas Freight: a marker missing.");
     expect(failing).toMatch(/more than 10% above its baseline/);
     expect(failing).toMatch(/3 keys \(j j a\) to accept, over its 2/);
     const recorded = reviewerMarkdown({
@@ -366,6 +373,7 @@ describe("the report", () => {
       klm: checkKlm(run, baseline, manifest),
       recorded: true,
       decisions: [],
+      markers: { checked: 43, missing: [] },
       focus: { keys: 0, last: "All caught up" },
       clock: { exact: 40, analyzedMedianMs: null },
       attempt: 0,

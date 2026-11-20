@@ -45,16 +45,18 @@ import {
 // - at most 2 keys to accept, reject, or choose in a question, and 3 to choose another record for
 //   a link, every key counted;
 // - focus never on <body> after any key;
-// - the KLM estimate per card (packages/evals/src/pilot/klm.ts): the median at most 4.0 s, and no
-//   card more than 10% above baselines/pilot-klm.json. The reviewer spends each card's estimate on
-//   the paused fake clock, so the page's own review clock records it, and pilot:analyze on the
-//   run's results file gives the same median;
+// - the KLM estimate per card (packages/evals/src/pilot/klm.ts): no card more than 10% above
+//   baselines/pilot-klm.json, and the median at most 4.0 s or, while the set misses that, at most
+//   the baseline's. The reviewer spends each card's estimate on the paused fake clock, so the
+//   page's own review clock records it, and pilot:analyze on the run's results file gives the same
+//   median;
 // - the flag-follower bound, in the report: 4 of 8;
 // - and no network beyond the static page.
 //
 // The second test walks the same path, spending the same time on each card, and runs axe in every
 // state it reaches, in both themes. axe-core settles each rule through setTimeout, which a paused
-// clock fires only as the reviewer spends time, so that walk's clock flows.
+// clock fires only as the reviewer spends time, so that walk's clock flows. It leaves the markers
+// to the first, so a lost marker fails one test.
 //
 // Record the KLM baseline on purpose, from the committed set: `CI=1 EARSHOT_PILOT_KLM=record pnpm
 // --filter @earshot/web exec playwright test e2e/pilot/scripted-reviewer.spec.ts`, then review the
@@ -127,12 +129,13 @@ async function headingOf(card: Locator): Promise<string> {
  * accessible description ("…, needs a check: …") and its "Needs a check" on screen; the name note
  * as the end of the card's accessible name and on screen. A seeded error's marker first, by name:
  * loud for a flagged one, "matched by sound" for a silent one. Soft, so a run where markers vanish
- * names every card that lost one, and goes on to the rest of the gate.
+ * names every card that lost one, and goes on to the rest of the gate. True when all of them held.
  */
-async function expectMarkers(card: Locator, proposalId: string, shown: string): Promise<void> {
+async function expectMarkers(card: Locator, proposalId: string, shown: string): Promise<boolean> {
   const tier = TIERS.get(proposalId);
   expect(tier, `${proposalId} is in the manifest's tiers`).toBeDefined();
-  if (!tier) return;
+  if (!tier) return false;
+  const failedBefore = test.info().errors.length;
   const seeded = ORACLE.get(proposalId);
   const what = `${SESSION_OF.get(proposalId) ?? "practice"} ${proposalId}`;
   if (seeded?.kind === "flagged") {
@@ -160,9 +163,13 @@ async function expectMarkers(card: Locator, proposalId: string, shown: string): 
       .soft(card, `${what} has no name note`)
       .not.toHaveAccessibleName(/matched (?:by sound|in context)/);
   }
+  return test.info().errors.length === failedBefore;
 }
 
-/** The page's state, as far as axe could see a difference: the screen, a panel, a toast. */
+/**
+ * The page's state, as far as axe could see a difference: the screen, a panel, a toast. A toast
+ * already on its way out doesn't count: axe waits for the page to settle, and it's gone by then.
+ */
 async function stateOf(page: Page): Promise<string> {
   return page.evaluate(() => {
     const screen = document.querySelector("main h1")?.textContent?.trim() ?? "?";
@@ -170,7 +177,7 @@ async function stateOf(page: Page): Promise<string> {
       (legend) => legend.textContent?.trim() === "Correct the record",
     );
     const toasts = document.querySelectorAll(
-      "[role='region'][aria-label='Notifications'] [role='dialog']",
+      "[role='region'][aria-label='Notifications'] [role='dialog']:not([data-ending-style])",
     ).length;
     const caughtUp = [...document.querySelectorAll("h3")].some(
       (heading) => heading.textContent?.trim() === "All caught up",
@@ -191,6 +198,8 @@ async function stateOf(page: Page): Promise<string> {
 }
 
 interface WalkOptions {
+  /** Check every card's markers (the timed walk); the axe walk leaves them to it. */
+  readonly markers?: boolean;
   /** Called at each screen, and twice for each key of a decision: on arriving, and at the key. */
   readonly onState?: (where: string) => Promise<void>;
 }
@@ -200,6 +209,8 @@ interface Walked {
   readonly decisions: Decision[];
   readonly keys: number;
   readonly last: string;
+  /** The cards whose markers were checked, and those that lost one. */
+  readonly markers: { readonly checked: number; readonly missing: string[] };
   readonly results: { readonly name: string; readonly text: string };
 }
 
@@ -211,6 +222,7 @@ interface Walked {
 async function walk(page: Page, options: WalkOptions = {}): Promise<Walked> {
   const cards: KlmCard[] = [];
   const decisions: Decision[] = [];
+  const markers = { checked: 0, missing: [] as string[] };
   let keys = 0;
   const press = async (key: string) => {
     await page.keyboard.press(key);
@@ -248,7 +260,11 @@ async function walk(page: Page, options: WalkOptions = {}): Promise<Walked> {
       const shown = await shownText(card);
       words.push(countWords(shown));
       if (index === 0) {
-        await expectMarkers(card, id, shown);
+        if (options.markers) {
+          markers.checked += 1;
+          if (!(await expectMarkers(card, id, shown)))
+            markers.missing.push(`${session} ${heading}`);
+        }
         if (answer?.kind === "flagged") {
           const choice = card
             .getByRole("radiogroup", { name: "Which record?" })
@@ -327,6 +343,7 @@ async function walk(page: Page, options: WalkOptions = {}): Promise<Walked> {
     decisions,
     keys,
     last,
+    markers,
     results: { name: download.suggestedFilename(), text: readFileSync(file, "utf8") },
   };
 }
@@ -344,7 +361,7 @@ test("the scripted reviewer decides pilot.v1 by its oracle on a fake clock: mark
   await page.clock.install({ time: START });
   await page.clock.pauseAt(START);
   const network = watchNetwork(page);
-  const run = await walk(page);
+  const run = await walk(page, { markers: true });
   // No network beyond the static page: no API route, no server action, nothing sent.
   expectOnlyStaticFiles(network.requests, network.sockets);
   expect(run.cards).toHaveLength(40);
@@ -375,6 +392,7 @@ test("the scripted reviewer decides pilot.v1 by its oracle on a fake clock: mark
     klm,
     recorded: RECORD,
     decisions: run.decisions,
+    markers: run.markers,
     focus: { keys: run.keys, last: run.last },
     clock: { exact, analyzedMedianMs: ci?.median ?? null },
     attempt: testInfo.retry,
@@ -385,6 +403,8 @@ test("the scripted reviewer decides pilot.v1 by its oracle on a fake clock: mark
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${report}\n\n`);
   if (RECORD) console.log(`Wrote ${KLM_BASELINE_PATH}. Review the diff, then commit it.`);
 
+  expect(run.markers.missing, "cards that lost a marker (each named above)").toEqual([]);
+  expect(run.markers.checked).toBe(MANIFEST.practice.proposals.length + run.cards.length);
   expect(overBudget(run.decisions), "decisions over their key budget").toEqual([]);
   expect(klm.problems, "the KLM gate").toEqual([]);
   expect(exact, "cards whose handlingMs is the estimate spent on them").toBe(run.cards.length);

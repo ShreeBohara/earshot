@@ -147,6 +147,8 @@ export interface ReviewerReport {
   readonly recorded: boolean;
   /** Every decision, the practice's included. */
   readonly decisions: readonly Decision[];
+  /** How many cards' markers were checked (the practice's included), and those that lost one. */
+  readonly markers: { readonly checked: number; readonly missing: readonly string[] };
   /** The keys pressed in all, and what held focus after the last one. */
   readonly focus: { readonly keys: number; readonly last: string };
   /**
@@ -209,13 +211,15 @@ export function reviewerMarkdown(report: ReviewerReport): string {
     "",
     "### Markers and the flag-follower bound (G2a)",
     "",
-    `- Every seeded error shows its marker, in the accessibility tree and on screen: ${seededFlagged.length} flagged, each loud ("needs a check" in its description); ${seededSilent.length} silent, each with "matched by sound" in its name.`,
+    report.markers.missing.length === 0
+      ? `- Every card showed the markers the manifest built it with, in the accessibility tree and on screen (${report.markers.checked} cards, the practice's included): the ${seededFlagged.length} flagged errors loud ("needs a check" in their description), the ${seededSilent.length} silent ones with "matched by sound" in their name.`
+      : `- **${report.markers.missing.length} of ${report.markers.checked} cards lost a marker:** ${report.markers.missing.join("; ")}.`,
     `- **The flag-follower bound:** a reviewer who accepts everything unmarked or quiet catches only the loud seeded errors: **${bound.caught} of ${bound.of}**. The gate needs people who notice quiet notes; the pilot measures that.`,
     "",
     "### Focus and the review clock",
     "",
     `- Focus never fell to \`<body>\` in ${report.focus.keys} key presses; after the last decision it was on "${report.focus.last}".`,
-    `- The page's review clock recorded each card's estimate as its \`handlingMs\` on ${report.clock.exact} of ${cards.length} cards; \`pilot:analyze\` on the run's results file gives a median of ${report.clock.analyzedMedianMs === null ? "—" : `${report.clock.analyzedMedianMs.toLocaleString("en-US")} ms`}.`,
+    `- The page's review clock recorded the time spent on a card, its estimate, as its \`handlingMs\` on ${report.clock.exact} of ${cards.length} cards; \`pilot:analyze\` on the run's results file gives a median of ${report.clock.analyzedMedianMs === null ? "—" : `${report.clock.analyzedMedianMs.toLocaleString("en-US")} ms`}.`,
     "",
     "### The 40 cards, as decided",
     "",
@@ -226,7 +230,11 @@ export function reviewerMarkdown(report: ReviewerReport): string {
       return `| ${index + 1} | ${card.session} | ${card.heading} | ${card.tier} | ${card.seeded ?? "—"} | ${card.keys.join(" ")} | ${card.words} | ${s(card.ms)} | ${was === undefined || was === null ? "—" : s(was)} |`;
     }),
   ];
-  const problems = [...klm.problems, ...budget];
+  const problems = [
+    ...report.markers.missing.map((card) => `${card}: a marker missing.`),
+    ...klm.problems,
+    ...budget,
+  ];
   if (problems.length > 0) {
     lines.push("", "### Problems", "", ...problems.map((problem) => `- ${problem}`));
   }
