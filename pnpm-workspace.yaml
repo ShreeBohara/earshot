@@ -57,6 +57,8 @@ catalog:
   vite: ^8.0.0
   vitest: ^4.1.0
   wrangler: ^4.148.0
+  # packages/evals' test of the live smoke workflow reads .github/workflows/eval-smoke.yml.
+  yaml: ^2.9.1
   zod: ^4.6.0
 
 # Supply chain: wait 3 days before installing any newly published version.

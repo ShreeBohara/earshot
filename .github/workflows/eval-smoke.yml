@@ -1,0 +1,124 @@
+name: eval-smoke
+
+# The live smoke eval (Phase 4 spec, WP11; gates G2c and G3b; ADR-0031): smoke.json's 30 debriefs
+# as text through a live model (Claude Haiku 5.5), the understanding pipeline, and the second
+# witness, gated against packages/evals/baselines/smoke-anthropic.json. It spends money, so it's
+# guarded:
+#
+# - off unless the repository variable EVAL_SMOKE_ENABLED is "true" (unset by default), and on
+#   pull requests only from this repository's own branches (forks get no secrets anyway);
+# - its key, EVAL_SMOKE_ANTHROPIC_KEY, is a secret of the eval-smoke environment only. Use one from
+#   an Anthropic workspace with a monthly spend limit;
+# - it estimates the run and refuses to start above EVAL_SMOKE_BUDGET_USD (a repository variable,
+#   default 0.10), then stops past it mid-run, failing as incomplete;
+# - it paces requests at 60 a minute at most, after a slow start;
+# - the log and the report hold numbers only: no key, prompt, transcript, or model output.
+#
+# It runs on pull requests that touch anything the live run executes or reads (the `changes` job
+# decides, so a required `eval-smoke` check passes when it's skipped), and by hand.
+# By hand, `baseline` records the three-run baseline instead, as an artifact to review and commit.
+# While EVAL_SMOKE_ENABLED isn't "true", both jobs are skipped, and a skipped job counts as passing
+# for a required check, as ci's and eval's do.
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Record the three-run baseline instead (about three times one run's cost), as an artifact to review and commit
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  changes:
+    if: vars.EVAL_SMOKE_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      smoke: ${{ steps.paths.outputs.smoke }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # Everything the live run executes or reads, beyond the spec's paths (WP11 step 3): the
+      # prompt and adapters, the contracts, the linker, normalizers, and witness, the demo CRM, the
+      # price table, the evals code the runner and scoring share with WP10, the debriefs, and the
+      # smoke set; plus the smoke CLI, its baseline, and this workflow. Tests and the offline
+      # cassettes don't count. (Codex found the first filter missed the shared runner, #50.)
+      - id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pattern='^(packages/(agent|core)/src/|packages/understanding/|packages/demo-crm/|packages/voice/src/prices\.ts|packages/evals/(smoke\.json|src/|debriefs/|scripts/((eval|baseline)-smoke|smoke-io|understanding-io|args)\.ts|baselines/smoke-)|\.github/workflows/eval-smoke\.yml)'
+          if git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE "$pattern"; then
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
+            echo "This PR touches what the live smoke eval measures."
+          else
+            echo "smoke=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing the live smoke eval measures changed; skipping it."
+          fi
+
+  eval-smoke:
+    needs: changes
+    if: needs.changes.outputs.smoke == 'true' && vars.EVAL_SMOKE_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    # A run takes about five minutes at 60 requests a minute; a re-run, or a baseline's three
+    # runs, take up to three times that.
+    timeout-minutes: 40
+    environment: eval-smoke
+    env:
+      EVAL_SMOKE_BUDGET_USD: ${{ vars.EVAL_SMOKE_BUDGET_USD || '0.10' }}
+      EVAL_SMOKE_PROVIDER: ${{ vars.EVAL_SMOKE_PROVIDER || 'anthropic' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # No key reaches this step: it refuses before anything is spent.
+      - name: Budget guard (refuses to start above EVAL_SMOKE_BUDGET_USD)
+        run: pnpm --filter @earshot/evals eval:smoke --estimate --summary "$GITHUB_STEP_SUMMARY"
+      # Fails on a regression beyond the noise band, evidence under 100%, wrong accounts above 2%,
+      # an incomplete run, or no baseline yet. EVAL_SMOKE_GROQ_KEY only if the provider is groq.
+      - name: Live smoke eval (numbers only in the log and the report)
+        if: ${{ !inputs.baseline }}
+        env:
+          EVAL_SMOKE_ANTHROPIC_KEY: ${{ secrets.EVAL_SMOKE_ANTHROPIC_KEY }}
+          EVAL_SMOKE_GROQ_KEY: ${{ secrets.EVAL_SMOKE_GROQ_KEY }}
+        run: pnpm --filter @earshot/evals eval:smoke --check --summary "$GITHUB_STEP_SUMMARY" --out "$RUNNER_TEMP/eval-smoke"
+      - name: Record the baseline (three runs, each within the budget)
+        if: ${{ inputs.baseline }}
+        env:
+          EVAL_SMOKE_ANTHROPIC_KEY: ${{ secrets.EVAL_SMOKE_ANTHROPIC_KEY }}
+          EVAL_SMOKE_GROQ_KEY: ${{ secrets.EVAL_SMOKE_GROQ_KEY }}
+        run: |
+          pnpm --filter @earshot/evals baseline:smoke --summary "$GITHUB_STEP_SUMMARY" \
+            --out "$RUNNER_TEMP/eval-smoke/smoke-$EVAL_SMOKE_PROVIDER.json"
+      - name: Upload the report or the baseline
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-smoke
+          path: ${{ runner.temp }}/eval-smoke
+          retention-days: 30
+          if-no-files-found: ignore

@@ -27,7 +27,16 @@ export interface ReportOptions {
   /** Each provider's gate failures; null when the gate wasn't run. */
   readonly failures?: Readonly<Record<string, readonly string[]>> | null;
   readonly title?: string;
+  /** What ran, after the counts: the offline cassettes unless a caller says otherwise (WP11). */
+  readonly ran?: string;
+  /** Whether to show the seeded errors' catches: a live model's runs have none (WP11). */
+  readonly seeded?: boolean;
+  /** The gate evidence coverage answers to: G2b here, G2c on a live run (WP11). */
+  readonly evidenceGate?: string;
 }
+
+const OFFLINE =
+  "through each LLM adapter's offline cassettes, linker v1, the normalizers, and the second witness. $0: no model or provider is called.";
 
 /** The report for one or more providers' metrics, side by side. */
 export function understandingMarkdown(
@@ -44,7 +53,7 @@ export function understandingMarkdown(
   const lines = [
     `## ${options.title ?? "Understanding eval"}`,
     "",
-    `${first.scripts} debriefs, ${first.turns} turns, ${first.proposals.expected} expected proposals, through each LLM adapter's offline cassettes, linker v1, the normalizers, and the second witness. $0: no model or provider is called.`,
+    `${first.scripts} debriefs, ${first.turns} turns, ${first.proposals.expected} expected proposals, ${options.ran ?? OFFLINE}`,
     "",
     head,
     rule,
@@ -72,7 +81,7 @@ export function understandingMarkdown(
     row("Amount accuracy", (m) => of(m.amounts)),
     row("Negation accuracy (turns)", (m) => of(m.negation)),
     row(
-      "Evidence coverage (G2b)",
+      `Evidence coverage (${options.evidenceGate ?? "G2b"})`,
       (m) =>
         `${of(m.evidence)}${m.evidence.unquotedLinked > 0 ? `, ${m.evidence.unquotedLinked} unquoted targets linked` : ""}`,
     ),
@@ -99,12 +108,16 @@ export function understandingMarkdown(
           })
           .join(" | ")} |`,
     ),
-    "",
-    "### Seeded model-like errors the pipeline caught",
-    "",
-    `| Error | ${providers.join(" | ")} |`,
-    `|---|${providers.map(() => "---").join("|")}|`,
-    ...ERROR_KINDS.map((kind) => row(ERROR_LABELS[kind], (m) => of(m.seeded[kind]))),
+    ...(options.seeded === false
+      ? []
+      : [
+          "",
+          "### Seeded model-like errors the pipeline caught",
+          "",
+          `| Error | ${providers.join(" | ")} |`,
+          `|---|${providers.map(() => "---").join("|")}|`,
+          ...ERROR_KINDS.map((kind) => row(ERROR_LABELS[kind], (m) => of(m.seeded[kind]))),
+        ]),
     "",
     `### Flags (${providers[0]})`,
     "",

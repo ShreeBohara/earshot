@@ -10,7 +10,7 @@ Proposed (2026-11-20), drafted by Phase 4 WP10. WP10 built:
 - the understanding cassettes, with seeded and labelled errors;
 - the understanding report, and its gate in CI's `checks` job, with a baseline.
 
-WP11 adds the live smoke tier: its set, runner, noise band, and budget guards. WP12 finishes this ADR and amends ADR-0026. Builds on ADR-0026 (harness v0), ADR-0027 (contracts and the pipeline), ADR-0028 (the linker, the confusable set and its simulator), ADR-0029 (the second witness), and ADR-0030 (the normalizers).
+WP11 built the live smoke tier (below): its set, runner, noise band, and budget guards, off until the user turns it on (WP11b). WP12 finishes this ADR and amends ADR-0026. Builds on ADR-0026 (harness v0), ADR-0027 (contracts and the pipeline), ADR-0028 (the linker, the confusable set and its simulator), ADR-0029 (the second witness), and ADR-0030 (the normalizers).
 
 ## Context and problem
 
@@ -225,6 +225,61 @@ CI's `checks` job runs `pnpm --filter @earshot/evals eval:understanding --check 
 2. **Make the tray show `link_uncertain` beside the record's name rather than as a badge.** Leave the badge colors to Phase 5's likely-edit highlighting, as spec §8's own response says ("flags are data; the UI shows a subset"). With no `link_uncertain` badge the share is 30.1%.
 3. **Before either, measure the flag's precision for likely edits on WP6's mined set,** which still waits for the user's approval. Synthetic context links may be more certain than real ones.
 
+### The live smoke tier (WP11)
+
+Tier (c): 30 debriefs as text through the live model, scored by the metrics above. It's $0 until the user sets it up (WP11b). WP11 made no live call.
+
+**The set (`smoke.json`, `src/smoke/select.ts`).** A seeded greedy pick, re-run by a test against the committed file.
+
+- **Strata:** the spec's (each type, confusable names, numbers, dates, negations, conflicts), plus misheard names, self-corrections, disfluencies, implied targets, and some hand-written scripts. Misheard names are named records the production stream heard wrong. They're where a model that "corrects" spellings loses the evidence, which is what the G3b test PR exercises.
+- **What it holds:** 121 turns and 122 proposals, including 30 misheard names and 11 conflicts.
+- **Left out:** d037 and d193, where linker v1 links a snapped name wrongly even from perfect drafts (the two wrong accounts above). With about 96 targets decided, each would be a point of wrong-account rate against a 2% gate. A test confirms a perfect model passes the absolute gates on the set.
+
+**The runner (`src/smoke/run.ts`).** It reuses WP10's loop (`runScriptWith`):
+
+- the biased transcript carries spread word timings;
+- the unbiased one has none, so the witness reads by alignment, as in the $0 runs;
+- retries get 90 s, not the product's 8 s deadline;
+- a provider failure past the retries, or a refused key, stops the run as incomplete. Invalid output twice counts as the model's miss.
+
+**Pacing:** at most 60 requests in any minute, after a slow start from 10 a minute over the first ten gaps (about 24 s).
+
+**Prompt caching.** The extractor's opt-in `promptCache` puts breakpoints on the tool definition and the system prompt. Nothing the model sees changes; a test compares the bodies.
+
+- **The minimum:** the claude-api skill's prompt-caching reference gives Haiku 5.5's minimum cacheable prefix as 512 tokens, and says to confirm it in Anthropic's docs, which WP11 didn't fetch.
+- **The prefix:** the tool definition alone is 13,298 characters, at least 2,000 tokens at any plausible ratio (about 5,300 at the estimate's 2.5 characters a token). That clears 512 by far, and clears every minimum in that table (4,096 at most) at 3.2 characters a token or fewer.
+- **The rates:** the price row's cache rates are $0.01 a million read and $0.125 written.
+- **Verification:** each report shows cache-read tokens, and flags a run where none came.
+
+**The budget guard (`src/smoke/budget.ts`).** Before the run, every turn is estimated from the characters it sends and the proposals it should get back, at 2.5 characters a token. The tool-use prompt adds 500 tokens, output gets ×1.5 plus 50 tokens, and the whole run ×1.25.
+
+| Run | With the cache plan | No cache hit at all |
+|---|---|---|
+| One run, 121 requests | $0.0303 | $0.1147 |
+| `baseline:smoke`, 3 runs | $0.0909 | $0.3441 |
+
+- **Why the cache is needed:** an uncached request is about 6,500 tokens, not the spec's 2,000. The v2 tool schema is most of it. So the default $0.10 budget fits only with the cache.
+- **During the run,** each call's measured cost is summed (the provider's usage at the price row's rates), and the run stops past the budget, incomplete. A call that timed out with no usage is charged the estimate.
+- **The ceiling:** `EVAL_SMOKE_BUDGET_USD` is refused above $1, as a typo guard.
+
+**The gate (`src/smoke/gate.ts`)**, against `baselines/smoke-<provider>.json`. The baseline is three complete runs: each gated metric's median and spread (the largest minus the smallest), tied to the provider, model, linker, and the scripts' bytes. A run fails on:
+
+- key-field accuracy, target accuracy, or proposal F1 more than max(3 points, 2 × spread) below the median;
+- evidence coverage under 100% (G2c);
+- wrong accounts above 2%;
+- an incomplete run;
+- no baseline. The absolute gates still run and are reported, but an unbaselined run can't pass, and the message says to run `baseline:smoke`;
+- a baseline that doesn't fit (other scripts, model, or linker). It isn't compared, and must be recorded again.
+
+**The re-run.** One automatic re-run within the budget (spec §8's answer to flapping). A complete run that fails only on a regression or the wrong-account rate is repeated if the rest of the budget covers another run's estimate, and the job fails only if the repeat fails too. Evidence, incompleteness, and a missing baseline never earn one.
+
+**The workflow (`.github/workflows/eval-smoke.yml`).**
+
+- **Triggers:** every pull request, plus `workflow_dispatch`. A `changes` job runs it when a PR touches anything the live run executes or reads. That's the spec's paths, plus the contracts, the demo CRM, the price table, the evals code the runner and scoring share with WP10, the debriefs, the smoke CLI, its baseline, and the workflow itself. Tests and the offline cassettes don't trigger it. Codex found that the first filter missed the shared runner (#50).
+- **Gating:** both jobs carry the spec's `if:`, so with `EVAL_SMOKE_ENABLED` unset everything is skipped, and a skipped `eval-smoke` passes a required check. The key reaches only the step that calls the model, in the `eval-smoke` environment.
+- **Steps:** the budget guard runs first, with no key. The report goes to the job summary and an artifact, as numbers, ids, and fixed codes only.
+- **The baseline by hand:** `workflow_dispatch` with `baseline` records the three runs as an artifact to review and commit.
+
 ## Consequences
 
 **Good**
@@ -233,7 +288,8 @@ CI's `checks` job runs `pnpm --filter @earshot/evals eval:understanding --check 
 - Every label is re-derived. The generated files, their index, the cassettes, and the error labels all reproduce byte for byte, and tests hold them to it.
 - The two-witness effect is measured end to end: the wrong-account rate goes from 7.0% to 0.3%.
 - The normalizers' catches are measured against labelled errors rather than asserted.
-- WP11's live smoke eval can score a real model with the same metrics and the same matching.
+- WP11's live smoke eval scores a real model with the same metrics and the same matching, through the same runner.
+- The live tier can't spend by accident: it's off by default, refuses an estimate over the budget, stops past it mid-run, and can't pass without a baseline.
 
 **Bad**
 
@@ -244,6 +300,9 @@ CI's `checks` job runs `pnpm --filter @earshot/evals eval:understanding --check 
 - **Conflict precision is 67.6%.** The unbiased channel's sound changes (about 2% of names) are the false conflicts that cost 19 right links. That's ADR-0028's finding again, at debrief scale.
 - **The baseline must be re-recorded whenever a script or the error seed changes,** even when nothing regressed. That's on purpose: the SHA binding makes a regenerated set a reviewed change.
 - **The flag share is 10.8 points over the guard,** pending the remedy above.
+- **Thirty live scripts can't resolve small effects** (spec decision 14). If the three baseline runs happen to agree, the band is 3 points, about 4 targets. If they don't, it's twice their spread. A test PR that only drops "quote names exactly" from the prompt may not move a model that quotes exactly anyway. The tool schema's descriptions repeat the rule, so the demonstration should drop it there too, or invert it.
+- **At about 96 targets decided, the 2% gate allows one wrong account.** Two fail the run.
+- **The smoke estimate's token count is an estimate.** The first live run's report shows the real usage.
 
 ## More information
 
@@ -254,3 +313,4 @@ CI's `checks` job runs `pnpm --filter @earshot/evals eval:understanding --check 
 - Files: `debriefs/generated/`, `cassettes/understanding/{anthropic,groq,errors}.json`, and `baselines/understanding.json`.
 - Run locally: `pnpm --filter @earshot/evals eval:understanding [--provider anthropic] [--json out.json]`.
 - The lab: `lab/tests/test_debrief_noise.py` checks that the renderer accepts every generated script's noise.
+- The live smoke tier (WP11): `packages/evals/src/smoke/`, `scripts/{eval-smoke,baseline-smoke,select-smoke,smoke-io}.ts`, `smoke.json`, and `.github/workflows/eval-smoke.yml`. Run `pnpm --filter @earshot/evals eval:smoke --budget 0.10 --estimate` for the estimate, or `--offline` for the plumbing against the cassettes, both $0. `eval:smoke --check` and `baseline:smoke` call the model and need the user's approval.

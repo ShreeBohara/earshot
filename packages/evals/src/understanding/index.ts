@@ -41,5 +41,14 @@ export {
   understandingMetrics,
 } from "./metrics";
 export { type ReportOptions, understandingMarkdown } from "./report";
-export { applyFlagged, type FinalProposal, runScript, type ScriptRun, type TurnRun } from "./run";
+export {
+  applyFlagged,
+  type FinalProposal,
+  type RunOptions,
+  runScript,
+  runScriptWith,
+  type ScriptRun,
+  type TurnRun,
+  type TurnUtterances,
+} from "./run";
 export { groundTruthProblems, unbiasedReadingOf } from "./verify";
