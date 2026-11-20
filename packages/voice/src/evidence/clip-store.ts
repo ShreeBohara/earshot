@@ -305,14 +305,13 @@ export class ClipStore {
   }
 
   /**
-   * Opens the store, creating its non-extractable device key on first use. Rejects when this
-   * browser can't keep audio (no IndexedDB, or it won't open).
+   * Opens the store. Rejects when this browser can't keep audio (no IndexedDB, or it won't open).
+   * The non-extractable device key is made with the first clip kept, so a device that never keeps
+   * one never has one.
    */
   static async open(options: ClipStoreOptions = {}): Promise<ClipStore> {
     const backend = options.backend ?? (await indexedDbClipBackend());
-    const store = new ClipStore(backend, options.now ?? Date.now);
-    await store.#deviceKey();
-    return store;
+    return new ClipStore(backend, options.now ?? Date.now);
   }
 
   /** Called after this store keeps, purges, or clears anything. */

@@ -87,9 +87,11 @@ describe.each([
     expect(stored.slice(0, 64)).not.toEqual(plain.slice(0, 64));
   });
 
-  it("keeps its own key, non-extractable, and binds each record to its id", async () => {
+  it("keeps its own key, non-extractable, from the first clip, and binds each record to its id", async () => {
     const backend = await makeBackend();
     const store = await ClipStore.open({ backend });
+    expect(await backend.getDeviceKey()).toBeUndefined();
+    await store.put({ sessionId: SESSION, turnId: TURN, audio: turn(0, ramp(8_000)) });
     const key = await backend.getDeviceKey();
     expect(key?.extractable).toBe(false);
     expect(key?.algorithm).toMatchObject({ name: "AES-GCM", length: 256 });
@@ -97,8 +99,6 @@ describe.each([
     expect(new TextDecoder().decode(clipAad(clipId(SESSION, TURN)))).toBe(
       `earshot-clip:v1:${SESSION}:${TURN}`,
     );
-
-    await store.put({ sessionId: SESSION, turnId: TURN, audio: turn(0, ramp(8_000)) });
     const record = (await backend.get(clipId(SESSION, TURN))) as ClipRecord;
     await expect(openClipRecord(key as CryptoKey, record)).resolves.toEqual(ramp(8_000));
   });
@@ -266,8 +266,13 @@ describe("the IndexedDB backend", () => {
       ClipStore.open({ backend: a }),
       ClipStore.open({ backend: b }),
     ]);
-    await first.put({ sessionId: SESSION, turnId: TURN, audio: turn(0, ramp(1_600)) });
+    // Both keep their first clip at once: each makes a key, and one transaction keeps one.
+    await Promise.all([
+      first.put({ sessionId: SESSION, turnId: TURN, audio: turn(0, ramp(1_600)) }),
+      second.put({ sessionId: SESSION, turnId: TURN_2, audio: turn(1_000, ramp(1_600, 7)) }),
+    ]);
     expect((await second.find(SESSION, 50))?.pcm).toEqual(ramp(1_600));
+    expect((await first.find(SESSION, 1_050))?.pcm).toEqual(ramp(1_600, 7));
   });
 
   it("refuses to open without IndexedDB, as in iOS Lockdown Mode", async () => {
