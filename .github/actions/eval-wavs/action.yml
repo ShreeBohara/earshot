@@ -21,14 +21,15 @@ runs:
     - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 
     # The WAVs. The key covers, coarsely, everything each WAV's own hash does: the scripts, the
-    # renderer, the model pins, and the lockfile (the package versions). On a miss the newest older
-    # entry is restored, and the renderer only renders scripts whose hash changed, so editing one
-    # script's expectations renders nothing and editing its text renders one WAV.
+    # renderer and its noise module, the model pins, and the lockfile (the package versions). On a
+    # miss the newest older entry is restored, and the renderer only renders scripts whose hash
+    # changed, so editing one script's expectations renders nothing and editing its text renders
+    # one WAV.
     - id: wavs
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: lab/.cache/wavs
-        key: eval-wavs-v1-${{ runner.os }}-${{ hashFiles('packages/evals/debriefs/*.json', 'lab/scripts/render_debriefs.py', 'lab/scripts/kokoro_files.json', 'lab/uv.lock') }}
+        key: eval-wavs-v1-${{ runner.os }}-${{ hashFiles('packages/evals/debriefs/*.json', 'lab/scripts/render_debriefs.py', 'lab/scripts/debrief_noise.py', 'lab/scripts/kokoro_files.json', 'lab/uv.lock') }}
         restore-keys: |
           eval-wavs-v1-${{ runner.os }}-
 
