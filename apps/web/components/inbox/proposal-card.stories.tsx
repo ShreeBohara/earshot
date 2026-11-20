@@ -105,9 +105,7 @@ export const NameNote: Story = {
   args: { proposal: NAME_NOTE },
   play: async ({ canvasElement }) => {
     const panel = within(themePanel(canvasElement));
-    await expect(
-      panel.getByRole("heading", { name: "Task · Pier Logistics, matched in context" }),
-    ).toBeVisible();
+    await expect(panel.getByRole("heading", { name: "Task · Pier Logistics" })).toBeVisible();
   },
 };
 

@@ -162,7 +162,11 @@ export function ProposalCard({
         <Heading id={titleId} className="font-medium text-sm">
           {model.type} <span className="text-muted-foreground">· {model.record}</span>
           {model.nameNote ? (
-            <span hidden className="font-normal text-muted-foreground text-xs" data-slot="name-note">
+            <span
+              hidden
+              className="font-normal text-muted-foreground text-xs"
+              data-slot="name-note"
+            >
               , {model.nameNote}
             </span>
           ) : null}
