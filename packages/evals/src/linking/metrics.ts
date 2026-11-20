@@ -8,9 +8,11 @@
 // - New-when-existing: "new" when gold is a CRM record, ÷ decided: a duplicate rather than a
 //   wrong write, capped so that "new" can't buy a lower wrong-account rate.
 // - Accuracy on decided: correct decisions ÷ decided.
-// - Risk–coverage and AURC: links admitted in order of falling p, as raising τ_link from 1
-//   would admit them, with every "new" decision already in. Risk is the wrong-account rate.
-//   AURC is the mean risk over the admitted links (ties admitted together).
+// - Risk–coverage and AURC: links admitted in order of falling p, as lowering τ_link from 1
+//   would admit them, with every "new" decision already in. The links are the linker's own and
+//   the asks only τ_link held back, which carry their best candidate's p and record
+//   (`wouldLink`). Risk is the wrong-account rate. AURC is the mean risk over the admitted links
+//   (ties admitted together).
 // - ECE: on links with a probability, 10 equal-mass bins, |mean p − accuracy| weighted by size.
 // - Divergence recall: of the decisions wrong in biased-only mode, the share the witness
 //   flagged or downgraded.
@@ -137,7 +139,10 @@ function witnessActed(scored: Scored): boolean {
   return flagged || (isDecided(biased) && final.decision === "ask");
 }
 
-/** Links admitted by falling p (null counts as 1), with every "new" in from the start. */
+/**
+ * Links admitted by falling p (null counts as 1), with every "new" in from the start: the
+ * linker's links, and its asks that carry a held-back link (`wouldLink`, at the ask's p).
+ */
 export function riskCoverage(
   rows: readonly Scored[],
   mode: Mode,
@@ -146,11 +151,15 @@ export function riskCoverage(
   const decisions = rows.map((row) => ({ row, decision: decisionOf(row, mode) }));
   const base = decisions.filter(({ decision }) => decision.decision === "new").length;
   const links = decisions
-    .filter(({ decision }) => decision.decision === "linked")
-    .map(({ row, decision }) => ({
-      p: decision.p ?? 1,
-      wrong: isWrongLink(decision, row.item.gold),
-    }))
+    .flatMap(({ row, decision }) => {
+      if (decision.decision === "linked") {
+        return [{ p: decision.p ?? 1, wrong: isWrongLink(decision, row.item.gold) }];
+      }
+      if (decision.decision === "ask" && decision.wouldLink && decision.p !== null) {
+        return [{ p: decision.p, wrong: decision.wouldLink !== row.item.gold }];
+      }
+      return [];
+    })
     .sort((a, b) => b.p - a.p);
   const points = thresholds.map((threshold) => {
     const admitted = links.filter((link) => link.p >= threshold);

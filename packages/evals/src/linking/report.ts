@@ -1,5 +1,7 @@
 // The linking eval's report as Markdown, for the terminal and a GitHub job summary: the headline
-// metrics with the witness on and off, then one row per class (spec WP3 step 4).
+// metrics with the witness on and off, then one row per class (spec WP3 step 4), and for linker
+// v1 its ablation table (WP4 step 8).
+import type { AblationRow } from "./ablations";
 import type { LinkingMetrics, LinkingReport } from "./metrics";
 import { CLASS_EXPECT, CLASS_LABELS, ITEM_CLASSES } from "./schema";
 
@@ -90,14 +92,43 @@ export function linkingMarkdown(
     lines.push("");
     if (options.gate === null)
       lines.push("G1 doesn't apply to this linker (a reference baseline).");
-    else if (options.gate.length === 0) lines.push("G1: pass.");
-    else lines.push(...options.gate.map((failure) => `- ${failure}`));
+    else {
+      if (!report.witness) {
+        lines.push(
+          "G1's thresholds, on biased-only decisions: this linker has no second witness yet, and G1 itself is judged with one (WP5).",
+          "",
+        );
+      }
+      if (options.gate.length === 0) lines.push("G1: pass.");
+      else lines.push(...options.gate.map((failure) => `- ${failure}`));
+    }
   }
   if (options.regressions !== undefined) {
     lines.push("");
     if (options.regressions === null) lines.push("No baseline to compare with.");
     else if (options.regressions.length === 0) lines.push("No regression against the baseline.");
     else lines.push(...options.regressions.map((failure) => `- ${failure}`));
+  }
+  return lines.join("\n");
+}
+
+/**
+ * The ablation table: each variant's thresholds and its biased-only numbers on one split. "Own
+ * wrong links" leaves out classes E2 and G, which only the second witness can resolve.
+ */
+export function ablationMarkdown(rows: readonly AblationRow[], split: string): string {
+  const lines = [
+    `#### Ablations: refit on calibration without each signal, scored on the ${split} split with the witness off`,
+    "",
+    "| Variant | Removes | τ_link / δ / τ_new | Coverage | Wrong-account rate | Own wrong links (not E2, G) | New-when-existing | Accuracy on decided |",
+    "|---|---|---|---|---|---|---|---|",
+  ];
+  for (const row of rows) {
+    const { tauLink, delta, tauNew } = row.params.thresholds;
+    const metrics = row.metrics;
+    lines.push(
+      `| ${row.label} | ${row.removed === "" ? "nothing" : row.removed} | ${tauLink} / ${delta} / ${tauNew}${row.feasible ? "" : " (limits not met)"} | ${pct(metrics.coverage)} (${of(metrics.decided, metrics.items)}) | ${pct(metrics.wrongAccountRate)} (${of(metrics.wrongLinks, metrics.decided)}) | ${row.ownWrongLinks} | ${pct(metrics.newWhenExistingRate)} (${of(metrics.newWhenExisting, metrics.decided)}) | ${pct(metrics.accuracyOnDecided)} |`,
+    );
   }
   return lines.join("\n");
 }

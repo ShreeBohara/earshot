@@ -2,13 +2,17 @@
 // per class:
 //
 //   pnpm --filter @earshot/evals eval:linking [--split test | calibration | all]
-//     [--set confusable | mined | <file.jsonl>] [--linker v0 | oracle] [--check]
-//     [--summary "$GITHUB_STEP_SUMMARY"] [--json report.json] [--write-baseline]
+//     [--set confusable | mined | <file.jsonl>] [--linker v0 | v1 | oracle] [--check]
+//     [--summary ["$GITHUB_STEP_SUMMARY"]] [--json report.json] [--write-baseline]
 //
 // - `--split` defaults to test, the split G1 is judged on. Tune on calibration only.
 // - `--set` defaults to confusable.v1; `mined` is WP6's mined.v1.
-// - `--linker` defaults to v0, Phase 3's matcher. `oracle` is the set's ground truth run as a
-//   linker, the ceiling the set allows, for reference.
+// - `--linker` defaults to v0, Phase 3's matcher. `v1` is WP4's linker with its committed
+//   parameters; its report adds the ablation table (each variant refit on calibration, about a
+//   second). `oracle` is the set's ground truth run as a linker, the ceiling the set allows, for
+//   reference.
+// - `--summary` appends the report to a file, or to $GITHUB_STEP_SUMMARY when it names none (and
+//   to nothing outside GitHub Actions; the report is printed either way).
 // - `--check` exits 1 on a G1 failure (for a linker the gate applies to, on the test split) or a
 //   regression against the linker's committed baseline: coverage down more than 3 points, or
 //   the wrong-account rate up more than 0.5 point. A baseline taken on another set file fails too.
@@ -17,6 +21,8 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import {
+  ablationMarkdown,
+  ablationTable,
   BASELINE_FORMAT,
   CONFUSABLE_SET_FILE,
   CONFUSABLE_SET_VERSION,
@@ -54,7 +60,7 @@ function setFile(name: string): { label: string; path: string } {
 }
 
 run(() => {
-  const args = parseArgs(process.argv.slice(2), ["check", "write-baseline"]);
+  const args = parseArgs(process.argv.slice(2), ["check", "write-baseline"], ["summary"]);
   const split = (flag(args, "split") ?? "test") as SplitName;
   if (!SPLITS.includes(split)) throw new Error(`--split is one of ${SPLITS.join(", ")}`);
   const linkerName = flag(args, "linker") ?? "v0";
@@ -115,9 +121,19 @@ run(() => {
       ];
     } else regressions = regressionFailures(report.final, baseline.splits[split].final);
   }
-  const markdown = linkingMarkdown(report, { gate, regressions });
+  let markdown = linkingMarkdown(report, { gate, regressions });
+  if (linker === LINKERS.v1 && set.label === CONFUSABLE_SET_VERSION) {
+    const ablations = ablationTable(items, LINKING_ENTITIES, (item) =>
+      split === "all" ? true : item.split === split,
+    );
+    markdown = `${markdown}\n\n${ablationMarkdown(ablations, split)}`;
+  }
   console.log(markdown);
-  appendSummary(flag(args, "summary"), markdown);
+  const summary = args.flags.get("summary");
+  appendSummary(
+    typeof summary === "string" ? summary : summary ? process.env.GITHUB_STEP_SUMMARY : undefined,
+    markdown,
+  );
   const out = flag(args, "json");
   if (out) writeFileSync(userPath(out), `${JSON.stringify(report, null, 2)}\n`);
   if (args.flags.has("check") && ((gate?.length ?? 0) > 0 || (regressions?.length ?? 0) > 0)) {
