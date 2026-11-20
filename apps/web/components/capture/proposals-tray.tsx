@@ -6,7 +6,7 @@ import type { ProposalView } from "@earshot/events";
 import { Badge } from "@earshot/ui/components/badge";
 import { StatePill } from "@earshot/ui/components/state-pill";
 import { cn } from "@earshot/ui/lib/utils";
-import { CheckIcon, PencilIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import { CheckIcon, PencilIcon, ReplaceIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useId, useLayoutEffect, ViewTransition } from "react";
 import {
   askCandidates,
@@ -63,6 +63,13 @@ function ReviewStatus({ status }: { status: ProposalView["status"] }) {
         <Badge variant="outline" className="h-6 gap-1.5 px-2.5 text-muted-foreground">
           <XIcon aria-hidden="true" data-icon="inline-start" />
           Rejected
+        </Badge>
+      );
+    case "superseded":
+      return (
+        <Badge variant="outline" className="h-6 gap-1.5 px-2.5 text-muted-foreground">
+          <ReplaceIcon aria-hidden="true" data-icon="inline-start" />
+          Replaced by a correction
         </Badge>
       );
   }

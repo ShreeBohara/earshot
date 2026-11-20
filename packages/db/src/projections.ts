@@ -50,6 +50,12 @@ export type SessionProjections = ProjectionStates<typeof defaultProjections>;
  * entity is in the workspace's CRM mirror (the same as when the entity is deleted later), and a
  * missing cost is stored as `cost_usd` 0, rounded like any cost to four decimal places. The
  * `target` column keeps the linker's decision as the events have it, entity id included.
+ *
+ * Phase 5's review fields (the review id, mode, batch, policy, and sync time), snoozes,
+ * supersedes, and the seal have no columns until migration 0014 (Phase 5 WP3): until then a row
+ * keeps the latest review's decision as its status, its diff, its handling time as
+ * `reviewer_ms`, and its seq and time, a reopen included. A `superseded` status needs 0014's
+ * check constraint too; no writer supersedes a proposal before Phase 5's corrections.
  */
 export async function rebuildProjections<
   TQueryResult extends PgQueryResultHKT,
@@ -173,7 +179,8 @@ function proposalRow(view: ProposalView, sessionId: string, mirrored: ReadonlySe
     conflicts: view.conflicts,
     status: view.status,
     editDiff: view.review?.editDiff ?? null,
-    reviewerMs: view.review?.reviewerMs ?? null,
+    // The review clock's handling time: v1's `reviewerMs`, which upcasts to both of v2's times.
+    reviewerMs: view.review?.timing.handlingMs ?? null,
     seq: view.seq,
     reviewedSeq: view.review?.seq ?? null,
     reviewedAt: view.review ? timestamptz(view.review.ts) : null,

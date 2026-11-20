@@ -198,6 +198,97 @@ export function review(
   };
 }
 
+/** The reviewer the Phase 5 builders name: a person who signed in with a passkey. */
+export const REVIEWER = {
+  userId: "u_9fK2mQx7Lr",
+  auth: { method: "passkey", signedInAt: "2026-11-10T19:00:00.000Z" },
+} as const;
+
+/**
+ * A `proposal.reviewed` v2 for proposal `uuid(3000 + n)`, with review id `uuid(7000 + n)`: a
+ * single review in the inbox, by keyboard, of an unmarked card, by `REVIEWER`. Approvals and
+ * edits are eligible to sync 30 s after the builders' clock; an edit changes the title. `payload`
+ * overrides any field, the review id included.
+ */
+export function reviewV2(
+  n: number,
+  decision: "approved" | "edited" | "rejected" | "reopened" = "approved",
+  payload: Record<string, unknown> = {},
+): EventBody {
+  const decides = decision === "approved" || decision === "edited";
+  return {
+    type: "proposal.reviewed",
+    schemaVersion: 2,
+    payload: {
+      reviewId: uuid(7000 + n),
+      proposalId: uuid(3000 + n),
+      decision,
+      target: null,
+      ...(decision === "edited"
+        ? { editDiff: { title: { before: "Send the deck", after: "Send the revised deck" } } }
+        : {}),
+      mode: "single",
+      batchId: null,
+      policy: null,
+      undoes: null,
+      reason: null,
+      seen: {
+        tier: "none",
+        fields: { title: { proposed: "Send the deck" } },
+        target: null,
+        relinked: null,
+        clip: "none",
+      },
+      timing: { decisionMs: 1200, handlingMs: 1500 },
+      input: "keyboard",
+      surface: "inbox",
+      syncEligibleAt: decides ? "2026-11-10T19:16:30.000Z" : null,
+      by: REVIEWER,
+      ...payload,
+    },
+  };
+}
+
+/**
+ * The reviewer's undo of review `undoes` on proposal `uuid(3000 + n)`: a `reopened` review with
+ * id `uuid(7100 + n)` unless `payload` sets another.
+ */
+export function reopen(
+  n: number,
+  undoes: string,
+  payload: Record<string, unknown> = {},
+): EventBody {
+  return reviewV2(n, "reopened", { reviewId: uuid(7100 + n), undoes, reason: "undo", ...payload });
+}
+
+/** Proposal `uuid(3000 + n)` snoozed until `until` (null wakes it), with id `uuid(8000 + n)`. */
+export function snoozed(
+  n: number,
+  until: string | null = "2026-11-11T14:00:00.000Z",
+  payload: Record<string, unknown> = {},
+): EventBody {
+  return {
+    type: "proposal.snoozed",
+    schemaVersion: 1,
+    payload: {
+      snoozeId: uuid(8000 + n),
+      proposalId: uuid(3000 + n),
+      until,
+      by: REVIEWER,
+      ...payload,
+    },
+  };
+}
+
+/** The seal, written by `SessionDO` a minute after the builders' `ended()`. */
+export function sealed(payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "session.sealed",
+    schemaVersion: 1,
+    payload: { sealedAt: "2026-11-10T19:16:40.000Z", by: "session", ...payload },
+  };
+}
+
 export function ended(payload: Record<string, unknown> = {}): EventBody {
   return {
     type: "session.ended",

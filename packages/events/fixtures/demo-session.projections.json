@@ -16,6 +16,7 @@
     },
     "startedAt": "2026-11-10T19:15:00.000Z",
     "endedAt": "2026-11-10T19:15:40.200Z",
+    "sealedAt": null,
     "durationMs": 40200,
     "costUsd": 0.0041,
     "lastSeq": 18,
@@ -333,12 +334,30 @@
         }
       ],
       "conflicts": [],
+      "supersedes": null,
+      "supersededBy": null,
+      "snoozedUntil": null,
       "seq": 2,
       "ts": "2026-11-10T19:15:08.450Z",
       "review": {
+        "reviewId": "01a1c6e3-4a54-7dea-a284-6cc0b3ea1752",
         "decision": "approved",
+        "target": null,
         "editDiff": null,
-        "reviewerMs": 3100,
+        "mode": "single",
+        "batchId": null,
+        "policy": null,
+        "undoes": null,
+        "reason": null,
+        "seen": null,
+        "timing": {
+          "decisionMs": 3100,
+          "handlingMs": 3100
+        },
+        "input": null,
+        "surface": null,
+        "syncEligibleAt": null,
+        "by": null,
         "seq": 14,
         "ts": "2026-11-10T19:15:46.900Z"
       }
@@ -377,12 +396,30 @@
       },
       "riskFlags": [],
       "conflicts": [],
+      "supersedes": null,
+      "supersededBy": null,
+      "snoozedUntil": null,
       "seq": 5,
       "ts": "2026-11-10T19:15:21.180Z",
       "review": {
+        "reviewId": "01a1c6e3-55a8-7492-95cb-0e57e5c4bbf8",
         "decision": "approved",
+        "target": null,
         "editDiff": null,
-        "reviewerMs": 2400,
+        "mode": "single",
+        "batchId": null,
+        "policy": null,
+        "undoes": null,
+        "reason": null,
+        "seen": null,
+        "timing": {
+          "decisionMs": 2400,
+          "handlingMs": 2400
+        },
+        "input": null,
+        "surface": null,
+        "syncEligibleAt": null,
+        "by": null,
         "seq": 15,
         "ts": "2026-11-10T19:15:49.800Z"
       }
@@ -441,17 +478,35 @@
         }
       ],
       "conflicts": [],
+      "supersedes": null,
+      "supersededBy": null,
+      "snoozedUntil": null,
       "seq": 7,
       "ts": "2026-11-10T19:15:26.510Z",
       "review": {
+        "reviewId": "01a1c6e3-83c0-7b53-ade2-f20cbac162c5",
         "decision": "edited",
+        "target": null,
         "editDiff": {
           "title": {
             "after": "Send Dana the pricing breakdown for the security add-on",
             "before": "Send Dana the pricing breakdown"
           }
         },
-        "reviewerMs": 11200,
+        "mode": "single",
+        "batchId": null,
+        "policy": null,
+        "undoes": null,
+        "reason": null,
+        "seen": null,
+        "timing": {
+          "decisionMs": 11200,
+          "handlingMs": 11200
+        },
+        "input": null,
+        "surface": null,
+        "syncEligibleAt": null,
+        "by": null,
         "seq": 16,
         "ts": "2026-11-10T19:16:01.600Z"
       }
@@ -490,12 +545,30 @@
       },
       "riskFlags": [],
       "conflicts": [],
+      "supersedes": null,
+      "supersededBy": null,
+      "snoozedUntil": null,
       "seq": 9,
       "ts": "2026-11-10T19:15:33.620Z",
       "review": {
+        "reviewId": "01a1c6e3-90a4-7469-aec8-6ffa16ce9c9f",
         "decision": "approved",
+        "target": null,
         "editDiff": null,
-        "reviewerMs": 2700,
+        "mode": "single",
+        "batchId": null,
+        "policy": null,
+        "undoes": null,
+        "reason": null,
+        "seen": null,
+        "timing": {
+          "decisionMs": 2700,
+          "handlingMs": 2700
+        },
+        "input": null,
+        "surface": null,
+        "syncEligibleAt": null,
+        "by": null,
         "seq": 17,
         "ts": "2026-11-10T19:16:04.900Z"
       }
@@ -553,12 +626,30 @@
         }
       ],
       "conflicts": [],
+      "supersedes": null,
+      "supersededBy": null,
+      "snoozedUntil": null,
       "seq": 11,
       "ts": "2026-11-10T19:15:39.720Z",
       "review": {
+        "reviewId": "01a1c6e3-a364-71c5-8024-ad4dc95dc08a",
         "decision": "rejected",
+        "target": null,
         "editDiff": null,
-        "reviewerMs": 4200,
+        "mode": "single",
+        "batchId": null,
+        "policy": null,
+        "undoes": null,
+        "reason": null,
+        "seen": null,
+        "timing": {
+          "decisionMs": 4200,
+          "handlingMs": 4200
+        },
+        "input": null,
+        "surface": null,
+        "syncEligibleAt": null,
+        "by": null,
         "seq": 18,
         "ts": "2026-11-10T19:16:09.700Z"
       }

@@ -50,7 +50,10 @@ export const proposals = pgTable(
     status: text().notNull().default("proposed"),
     /** What the reviewer changed, when the status is `edited`. */
     editDiff: jsonb("edit_diff").$type<Record<string, unknown>>(),
-    /** How long the reviewer took to decide. bigint, like the contract's safe-integer range. */
+    /**
+     * How long the latest review took: the review clock's `handlingMs` (v1's `reviewerMs`).
+     * bigint, like the contract's safe-integer range.
+     */
     reviewerMs: bigint("reviewer_ms", { mode: "number" }),
     /** The seq of the `proposal.created` event. */
     seq: integer(),

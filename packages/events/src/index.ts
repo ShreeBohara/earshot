@@ -45,8 +45,10 @@ export {
   type ProposalCreatedEvent,
   type ProposalFlaggedEvent,
   type ProposalReviewedEvent,
+  type ProposalSnoozedEvent,
   type SessionEndedEvent,
   type SessionEvent,
+  type SessionSealedEvent,
   type SessionStartedEvent,
   type TurnCompletedEvent,
   type TurnMeasuredEvent,
@@ -56,4 +58,9 @@ export {
   type UsageRecordedEvent,
   type UtteranceFinalEvent,
 } from "./types";
-export { proposalCreatedV1ToV2, upcasters, utteranceFinalV1ToV2 } from "./upcasters";
+export {
+  proposalCreatedV1ToV2,
+  proposalReviewedV1ToV2,
+  upcasters,
+  utteranceFinalV1ToV2,
+} from "./upcasters";

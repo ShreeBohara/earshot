@@ -83,6 +83,12 @@ export const eventPayloadContracts = [
   { type: "proposal.created", schemaVersion: 2, schema: ProposalCreatedV2 },
   { type: "proposal.flagged", schemaVersion: 1, schema: ProposalFlaggedV1 },
   { type: "turn.witnessed", schemaVersion: 1, schema: TurnWitnessedV1 },
+  // Phase 5: reviews that say how they were made (v1 upcasts), snoozes, and the seal, after
+  // which the web Worker writes the session's reviews. `proposalsProjection` folds reviews and
+  // snoozes, and `sessionProjection` the seal.
+  { type: "proposal.reviewed", schemaVersion: 2, schema: ProposalReviewedV2 },
+  { type: "proposal.snoozed", schemaVersion: 1, schema: ProposalSnoozedV1 },
+  { type: "session.sealed", schemaVersion: 1, schema: SessionSealedV1 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
