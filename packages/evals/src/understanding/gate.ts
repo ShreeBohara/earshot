@@ -9,16 +9,33 @@
 //   model quoted, or an unquoted target linked anyway: G2b);
 // - the end-to-end wrong-account rate is above 2%;
 // - a cassette couldn't answer a request (the cassettes are stale: regenerate them);
-// - the baseline was recorded on other scripts or other seeded errors (re-record it on purpose).
+// - the baseline was recorded on other scripts or other seeded errors (re-record it on purpose);
+// - the likely-edit tiers break their budgets (Phase 5 WP4, spec §4.4): loud on more than the
+//   interim ceiling's share of final proposals (18%, until false witness conflicts fall and the
+//   spec's 15% can hold; tiers.ts), any card marker on more than 35%, or fewer than 95% of the
+//   seeded errors marked, the name note included.
 import { RiskKindV2 } from "@earshot/core";
 import { z } from "zod";
 import type { UnderstandingMetrics } from "./metrics";
+import {
+  LOUD_SHARE_INTERIM_CEILING,
+  LOUD_SHARE_TARGET,
+  MARKED_SHARE_BUDGET,
+  SURFACING_RECALL_BUDGET,
+} from "./tiers";
 
 export const UNDERSTANDING_GATE = {
   /** A key metric may fall this far below its baseline. */
   maxDrop: 0.03,
   minEvidenceCoverage: 1,
   maxWrongAccountRate: 0.02,
+  /**
+   * The loud share's gate: the interim ceiling, not the spec's 15% (`LOUD_SHARE_TARGET`), which
+   * asks, conflicts, and unsupported values alone exceed (`LOUD_SHARE_INTERIM_CEILING`).
+   */
+  maxLoudShare: LOUD_SHARE_INTERIM_CEILING,
+  maxMarkedShare: MARKED_SHARE_BUDGET,
+  minSurfacingRecall: SURFACING_RECALL_BUDGET,
 } as const;
 
 /** The metrics the regression check guards, by name, and how each is read off the metrics. */
@@ -53,6 +70,17 @@ export const UnderstandingSummary = z.strictObject({
   expectedFlags: z.partialRecord(RiskKindV2, z.number().min(0).max(1).nullable()),
   proposals: z.int().nonnegative(),
   decided: z.int().nonnegative(),
+  // The likely-edit tiers (Phase 5 WP4): recorded with the rest; gated by their budgets alone.
+  loudShare: z.number().min(0).max(1).nullable(),
+  markedShare: z.number().min(0).max(1).nullable(),
+  nameNoteShare: z.number().min(0).max(1).nullable(),
+  /** Asks, witness conflicts, and unsupported values: the floor under the loud share. */
+  loudFloorShare: z.number().min(0).max(1).nullable(),
+  surfacingRecall: z.number().min(0).max(1).nullable(),
+  loudPrecision: z.number().min(0).max(1).nullable(),
+  quietPrecision: z.number().min(0).max(1).nullable(),
+  nameNotePrecision: z.number().min(0).max(1).nullable(),
+  hiddenWrongAccounts: z.int().nonnegative(),
 });
 export type UnderstandingSummary = z.infer<typeof UnderstandingSummary>;
 
@@ -95,6 +123,15 @@ export function summarize(metrics: UnderstandingMetrics): UnderstandingSummary {
     ),
     proposals: metrics.proposals.actual,
     decided: metrics.wrongAccount.of,
+    loudShare: round(metrics.tiers.loud.rate),
+    markedShare: round(metrics.tiers.marked.rate),
+    nameNoteShare: round(metrics.tiers.nameNoteOnly.rate),
+    loudFloorShare: round(metrics.tiers.loudFloor.rate),
+    surfacingRecall: round(metrics.tiers.surfacing.rate),
+    loudPrecision: round(metrics.tiers.precision.loud.rate),
+    quietPrecision: round(metrics.tiers.precision.quiet.rate),
+    nameNotePrecision: round(metrics.tiers.precision.nameNote.rate),
+    hiddenWrongAccounts: metrics.tiers.hiddenWrongAccounts,
   };
 }
 
@@ -125,6 +162,7 @@ export function understandingGateFailures(
       `${at} the end-to-end wrong-account rate ${pct(wrong)} is above ${pct(UNDERSTANDING_GATE.maxWrongAccountRate)}`,
     );
   }
+  failures.push(...tierBudgetFailures(at, metrics));
   if (baseline !== null) {
     for (const [name, read] of Object.entries(KEY_METRICS) as [
       KeyMetric,
@@ -151,6 +189,35 @@ export function understandingGateFailures(
         );
       }
     }
+  }
+  return failures;
+}
+
+/**
+ * The tiers' budgets (spec §4.4): loud at most the interim ceiling, any card marker at most 35%,
+ * and at least 95% of the seeded errors marked. A share with nothing to divide (no proposals, no
+ * seeded errors, as in a hand-built run) isn't gated.
+ */
+function tierBudgetFailures(at: string, metrics: UnderstandingMetrics): string[] {
+  const failures: string[] = [];
+  const { tiers } = metrics;
+  const loud = tiers.loud.rate;
+  if (loud !== null && loud > UNDERSTANDING_GATE.maxLoudShare + 1e-9) {
+    failures.push(
+      `${at} the loud share ${pct(loud)} (${tiers.loud.n}/${tiers.loud.of}) is over its interim ceiling of ${pct(UNDERSTANDING_GATE.maxLoudShare)} (the spec's budget is ${pct(LOUD_SHARE_TARGET)}; asks, conflicts, and unsupported values alone are ${pct(tiers.loudFloor.rate)})`,
+    );
+  }
+  const marked = tiers.marked.rate;
+  if (marked !== null && marked > UNDERSTANDING_GATE.maxMarkedShare + 1e-9) {
+    failures.push(
+      `${at} the marked share ${pct(marked)} (${tiers.marked.n}/${tiers.marked.of}) is over ${pct(UNDERSTANDING_GATE.maxMarkedShare)}: a sea of color`,
+    );
+  }
+  const surfacing = tiers.surfacing.rate;
+  if (surfacing !== null && surfacing < UNDERSTANDING_GATE.minSurfacingRecall - 1e-9) {
+    failures.push(
+      `${at} surfacing recall ${pct(surfacing)} (${tiers.surfacing.n}/${tiers.surfacing.of} seeded errors marked) is under ${pct(UNDERSTANDING_GATE.minSurfacingRecall)}`,
+    );
   }
   return failures;
 }

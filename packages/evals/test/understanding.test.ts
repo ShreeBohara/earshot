@@ -23,6 +23,8 @@ import {
   type ErrorLabels,
   generateUnderstandingCassettes,
   KEY_METRICS,
+  LOUD_SHARE_INTERIM_CEILING,
+  LOUD_SHARE_TARGET,
   matchTurn,
   runScript,
   type ScriptRun,
@@ -148,6 +150,22 @@ describe("the understanding eval over all 200 debriefs", () => {
     }
   });
 
+  it("keeps the tiers in their budgets, with the interim ceiling where the loud floor puts it", () => {
+    for (const provider of EVAL_PROVIDERS) {
+      const { tiers } = metrics[provider] as UnderstandingMetrics;
+      const floor = tiers.loudFloor.rate ?? 0;
+      // The interim ceiling stands only while asks, conflicts, and unsupported values alone are
+      // over the spec's 15%: their share plus 2 points, rounded up to a whole percent. When a
+      // linker or witness change moves the floor, this fails until the ceiling is set again (or
+      // dropped for the 15% budget).
+      expect(floor, provider).toBeGreaterThan(LOUD_SHARE_TARGET);
+      expect(Math.ceil((floor + 0.02) * 100) / 100, provider).toBe(LOUD_SHARE_INTERIM_CEILING);
+      expect(tiers.loud.rate ?? 1, provider).toBeLessThanOrEqual(LOUD_SHARE_INTERIM_CEILING);
+      expect(tiers.surfacing, provider).toEqual({ n: 40, of: 40, rate: 1 });
+      expect(tiers.surfacing.of, provider).toBe(labels.errors.length);
+    }
+  });
+
   it("catches the seeded errors it was built to catch", () => {
     const found = metrics.anthropic as UnderstandingMetrics;
     expect(found.seeded.wrong_date.n).toBe(found.seeded.wrong_date.of);
@@ -178,6 +196,17 @@ describe("the understanding eval over all 200 debriefs", () => {
       "Flag share",
       "Proposals by type",
       "Seeded model-like errors",
+      "Likely-edit tiers",
+      "Loud share",
+      "Loud floor",
+      "Marked share",
+      "Name-note share",
+      "Surfacing recall",
+      "Precision, loud",
+      "Precision, quiet card notes",
+      "Precision, the name note alone",
+      "Wrong accounts with no marker",
+      "By reason",
       "Passes",
     ]) {
       expect(markdown).toContain(label);
