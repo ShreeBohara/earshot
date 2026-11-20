@@ -3,7 +3,15 @@
 //
 //   withTenant(userId, workspaceId) → appendEvents(tx, sessionId, fromSeq - 1, events)
 //                                   → rebuildProjections(tx, sessionId)
+//                                   → recordReviewAudit(tx, signer, appended, "flush")
 //   then confirmFlushed(toSeq) on the session's Durable Object, then ack.
+//
+// From Phase 5 (WP3, docs/adr/0033) the review events an append writes get their audit rows, in the
+// session's user's name, and one signed checkpoint (`request: "flush"`), in the append's own
+// transaction and after the rebuild, so the workspace's audit lock is held only for those inserts.
+// Only events this delivery appends get rows: a redelivery that finds its events stored writes
+// none. Without a usable EARSHOT_AUDIT_SIGNING_KEY a message carrying reviews fails closed: it's
+// retried, and nothing of it is stored, until the key is fixed.
 //
 // Queues deliver at least once and in no particular order, so every message can arrive twice, or
 // before the one it follows. `expectedLastSeq` travels in the message (as `fromSeq - 1`), and the
@@ -16,11 +24,19 @@
 // | stale, the stored ids differ     | A second writer: log an alert, retry until the DLQ           |
 // | gap                              | Read the missing range from the DO, append it and this batch |
 // | UnknownSessionError              | Retry with a delay, then the DLQ (the web app writes the row first) |
+// | reviews, and no signing key      | Retry with a delay, then the DLQ (SessionDO resends later)   |
 // | the batch is refused (replay)    | A bug in the batch: straight to the DLQ, no retry            |
 //
 // Pure TypeScript: no Workers globals, so the Node tests run this exact code against PGlite, and
 // the workerd tests run it against a fake store.
-import { appendEvents, readEvents, rebuildProjections, withTenant } from "@earshot/db";
+import {
+  AuditUnavailableError,
+  appendEvents,
+  readEvents,
+  rebuildProjections,
+  recordReviewAudit,
+  withTenant,
+} from "@earshot/db";
 import {
   ConcurrencyError,
   EventValidationError,
@@ -29,6 +45,7 @@ import {
   UnknownEventError,
   UpcastError,
 } from "@earshot/events";
+import type { AuditSigner } from "@earshot/keys/server";
 import type { TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { type FlushEvent, FlushMessage } from "./flush-message";
@@ -58,7 +75,11 @@ export interface SessionRpc {
 
 /** Postgres, as the consumer uses it. `postgresFlushStore` is the real one. */
 export interface FlushStore {
-  /** `appendEvents`, then `rebuildProjections`, in one `withTenant` transaction. */
+  /**
+   * `appendEvents`, then `rebuildProjections`, then the audit rows and checkpoint for the review
+   * events it appended, in one `withTenant` transaction. Throws `AuditUnavailableError`, storing
+   * nothing, for review events with no signer.
+   */
   append(
     tenant: Tenant,
     sessionId: string,
@@ -77,18 +98,27 @@ export interface FlushDeps {
   readonly log: Logger;
 }
 
-/** The store on any Postgres Drizzle database that runs interactive transactions. */
+/**
+ * The store on any Postgres Drizzle database that runs interactive transactions. `signer` signs
+ * the checkpoint for review events: the edge Worker's EARSHOT_AUDIT_SIGNING_KEY, or null when it
+ * has no usable one, and then every message carrying reviews fails closed.
+ */
 export function postgresFlushStore<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown>,
   TSchema extends TablesRelationalConfig,
->(db: PgDatabase<TQueryResult, TFullSchema, TSchema>): FlushStore {
+>(
+  db: PgDatabase<TQueryResult, TFullSchema, TSchema>,
+  options: { readonly signer: AuditSigner | null; readonly now?: () => Date },
+): FlushStore {
   return {
     append: (tenant, sessionId, expectedLastSeq, events) =>
       withTenant(db, tenant, async (tx) => {
-        await appendEvents(tx, sessionId, expectedLastSeq, events);
+        const appended = await appendEvents(tx, sessionId, expectedLastSeq, events);
         // Same transaction: the projections never lag the log.
         await rebuildProjections(tx, sessionId);
+        // Last, after the session's lock and the rebuild: the audit lock lasts until commit.
+        await recordReviewAudit(tx, options.signer, appended, "flush", options.now?.());
       }),
     storedIds: (tenant, sessionId, fromSeq) =>
       withTenant(db, tenant, async (tx) =>
@@ -249,6 +279,14 @@ async function flushMessage(message: QueueMessageLike, deps: FlushDeps): Promise
       return retry("conflict");
     }
     if (isRefusedBatch(error)) return { kind: "dead_letter", reason: errorName(error) };
+    if (error instanceof AuditUnavailableError) {
+      // Fail closed: the reviews wait in SessionDO until the edge Worker has a usable key.
+      deps.log.error("flush refused: reviews need an audit checkpoint and no signing key works", {
+        sessionId: flush.sessionId,
+        fromSeq: flush.fromSeq,
+      });
+      return retry("audit_unavailable");
+    }
     if (error instanceof RangeUnavailableError) return retry("range_unavailable");
     if (errorName(error) === "UnknownSessionError") return retry("unknown_session");
     if (error instanceof ConcurrencyError) return retry(`concurrency_${error.reason}`);

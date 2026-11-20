@@ -1,9 +1,13 @@
 // The edge Worker's configuration (src/config.ts): development defaults, and fail-closed elsewhere.
 import { DEV_SESSION_TICKET_SECRET } from "@earshot/core";
+import { DEV_AUDIT_SIGNING_KEY, generateAuditSigningKey } from "@earshot/keys/server";
 import { describe, expect, it } from "vitest";
 import {
+  auditSecrets,
   EdgeConfigError,
   isAllowedOrigin,
+  readAuditSigner,
+  readAuditSigning,
   readEdgeConfig,
   readTicketSecret,
   readWebOrigins,
@@ -105,5 +109,45 @@ describe("readEdgeConfig", () => {
       WEB_ORIGIN: "http://localhost:3000",
     });
     expect(again.ticketKey).toBe(config.ticketKey);
+  });
+});
+
+describe("the audit signing key (Phase 5 WP3)", () => {
+  it("signs with the committed development key in development, and only there", async () => {
+    expect((await readAuditSigning({ DEPLOY_ENV: "development" })).status).toBe("development");
+    expect(await readAuditSigner({ DEPLOY_ENV: "development" })).not.toBeNull();
+    for (const env of [
+      { DEPLOY_ENV: "production" },
+      { DEPLOY_ENV: "pr-12", EARSHOT_AUDIT_SIGNING_KEY: "  " },
+    ]) {
+      expect((await readAuditSigning(env)).status).toBe("missing");
+      expect(await readAuditSigner(env)).toBeNull();
+    }
+    const devKeyOutside = await readAuditSigning({
+      DEPLOY_ENV: "production",
+      EARSHOT_AUDIT_SIGNING_KEY: DEV_AUDIT_SIGNING_KEY,
+    });
+    expect(devKeyOutside.status).toBe("invalid");
+  });
+
+  it("fails closed on a malformed key, naming the variable and never the value", async () => {
+    const state = await readAuditSigning({
+      DEPLOY_ENV: "production",
+      EARSHOT_AUDIT_SIGNING_KEY: '{"kty":"OKP","crv":"Ed25519","d":"not-a-key"}',
+    });
+    expect(state.status).toBe("invalid");
+    expect(JSON.stringify(state)).toContain("EARSHOT_AUDIT_SIGNING_KEY");
+    expect(JSON.stringify(state)).not.toContain("not-a-key");
+  });
+
+  it("signs with a configured key, loaded once per value, and lists what a log must mask", async () => {
+    const { secret } = await generateAuditSigningKey(new Date("2026-11-20T00:00:00Z"));
+    const env = { DEPLOY_ENV: "production", EARSHOT_AUDIT_SIGNING_KEY: secret };
+    const state = await readAuditSigning(env);
+    expect(state.status).toBe("configured");
+    expect(await readAuditSigning(env)).toBe(state);
+    const d = (JSON.parse(secret) as { d: string }).d;
+    expect(auditSecrets(env)).toEqual([secret, d]);
+    expect(JSON.stringify(state)).not.toContain(d);
   });
 });

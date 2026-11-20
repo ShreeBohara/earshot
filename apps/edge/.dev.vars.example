@@ -9,6 +9,12 @@
 # (`openssl rand -base64 32`). Required outside development.
 # EARSHOT_SESSION_TICKET_SECRET=replace-with-at-least-32-random-bytes
 
+# Signs the audit chain's checkpoints for the tray's reviews (docs/adr/0033): the same private
+# Ed25519 JWK as the web app's, from `pnpm --filter @earshot/keys audit-key:new`. Required outside
+# development, where without it SessionDO refuses reviews and the flush won't store them;
+# `wrangler dev` (DEPLOY_ENV=development) signs with the committed development key.
+# EARSHOT_AUDIT_SIGNING_KEY={"kty":"OKP","crv":"Ed25519","d":"…","x":"…","kid":"audit-YYYY-MM-DD-xxxx"}
+
 # The flush consumer's database: the pooled connection string of your personal Neon branch.
 # DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=require
 

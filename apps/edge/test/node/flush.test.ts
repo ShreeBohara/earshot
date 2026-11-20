@@ -2,7 +2,15 @@
 // real `postgresFlushStore` (withTenant → appendEvents → rebuildProjections) on PGlite with every
 // migration and row-level security. Only the Queue and the Durable Object are faked.
 import { fileURLToPath } from "node:url";
-import { schema } from "@earshot/db";
+import {
+  exportAuditChain,
+  type ReviewPayload,
+  schema,
+  verifyAuditExport,
+  withTenant,
+  writeSessionReviews,
+} from "@earshot/db";
+import { type AuditSigner, loadAuditSigningKey } from "@earshot/keys/server";
 import { PGlite } from "@electric-sql/pglite";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { vector } from "@electric-sql/pglite-pgvector";
@@ -30,8 +38,13 @@ const B = { userId: "user-b", workspaceId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
 
 let client: PGlite;
 let db: ReturnType<typeof drizzle<typeof schema>>;
+/** The committed development key, as `wrangler dev` signs with. */
+let signer: AuditSigner;
 
 beforeAll(async () => {
+  const signing = await loadAuditSigningKey({}, { development: true });
+  if (signing.status !== "development") throw new Error("no development signing key");
+  signer = signing.signer;
   client = new PGlite({ extensions: { vector, pg_trgm } });
   db = drizzle({ client, schema });
   await migrate(db, { migrationsFolder });
@@ -183,9 +196,16 @@ function fakeDo(log: FlushEvent[] = []) {
   };
 }
 
-function deps(session: SessionRpc, deadLetters: unknown[] = [], lines: string[] = []): FlushDeps {
+function deps(
+  session: SessionRpc,
+  deadLetters: unknown[] = [],
+  lines: string[] = [],
+  options: { signer?: AuditSigner | null } = {},
+): FlushDeps {
   return {
-    store: postgresFlushStore(db),
+    store: postgresFlushStore(db, {
+      signer: options.signer === undefined ? signer : options.signer,
+    }),
     session: () => session,
     deadLetter: async (body) => {
       deadLetters.push(body);
@@ -371,5 +391,266 @@ describe("flushBatch on Postgres", () => {
     await flushBatch({ messages: [pending] }, deps(durable.rpc));
     expect(pending.acked).toBe(true);
     expect(await storedIds(sid)).toEqual(events.map((event) => event.id));
+  });
+});
+
+// ─── Phase 5: review events, their audit rows, and the web Worker's writes after the seal ──────
+
+const REVIEWER = { userId: A.userId, auth: { method: "passkey", signedInAt: TS } };
+
+/** A `proposal.reviewed` v2 payload, as SessionDO fills the tray's: approved, by keyboard. */
+function reviewPayload(proposalId: string, overrides: Record<string, unknown> = {}) {
+  return {
+    reviewId: uuid(),
+    proposalId,
+    decision: "approved",
+    target: null,
+    mode: "single",
+    batchId: null,
+    policy: null,
+    undoes: null,
+    reason: null,
+    seen: { tier: "none", fields: {}, target: null, relinked: null, clip: "none" },
+    timing: { decisionMs: 800, handlingMs: 950 },
+    input: "keyboard",
+    surface: "tray",
+    syncEligibleAt: "2026-11-19T10:02:30.000Z",
+    by: REVIEWER,
+    ...overrides,
+  };
+}
+
+/**
+ * A reviewed debrief, as SessionDO numbers it: the debrief's start, utterance, and proposal; a
+ * tray approval and a snooze of a second proposal; usage; the end; and the seal.
+ */
+function reviewedDebrief(): { events: FlushEvent[]; proposalId: string; secondId: string } {
+  const [started, utterance, proposal, usage, ended] = debrief();
+  if (!started || !utterance || !proposal || !usage || !ended) throw new Error("no debrief");
+  const proposalId = proposal.payload.proposalId as string;
+  const secondId = uuid();
+  // Both name a record, so the writers' rules let them be approved.
+  const linked = { ...proposal, payload: { ...proposal.payload, targetEntityId: "ct_045" } };
+  const second = { ...linked, id: uuid(), payload: { ...linked.payload, proposalId: secondId } };
+  const bodies: Omit<FlushEvent, "seq">[] = [
+    started,
+    utterance,
+    linked,
+    second,
+    {
+      id: uuid(),
+      type: "proposal.reviewed",
+      schemaVersion: 2,
+      ts: TS,
+      payload: reviewPayload(proposalId),
+    },
+    {
+      id: uuid(),
+      type: "proposal.snoozed",
+      schemaVersion: 1,
+      ts: TS,
+      payload: { snoozeId: uuid(), proposalId: secondId, until: null, by: REVIEWER },
+    },
+    usage,
+    ended,
+    {
+      id: uuid(),
+      type: "session.sealed",
+      schemaVersion: 1,
+      ts: TS,
+      payload: { sealedAt: "2026-11-19T10:03:00.000Z", by: "session" },
+    },
+  ];
+  return { events: bodies.map((event, seq) => ({ ...event, seq })), proposalId, secondId };
+}
+
+async function auditRows() {
+  return db.select().from(schema.auditLog).orderBy(asc(schema.auditLog.chainSeq));
+}
+
+async function checkpoints() {
+  return db.select().from(schema.auditCheckpoints).orderBy(asc(schema.auditCheckpoints.chainSeq));
+}
+
+/** A fresh tenant per test, so each test's audit chain starts empty. */
+async function freshTenant(): Promise<{ userId: string; workspaceId: string }> {
+  const tenant = { userId: `user-${uuid()}`, workspaceId: uuid() };
+  await db.insert(schema.user).values({
+    id: tenant.userId,
+    name: tenant.userId,
+    email: `${tenant.userId}@example.test`,
+  });
+  await db.insert(schema.workspaces).values({ id: tenant.workspaceId, name: tenant.userId });
+  await db.insert(schema.workspaceMembers).values({ ...tenant, role: "owner" });
+  return tenant;
+}
+
+function forTenant(events: FlushEvent[], tenant: { userId: string }): FlushEvent[] {
+  return events.map((event) =>
+    event.type === "proposal.reviewed" || event.type === "proposal.snoozed"
+      ? {
+          ...event,
+          payload: { ...event.payload, by: { ...REVIEWER, userId: tenant.userId } },
+        }
+      : event,
+  );
+}
+
+describe("review events at flush: audit rows and a checkpoint", () => {
+  it("writes an audit row per review event a message appends, in the session user's name, and one flush checkpoint", async () => {
+    const tenant = await freshTenant();
+    const sid = await createSession(tenant);
+    const { events: raw, proposalId } = reviewedDebrief();
+    const events = forTenant(raw, tenant);
+    const pending = delivery(message(sid, events, tenant));
+    await flushBatch({ messages: [pending] }, deps(fakeDo(events).rpc));
+    expect(pending.acked).toBe(true);
+
+    const rows = (await auditRows()).filter((row) => row.workspaceId === tenant.workspaceId);
+    const review = events.find((event) => event.type === "proposal.reviewed");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      actorUserId: tenant.userId,
+      action: "proposal.approved",
+      subjectType: "proposal",
+      subjectId: proposalId,
+      chainSeq: 1,
+      detail: {
+        sessionId: sid,
+        eventId: review?.id,
+        seq: review?.seq,
+        reviewId: review?.payload.reviewId,
+        mode: "single",
+        batchId: null,
+        policy: null,
+        undoes: null,
+        auth: REVIEWER.auth,
+        surface: "tray",
+        input: "keyboard",
+      },
+    });
+    const stored = await withTenant(db, tenant, (tx) =>
+      tx
+        .select()
+        .from(schema.sessionEvents)
+        .where(eq(schema.sessionEvents.id, review?.id ?? "")),
+    );
+    expect(stored).toHaveLength(1);
+    const ckpts = (await checkpoints()).filter((row) => row.workspaceId === tenant.workspaceId);
+    expect(ckpts.map((row) => [row.chainSeq, row.request, row.kid])).toEqual([
+      [1, "flush", signer.kid],
+    ]);
+    // The chain and its checkpoint verify offline, against the development key.
+    const exported = await withTenant(db, tenant, (tx) => exportAuditChain(tx));
+    const file = {
+      format: "earshot.account-export",
+      audit: { form: 1, keys: [signer.publicKey] },
+      workspaces: [
+        {
+          id: tenant.workspaceId,
+          tables: { audit_log: exported.entries, audit_checkpoints: exported.checkpoints },
+        },
+      ],
+    };
+    const verified = await verifyAuditExport(JSON.parse(JSON.stringify(file)), {
+      allowDevelopmentKey: true,
+    });
+    expect(verified.problems).toEqual([]);
+    expect(verified.ok).toBe(true);
+  });
+
+  it("adds no audit rows on a redelivery that finds its events stored", async () => {
+    const tenant = await freshTenant();
+    const sid = await createSession(tenant);
+    const events = forTenant(reviewedDebrief().events, tenant);
+    const durable = fakeDo(events);
+    await flushBatch({ messages: [delivery(message(sid, events, tenant))] }, deps(durable.rpc));
+    const again = delivery(message(sid, events, tenant), 2);
+    await flushBatch({ messages: [again] }, deps(durable.rpc));
+    expect(again.acked).toBe(true);
+    const ours = (rows: { workspaceId: string }[]) =>
+      rows.filter((row) => row.workspaceId === tenant.workspaceId);
+    expect(ours(await auditRows())).toHaveLength(1);
+    expect(ours(await checkpoints())).toHaveLength(1);
+  });
+
+  it("audits the review events a gap repair reads from the Durable Object", async () => {
+    const tenant = await freshTenant();
+    const sid = await createSession(tenant);
+    const events = forTenant(reviewedDebrief().events, tenant);
+    // Only the last three events arrive; the review before them comes from the object.
+    const later = delivery(message(sid, events.slice(6), tenant));
+    await flushBatch({ messages: [later] }, deps(fakeDo(events).rpc));
+    expect(later.acked).toBe(true);
+    const rows = (await auditRows()).filter((row) => row.workspaceId === tenant.workspaceId);
+    expect(rows.map((row) => row.action)).toEqual(["proposal.approved"]);
+  });
+
+  it("fails closed without a signing key: retries a message with reviews and stores none of it", async () => {
+    const tenant = await freshTenant();
+    const sid = await createSession(tenant);
+    const events = forTenant(reviewedDebrief().events, tenant);
+    const lines: string[] = [];
+    // The first four events hold no review: they flush without a key.
+    const plain = delivery(message(sid, events.slice(0, 4), tenant));
+    await flushBatch({ messages: [plain] }, deps(fakeDo(events).rpc, [], lines, { signer: null }));
+    expect(plain.acked).toBe(true);
+
+    const reviewed = delivery(message(sid, events.slice(4), tenant));
+    await flushBatch(
+      { messages: [reviewed] },
+      deps(fakeDo(events).rpc, [], lines, { signer: null }),
+    );
+    expect(reviewed.acked).toBe(false);
+    expect(reviewed.retried).toEqual({ delaySeconds: 10 });
+    expect(lines.join("\n")).toContain('"reason":"audit_unavailable"');
+    expect(await storedIds(sid)).toEqual(events.slice(0, 4).map((event) => event.id));
+    expect((await auditRows()).filter((row) => row.workspaceId === tenant.workspaceId)).toEqual([]);
+  });
+});
+
+describe("the web Worker as the second writer", () => {
+  it("acks a redelivered flush message after the web Worker's reviews, with no conflict", async () => {
+    const tenant = await freshTenant();
+    const sid = await createSession(tenant);
+    const { events: raw, secondId } = reviewedDebrief();
+    const events = forTenant(raw, tenant);
+    const durable = fakeDo(events);
+    const original = message(sid, events, tenant);
+    await flushBatch({ messages: [delivery(original)] }, deps(durable.rpc));
+
+    // Postgres holds the seal: the web Worker reviews the snoozed proposal.
+    const written = await withTenant(db, tenant, (tx) =>
+      writeSessionReviews(
+        tx,
+        sid,
+        {
+          reviews: [
+            reviewPayload(secondId, {
+              surface: "inbox",
+              by: { ...REVIEWER, userId: tenant.userId },
+            }) as unknown as ReviewPayload,
+          ],
+          snoozes: [],
+        },
+        { signer, now: new Date("2026-11-20T09:00:00.000Z"), newId: uuid },
+      ),
+    );
+    expect(written).toMatchObject({ ok: true, lastSeq: events.length });
+
+    // The flush message again, and its seal alone: both acked as committed, nothing conflicts.
+    const lines: string[] = [];
+    const redelivered = delivery(original, 2);
+    const sealOnly = delivery(message(sid, events.slice(-1), tenant), 2);
+    await flushBatch({ messages: [redelivered, sealOnly] }, deps(durable.rpc, [], lines));
+    expect([redelivered.acked, sealOnly.acked]).toEqual([true, true]);
+    expect(lines.join("\n")).not.toContain("flush conflict");
+    const ids = await storedIds(sid);
+    expect(ids).toHaveLength(events.length + 1);
+    expect(ids.slice(0, events.length)).toEqual(events.map((event) => event.id));
+    const rows = (await auditRows()).filter((row) => row.workspaceId === tenant.workspaceId);
+    expect(rows.map((row) => row.detail.surface)).toEqual(["tray", "inbox"]);
+    const ckpts = (await checkpoints()).filter((row) => row.workspaceId === tenant.workspaceId);
+    expect(ckpts.map((row) => row.request)).toEqual(["flush", "review"]);
   });
 });
