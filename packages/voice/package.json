@@ -22,6 +22,7 @@
   "dependencies": {
     "@earshot/core": "workspace:*",
     "@earshot/events": "workspace:*",
+    "@earshot/understanding": "workspace:*",
     "@ricky0123/vad-web": "0.0.31",
     "esbuild": "^0.28.2",
     "onnxruntime-web": "1.31.1"

@@ -43,13 +43,13 @@ import {
   type UtteranceFinalV2,
 } from "@earshot/core";
 import {
-  anyFlagTier,
   checkReviews,
   checkSnooze,
   defaultRegistry,
   proposalsProjection,
   replay,
 } from "@earshot/events";
+import { tierOf } from "@earshot/understanding/tiers";
 import { PRICE_TABLE_DATE, priceStt } from "../prices";
 import type { SocketFactory } from "../stt/socket";
 import { type FakeServerSocket, FakeSocketServer } from "./fake-socket";
@@ -723,7 +723,7 @@ export class FakeSessionServer {
       this.#ackExisting(message.msgId, resentSeq);
       return;
     }
-    const check = checkReviews(this.#proposals(), fresh, { tierOf: anyFlagTier, from: "client" });
+    const check = checkReviews(this.#proposals(), fresh, { tierOf, from: "client" });
     if (!check.ok) {
       this.#refuse(message.msgId, "bad_message", false);
       return;

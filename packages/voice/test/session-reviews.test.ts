@@ -217,6 +217,36 @@ describe("SessionClient.sendReview", () => {
     expect(await pending).toEqual([{ ok: false, ids: [review.reviewId], code: "bad_message" }]);
   });
 
+  it("refuses an accept-all item tierOf marks, as SessionDO does: the name note, not a lone self-correction", async () => {
+    const h = await harness({ proposals: 0 });
+    const soundLink = linkedProposal();
+    // Linked by sound below 0.97: only the name note, but a marker all the same.
+    const named = {
+      ...soundLink,
+      target: { ...soundLink.target, basis: "sound", p: 0.9 },
+      riskFlags: [{ kind: "link_uncertain", field: "target" }],
+    };
+    // A flag, but no marker: the model took the rep's correction.
+    const corrected = {
+      ...linkedProposal(),
+      riskFlags: [{ kind: "self_correction", field: "title" }],
+    };
+    h.server.append("proposal.created", named);
+    h.server.append("proposal.created", corrected);
+    await settle(400);
+    const batchId = uuid("00000010");
+    const refused = reviewOf(named.proposalId, { mode: "batch", batchId });
+    const taken = reviewOf(corrected.proposalId, { mode: "batch", batchId });
+    const first = h.client.sendReview([refused]);
+    await settle(400);
+    expect(await first).toEqual([{ ok: false, ids: [refused.reviewId], code: "bad_message" }]);
+    const second = h.client.sendReview([taken]);
+    await settle(400);
+    expect(await second).toEqual([
+      expect.objectContaining({ ok: true, via: "socket", ids: [taken.reviewId] }),
+    ]);
+  });
+
   it("sends a review SessionDO refuses with sealed to the web route, with the same review id", async () => {
     const sent: unknown[] = [];
     const route: ReviewRoute = async (request) => {

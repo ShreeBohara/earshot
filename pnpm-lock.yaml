@@ -867,6 +867,9 @@ importers:
       '@earshot/events':
         specifier: workspace:*
         version: link:../events
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../understanding
       '@ricky0123/vad-web':
         specifier: 0.0.31
         version: 0.0.31
