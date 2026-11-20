@@ -4,7 +4,7 @@
 // undo, and a snooze go over the socket and SessionDO writes them; then the seal, after which the
 // socket refuses and the client hands each review to the web route under the same review id, so
 // the tray keeps working.
-import type { ReviewInput, ReviewRouteResponse } from "@earshot/core";
+import type { ProposalReviewedV2, ReviewInput, ReviewRouteResponse } from "@earshot/core";
 import type { ProposalView } from "@earshot/events";
 import { createSessionClient, type ReviewRoute, ReviewRouteFailure } from "@earshot/voice/session";
 import { FakePageLifecycle, FakeSessionServer, settle } from "@earshot/voice/testing";
@@ -182,6 +182,57 @@ describe("the tray's reviews over the session socket", () => {
     // The socket's own event catches up with the page's change: nothing left to remember.
     t.store.reconcile(t.client.store.getState().projections.proposals);
     expect(t.store.overlay().size).toBe(0);
+  });
+
+  // Codex's review of #59: SessionDO reopens an approval that a late flag put in doubt. When that
+  // reopen overtakes the approval before the tray reconciles (its list renders deferred, and can
+  // skip the approved state), the page's approval must not keep the card hidden in Reviewed.
+  it("brings a card back when SessionDO reopens it after a late flag, even if the approval never showed", async () => {
+    const t = await tray(1);
+    const [proposal] = t.open();
+    if (!proposal) throw new Error("no card");
+    const review = decisionReview({
+      proposal,
+      entities: {},
+      decision: "approved",
+      timing: { decisionMs: 900, handlingMs: 900 },
+      input: "keyboard",
+      surface: "tray",
+    });
+    const landed = t.store.apply(decided(review, proposal));
+    await settle(400);
+    await expect(landed).resolves.toEqual({ ok: true });
+    expect(t.open()).toHaveLength(0);
+
+    // Before the tray reconciles, SessionDO's system reopen, as `#systemReopen` writes it.
+    const reopen: ProposalReviewedV2 = {
+      reviewId: uuid("0000000f"),
+      proposalId: proposal.proposalId,
+      decision: "reopened",
+      target: null,
+      mode: "system",
+      batchId: null,
+      policy: null,
+      undoes: review.reviewId,
+      reason: "flagged",
+      seen: {
+        tier: "loud",
+        fields: { title: { proposed: "Send the deck" } },
+        target: { entityId: ENTITY, offered: [] },
+        relinked: null,
+        clip: "none",
+      },
+      timing: { decisionMs: 0, handlingMs: 0 },
+      input: "none",
+      surface: "session",
+      syncEligibleAt: null,
+      by: { userId: "user-1", auth: null },
+    };
+    t.server.append("proposal.reviewed", reopen);
+    await settle(400);
+    t.store.reconcile(t.client.store.getState().projections.proposals);
+    expect(t.store.overlay().size).toBe(0);
+    expect(t.open().map((card) => card.proposalId)).toEqual([proposal.proposalId]);
   });
 
   it("accepts all 30 as one change, in two review messages with one batch id, and undoes it the same way", async () => {

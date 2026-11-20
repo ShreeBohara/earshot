@@ -515,7 +515,8 @@ describe("CaptureController's tray after `end` (Phase 5 WP6)", () => {
     const review = trayReview(t);
     const sent = sink.send(SESSION_ID, { reviews: [review], snoozes: [] });
     await settle(200);
-    await expect(sent).resolves.toEqual({ ok: true });
+    // With the seq SessionDO's ack says the write reached, for the tray's reconcile.
+    await expect(sent).resolves.toEqual({ ok: true, seq: expect.any(Number) });
     expect(t.server.log.at(-1)?.payload).toMatchObject({ reviewId: review.reviewId });
 
     // The seal: the tray hands over, and the client closes once its late events are in.
@@ -535,8 +536,10 @@ describe("CaptureController's tray after `end` (Phase 5 WP6)", () => {
       input: "pointer",
       surface: "tray",
     });
+    // With the route's `lastSeq`, as the socket's ack gave before the seal.
     await expect(sink.send(SESSION_ID, { reviews: [reopened], snoozes: [] })).resolves.toEqual({
       ok: true,
+      seq: expect.any(Number),
     });
     const posted = t.routes.filter((route) => route.url.endsWith("/reviews"));
     expect(posted).toHaveLength(1);

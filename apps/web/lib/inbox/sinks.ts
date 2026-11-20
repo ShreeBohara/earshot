@@ -55,7 +55,15 @@ export type SinkRefusal =
   | "failed";
 
 export type SinkResult =
-  | { readonly ok: true }
+  | {
+      readonly ok: true;
+      /**
+       * The session log's seq the write reached, when the writer said (the route's `lastSeq`, the
+       * socket's ack). `OptimisticReviews.reconcile` reads it to tell when the session's own
+       * events have caught up with the write, or gone past it.
+       */
+      readonly seq?: number;
+    }
   | { readonly ok: false; readonly reason: SinkRefusal };
 
 /**
@@ -95,7 +103,8 @@ export function routeSink(fetcher: typeof fetch = fetch): ReviewSink {
       }
       if (response.ok) {
         const body = (await response.json().catch(() => null)) as ReviewRouteResponse | null;
-        return body?.sessionId ? { ok: true } : { ok: false, reason: "failed" };
+        if (!body?.sessionId) return { ok: false, reason: "failed" };
+        return typeof body.lastSeq === "number" ? { ok: true, seq: body.lastSeq } : { ok: true };
       }
       const body = (await response.json().catch(() => null)) as ReviewRouteErrorBody | null;
       const reason = body?.error ? ROUTE_REFUSALS[body.error] : undefined;
@@ -148,11 +157,13 @@ export function socketSink(writer: ReviewWriter): ReviewSink {
       if (request.reviews.length > 0)
         deliveries.push(...(await writer.sendReview(request.reviews)));
       for (const snooze of request.snoozes) deliveries.push(await writer.sendSnooze(snooze));
+      let seq: number | undefined;
       for (const delivery of deliveries) {
         if (!delivery.ok)
           return { ok: false, reason: DELIVERY_REFUSALS[delivery.code] ?? "failed" };
+        if (delivery.seq !== undefined) seq = Math.max(seq ?? delivery.seq, delivery.seq);
       }
-      return { ok: true };
+      return seq === undefined ? { ok: true } : { ok: true, seq };
     },
   };
 }
@@ -261,6 +272,8 @@ export class OptimisticReviews {
   #queue: Queued[] = [];
   #overlay: ReadonlyMap<string, LocalState> = new Map();
   #pendingIds: ReadonlySet<string> = new Set();
+  /** Each card's latest landed write: the log's seq it reached, when its writer said. */
+  readonly #reached = new Map<string, number>();
   #sending = false;
 
   constructor(sink: ReviewSink, options: { onFailure?: (failure: Failure) => void } = {}) {
@@ -304,8 +317,19 @@ export class OptimisticReviews {
   }
 
   /**
-   * Forgets the page's state for proposals whose loaded state has caught up with it: a fresh load
-   * holds the review the page made. Changes still on their way stay.
+   * Forgets the page's state for proposals whose loaded state has caught up with it, or gone past
+   * it, so the loaded state is the authority again. Changes still on their way stay. Any of these
+   * is enough:
+   * - **Caught up:** the loaded card is what the page made it (status, latest review, and snooze).
+   * - **Reversed:** the loaded latest review reverses the page's (its `undoes` names it), such as
+   *   `SessionDO`'s system reopen after a late flag, or an undo made elsewhere.
+   * - **Gone past:** the loaded latest review's seq is at or past the seq the page's write
+   *   reached, when its writer said (the tray's cards come from the session's own events, which
+   *   carry it). The events hold the write and whatever followed it.
+   *
+   * Without the last two, an event that overtook the page's write before this ran (a list that
+   * renders deferred can skip the approved state between them) left the page's approval showing
+   * forever, hiding the reopen.
    */
   reconcile(
     loaded: Iterable<Pick<InboxProposal, "proposalId" | "status" | "review" | "snoozedUntil">>,
@@ -315,12 +339,20 @@ export class OptimisticReviews {
     for (const proposal of loaded) {
       const local = next.get(proposal.proposalId);
       if (!local || this.pending(proposal.proposalId)) continue;
-      if (
+      const caughtUp =
         local.status === proposal.status &&
         (local.review?.reviewId ?? null) === (proposal.review?.reviewId ?? null) &&
-        local.snoozedUntil === proposal.snoozedUntil
-      ) {
+        local.snoozedUntil === proposal.snoozedUntil;
+      const reversed =
+        local.review !== null &&
+        proposal.review !== null &&
+        proposal.review.undoes === local.review.reviewId;
+      const reached = this.#reached.get(proposal.proposalId);
+      const loadedSeq = proposal.review?.seq;
+      const gonePast = reached !== undefined && loadedSeq !== undefined && loadedSeq >= reached;
+      if (caughtUp || reversed || gonePast) {
         next.delete(proposal.proposalId);
+        this.#reached.delete(proposal.proposalId);
         changed = true;
       }
     }
@@ -350,7 +382,13 @@ export class OptimisticReviews {
             refusal = result.reason;
             break;
           }
-          for (const proposalId of proposalsOf(part)) landed.add(proposalId);
+          for (const proposalId of proposalsOf(part)) {
+            landed.add(proposalId);
+            if (result.seq !== undefined) {
+              const before = this.#reached.get(proposalId);
+              this.#reached.set(proposalId, Math.max(before ?? result.seq, result.seq));
+            }
+          }
         }
         this.#queue.shift();
         this.#queueChanged();
