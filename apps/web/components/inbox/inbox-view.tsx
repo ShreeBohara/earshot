@@ -76,6 +76,9 @@ export async function fetchInbox(before?: string): Promise<InboxData | null> {
   }
 }
 
+/** Undo for one proposal: a reopen of its latest review, or a wake from its snooze. */
+type UndoAction = (proposalId: string, event: InputEventLike) => void;
+
 /** One thing the reviewer did here, for u: the latest that still stands is undone first. */
 type HistoryEntry = {
   readonly kind: "review" | "snooze";
@@ -130,6 +133,8 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
   const headingId = useId();
 
   const onFailure = useRef<(failure: Failure) => void>(() => {});
+  /** The latest reopen and wake, for a toast's Undo (set after every render, with `onFailure`). */
+  const toastActions = useRef<{ reopen: UndoAction; wake: UndoAction } | null>(null);
   const [store] = useState(
     () =>
       new OptimisticReviews(sink ?? routeSink(), {
@@ -276,6 +281,9 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
   };
   useEffect(() => {
     onFailure.current = handleFailure;
+    // A toast's Undo is pressed long after the render that made it. The reopen and wake from that
+    // render still see the card open, and would return without undoing, so it calls these.
+    toastActions.current = { reopen, wake };
   });
 
   function hint(proposalId: string, text: string | null) {
@@ -356,7 +364,7 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
       request: { reviews: [review], snoozes: [] },
     });
     announce(actionMessage(how.message, left, shortcuts), (undoEvent) =>
-      reopen(proposalId, undoEvent),
+      toastActions.current?.reopen(proposalId, undoEvent),
     );
   }
 
@@ -557,7 +565,7 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
         left,
         shortcuts,
       ),
-      (undoEvent) => wake(proposalId, undoEvent),
+      (undoEvent) => toastActions.current?.wake(proposalId, undoEvent),
     );
   }
 

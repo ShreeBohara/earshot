@@ -160,5 +160,25 @@ test("by pointer and the correction panel: More snoozes, c and a digit choose th
   await expect(card(page, CARDS.acmeStage)).toHaveCount(0);
   await expect.poll(() => focused(page)).toBe(CARDS.seanTask);
   await expectFocusOffBody(page);
+
+  // One message per action: each replaces the last, so one toast is left, once the others leave.
+  await expect(toast.getByRole("dialog")).toHaveCount(1);
+  // The toast's Undo, clicked: the card comes back and takes focus. It reads the card as it stands
+  // when clicked, not as it stood when the toast appeared (Codex's review of #57).
+  await toast.getByRole("button", { name: "Undo" }).click();
+  await expect(card(page, CARDS.acmeStage)).toBeVisible();
+  await expect.poll(() => focused(page)).toBe(CARDS.acmeStage);
+  await expect(toast).toContainText(/Back for review: /);
+
+  // The same for a snooze: More → For 3 hours, then the toast's Undo wakes it.
+  await card(page, CARDS.acmeStage).getByRole("button", { name: "More" }).click();
+  await page.getByRole("menuitem", { name: "For 3 hours" }).click();
+  await expect(card(page, CARDS.acmeStage)).toHaveCount(0);
+  await expect(toast.getByRole("dialog")).toHaveCount(1);
+  await toast.getByRole("button", { name: "Undo" }).click();
+  await expect(card(page, CARDS.acmeStage)).toBeVisible();
+  await expect.poll(() => focused(page)).toBe(CARDS.acmeStage);
+  await expect(page.getByRole("region", { name: "Snoozed" })).toHaveCount(0);
+  await expectFocusOffBody(page);
   await reviewsSent(page);
 });
