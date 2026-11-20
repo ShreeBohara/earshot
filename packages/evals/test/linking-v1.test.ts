@@ -23,6 +23,7 @@ import { HOMOPHONES as PRODUCT_HOMOPHONES } from "@earshot/understanding/names";
 import { describe, expect, it } from "vitest";
 import { HOMOPHONES } from "../src/channel";
 import {
+  ABLATIONS,
   ablationTable,
   asExpected,
   CONFUSABLE_SET_FILE,
@@ -32,10 +33,13 @@ import {
   LINKER_V1,
   LINKING_ENTITIES,
   LinkingBaseline,
+  type LinkingCase,
   linkerInput,
+  linkerV1,
   linkingCase,
   linkingReport,
   parseConfusableSet,
+  type Sees,
   score,
   splitSummary,
   WITNESS_ONLY_CLASSES,
@@ -210,6 +214,32 @@ describe("the ablations", () => {
     ]);
     expect(coverage.v1).toBeGreaterThan((coverage["no-sound"] ?? 1) + 0.3);
     expect(coverage.v1).toBeGreaterThan((coverage["no-context"] ?? 1) + 0.2);
+  });
+
+  it("hide what they remove from the input, so nothing derived from it still sees it", () => {
+    // Codex's catch on #42: without this, "no-focus" still read the open account through the
+    // prefilter's bonus and through `rivalContext`. Blanking the hidden context in the cases
+    // themselves must change no prediction.
+    const blank =
+      (sees: Sees) =>
+      (linkingCase: LinkingCase): LinkingCase => ({
+        ...linkingCase,
+        focusEntityId: sees.focus ? linkingCase.focusEntityId : null,
+        recent: sees.recent ? linkingCase.recent : [],
+        biased: sees.company ? linkingCase.biased : { ...linkingCase.biased, company: null },
+      });
+    const cases = ITEMS.filter((item) => item.split === "test").map(linkingCase);
+    for (const name of ["no-focus", "no-context"]) {
+      const ablation = ABLATIONS.find((candidate) => candidate.name === name);
+      if (!ablation) throw new Error(`no ablation ${name}`);
+      const { params } = fitLinker(ITEMS, LINKING_ENTITIES, ablation.config);
+      const linker = linkerV1(params, { name, baseline: null, sees: ablation.config.sees });
+      const blanked = cases.map(blank(ablation.config.sees));
+      expect(cases.some((linkingCase, k) => linkingCase !== blanked[k])).toBe(true);
+      expect(linker.predict(blanked, LINKING_ENTITIES), name).toEqual(
+        linker.predict(cases, LINKING_ENTITIES),
+      );
+    }
   });
 
   it("share one homophone list with the product", () => {

@@ -214,6 +214,33 @@ export function linkerInput(
   };
 }
 
+/** What a linker is shown besides the mention's words. An ablation can hide any of it. */
+export interface Sees {
+  /** The account open in Earshot. */
+  readonly focus: boolean;
+  /** Records linked earlier in the session. */
+  readonly recent: boolean;
+  /** The company said with the mention, and the turn's other mentions. */
+  readonly company: boolean;
+}
+
+export const SEES_ALL: Sees = { focus: true, recent: true, company: true };
+
+/**
+ * The input with what `sees` hides cleared. Clearing it from the input, rather than only dropping
+ * its features from the model, keeps it out of everything that reads it: the family source, the
+ * prefilter's context bonus, and the features derived from it (`rivalContext`).
+ */
+export function shown(input: LinkerInput, sees: Sees): LinkerInput {
+  return {
+    mention: sees.company ? input.mention : { ...input.mention, companyText: null },
+    focusEntityId: sees.focus ? input.focusEntityId : null,
+    recent: sees.recent ? input.recent : [],
+    turnMentions: sees.company ? input.turnMentions : [],
+    kinds: input.kinds,
+  };
+}
+
 /** A `link` result as the harness scores it; an ask carries what the risk–coverage sweep needs. */
 export function asLinkDecision(result: LinkResult, delta: number): LinkDecision {
   if (result.decision === "linked") {
@@ -233,13 +260,18 @@ export function asLinkDecision(result: LinkResult, delta: number): LinkDecision 
 }
 
 /**
- * Linker v1 with a parameter set: the committed one, or an ablation's. Its final decisions are
- * its biased-only ones until WP5 adds the witness.
+ * Linker v1 with a parameter set: the committed one, or an ablation's, with what that ablation
+ * hides (`sees`). Its final decisions are its biased-only ones until WP5 adds the witness.
  */
 export function linkerV1(
   params: LinkerParams = LINKER_PARAMS_V1,
-  options: { readonly name?: string; readonly baseline?: string | null } = {},
+  options: {
+    readonly name?: string;
+    readonly baseline?: string | null;
+    readonly sees?: Sees;
+  } = {},
 ): Linker {
+  const sees = options.sees ?? SEES_ALL;
   return {
     name: options.name ?? params.version,
     witness: false,
@@ -248,7 +280,7 @@ export function linkerV1(
     predict(cases, entities) {
       const index = buildLinkIndex(entities);
       return cases.map((linkingCase) => {
-        const input = linkerInput(linkingCase);
+        const input = shown(linkerInput(linkingCase), sees);
         const result = link(input.mention, { ...input, index, params });
         const decision = asLinkDecision(result, params.thresholds.delta);
         return { id: linkingCase.id, biased: decision, final: decision, flagged: false };

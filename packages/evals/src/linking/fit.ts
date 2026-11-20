@@ -31,7 +31,7 @@ import {
   searchThresholds,
   THRESHOLD_GRID,
 } from "@earshot/understanding/link";
-import { linkerInput, linkingCase } from "./linkers";
+import { linkerInput, linkingCase, SEES_ALL, type Sees, shown } from "./linkers";
 import type { ConfusableItem, ItemClass } from "./schema";
 
 /** The classes only a second witness can resolve, left out of a single-witness fit. */
@@ -46,13 +46,23 @@ export const FOLDS = 5;
 /** The L2 penalty (spec WP4 step 3, target). */
 export const LAMBDA = 1;
 
-/** What a fit uses: the model's features and the candidate sources. */
+/**
+ * What a fit uses: the model's features, the candidate sources, and what the linker is shown
+ * besides the mention. An ablation that removes a signal hides it from the input too (`sees`), in
+ * fitting and in prediction, so nothing derived from it (the prefilter, `rivalContext`) still
+ * carries it.
+ */
 export interface FitConfig {
   readonly features: readonly FeatureName[];
   readonly sources: readonly CandidateSource[];
+  readonly sees: Sees;
 }
 
-export const FULL_FIT: FitConfig = { features: FEATURE_NAMES, sources: CANDIDATE_SOURCES };
+export const FULL_FIT: FitConfig = {
+  features: FEATURE_NAMES,
+  sources: CANDIDATE_SOURCES,
+  sees: SEES_ALL,
+};
 
 export interface Ablation {
   readonly name: string;
@@ -62,10 +72,15 @@ export interface Ablation {
   readonly config: FitConfig;
 }
 
-function without(features: readonly FeatureName[], sources: readonly CandidateSource[]): FitConfig {
+function without(
+  features: readonly FeatureName[],
+  sources: readonly CandidateSource[],
+  hidden: Partial<Sees> = {},
+): FitConfig {
   return {
     features: FEATURE_NAMES.filter((feature) => !features.includes(feature)),
     sources: CANDIDATE_SOURCES.filter((source) => !sources.includes(source)),
+    sees: { ...SEES_ALL, ...hidden },
   };
 }
 
@@ -90,14 +105,20 @@ export const ABLATIONS: readonly Ablation[] = [
   {
     name: "no-context",
     label: "Without context",
-    removed: "the family source; parentCtx, focus, recent, rivalContext",
-    config: without(["parentCtx", "focus", "recent", "rivalContext"], ["family"]),
+    removed:
+      "the open account, earlier links, and the company said: the family source; parentCtx, focus, recent, rivalContext",
+    config: without(["parentCtx", "focus", "recent", "rivalContext"], ["family"], {
+      focus: false,
+      recent: false,
+      company: false,
+    }),
   },
   {
     name: "no-focus",
     label: "Without the open account",
-    removed: "the family source; focus",
-    config: without(["focus"], ["family"]),
+    removed:
+      "the open account, wherever it's read: the family source, the prefilter's bonus, focus, and its part in rivalContext",
+    config: without(["focus"], ["family"], { focus: false }),
   },
 ];
 
@@ -183,7 +204,7 @@ export function fitLinker(
   const learnable: Prepared[] = calibration
     .filter((item) => !WITNESS_ONLY_CLASSES.includes(item.class))
     .map((item) => {
-      const input = linkerInput(linkingCase(item));
+      const input = shown(linkerInput(linkingCase(item)), config.sees);
       const rows = candidateRows(input.mention, { ...input, index, sources: config.sources });
       return {
         item,

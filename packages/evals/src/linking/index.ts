@@ -56,6 +56,9 @@ export {
   linkerInput,
   linkerV1,
   linkingCase,
+  SEES_ALL,
+  type Sees,
+  shown,
 } from "./linkers";
 export {
   asExpected,

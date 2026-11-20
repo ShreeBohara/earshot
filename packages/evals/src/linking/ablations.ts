@@ -4,7 +4,7 @@
 import type { EntityRef } from "@earshot/core";
 import { LINKER_PARAMS_V1, type LinkerParams } from "@earshot/understanding/link";
 import { ABLATIONS, fitLinker, WITNESS_ONLY_CLASSES } from "./fit";
-import { linkerV1, linkingCase } from "./linkers";
+import { linkerV1, linkingCase, SEES_ALL } from "./linkers";
 import { isWrongLink, type LinkingMetrics, linkingMetrics, score } from "./metrics";
 import type { ConfusableItem } from "./schema";
 
@@ -45,6 +45,7 @@ export function ablationTable(
       label: "v1, every signal",
       removed: "",
       params: LINKER_PARAMS_V1,
+      sees: SEES_ALL,
       feasible: committedFeasible(),
     },
     ...ABLATIONS.map((ablation) => {
@@ -54,12 +55,13 @@ export function ablationTable(
         label: ablation.label,
         removed: ablation.removed,
         params: fitted.params,
+        sees: ablation.config.sees,
         feasible: fitted.outOfFold.feasible,
       };
     }),
   ];
-  return variants.map((variant) => {
-    const linker = linkerV1(variant.params, { name: variant.name, baseline: null });
+  return variants.map(({ sees, ...variant }) => {
+    const linker = linkerV1(variant.params, { name: variant.name, baseline: null, sees });
     const rows = score(items, linker.predict(cases, entities)).filter((row) => keep(row.item));
     return {
       ...variant,
