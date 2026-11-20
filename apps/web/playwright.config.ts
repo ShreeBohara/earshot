@@ -5,6 +5,9 @@ import { defineConfig, devices } from "@playwright/test";
 // health check in smoke.spec.ts needs a deployed stack; run e2e/sign-in.spec.ts, e2e/demo.spec.ts
 // (the /demo replay, at the test-only 8×), and e2e/keys.spec.ts locally.
 //
+// e2e/inbox/ is the review inbox (Phase 5 WP5) over the sample debriefs Settings → Data loads:
+// keyboard, focus, and axe in every state. Like the capture tests, it needs next dev.
+//
 // e2e/capture/ drives the capture screen in its development-only fake mode: Chrome's fake
 // microphone, the fake speech-to-text adapter, and the edge Worker's e2e entry, whose cassettes
 // answer every turn (CONTRIBUTING.md). No keys, no provider calls. Playwright starts that Worker
@@ -41,7 +44,14 @@ export default defineConfig({
     // Matched on e2e/capture/ itself: the checkout's own path may contain "capture" too.
     {
       name: "smoke",
-      testIgnore: /[\\/]e2e[\\/](?:capture|eval)[\\/]/,
+      testIgnore: /[\\/]e2e[\\/](?:capture|eval|inbox)[\\/]/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    // e2e/inbox/ reviews the sample debriefs in the inbox (Phase 5 WP5): keys, focus, and axe in
+    // every state, on the zero-setup server with no keys and no providers.
+    {
+      name: "inbox",
+      testMatch: /[\\/]e2e[\\/]inbox[\\/][^\\/]+\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
