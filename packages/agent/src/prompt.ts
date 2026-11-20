@@ -1,8 +1,10 @@
 // The extraction prompt, v2 (Phase 4 spec, WP8 step 2). It's ordered for prompt caching: fixed
 // instructions first, then what's stable for the session (the call time and the open account),
-// and the turn's transcript last, in the user message. Caching isn't switched on yet (spec §8
-// keeps it as a latency lever). Haiku 5.5's minimum cacheable prompt is reportedly 512 tokens
-// (check Anthropic's caching docs), and the tool schema plus these instructions already exceed it.
+// and the turn's transcript last, in the user message. Production doesn't cache yet (spec §8
+// keeps it as a latency lever); the live smoke eval does, through the extractor's `promptCache`
+// option (Phase 4 WP11, ADR-0031). Haiku 5.5's minimum cacheable prompt is 512 tokens by the
+// claude-api skill's table (which says to check Anthropic's caching docs), and the tool schema
+// alone, about 13,000 characters of JSON, is several times that.
 //
 // v2 sends no CRM list (spec decision 1). A model that sees the list snaps "Atmas" to "Atmos
 // Industrial" just as the keyterm-biased transcript does, and their errors line up, which is the

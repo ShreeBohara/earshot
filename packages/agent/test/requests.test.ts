@@ -53,6 +53,54 @@ describe("the Anthropic request", () => {
     // Haiku 5.5 refuses non-default sampling, and skips thinking on a forced tool call.
     expect(body).not.toHaveProperty("temperature");
     expect(body).not.toHaveProperty("thinking");
+    // No cache markers unless asked: the committed cassettes key on these exact bytes.
+    expect(JSON.stringify(body)).not.toContain("cache_control");
+  });
+});
+
+describe("the prompt cache (promptCache, the live smoke eval's)", () => {
+  async function bodies(provider: LlmProvider, promptCache: boolean) {
+    const { seen, fetch, turn } = capturing(provider);
+    await createProposalExtractor({ provider, fetch, promptCache }).extract({
+      ...turn,
+      apiKey: SCENARIO_API_KEY,
+      signal: new AbortController().signal,
+    });
+    return seen[0]?.body ?? {};
+  }
+
+  /** A request body with every `cache_control` taken out. */
+  function unmarked(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(unmarked);
+    if (value === null || typeof value !== "object") return value;
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => key !== "cache_control")
+        .map(([key, item]) => [key, unmarked(item)]),
+    );
+  }
+
+  it("marks the tool definition and the system prompt as 5-minute breakpoints, and nothing else", async () => {
+    const body = await bodies("anthropic", true);
+    const tools = body.tools as { name: string; cache_control?: unknown }[];
+    expect(tools.map((tool) => [tool.name, tool.cache_control])).toEqual([
+      ["submit_proposals", { type: "ephemeral" }],
+    ]);
+    const system = body.system as { type: string; text: string; cache_control?: unknown }[];
+    expect(system).toHaveLength(1);
+    expect(system[0]?.cache_control).toEqual({ type: "ephemeral" });
+    expect(system[0]?.text).toContain("Call time: Tuesday, 2026-11-10 11:15");
+    expect(JSON.stringify(body.messages)).not.toContain("cache_control");
+  });
+
+  it("changes no word the model sees: without the markers, the request is the uncached one", async () => {
+    const plain = await bodies("anthropic", false);
+    const cached = await bodies("anthropic", true);
+    expect(unmarked(cached)).toEqual(unmarked(plain));
+  });
+
+  it("leaves a Groq request as it was", async () => {
+    expect(await bodies("groq", true)).toEqual(await bodies("groq", false));
   });
 });
 

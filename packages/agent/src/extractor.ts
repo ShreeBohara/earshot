@@ -102,7 +102,19 @@ export interface ExtractorOptions {
   readonly prices?: LlmPriceTable;
   /** The clock for `latencyMs`. */
   readonly now?: () => number;
+  /**
+   * Marks the stable prefix for Anthropic's prompt cache: the tool definition, which every call
+   * sends unchanged, and the system prompt, which stays the same through a session (the call time
+   * and the open account). Neither marker changes a word the model sees. Off by default:
+   * production doesn't cache yet (spec §8 keeps it as a latency lever), and the committed
+   * cassettes key on requests without the markers. The live smoke eval turns it on (Phase 4 WP11;
+   * ADR-0031). Groq ignores it.
+   */
+  readonly promptCache?: boolean;
 }
+
+/** Anthropic's 5-minute cache breakpoint, as AI SDK provider options. */
+const EPHEMERAL_CACHE = { anthropic: { cacheControl: { type: "ephemeral" } } } as const;
 
 interface ProviderCall {
   readonly apiKey: string;
@@ -153,11 +165,14 @@ export function createProposalExtractor(options: ExtractorOptions): ProposalExtr
   const adapter = ADAPTERS[provider];
   const endpoint = providerEndpoint(provider, options.gateway);
   const now = options.now ?? Date.now;
+  const cache = options.promptCache === true && provider === "anthropic";
   const submit = tool({
     description: SUBMIT_PROPOSALS_DESCRIPTION,
     // No `validate`: the SDK only parses the JSON, and every check runs below with Zod.
     inputSchema: jsonSchema(SUBMIT_PROPOSALS_JSON_SCHEMA as JSONSchema7),
     ...(adapter.strict ? { strict: true } : {}),
+    // Tools come first in the prompt, so this breakpoint caches a prefix every session shares.
+    ...(cache ? { providerOptions: EPHEMERAL_CACHE } : {}),
   });
 
   return {
@@ -204,7 +219,11 @@ export function createProposalExtractor(options: ExtractorOptions): ProposalExtr
         try {
           const result = await generateText({
             model: languageModel,
-            instructions: prompt.instructions,
+            // With the cache on, the system prompt is the second breakpoint: the session's later
+            // calls, a retry's included, read the tools and it back.
+            instructions: cache
+              ? { role: "system", content: prompt.instructions, providerOptions: EPHEMERAL_CACHE }
+              : prompt.instructions,
             messages: [
               {
                 role: "user",
