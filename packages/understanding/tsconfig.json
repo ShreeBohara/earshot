@@ -1,0 +1,12 @@
+{
+  "extends": "@earshot/tsconfig/base.json",
+  "compilerOptions": {
+    // The source runs in SessionDO (workerd), the browser, the evals, and the CRM loader, so it
+    // gets ES2023 alone: no DOM, no WebWorker globals, and no Node types. A `document`, a
+    // `setTimeout`, or a `Buffer` in src/ fails the typecheck. test/no-dom.test.ts checks the
+    // entries again the way the edge Worker compiles them.
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"]
+}
