@@ -39,6 +39,14 @@ export const DEV_AUDIT_SIGNING_KEY = JSON.stringify({
 });
 const DEV_AUDIT_X = "nUcmyW3nIkJwBDLwcrjjGoh0BeaNfV6zifT2u4vcMyA";
 
+/**
+ * Whether a public key is the development key, by its public half or its reserved id. A
+ * verifier counts its signatures as unsigned by default: anyone can make them, under any kid.
+ */
+export function isDevelopmentAuditKey(key: { readonly kid: string; readonly x: string }): boolean {
+  return key.x === DEV_AUDIT_X || key.kid === DEV_AUDIT_KID;
+}
+
 /** A key id: letters, digits, `.`, `_`, and `-`, at most 64 characters, starting alphanumeric. */
 const KID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 /** 32 bytes as base64url without padding: an Ed25519 public key (`x`) or seed (`d`). */
@@ -347,6 +355,26 @@ export function parseRetiredAuditKeys(raw: string | undefined): AuditPublicKey[]
     });
   }
   return keys;
+}
+
+/**
+ * Whether a value is a well-formed public key as `/api/audit/keys` serves it: a kid of the allowed
+ * characters, `alg` Ed25519, a 32-byte `x`, a status, and an optional ISO `retiredAt`. Verifiers
+ * check keys they read from a file with this before trusting or printing anything in them.
+ */
+export function isAuditPublicKey(value: unknown): value is AuditPublicKey {
+  return (
+    isRecord(value) &&
+    typeof value.kid === "string" &&
+    KID.test(value.kid) &&
+    value.alg === AUDIT_SIGNING_ALG &&
+    typeof value.x === "string" &&
+    KEY_32.test(value.x) &&
+    (value.status === "active" || value.status === "retired") &&
+    (value.retiredAt === undefined ||
+      (typeof value.retiredAt === "string" && !Number.isNaN(Date.parse(value.retiredAt)))) &&
+    !("d" in value)
+  );
 }
 
 /**

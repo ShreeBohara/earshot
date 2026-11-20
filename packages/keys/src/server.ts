@@ -21,6 +21,8 @@ export {
   fromHex,
   type GeneratedAuditKey,
   generateAuditSigningKey,
+  isAuditPublicKey,
+  isDevelopmentAuditKey,
   loadAuditSigningKey,
   parseRetiredAuditKeys,
   type SignedCheckpoint,

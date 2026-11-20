@@ -12,6 +12,8 @@ import {
   fromBase64Url,
   fromHex,
   generateAuditSigningKey,
+  isAuditPublicKey,
+  isDevelopmentAuditKey,
   loadAuditSigningKey,
   parseRetiredAuditKeys,
   signCheckpoint,
@@ -362,6 +364,40 @@ describe("auditKeySecretValues", () => {
     expect(auditKeySecretValues(` ${key.secret}\n`)).toEqual([key.secret, key.d]);
     expect(auditKeySecretValues(undefined)).toEqual([]);
     expect(auditKeySecretValues("not json at all")).toEqual(["not json at all"]);
+  });
+});
+
+describe("public keys from a file", () => {
+  it("are well formed only with an allowed kid, Ed25519, a 32-byte x, a status, and no private half", async () => {
+    const key = await testKey();
+    const good = { kid: key.kid, alg: "Ed25519", x: JSON.parse(key.publicJwk).x, status: "active" };
+    expect(isAuditPublicKey(good)).toBe(true);
+    expect(
+      isAuditPublicKey({ ...good, status: "retired", retiredAt: "2026-12-01T09:00:00Z" }),
+    ).toBe(true);
+    for (const bad of [
+      { ...good, kid: "audit\u001b[31m" },
+      { ...good, kid: "" },
+      { ...good, alg: "EdDSA" },
+      { ...good, x: "short" },
+      { ...good, status: "expired" },
+      { ...good, retiredAt: "yesterday" },
+      { ...good, d: key.d },
+      null,
+      "a string",
+    ]) {
+      expect(isAuditPublicKey(bad), JSON.stringify(bad)).toBe(false);
+    }
+  });
+
+  it("name the development key by its public half, whatever its kid", async () => {
+    const dev = JSON.parse(DEV_AUDIT_SIGNING_KEY) as { x: string };
+    const key = await testKey();
+    expect(isDevelopmentAuditKey({ kid: "audit-2026-11-20-beef", x: dev.x })).toBe(true);
+    expect(isDevelopmentAuditKey({ kid: DEV_AUDIT_KID, x: JSON.parse(key.publicJwk).x })).toBe(
+      true,
+    );
+    expect(isDevelopmentAuditKey({ kid: key.kid, x: JSON.parse(key.publicJwk).x })).toBe(false);
   });
 });
 
