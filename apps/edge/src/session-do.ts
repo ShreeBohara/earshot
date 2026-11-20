@@ -816,14 +816,8 @@ export class SessionRuntime extends DurableObject<Env> {
       this.#refuse(message.msgId, "bad_message", false);
       return;
     }
-    const events: NewEvent[] = [];
     let result: WitnessTurnResult = { flagged: [], compared: 0, unavailable: 0 };
     if (message.outcome === "transcribed") {
-      events.push({
-        type: "utterance.final",
-        schemaVersion: 2,
-        payload: { ...message.utterance },
-      });
       try {
         result = witnessTurn({
           links: readLinks(turn.links),
@@ -835,29 +829,37 @@ export class SessionRuntime extends DurableObject<Env> {
         // A bug: the witness is still recorded, with nothing flagged.
         this.#log.error("witness comparison failed", { cause: errorName(error) });
       }
-      for (const flagged of result.flagged) {
+    }
+    const record = (flagged: WitnessTurnResult["flagged"]) => {
+      const events: NewEvent[] = [];
+      if (message.outcome === "transcribed") {
+        events.push({
+          type: "utterance.final",
+          schemaVersion: 2,
+          payload: { ...message.utterance },
+        });
+      }
+      for (const payload of flagged) {
         events.push({
           type: "proposal.flagged",
           schemaVersion: 1,
-          payload: toStorable(flagged) as unknown as Record<string, unknown>,
+          payload: toStorable(payload) as unknown as Record<string, unknown>,
         });
       }
-    }
-    events.push({
-      type: "turn.witnessed",
-      schemaVersion: 1,
-      payload: {
-        turnId: message.turnId,
-        outcome: message.outcome === "transcribed" ? "compared" : message.outcome,
-        provider: message.provider,
-        model: message.model,
-        utteranceIds: message.outcome === "transcribed" ? [message.utterance.utteranceId] : [],
-        conflicts: result.flagged.length,
-        latencyMs: message.latencyMs ?? null,
-        reason: message.outcome === "transcribed" ? null : message.reason,
-      },
-    });
-    try {
+      events.push({
+        type: "turn.witnessed",
+        schemaVersion: 1,
+        payload: {
+          turnId: message.turnId,
+          outcome: message.outcome === "transcribed" ? "compared" : message.outcome,
+          provider: message.provider,
+          model: message.model,
+          utteranceIds: message.outcome === "transcribed" ? [message.utterance.utteranceId] : [],
+          conflicts: flagged.length,
+          latencyMs: message.latencyMs ?? null,
+          reason: message.outcome === "transcribed" ? null : message.reason,
+        },
+      });
       this.#commit(message.msgId, events, {
         during: (appended) => {
           if (message.outcome === "transcribed" && appended[0]) {
@@ -866,11 +868,20 @@ export class SessionRuntime extends DurableObject<Env> {
           store.markWitnessed(message.turnId, message.msgId);
         },
       });
+    };
+    try {
+      record(result.flagged);
     } catch (error) {
-      // An event the registry refused: a bug in the comparison. Don't run it again.
-      this.#log.error("witness not recorded", { cause: errorName(error) });
-      this.#commit(message.msgId, [], { error: { code: "internal", retryable: false } });
-      return;
+      // A flag the registry refused: a bug in the comparison. Keep the witness without its flags.
+      this.#log.error("witness flags not recorded", { cause: errorName(error) });
+      try {
+        result = { ...result, flagged: [] };
+        record([]);
+      } catch (retryError) {
+        this.#log.error("witness not recorded", { cause: errorName(retryError) });
+        this.#commit(message.msgId, [], { error: { code: "internal", retryable: false } });
+        return;
+      }
     }
     // Counts and codes only: never a name or a word.
     this.#log.info("turn witnessed", {
