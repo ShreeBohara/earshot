@@ -580,6 +580,7 @@ describe('what "accept all" says', () => {
     expect(batchNoneReason(["loud", "quiet", "name_note"])).toBe(
       "Every card here is marked, so each needs a look.",
     );
+    expect(batchNoneReason(["quiet", "saving"])).toBe("Your last review here is still saving.");
     expect(batchNoneReason(["loud", "no_record"])).toBe(
       "Nothing here can be accepted as it stands.",
     );

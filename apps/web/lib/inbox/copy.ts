@@ -197,9 +197,9 @@ export function batchNoneReason(reasons: readonly StayReason[]): string {
   const marked = reasons.every(
     (reason) => reason === "loud" || reason === "quiet" || reason === "name_note",
   );
-  return marked
-    ? "Every card here is marked, so each needs a look."
-    : "Nothing here can be accepted as it stands.";
+  if (marked) return "Every card here is marked, so each needs a look.";
+  if (reasons.includes("saving")) return "Your last review here is still saving.";
+  return "Nothing here can be accepted as it stands.";
 }
 
 /** The checkpoint's summary, which the confirm button is described by. */
