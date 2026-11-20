@@ -60,7 +60,7 @@ That needs:
 - **Resends.** A resend is answered by msgId, as every message is. One that arrives while the first waits starts nothing.
 - **Ordering.** A witness for a finished turn is compared at once. One for a turn still queued or running waits on the session's chain: it's compared right after that turn's extraction, before anything queued after it, the session's `end` included, and its ack comes when its events are written. Since the client sends witnesses after their turn's `turn_end`, and in turn order, comparisons run in turn order. A witness arriving while a later turn runs is compared at once, between that turn's events, and changes nothing that turn reads.
 - **The link context.** Each turn's commit keeps, in a new `turns` table, what each proposal's linker read (`ProposalLink`): the target, the mention as linked, the kinds allowed, the earlier links that proposal saw, and the turn's other named records. A witness that comes after a hibernation is compared with the same `LinkContext`, against the index rebuilt from the stored entities.
-- **Events.** One transaction writes the unbiased `utterance.final` (filed under the turn), a `proposal.flagged` for each conflict, then `turn.witnessed` (`compared`, the conflict count, the client's latency), and records the turn as witnessed. A failed or skipped witness writes `turn.witnessed` alone. A purge while a witness waits writes nothing. The log line holds counts and codes only.
+- **Events.** One transaction writes the unbiased `utterance.final` (filed under the turn), a `proposal.flagged` for each conflict, then `turn.witnessed` (`compared`, the conflict count, the client's latency), and records the turn as witnessed. A failed or skipped witness writes `turn.witnessed` alone. A flag the event registry refuses (a bug in the comparison) is dropped and the witness recorded without it, rather than lost. A purge while a witness waits writes nothing. The log line holds counts and codes only.
 - **Extraction** still reads only the biased witness's utterances (WP8).
 
 ### The comparison (`packages/agent/src/witness.ts`)
@@ -98,7 +98,7 @@ A conflict becomes `proposal.flagged`: `witness_conflict` on the target, a downg
 
 ### Measurements
 
-- **Bundle.** The edge Worker's dry-run bundle grows from 2,713.20 KiB to 2,738.15 KiB, gzip 511.42 to 517.47 KiB: +24.95 KiB, +6.05 KiB gzipped. That's the witness comparison's reading code, `witnessTurn`, and `SessionDO`'s handling.
+- **Bundle.** The edge Worker's dry-run bundle grows from 2,713.20 KiB to 2,738.54 KiB, gzip 511.42 to 517.55 KiB: +25.34 KiB, +6.13 KiB gzipped. That's the witness comparison's reading code, `witnessTurn`, and `SessionDO`'s handling. The web Worker's bundle check still finds no fake-voice code.
 - **Groq's latency** is unmeasured until the live check.
 
 ## The live check (pending the user's approval)
