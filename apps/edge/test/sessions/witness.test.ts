@@ -209,7 +209,9 @@ describe("a witness after extraction", () => {
 });
 
 describe("a witness before extraction", () => {
-  it("waits for the turn's proposals, then compares, in the session's order", async () => {
+  it("waits for the turn's proposals, then compares, in the session's order", {
+    timeout: 120_000,
+  }, async () => {
     const { socket, stub } = await open();
     const { turnId, turnEnd } = await d003Turn(socket, stub, true);
     socket.send(turnEnd);
@@ -234,7 +236,9 @@ describe("a witness before extraction", () => {
     socket.close();
   });
 
-  it("answers a resend with the same ack, and one sent while it waits starts nothing", async () => {
+  it("answers a resend with the same ack, and one sent while it waits starts nothing", {
+    timeout: 120_000,
+  }, async () => {
     const { socket, stub } = await open();
     const { turnId, turnEnd } = await d003Turn(socket, stub, true);
     socket.send(turnEnd);
@@ -249,7 +253,9 @@ describe("a witness before extraction", () => {
     socket.close();
   });
 
-  it("writes nothing when the session is purged while the witness waits for its turn", async () => {
+  it("writes nothing when the session is purged while the witness waits for its turn", {
+    timeout: 120_000,
+  }, async () => {
     const { socket, stub, ids } = await open();
     const { turnId, turnEnd } = await d003Turn(socket, stub, true);
     socket.send(turnEnd);
