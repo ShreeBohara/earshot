@@ -29,6 +29,7 @@ import { describe, expect, it } from "vitest";
 import { HOMOPHONES } from "../src/channel";
 import {
   ABLATIONS,
+  type AblationRow,
   ablationTable,
   asExpected,
   CONFUSABLE_SET_FILE,
@@ -61,6 +62,8 @@ const BASELINE = LinkingBaseline.parse(
 );
 const SCORED = score(ITEMS, LINKER_V1.predict(ITEMS.map(linkingCase), LINKING_ENTITIES));
 const FITTED = fitLinker(ITEMS, LINKING_ENTITIES);
+// Refits and full-set passes: about a second here, 10 to 15 s on a busy CI runner.
+const CPU_HEAVY_TIMEOUT = 120_000;
 
 // @earshot/understanding restates four contract types instead of importing @earshot/core (whose
 // session tickets need Web Crypto types a DOM-free program lacks). This fails to compile if the
@@ -100,7 +103,9 @@ describe("linker v1's parameters", () => {
     expect(fitted.candidateRecall.found).toBe(fitted.candidateRecall.of);
   });
 
-  it("come out the same every time, and never read the test split", () => {
+  it("come out the same every time, and never read the test split", {
+    timeout: CPU_HEAVY_TIMEOUT,
+  }, () => {
     const calibrationOnly = ITEMS.filter((item) => item.split === "calibration");
     expect(fitLinker(ITEMS, LINKING_ENTITIES)).toEqual(FITTED);
     expect(fitLinker(calibrationOnly, LINKING_ENTITIES)).toEqual(FITTED);
@@ -249,7 +254,9 @@ describe("the second witness on confusable.v1", () => {
     }
   });
 
-  it("decides each mention as the threshold search scored it", () => {
+  it("decides each mention as the threshold search scored it", {
+    timeout: CPU_HEAVY_TIMEOUT,
+  }, () => {
     for (const { item, prediction } of SCORED) {
       const gridItem = gridItemFor(item, INDEX, LINKER_PARAMS_V1);
       const decision = finalDecision(gridItem, LINKER_PARAMS_V1.thresholds);
@@ -286,8 +293,19 @@ describe("the second witness on confusable.v1", () => {
 });
 
 describe("the ablations", () => {
-  it("lose most of the coverage without sound, and much of it without context", () => {
-    const rows = ablationTable(ITEMS, LINKING_ENTITIES, (item) => item.split === "test");
+  // Every variant refits on calibration with the θ_d grid: about 2 s here, but a CI runner busy
+  // with every package's tests has taken over 30 s. One table serves both tests.
+  const ABLATION_TIMEOUT = 180_000;
+  let table: AblationRow[] | undefined;
+  const testTable = () => {
+    table ??= ablationTable(ITEMS, LINKING_ENTITIES, (item) => item.split === "test");
+    return table;
+  };
+
+  it("lose most of the coverage without sound, and much of it without context", {
+    timeout: ABLATION_TIMEOUT,
+  }, () => {
+    const rows = testTable();
     const coverage = Object.fromEntries(rows.map((row) => [row.name, row.metrics.coverage]));
     expect(rows.map((row) => row.name)).toEqual([
       "v1",
@@ -300,7 +318,9 @@ describe("the ablations", () => {
     expect(coverage.v1).toBeGreaterThan((coverage["no-context"] ?? 1) + 0.2);
   });
 
-  it("hide what they remove from the input, so nothing derived from it still sees it", () => {
+  it("hide what they remove from the input, so nothing derived from it still sees it", {
+    timeout: ABLATION_TIMEOUT,
+  }, () => {
     // Codex's catch on #42: without this, "no-focus" still read the open account through the
     // prefilter's bonus and through `rivalContext`. Blanking the hidden context in the cases
     // themselves must change no prediction.
@@ -315,10 +335,11 @@ describe("the ablations", () => {
     const cases = ITEMS.filter((item) => item.split === "test").map(linkingCase);
     for (const name of ["no-focus", "no-context"]) {
       const ablation = ABLATIONS.find((candidate) => candidate.name === name);
-      if (!ablation) throw new Error(`no ablation ${name}`);
-      const { params } = fitLinker(ITEMS, LINKING_ENTITIES, ablation.config);
-      const linker = linkerV1(params, { name, baseline: null, sees: ablation.config.sees });
-      const blanked = cases.map(blank(ablation.config.sees));
+      const row = testTable().find((candidate) => candidate.name === name);
+      if (!ablation || !row) throw new Error(`no ablation ${name}`);
+      const { sees } = ablation.config;
+      const linker = linkerV1(row.params, { name, baseline: null, witness: false, sees });
+      const blanked = cases.map(blank(sees));
       expect(cases.some((linkingCase, k) => linkingCase !== blanked[k])).toBe(true);
       expect(linker.predict(blanked, LINKING_ENTITIES), name).toEqual(
         linker.predict(cases, LINKING_ENTITIES),
