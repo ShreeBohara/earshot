@@ -46,38 +46,93 @@ function span(line: number, quote: string) {
   };
 }
 
+/** What the linker made of each line, as `proposal.created` v2 has it (Phase 4 WP8). */
+function target(overrides: Record<string, unknown>) {
+  return {
+    decision: "none",
+    entityId: null,
+    kind: null,
+    basis: null,
+    p: null,
+    mention: null,
+    company: null,
+    candidates: [],
+    ...overrides,
+  };
+}
+
 const PROPOSAL_PAYLOADS = [
   {
+    // "Dana Lee" sounds like Dana Li, or may be someone new: the linker asks.
     proposalId: "01a1c6e2-b000-7000-8000-000000000001",
     type: "contact",
-    targetEntityId: null,
+    target: target({
+      decision: "ask",
+      kind: "contact",
+      p: 0.62,
+      mention: { quote: "Dana Lee", evidence: span(0, "Dana Lee") },
+      candidates: [
+        { entityId: "ct_145", p: 0.62 },
+        { entityId: null, p: 0.38 },
+      ],
+    }),
     fields: {
       name: { value: "Dana Lee", evidence: span(0, "Dana Lee") },
       title: { value: "VP of Operations", evidence: span(0, "VP of Operations") },
     },
-    riskFlags: [{ kind: "new_entity" }, { kind: "low_confidence", field: "name" }],
+    riskFlags: [
+      { kind: "low_confidence", field: "name" },
+      { kind: "ambiguous_target", field: "target" },
+    ],
+    supersedes: null,
+    linker: "linker.v1",
   },
   {
+    // "the deal" names nothing: the open account's only deal.
     proposalId: "01a1c6e2-b000-7000-8000-000000000002",
     type: "deal_update",
-    targetEntityId: "01a0f831-afe8-7fff-84cf-71639949085b",
+    target: target({
+      decision: "linked",
+      entityId: "01a0f831-afe8-7fff-84cf-71639949085b",
+      basis: "focus",
+    }),
     fields: {
       stage: { value: "Proposal", evidence: span(1, "move the deal to the proposal stage") },
     },
-    riskFlags: [],
+    riskFlags: [{ kind: "implied_target", field: "target" }],
+    supersedes: null,
+    linker: "linker.v1",
   },
   {
+    // "Dana" linked by sound, and a due date its words read otherwise, replaced.
     proposalId: "01a1c6e2-b000-7000-8000-000000000003",
     type: "task",
-    targetEntityId: "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+    target: target({
+      decision: "linked",
+      entityId: "ct_145",
+      kind: "contact",
+      basis: "sound",
+      p: 0.81,
+      mention: { quote: "Dana", evidence: span(2, "Dana") },
+      candidates: [{ entityId: "ct_145", p: 0.81 }],
+    }),
     fields: {
       title: {
         value: "Send Dana the pricing breakdown",
         evidence: span(2, "send Dana the pricing breakdown"),
       },
-      dueDate: { value: "2026-11-12", evidence: span(2, "by Thursday") },
+      dueDate: {
+        value: "2026-11-12",
+        evidence: span(2, "by Thursday"),
+        norm: { llmValue: "2026-11-13" },
+      },
     },
-    riskFlags: [{ kind: "date", field: "dueDate" }],
+    riskFlags: [
+      { kind: "value_mismatch", field: "dueDate" },
+      { kind: "link_uncertain", field: "target" },
+    ],
+    supersedes: null,
+    linker: "linker.v1",
   },
 ] as const;
 
@@ -93,7 +148,7 @@ export function demoState(options: { reviewed?: boolean; lines?: number } = {}) 
       sessionId: SESSION_ID,
       seq: seq++,
       type,
-      schemaVersion: type === "utterance.final" ? 2 : 1,
+      schemaVersion: type === "utterance.final" || type === "proposal.created" ? 2 : 1,
       ts: new Date(Date.UTC(2026, 10, 10, 19, 15, seq)).toISOString(),
       payload,
     });

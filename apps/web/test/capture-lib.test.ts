@@ -1,10 +1,17 @@
-import type { EntityRef } from "@earshot/core";
+import type { EntityRef, TargetV2 } from "@earshot/core";
 import type { StoredKeyMeta } from "@earshot/keys";
 import { SessionStore } from "@earshot/voice/session";
 import { describe, expect, it } from "vitest";
 import { demoState } from "@/components/capture/fixtures";
 import { deriveActivity } from "@/lib/capture/activity";
-import { listProposals, turnOutcomeText } from "@/lib/capture/copy";
+import {
+  askCandidates,
+  listProposals,
+  RISK_LABELS,
+  riskLabel,
+  targetHeading,
+  turnOutcomeText,
+} from "@/lib/capture/copy";
 import { TurnMarksRecorder } from "@/lib/capture/marks";
 import { evidenceSpans, findMentions, segmentText } from "@/lib/capture/mentions";
 import { choiceLabel, defaultSelection, providerChoices } from "@/lib/capture/providers";
@@ -114,6 +121,75 @@ describe("copy", () => {
     expect(listProposals(["contact", "task"])).toBe("a contact and a task");
     expect(listProposals(["contact", "task", "note"])).toBe("a contact, a task, and a note");
     expect(turnOutcomeText("proposals", ["deal_update"])).toBe("Proposed a deal update.");
+  });
+});
+
+describe("the tray's copy for targets and risks", () => {
+  const names: Record<string, string> = {
+    co_1: "Acme Dynamics",
+    co_2: "Akme Dynamics",
+    co_3: "Acmi Dynamics",
+  };
+  const nameOf = (id: string) => names[id] ?? "A CRM record";
+  const target = (overrides: Partial<TargetV2>): TargetV2 => ({
+    decision: "none",
+    entityId: null,
+    kind: null,
+    basis: null,
+    p: null,
+    mention: null,
+    company: null,
+    candidates: [],
+    ...overrides,
+  });
+
+  it("says the linker's decision: a name, a question, a new record, or none", () => {
+    expect(targetHeading(target({ decision: "linked", entityId: "co_1" }), nameOf)).toBe(
+      "Acme Dynamics",
+    );
+    const ask = target({
+      decision: "ask",
+      candidates: [
+        { entityId: "co_1", p: 0.48 },
+        { entityId: "co_2", p: 0.47 },
+        { entityId: "co_3", p: 0.03 },
+        { entityId: null, p: 0.02 },
+      ],
+    });
+    // The spec's example: candidates under 5% aren't named.
+    expect(targetHeading(ask, nameOf)).toBe("Ask: Acme Dynamics or Akme Dynamics?");
+    expect(askCandidates(ask).map((candidate) => candidate.entityId)).toEqual(["co_1", "co_2"]);
+    const three = target({
+      decision: "ask",
+      candidates: [
+        { entityId: "co_1", p: 0.4 },
+        { entityId: "co_2", p: 0.3 },
+        { entityId: null, p: 0.3 },
+      ],
+    });
+    expect(targetHeading(three, nameOf)).toBe(
+      "Ask: Acme Dynamics, Akme Dynamics, or a new record?",
+    );
+    const unlikely = target({ decision: "ask", candidates: [{ entityId: "co_3", p: 0.01 }] });
+    expect(targetHeading(unlikely, nameOf)).toBe("Ask: Acmi Dynamics?");
+    expect(targetHeading(target({ decision: "new" }), nameOf)).toBe("New");
+    expect(targetHeading(target({}), nameOf)).toBe("No record");
+  });
+
+  it("labels every risk kind, the target's without a field name", () => {
+    for (const label of Object.values(RISK_LABELS)) expect(label.length).toBeGreaterThan(0);
+    expect(riskLabel({ kind: "value_mismatch", field: "dueDate" })).toBe(
+      "Differs from what was said: due date",
+    );
+    expect(riskLabel({ kind: "ambiguous_target", field: "target" })).toBe("Pick the record");
+    expect(riskLabel({ kind: "new_entity" })).toBe("Creates a record");
+    // `unsupported` means one thing: the words cited don't back it.
+    expect(riskLabel({ kind: "unsupported", field: "dueDate" })).toBe(
+      "Not backed by what was said: due date",
+    );
+    expect(riskLabel({ kind: "unsupported", field: "target" })).toBe(
+      "Record's name not in the transcript",
+    );
   });
 });
 
@@ -253,10 +329,10 @@ describe("the stories' session fixture", () => {
     expect(state.fold).toBe("live");
     expect(state.issues).toEqual([]);
     expect(state.projections.utterances).toHaveLength(3);
-    expect(state.projections.proposals.map((p) => [p.type, p.status])).toEqual([
-      ["contact", "proposed"],
-      ["deal_update", "approved"],
-      ["task", "proposed"],
+    expect(state.projections.proposals.map((p) => [p.type, p.status, p.target.decision])).toEqual([
+      ["contact", "proposed", "ask"],
+      ["deal_update", "approved", "linked"],
+      ["task", "proposed", "linked"],
     ]);
     expect(state.meter.costUsd).toBeCloseTo(0.00063, 9);
   });

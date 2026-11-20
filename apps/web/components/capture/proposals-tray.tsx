@@ -8,7 +8,13 @@ import { StatePill } from "@earshot/ui/components/state-pill";
 import { cn } from "@earshot/ui/lib/utils";
 import { CheckIcon, PencilIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useId, useLayoutEffect, ViewTransition } from "react";
-import { fieldLabel, PROPOSAL_TYPE_LABELS, RISK_LABELS } from "@/lib/capture/copy";
+import {
+  askCandidates,
+  fieldLabel,
+  PROPOSAL_TYPE_LABELS,
+  riskLabel,
+  targetHeading,
+} from "@/lib/capture/copy";
 import { afterNextPaint } from "@/lib/capture/feedback";
 
 export interface ProposalsTrayProps {
@@ -61,9 +67,54 @@ function ReviewStatus({ status }: { status: ProposalView["status"] }) {
   }
 }
 
-function targetName(proposal: ProposalView, entities: readonly EntityRef[]): string {
-  if (proposal.targetEntityId === null) return "New";
-  return entities.find((entity) => entity.id === proposal.targetEntityId)?.name ?? "A CRM record";
+function nameIn(entities: readonly EntityRef[]): (entityId: string) => string {
+  return (entityId) => entities.find((entity) => entity.id === entityId)?.name ?? "A CRM record";
+}
+
+/** A probability as a whole percentage, at least 1% when it isn't 0. */
+function percent(p: number): string {
+  return `${p > 0 && p < 0.01 ? 1 : Math.round(p * 100)}%`;
+}
+
+/**
+ * Under the heading: the words that named the record, and for a question its candidates with
+ * their probabilities. Read-only in Phase 4: choosing one is Phase 5's.
+ */
+function TargetDetails({
+  proposal,
+  entities,
+}: {
+  proposal: ProposalView;
+  entities: readonly EntityRef[];
+}) {
+  const { target } = proposal;
+  const candidates = target.decision === "ask" ? askCandidates(target) : [];
+  if (target.mention === null && candidates.length === 0) return null;
+  const nameOf = nameIn(entities);
+  return (
+    <div className="grid gap-1 text-xs" data-slot="target">
+      {target.mention ? (
+        <p className="font-mono text-muted-foreground">
+          <span className="sr-only">Record named as: </span>“{target.mention.quote}”
+        </p>
+      ) : null}
+      {candidates.length > 0 ? (
+        <ul aria-label="Candidates" className="flex flex-wrap gap-1.5">
+          {candidates.map((candidate) => (
+            <li
+              key={candidate.entityId ?? "new"}
+              className="rounded-md border px-2 py-0.5 text-foreground"
+            >
+              {candidate.entityId === null ? "A new record" : nameOf(candidate.entityId)}{" "}
+              <span className="font-mono text-muted-foreground tabular-nums">
+                {percent(candidate.p)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
 }
 
 function ProposalCard({
@@ -113,10 +164,13 @@ function ProposalCard({
       <header className="flex items-start justify-between gap-3">
         <h3 id={titleId} className="font-medium text-sm">
           {PROPOSAL_TYPE_LABELS[proposal.type]}{" "}
-          <span className="text-muted-foreground">· {targetName(proposal, entities)}</span>
+          <span className="text-muted-foreground">
+            · {targetHeading(proposal.target, nameIn(entities))}
+          </span>
         </h3>
         {showReview ? <ReviewStatus status={proposal.status} /> : <StatePill state="proposed" />}
       </header>
+      <TargetDetails proposal={proposal} entities={entities} />
       {fields.length > 0 ? (
         <dl className="grid gap-2 text-sm">
           {fields.map(([name, field]) => {
@@ -157,8 +211,7 @@ function ProposalCard({
             <li key={`${flag.kind}:${flag.field ?? ""}`}>
               <Badge variant="conflict" className="h-6 gap-1 px-2">
                 <TriangleAlertIcon aria-hidden="true" data-icon="inline-start" />
-                {RISK_LABELS[flag.kind] ?? flag.kind}
-                {flag.field ? `: ${fieldLabel(flag.field).toLowerCase()}` : ""}
+                {riskLabel(flag)}
               </Badge>
             </li>
           ))}
@@ -170,8 +223,10 @@ function ProposalCard({
 
 /**
  * The proposals as they arrive: each card slides in over 200 ms with a View Transition (none
- * with reduced motion: capture.css), shows its type, its target (a record's name, or "New"),
- * its fields with the words they came from, and its risk badges, in the proposed state's blue.
+ * with reduced motion: capture.css), shows its type, the linker's decision on its record (the
+ * record's name; "Ask: Acme Dynamics or Akme Dynamics?" with the candidates and their odds;
+ * "New"; "No record"), the words that named it, its fields with the words they came from, and
+ * its risk badges, in the proposed state's blue. Read-only: Phase 5 answers the questions.
  * Replays show review status instead.
  */
 export function ProposalsTray({
