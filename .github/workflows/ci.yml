@@ -54,6 +54,12 @@ jobs:
         run: pnpm ci:check
       - name: Lint, typecheck, test, build (including the OpenNext Worker bundle)
         run: pnpm turbo run lint typecheck test build build:worker ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+      # Gate G1a (Phase 4 spec §6, WP5): linker v1 with the second witness on confusable.v1's test
+      # split. Fails on wrong-account above 2.0%, coverage below 85%, new-when-existing above 5%,
+      # or a regression against baselines/linking.json (coverage down more than 3 points, or
+      # wrong-account up more than 0.5 point). Deterministic and $0: no models, no providers.
+      - name: Linking eval, gate G1a (linker v1 with the second witness, confusable.v1 test split)
+        run: pnpm --filter @earshot/evals eval:linking --linker v1 --split test --check --summary
       - name: Contracts are up to date
         run: |
           pnpm contracts:gen

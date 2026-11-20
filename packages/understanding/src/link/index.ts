@@ -296,14 +296,20 @@ export {
 } from "./candidates";
 export {
   decide,
+  finalDecision,
   type GridItem,
   type GridLimits,
   type GridResult,
+  type GridWitness,
+  isDecision,
+  outcomesDiffer,
+  type ReadingOutcome,
   type RuleDecision,
   searchThresholds,
   THRESHOLD_GRID,
   type ThresholdGrid,
   type Thresholds,
+  witnessConflict,
 } from "./decide";
 export {
   type CandidateFeatures,

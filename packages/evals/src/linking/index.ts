@@ -25,6 +25,7 @@ export {
   FOLDS,
   FULL_FIT,
   fitLinker,
+  gridItemFor,
   LAMBDA,
   WITNESS_ONLY_CLASSES,
 } from "./fit";
@@ -44,6 +45,7 @@ export { type ConfusableDraft, generateConfusableSet, POOLS, SET_SEED } from "./
 export {
   asLinkDecision,
   type CaseReading,
+  downgradedDecision,
   LINKER_ORACLE,
   LINKER_V0,
   LINKER_V1,
@@ -59,6 +61,8 @@ export {
   SEES_ALL,
   type Sees,
   shown,
+  unbiasedMention,
+  witnessedDecision,
 } from "./linkers";
 export {
   asExpected,
