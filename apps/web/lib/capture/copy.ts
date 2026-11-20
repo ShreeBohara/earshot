@@ -1,6 +1,9 @@
 // What the capture screen says about each code. Codes come from the voice engine, the session
 // socket, and the client; none of them ever carries a provider's own message or a key.
 import type {
+  Evidence,
+  FieldValue,
+  ProposalFieldV2,
   ProposalTypeV2,
   RiskFlagV2,
   RiskKindV2,
@@ -9,6 +12,7 @@ import type {
   TargetV2,
   TurnOutcome,
 } from "@earshot/core";
+import type { NameNote, QuietReason, QuietReasonKind } from "@earshot/understanding/tiers";
 import type { VoiceErrorCode } from "@earshot/voice";
 import type { ClientIssueCode } from "@earshot/voice/session";
 
@@ -154,6 +158,89 @@ export const RISK_LABELS: Readonly<Record<RiskKindV2, string>> = {
   self_correction: "Corrected while speaking",
   weak_support: "Loosely backed by what was said",
 };
+
+/**
+ * The quiet tier's notes (Phase 5 spec §4.4): a short line on the field or the card, no color, and
+ * never a first-person line, which is for loud cards alone (lib/inbox/voice.ts). `quietNote` adds
+ * what the note can show: the value a reading replaced, or the words in a negation.
+ */
+export const QUIET_NOTES: Readonly<Record<QuietReasonKind, string>> = {
+  implied_target: "Open account assumed",
+  new_entity: "Creates a record",
+  value_corrected: "Corrected from what was written",
+  negation: "Said in a negation",
+  low_confidence: "Low confidence",
+  weak_support: "Loosely backed by what was said",
+  date: "Check the date",
+  number: "Check the number",
+};
+
+/**
+ * The note beside a record's name for a link that wasn't by its exact name or an alias, below
+ * p 0.97 (`link_uncertain`; ADR-0031's option 2). It replaces the tray's "Linked by sound" badge.
+ */
+export const NAME_NOTES: Readonly<Record<NameNote, string>> = {
+  sound: "matched by sound",
+  context: "matched in context",
+};
+
+/** What a quiet note says: the value a reading replaced, or the negated words, when known. */
+export function quietNote(
+  reason: QuietReason,
+  fields: Readonly<Record<string, Pick<ProposalFieldV2, "evidence" | "norm">>>,
+  heard?: (evidence: Evidence) => string | undefined,
+): string {
+  const field = reason.field === null ? undefined : fields[reason.field];
+  if (reason.kind === "value_corrected" && field?.norm?.llmValue !== undefined) {
+    const was = spokenValue(reason.field ?? "", field.norm.llmValue, field.norm.currency);
+    return `Corrected from ${was}`;
+  }
+  if (reason.kind === "negation" && field) {
+    const words = heard?.(field.evidence);
+    if (words) return `Said in a negation: “${words}”`;
+  }
+  return QUIET_NOTES[reason.kind];
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const CLOCK = /^(\d{1,2}):(\d{2})$/;
+const monthDay = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
+/**
+ * A value as a card says it in a sentence: "March 6" for a date, "2 pm" or "2:30 pm" for a time,
+ * "$40,000" for an amount (in its words' currency, when they named one), "yes" or "no", "none".
+ */
+export function spokenValue(field: string, value: FieldValue, currency?: string): string {
+  if (value === null) return "none";
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (typeof value === "number") {
+    if (field !== "amount") return String(value);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency ?? "USD",
+      maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    }).format(value);
+  }
+  if (DAY.test(value)) {
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isNaN(date.getTime()) ? value : monthDay.format(date);
+  }
+  const clock = CLOCK.exec(value);
+  if (clock) {
+    const hours = Number(clock[1]);
+    const minutes = clock[2] ?? "00";
+    if (hours <= 23) {
+      const half = hours < 12 ? "am" : "pm";
+      const hour = hours % 12 === 0 ? 12 : hours % 12;
+      return minutes === "00" ? `${hour} ${half}` : `${hour}:${minutes} ${half}`;
+    }
+  }
+  return value;
+}
 
 /** Badges on the target (`field: "target"`) that read better said of the record. */
 const TARGET_RISK_LABELS: Partial<Readonly<Record<RiskKindV2, string>>> = {

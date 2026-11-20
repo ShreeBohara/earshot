@@ -25,7 +25,8 @@ export const Empty: Story = { args: { proposals: [] } };
 
 /**
  * Live: every card in the proposed state's blue, with the linker's decision on its record (a
- * question with its candidates, the open account, a link by sound), its fields, quotes, and risks.
+ * question with its candidates, the open account, a link by sound with its note beside the name),
+ * its fields, quotes, and risks.
  */
 export const Live: Story = {
   play: async ({ args, canvasElement }) => {
@@ -41,10 +42,13 @@ export const Live: Story = {
     await expect(
       panel.getByRole("heading", { name: "Deal update · Acme Corp - Security Platform" }),
     ).toBeVisible();
-    await expect(panel.getByRole("heading", { name: "Task · Dana Li" })).toBeVisible();
+    await expect(
+      panel.getByRole("heading", { name: "Task · Dana Li, matched by sound" }),
+    ).toBeVisible();
     await expect(panel.getByText("Pick the record")).toBeVisible();
     await expect(panel.getByText("Open account assumed")).toBeVisible();
-    await expect(panel.getByText("Linked by sound")).toBeVisible();
+    // An uncertain link is a note beside the name now, never a badge (ADR-0031's option 2).
+    await expect(panel.queryByText("Linked by sound")).toBeNull();
     await expect(panel.getByText("Differs from what was said: due date")).toBeVisible();
     await expect(panel.getAllByText("Proposed")).toHaveLength(3);
     const first = cards[0] as HTMLElement;

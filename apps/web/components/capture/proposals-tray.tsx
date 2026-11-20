@@ -6,12 +6,14 @@ import type { ProposalView } from "@earshot/events";
 import { Badge } from "@earshot/ui/components/badge";
 import { StatePill } from "@earshot/ui/components/state-pill";
 import { cn } from "@earshot/ui/lib/utils";
+import { tierOf } from "@earshot/understanding/tiers";
 import { CheckIcon, PencilIcon, ReplaceIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useId, useLayoutEffect, ViewTransition } from "react";
 import {
   askCandidates,
   CONFLICT_COPY,
   fieldLabel,
+  NAME_NOTES,
   PROPOSAL_TYPE_LABELS,
   riskLabel,
   targetHeading,
@@ -181,7 +183,9 @@ function ProposalCard({
   }, [proposalId]);
 
   const fields = Object.entries(proposal.fields);
-  const risks = proposal.riskFlags;
+  // An uncertain link is a note beside the record's name, not a badge (ADR-0031's option 2).
+  const { nameNote } = tierOf(proposal);
+  const risks = proposal.riskFlags.filter((flag) => flag.kind !== "link_uncertain");
   return (
     <article
       aria-labelledby={titleId}
@@ -205,6 +209,11 @@ function ProposalCard({
           <span className="text-muted-foreground">
             · {targetHeading(proposal.target, nameIn(entities))}
           </span>
+          {nameNote ? (
+            <span className="font-normal text-muted-foreground text-xs" data-slot="name-note">
+              , {NAME_NOTES[nameNote]}
+            </span>
+          ) : null}
         </h3>
         {showReview ? <ReviewStatus status={proposal.status} /> : <StatePill state="proposed" />}
       </header>
@@ -263,7 +272,8 @@ function ProposalCard({
 /**
  * The proposals as they arrive: each card slides in over 200 ms with a View Transition (none
  * with reduced motion: capture.css), shows its type, the linker's decision on its record (the
- * record's name; "Ask: Acme Dynamics or Akme Dynamics?" with the candidates and their odds;
+ * record's name, with "matched by sound" or "matched in context" beside a link that wasn't by
+ * the exact name; "Ask: Acme Dynamics or Akme Dynamics?" with the candidates and their odds;
  * "New"; "No record"), the words that named it, a conflict pill where the second witness heard
  * them differently, its fields with the words they came from, and its risk badges, in the
  * proposed state's blue. Read-only: Phase 5 answers the questions. Replays show review status
