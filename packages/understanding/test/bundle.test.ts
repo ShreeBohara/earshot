@@ -2,7 +2,8 @@
 // bundle the way wrangler bundles a Worker: no Node built-ins, nothing from `./testing`, and
 // `double-metaphone` and chrono-node's English parser carried along (none of chrono's other 15
 // locales). The bundled `./names`, `./link` (with the linker's parameters inside), `./normalize`,
-// and `./faithfulness` then run on their own, outside Vitest's module graph.
+// `./faithfulness`, and `./tiers` then run on their own, outside Vitest's module graph. `./tiers`,
+// which the web Worker and the browser import too, carries none of the rest.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -17,6 +18,7 @@ const ENTRIES = {
   witness: "src/witness/index.ts",
   normalize: "src/normalize/index.ts",
   faithfulness: "src/faithfulness.ts",
+  tiers: "src/tiers/index.ts",
 };
 const DOUBLE_METAPHONE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?double-metaphone\//;
 const CHRONO_LOCALE =
@@ -71,6 +73,19 @@ describe("the Worker bundle", () => {
     if (!normalize || !faithfulness) throw new Error("no normalize or faithfulness bundle");
     expect(normalize.text.length).toBeLessThan(200_000);
     expect(faithfulness.text.length).toBeLessThan(220_000);
+
+    // The tiers import types alone from the linker and the faithfulness check: their bundle holds
+    // its own file and nothing else, about 3.4 KB unminified today.
+    const tiers = result.outputFiles.find((file) => path.basename(file.path) === "tiers.js");
+    const tiersMeta = Object.entries(result.metafile.outputs).find(
+      ([output]) => path.basename(output) === "tiers.js",
+    )?.[1];
+    if (!tiers || !tiersMeta) throw new Error("no tiers bundle");
+    // The metafile's paths are relative to the working directory.
+    expect(Object.keys(tiersMeta.inputs).map((input) => path.resolve(input))).toEqual([
+      path.join(root, ENTRIES.tiers),
+    ]);
+    expect(tiers.text.length).toBeLessThan(12_000);
 
     const dir = mkdtempSync(path.join(tmpdir(), "earshot-understanding-bundle-"));
     try {
@@ -130,6 +145,19 @@ describe("the Worker bundle", () => {
         norm: { llmValue: "2026-12-14" },
         verdict: "replaced",
       });
+
+      const tiersFile = path.join(dir, "tiers.mjs");
+      writeFileSync(tiersFile, tiers.text);
+      const { tierOf } = (await import(
+        /* @vite-ignore */ pathToFileURL(tiersFile).href
+      )) as typeof import("../src/tiers");
+      expect(
+        tierOf({
+          riskFlags: [{ kind: "link_uncertain", field: "target" }],
+          target: { decision: "linked", basis: "context", candidates: [] },
+          fields: {},
+        }),
+      ).toEqual({ tier: "quiet", reasons: [], nameNote: "context" });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
