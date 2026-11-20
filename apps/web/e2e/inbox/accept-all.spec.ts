@@ -8,6 +8,7 @@ import {
   focused,
   openInboxWithSamples,
   reviewsSent,
+  settled,
 } from "./support";
 
 // "Accept all from this call" (Phase 5 spec WP6 step 1; ADR-0035), over the sample debriefs, which
@@ -54,6 +55,7 @@ function group(page: Page, account: string): Locator {
 async function expectNoViolations(page: Page, state: string): Promise<void> {
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
+    await settled(page);
     expect(await seriousViolations(page), `${state} (${colorScheme})`).toEqual([]);
   }
   await page.emulateMedia({ colorScheme: "light" });
