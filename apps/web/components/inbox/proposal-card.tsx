@@ -24,10 +24,14 @@ import {
   XIcon,
 } from "lucide-react";
 import { type MouseEvent, type Ref, useId, useLayoutEffect, useRef, useState } from "react";
+import { NO_AUDIO_COPY, type NoAudioReason } from "@/lib/evidence/copy";
+import { type CardEvidence, type PlayableSpan, targetWords } from "@/lib/evidence/state";
 import type { CardModel } from "@/lib/inbox/card";
 import type { InputEventLike } from "@/lib/inbox/input";
 import { type SnoozeOption, snoozeUntil, whenWords } from "@/lib/inbox/time";
 import type { InboxProposal } from "@/lib/inbox/types";
+import { CaptureLink } from "../capture/link";
+import { PlayEvidenceButton } from "../evidence/play-evidence";
 import { ChoiceList } from "./choice-list";
 import { EditForm } from "./edit-form";
 
@@ -81,9 +85,57 @@ export interface ProposalCardProps {
   menuFinalFocus: () => boolean;
   /**
    * A line saying why the card has no audio to play, where none ever exists: the pilot's written
-   * debriefs (WP7). Evidence clips (WP9) bring the other cases.
+   * debriefs (WP7). With it, the card never offers playback.
    */
   audioNote?: string;
+  /**
+   * Evidence clips (WP9): which of the card's words this device can play, and the line saying why
+   * the rest can't. The inbox and the tray pass it (`EvidenceCard`); without it the card is as it
+   * was before clips.
+   */
+  evidence?: CardEvidence;
+}
+
+/** The words a field was heard as, with a button that plays them where this device can. */
+function HeardLine({ heard, play }: { heard: string | null; play: PlayableSpan | undefined }) {
+  if (heard) {
+    return (
+      <span className="block font-mono text-muted-foreground text-xs">
+        <span className="sr-only">Heard: </span>“{heard}”
+        {play ? <PlayEvidenceButton span={play} /> : null}
+      </span>
+    );
+  }
+  return play ? (
+    <span className="block">
+      <PlayEvidenceButton span={play} />
+    </span>
+  ) : null;
+}
+
+/** The card's line for a reason it has no audio; "Settings → Capture" is a link where it's named. */
+function NoAudioLine({ reason }: { reason: NoAudioReason }) {
+  const text = NO_AUDIO_COPY[reason];
+  const place = "Settings → Capture";
+  const at = reason === "clips_off" ? text.indexOf(place) : -1;
+  return (
+    <p className="text-muted-foreground text-xs" data-slot="no-audio" data-reason={reason}>
+      {at < 0 ? (
+        text
+      ) : (
+        <>
+          {text.slice(0, at)}
+          <CaptureLink
+            href="/settings/capture"
+            className="rounded-sm underline underline-offset-4 outline-none hover:text-foreground focus-visible:focus-ring"
+          >
+            {place}
+          </CaptureLink>
+          {text.slice(at + place.length)}
+        </>
+      )}
+    </p>
+  );
 }
 
 function ActionKey({ shortcuts, children }: { shortcuts: boolean; children: string }) {
@@ -118,6 +170,7 @@ export function ProposalCard({
   cardRef,
   menuFinalFocus,
   audioNote,
+  evidence: clips,
 }: ProposalCardProps) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -129,6 +182,10 @@ export function ProposalCard({
   const keys = (key: string) => (shortcuts ? key : undefined);
   const [now] = useState(() => new Date());
   const correctionRef = useRef<HTMLFieldSetElement | null>(null);
+  // The pilot's line rules out clips: its debriefs were never recorded.
+  const evidence = audioNote ? undefined : clips;
+  const targetPlay = evidence?.target ?? null;
+  const targetAt = targetPlay ? targetWords(model) : null;
 
   // Into the correction panel as it opens: its picked record, or its first.
   useLayoutEffect(() => {
@@ -181,13 +238,19 @@ export function ProposalCard({
           data-slot="first-person"
         >
           <TriangleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-          <span>{model.firstPerson.text}</span>
+          <span>
+            {model.firstPerson.text}
+            {targetPlay && targetAt === "first_person" ? (
+              <PlayEvidenceButton span={targetPlay} />
+            ) : null}
+          </span>
         </p>
       ) : null}
 
       {model.mention && !model.firstPerson ? (
         <p className="font-mono text-muted-foreground text-xs">
           <span className="sr-only">Record named as: </span>“{model.mention}”
+          {targetPlay && targetAt === "mention" ? <PlayEvidenceButton span={targetPlay} /> : null}
         </p>
       ) : null}
 
@@ -224,11 +287,7 @@ export function ProposalCard({
                     ) : null}
                   </span>
                 )}
-                {field.heard ? (
-                  <span className="block font-mono text-muted-foreground text-xs">
-                    <span className="sr-only">Heard: </span>“{field.heard}”
-                  </span>
-                ) : null}
+                <HeardLine heard={field.heard} play={evidence?.fields[field.name]} />
                 {field.notes.map((note) => (
                   <span key={note} className="block text-muted-foreground text-xs" data-slot="note">
                     {note}
@@ -245,6 +304,8 @@ export function ProposalCard({
           {audioNote}
         </p>
       ) : null}
+
+      {evidence?.note && !editing ? <NoAudioLine reason={evidence.note} /> : null}
 
       {model.notes.length > 0 && !editing ? (
         <ul aria-label="Notes" className="grid gap-0.5 text-muted-foreground text-xs">

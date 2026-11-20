@@ -31,8 +31,8 @@ import { afterNextPaint } from "@/lib/capture/feedback";
 import { CAUGHT_UP_COPY } from "@/lib/inbox/copy";
 import { type ReviewWriter, socketSink } from "@/lib/inbox/sinks";
 import type { InboxEntity, InboxSession } from "@/lib/inbox/types";
+import { EvidenceCard } from "../evidence/evidence-card";
 import { ReviewedSection, SnoozedSection } from "../inbox/inbox-sections";
-import { ProposalCard as ReviewCard } from "../inbox/proposal-card";
 import { InboxShortcutsDialog } from "../inbox/shortcuts-dialog";
 import { useReviewList } from "../inbox/use-review-list";
 import { CaptureLink } from "./link";
@@ -383,6 +383,16 @@ function LiveTray({
     loadedAt,
   });
   const { store, sections, sending } = list;
+  // The debrief this page is recording: its clips are kept here as each turn ends.
+  const clipSession = useMemo(
+    () => ({
+      sessionId: review.writer.sessionId,
+      startedAt: review.startedAt,
+      endedAt: review.endedAt,
+      recordedHere: true,
+    }),
+    [review.writer.sessionId, review.startedAt, review.endedAt],
+  );
 
   // The session's own events catch up with the page's reviews: forget the page's state for them,
   // so a later event (a reopen after a flag) shows through. Against what the list renders (the
@@ -453,7 +463,7 @@ function LiveTray({
                       data-highlighted={highlightedId === proposal.proposalId ? "" : undefined}
                     >
                       <PaintMark proposalId={proposal.proposalId} onPainted={onPainted} />
-                      <ReviewCard {...card} headingLevel={3} />
+                      <EvidenceCard {...card} session={clipSession} headingLevel={3} />
                     </li>
                   </ViewTransition>
                 );

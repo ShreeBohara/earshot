@@ -1,6 +1,8 @@
 import { bothThemes, bothThemesParameters, themePanel } from "@earshot/ui/lib/story-themes";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
+import type { NoAudioReason } from "@/lib/evidence/copy";
+import type { CardEvidence, PlayableSpan } from "@/lib/evidence/state";
 import { cardModel } from "@/lib/inbox/card";
 import type { InboxProposal } from "@/lib/inbox/types";
 import {
@@ -220,5 +222,95 @@ export const ShortcutsOff: Story = {
     await expect(panel.getByRole("button", { name: "Accept" })).not.toHaveAttribute(
       "aria-keyshortcuts",
     );
+  },
+};
+
+/** A span the story's card can play: the key and length a card's evidence would carry. */
+function playable(proposal: InboxProposal, field: string, seconds: number): PlayableSpan {
+  return { key: `${proposal.proposalId}:${field}`, sessionId: "story", audioMs: [0, 900], seconds };
+}
+
+const UPDATE_CLIPS: CardEvidence = {
+  target: playable(UPDATE, "target", 1),
+  fields: { stage: playable(UPDATE, "stage", 1), amount: playable(UPDATE, "amount", 2) },
+  note: null,
+};
+
+/**
+ * Evidence clips (WP9): this device holds the turn's audio, so the record's words and each field's
+ * have a play button named for what it plays. No single key: the inbox's keys stay as they were.
+ */
+export const WithClips: Story = {
+  args: { proposal: UPDATE, evidence: UPDATE_CLIPS },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    const buttons = panel.getAllByRole("button", { name: /^Play what you said/ });
+    await expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Play what you said, 1 second",
+      "Play what you said, 1 second",
+      "Play what you said, 2 seconds",
+    ]);
+    for (const button of buttons) {
+      await expect(button).not.toHaveAttribute("aria-keyshortcuts");
+      await expect(button).toHaveTextContent("Play");
+    }
+    await expect(
+      panel.queryByText(/No audio|deleted after|can't keep|too long|clips are off/),
+    ).toBeNull();
+  },
+};
+
+/** On a loud card, the target's button follows the first-person line that asks about it. */
+export const WithClipsOnALoudCard: Story = {
+  args: {
+    proposal: QUESTION,
+    evidence: {
+      target: playable(QUESTION, "target", 1),
+      fields: { name: playable(QUESTION, "name", 1), title: playable(QUESTION, "title", 2) },
+      note: null,
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    const line = canvasElement.querySelector("[data-slot=first-person]");
+    await expect(
+      within(line as HTMLElement).getByRole("button", { name: "Play what you said, 1 second" }),
+    ).toBeVisible();
+    await expect(panel.getAllByRole("button", { name: /^Play what you said/ })).toHaveLength(3);
+  },
+};
+
+const REASONS: readonly NoAudioReason[] = [
+  "clips_off",
+  "another_device",
+  "expired",
+  "unavailable",
+  "too_long",
+];
+
+/** Every reason a card has no audio to play, each with its own line (§4.7), and no play button. */
+export const NoAudio: Story = {
+  render: (args) => (
+    <div className="grid gap-4">
+      {REASONS.map((reason) => (
+        <Card key={reason} {...args} evidence={{ target: null, fields: {}, note: reason }} />
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    for (const line of [
+      "No audio on this device. It stays where you recorded it.",
+      "The audio was deleted after 24 hours.",
+      "This browser can't keep audio.",
+      "That turn was too long to keep.",
+    ]) {
+      await expect(panel.getByText(line)).toBeVisible();
+    }
+    await expect(panel.getByRole("link", { name: "Settings → Capture" })).toHaveAttribute(
+      "href",
+      "/settings/capture",
+    );
+    await expect(panel.queryByRole("button", { name: /^Play what you said/ })).toBeNull();
   },
 };

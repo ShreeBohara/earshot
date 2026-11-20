@@ -9,6 +9,7 @@ import { publishInboxCount } from "@/lib/inbox/count-store";
 import { type ReviewSink, routeSink } from "@/lib/inbox/sinks";
 import type { InboxData } from "@/lib/inbox/types";
 import { CaptureLink } from "../capture/link";
+import { EvidenceCard } from "../evidence/evidence-card";
 import { AcceptAllButton, BatchCheckpoint } from "./accept-all";
 import {
   accountName,
@@ -17,7 +18,6 @@ import {
   SnoozedSection,
   When,
 } from "./inbox-sections";
-import { ProposalCard } from "./proposal-card";
 import { InboxShortcutsDialog } from "./shortcuts-dialog";
 import { useReviewList } from "./use-review-list";
 
@@ -127,6 +127,19 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
     });
   }
 
+  // Each debrief as its cards' clips need it: recorded on some device, maybe this one.
+  const clipSessions = new Map(
+    data.sessions.map((session) => [
+      session.sessionId,
+      {
+        sessionId: session.sessionId,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        recordedHere: false,
+      },
+    ]),
+  );
+
   const empty = data.sessions.length === 0;
   const caughtUp = sections.review.length === 0;
   return (
@@ -211,10 +224,15 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
                       >
                         {account.proposals.map((proposal) => {
                           const card = list.card(proposal.proposalId);
-                          if (!card) return null;
+                          const session = clipSessions.get(group.sessionId);
+                          if (!card || !session) return null;
                           return (
                             <li key={proposal.proposalId}>
-                              <ProposalCard {...card} headingLevel={group.byAccount ? 5 : 4} />
+                              <EvidenceCard
+                                {...card}
+                                session={session}
+                                headingLevel={group.byAccount ? 5 : 4}
+                              />
                             </li>
                           );
                         })}
