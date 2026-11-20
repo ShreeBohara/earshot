@@ -6,6 +6,7 @@ import { auditSecrets, readAuditSigning } from "./config";
 import { type FlushStore, flushBatch, postgresFlushStore, type SessionRpc } from "./flush";
 import { type FlushMessage, type FlushSink, parseRange, sendBatches } from "./flush-message";
 import { createLogger } from "./log";
+import type { SealAnswer } from "./session-do";
 
 /** SessionDO's sink in production: the `FLUSH` producer, as JSON, within `sendBatch`'s limits. */
 export function queueSink(queue: Queue<FlushMessage>): FlushSink {
@@ -87,9 +88,10 @@ function openPostgres(
 }
 
 const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-/** The most sessions one `purgeSessions` call takes. */
+/** The most sessions one `purgeSessions` or `sealSessions` call takes. */
 export const MAX_PURGE_SESSIONS = 500;
-/** How many Durable Objects are purged at once. */
+export const MAX_SEAL_SESSIONS = 500;
+/** How many Durable Objects are purged, or asked to seal, at once. */
 const PURGE_CONCURRENCY = 10;
 
 /** Why a fan-out RPC refused its argument, answered rather than thrown. */
@@ -129,4 +131,35 @@ export async function purgeSessions(env: Env, sessionIds: readonly string[]): Pr
   }
   createLogger().info("sessions purged", { count: ids.length });
   return { ok: true, purged: ids.length };
+}
+
+/** What each session's Durable Object answered `sealNow()` with (see `SealAnswer`). */
+export type SealResult =
+  | { readonly ok: true; readonly sessions: Readonly<Record<string, SealAnswer>> }
+  | IdsRefusal;
+
+/**
+ * Asks the sessions' Durable Objects to seal now (Phase 5 spec §4.3, the repair path): the web
+ * app's inbox loader calls this through its `EDGE` service binding, with at most 500 lowercase
+ * session UUIDs, for sessions that ended a while ago and still have no seal in Postgres. Each
+ * object answers `live` (still capturing, left alone), `sealing` (sealed by this call; the seal
+ * reaches Postgres with its flush), `sealed` (sealed before), or `gone` (it holds no log, so the
+ * web Worker may seal Postgres's copy itself). Only bound Workers can call it; a bad argument is
+ * answered, not thrown.
+ */
+export async function sealSessions(env: Env, sessionIds: readonly string[]): Promise<SealResult> {
+  const ids = sessionIdsOf(sessionIds, MAX_SEAL_SESSIONS);
+  if (!Array.isArray(ids)) return ids;
+  const answers: Record<string, SealAnswer> = {};
+  for (let start = 0; start < ids.length; start += PURGE_CONCURRENCY) {
+    await Promise.all(
+      ids.slice(start, start + PURGE_CONCURRENCY).map(async (id) => {
+        answers[id] = await env.SESSION.get(env.SESSION.idFromName(id)).sealNow();
+      }),
+    );
+  }
+  const counts: Record<SealAnswer, number> = { live: 0, sealing: 0, sealed: 0, gone: 0 };
+  for (const answer of Object.values(answers)) counts[answer] += 1;
+  createLogger().info("sessions asked to seal", counts);
+  return { ok: true, sessions: answers };
 }

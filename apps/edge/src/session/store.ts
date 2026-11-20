@@ -10,6 +10,9 @@
 //   turns        each completed turn: the seq of its `turn.completed`, what its proposals' linker
 //                read (so the second witness is compared in the same context, Phase 4 WP9, even
 //                after the object hibernates), and the witness message that settled it
+//   writes       every review and snooze by its client-made id (`reviewId`, `snoozeId`), with its
+//                seq and proposal, so the same review sent again under a new msgId gets the first
+//                one's seq (Phase 5 WP3)
 //
 // All methods are synchronous: SQLite-backed Durable Object storage runs queries synchronously,
 // and `transactionSync` makes a message's writes atomic.
@@ -27,6 +30,8 @@ const SCHEMA = [
   "CREATE INDEX IF NOT EXISTS utterances_turn_seq ON utterances (turn_id, seq)",
   `CREATE TABLE IF NOT EXISTS turns (turn_id TEXT PRIMARY KEY, completed_seq INTEGER NOT NULL,
     links TEXT NOT NULL, witness_msg TEXT)`,
+  `CREATE TABLE IF NOT EXISTS writes (id TEXT PRIMARY KEY, kind TEXT NOT NULL, seq INTEGER NOT NULL,
+    proposal_id TEXT NOT NULL)`,
 ];
 
 /** Every setting `meta` holds. Values are strings; numbers are stored in decimal. */
@@ -49,6 +54,10 @@ export type MetaKey =
   // `end` (or an idle session ended by the DO): the seq of `session.ended`, and when.
   | "ended_seq"
   | "ended_ms"
+  // The seal (Phase 5 WP3): when it's due (a grace after `end`, restarted by each write that
+  // follows, capped), and the seq of `session.sealed` once written, after which nothing is.
+  | "seal_due_ms"
+  | "sealed_seq"
   // The flush: the last seq handed to the Queue, the last seq Postgres confirmed, and when the
   // oldest event not yet handed over was written.
   | "enqueued_seq"
@@ -79,6 +88,13 @@ export interface CompletedTurn {
   readonly links: string;
   /** The `witness` message that settled the turn, once one has. */
   readonly witnessMsg: string | null;
+}
+
+/** A review or a snooze already in the log, by its client-made id. */
+export interface RecordedWrite {
+  readonly kind: "review" | "snooze";
+  readonly seq: number;
+  readonly proposalId: string;
 }
 
 /** A handled client message: the seq of the last event it appended, and the error it got. */
@@ -382,6 +398,34 @@ export class SessionStore {
   /** Records the witness that settled a turn. Call in the transaction that appended its events. */
   markWitnessed(turnId: string, msgId: string): void {
     this.#sql.exec("UPDATE turns SET witness_msg = ? WHERE turn_id = ?", msgId, turnId);
+  }
+
+  /** A review or snooze by its `reviewId` or `snoozeId`, if the log holds one. */
+  recordedWrite(id: string): RecordedWrite | undefined {
+    if (!this.#hasTables) return undefined;
+    const row = this.#sql
+      .exec<{ kind: string; seq: number; proposal_id: string }>(
+        "SELECT kind, seq, proposal_id FROM writes WHERE id = ?",
+        id,
+      )
+      .toArray()[0];
+    if (!row) return undefined;
+    return {
+      kind: row.kind === "snooze" ? "snooze" : "review",
+      seq: row.seq,
+      proposalId: row.proposal_id,
+    };
+  }
+
+  /** Records a review or snooze's id. Call in the transaction that appended its event. */
+  addWrite(id: string, write: RecordedWrite): void {
+    this.#sql.exec(
+      "INSERT INTO writes (id, kind, seq, proposal_id) VALUES (?, ?, ?, ?)",
+      id,
+      write.kind,
+      write.seq,
+      write.proposalId,
+    );
   }
 
   /** Forgets the in-memory copies, after `deleteAll()` removed the tables under them. */

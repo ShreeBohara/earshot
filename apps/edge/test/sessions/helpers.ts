@@ -14,9 +14,11 @@ import {
   DEV_SESSION_TICKET_SECRET,
   type EventEnvelope,
   parseServerMessage,
+  type ReviewInput,
   SESSION_SUBPROTOCOL,
   type ServerMessage,
   type ServerMessageOf,
+  type SignInMethod,
   signTicket,
   ticketClaims,
   ticketSubprotocol,
@@ -44,9 +46,18 @@ export function sessionStub(sid: string) {
   return env.SESSION.get(env.SESSION.idFromName(sid));
 }
 
+/** How a ticket's web session signed in: its `am` and `sat` claims (Phase 5). */
+export type TicketSignIn = { method: SignInMethod; at: Date };
+
 export async function ticketFor(
   ids: SessionIds,
-  options: { now?: Date; ttlSeconds?: number; jti?: string; secret?: string } = {},
+  options: {
+    now?: Date;
+    ttlSeconds?: number;
+    jti?: string;
+    secret?: string;
+    signIn?: TicketSignIn;
+  } = {},
 ): Promise<string> {
   return signTicket(
     options.secret ?? DEV_SESSION_TICKET_SECRET,
@@ -57,6 +68,7 @@ export async function ticketFor(
       now: options.now ?? new Date(),
       ...(options.ttlSeconds ? { ttlSeconds: options.ttlSeconds } : {}),
       ...(options.jti ? { jti: options.jti } : {}),
+      ...(options.signIn ? { signIn: options.signIn } : {}),
     }),
   );
 }
@@ -215,8 +227,12 @@ export async function connect(
 }
 
 /** Connects with a fresh ticket and says hello; resolves after `welcome`. */
-export async function open(ids: SessionIds = newSession(), lastSeq = -1) {
-  const ticket = await ticketFor(ids);
+export async function open(
+  ids: SessionIds = newSession(),
+  lastSeq = -1,
+  options: { signIn?: TicketSignIn } = {},
+) {
+  const ticket = await ticketFor(ids, options.signIn ? { signIn: options.signIn } : {});
   const { socket, status } = await connect(ids.sid, { ticket });
   if (!socket || status !== 101) throw new Error(`handshake failed with ${status}`);
   socket.send({ t: "hello", protocol: 1, lastSeq });
@@ -300,6 +316,37 @@ export function metricMessage(turnId: string): ClientMessageOf<"metric"> {
 
 export function endMessage(): ClientMessageOf<"end"> {
   return { t: "end", msgId: uuidv7(), endedAt: "2026-11-10T19:16:00.000Z" };
+}
+
+/** A review as the tray sends it: a single approval by keyboard, of an unmarked card. */
+export function reviewInput(proposalId: string, overrides: Partial<ReviewInput> = {}): ReviewInput {
+  return {
+    reviewId: uuidv7(),
+    proposalId,
+    decision: "approved",
+    target: null,
+    mode: "single",
+    batchId: null,
+    policy: null,
+    undoes: null,
+    reason: null,
+    seen: { tier: "none", fields: {}, target: null, relinked: null, clip: "none" },
+    timing: { decisionMs: 900, handlingMs: 1_100 },
+    input: "keyboard",
+    surface: "tray",
+    ...overrides,
+  };
+}
+
+export function reviewMessage(...reviews: ReviewInput[]): ClientMessageOf<"review"> {
+  return { t: "review", msgId: uuidv7(), reviews };
+}
+
+export function snoozeMessage(
+  proposalId: string,
+  until: string | null = "2026-11-21T09:00:00.000Z",
+): ClientMessageOf<"snooze"> {
+  return { t: "snooze", msgId: uuidv7(), snoozeId: uuidv7(), proposalId, until };
 }
 
 // ─── The session's SQLite ──────────────────────────────────────────────────────────────────────
@@ -391,6 +438,11 @@ export function freezeClock(stub: Stub, at: number | null): Promise<void> {
 
 export function failSink(stub: Stub, failing: boolean): Promise<void> {
   return withSql(stub, (sql) => setTestSetting(sql, "sink", failing ? "fail" : null));
+}
+
+/** Takes the audit signing key away from the session (or gives it back), as a deploy without it. */
+export function breakAuditKey(stub: Stub, broken: boolean): Promise<void> {
+  return withSql(stub, (sql) => setTestSetting(sql, "audit", broken ? "missing" : null));
 }
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

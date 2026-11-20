@@ -145,7 +145,10 @@ describe("cleanup", () => {
     await socket.request(startMessage());
     await socket.request(endMessage());
     await expect.poll(async () => (await flushes(stub)).length).toBe(1);
-    await stub.confirmFlushed(1);
+    // The whole session ends in its seal (Phase 5): seal it now rather than wait out the grace.
+    expect(await stub.sealNow()).toBe("sealing");
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
+    await stub.confirmFlushed(2);
     const due = Number((await meta(stub)).cleanup_due_ms);
     expect(due - Date.now()).toBeGreaterThan(FLUSH_TIMING.cleanupAfterConfirmMs - 60_000);
 
