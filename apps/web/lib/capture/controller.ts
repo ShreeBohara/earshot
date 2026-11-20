@@ -31,6 +31,7 @@ import {
   type VoiceEngine,
   VoiceError,
   type VoiceEvent,
+  type VoiceEventOf,
 } from "@earshot/voice";
 import {
   type Capture,
@@ -113,8 +114,11 @@ export interface CaptureUiState {
   readonly fake: { readonly holdMs: number; readonly nextLine: string | null } | null;
 }
 
-/** A voice engine that says where its audio clock ended, so its replacement can carry it on. */
-export type CaptureEngine = VoiceEngine & Pick<DebriefEngine, "audioClockMs">;
+/**
+ * A voice engine that says which mode it runs in, for its turns' marks, and where its audio clock
+ * ended, so that its replacement can carry the clock on.
+ */
+export type CaptureEngine = VoiceEngine & Pick<DebriefEngine, "audioClockMs" | "mode">;
 
 /** Everything the controller touches outside itself, so tests can swap any of it. */
 export interface CaptureDeps {
@@ -599,12 +603,13 @@ export class CaptureController {
     }
   }
 
-  /** Stops the engine (its last turn end and usage still go out), then the microphone. */
+  /** Stops the engine, then the microphone. The engine's last turn still goes out, and counts. */
   #releaseCapture(): Promise<void> {
     const engine = this.#engine;
     const mic = this.#mic;
     const detachEngine = this.#detachEngine;
     const detachBridge = this.#detachBridge;
+    if (engine) this.#speechEnds();
     this.#engine = null;
     this.#mic = null;
     this.#detachEngine = null;
@@ -638,9 +643,17 @@ export class CaptureController {
     this.#deps.speech.flush(safe);
   }
 
-  #onEngineEvent(live: LiveSession, engine: VoiceEngine, event: VoiceEvent): void {
-    if (this.#live !== live || this.#engine !== engine) return;
+  #onEngineEvent(live: LiveSession, engine: CaptureEngine, event: VoiceEvent): void {
+    if (this.#live !== live) return;
     const at = this.#deps.clock();
+    if (this.#engine !== engine) {
+      // An engine on its way out (replaced by `H`, or stopped by a pause or the end) finishes its
+      // last turn as it stops: that turn counts and gets its marks. Nothing else of the engine
+      // reaches the machine or the screen, so it can't touch whatever runs next.
+      if (event.type === "final") live.marks.final(event.turnId, at);
+      else if (event.type === "turn_end") this.#countTurn(live, engine, event, at);
+      return;
+    }
     switch (event.type) {
       case "state": {
         const previous = this.#engineState;
@@ -668,26 +681,49 @@ export class CaptureController {
         live.marks.final(event.turnId, at);
         this.#update({ partial: null });
         return;
-      case "turn_end": {
-        live.marks.turnEnded(event.turnId, event.trigger, this.#state.mode, at);
-        const turnsSent = this.#state.turnsSent + 1;
-        const fake = this.#state.fake;
-        this.#update({
-          turnsSent,
-          partial: null,
-          fake: fake
-            ? { ...fake, nextLine: live.plan.fake?.scenario.turns[turnsSent]?.text ?? null }
-            : null,
-        });
-        this.#silent(live, { type: "turn_sent", turnId: event.turnId });
+      case "turn_end":
+        this.#countTurn(live, engine, event, at);
         return;
-      }
       case "level":
         this.levels.set(event.mic, event.agent);
         return;
       default:
         return;
     }
+  }
+
+  /** A turn went out: its marks, the count, the fake's next line, and the wait for its answer. */
+  #countTurn(
+    live: LiveSession,
+    engine: CaptureEngine,
+    event: VoiceEventOf<"turn_end">,
+    at: number,
+  ): void {
+    // The engine's own mode: after `H`, the screen's is already the next engine's.
+    live.marks.turnEnded(event.turnId, event.trigger, engine.mode, at);
+    const turnsSent = this.#state.turnsSent + 1;
+    const fake = this.#state.fake;
+    this.#update({
+      turnsSent,
+      // Only the running engine's turn clears the live line; an old engine's mustn't touch it.
+      ...(engine === this.#engine ? { partial: null } : {}),
+      fake: fake
+        ? { ...fake, nextLine: live.plan.fake?.scenario.turns[turnsSent]?.text ?? null }
+        : null,
+    });
+    this.#silent(live, { type: "turn_sent", turnId: event.turnId });
+  }
+
+  /**
+   * The running engine is going out of service and finishes its last turn as it stops: speech
+   * still going on ends now, so that turn's latency counts from here.
+   */
+  #speechEnds(): void {
+    const marks = this.#live?.marks;
+    if (!marks) return;
+    const at = this.#deps.clock();
+    if (this.#state.pressed) marks.released(at);
+    else if (this.#engineState === "recording") marks.speechStopped(at);
   }
 
   /** Push-to-talk down. `at` is the DOM event's timestamp, on the page's clock. */
@@ -716,17 +752,19 @@ export class CaptureController {
   toggleHandsFree(): void {
     if (this.#state.pressed) this.release();
     const mode: CaptureMode = this.#state.mode === "push_to_talk" ? "hands_free" : "push_to_talk";
-    this.#update({ mode });
+    this.#update({ mode, partial: null });
     this.#log("action", mode === "hands_free" ? "Hands-free on." : "Push-to-talk on.");
     const live = this.#live;
     const mic = this.#mic;
     const engine = this.#engine;
     if (!live || !mic || !engine) return;
+    this.#speechEnds();
     const audioContext = this.#deps.createAudioContext();
     const generation = this.#generation;
+    const detachEngine = this.#detachEngine;
     const detachBridge = this.#detachBridge;
-    // The old engine's states mustn't reach the machine; its last turn end still goes out.
-    this.#detachEngine?.();
+    // The old engine finishes its last turn as it stops: the turn goes out, counts, and gets its
+    // marks, but none of the old engine's states reach the machine (see #onEngineEvent).
     this.#engine = null;
     this.#detachEngine = null;
     this.#detachBridge = null;
@@ -736,6 +774,7 @@ export class CaptureController {
       } catch {
         // Replaced either way.
       }
+      detachEngine?.();
       detachBridge?.();
       if (generation !== this.#generation || this.#mic !== mic) {
         void audioContext?.close().catch(() => {});

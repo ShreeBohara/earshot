@@ -28,6 +28,12 @@ const SCENARIO: FakeScenario = {
   turns: [{ text: "Met Dana Lee at Acme Corp" }, { text: "That is all" }],
 };
 
+/** For runs with a third engine, which says a third line. */
+const THREE_LINES: FakeScenario = {
+  ...SCENARIO,
+  turns: [...SCENARIO.turns, { text: "Dana Lee wants the pricing deck by Friday" }],
+};
+
 function setup(
   options: {
     keys?: StoredKeyMeta[];
@@ -166,16 +172,24 @@ function setup(
   };
 }
 
-async function talk(t: ReturnType<typeof setup>, ms: number) {
-  t.controller.press();
+/** Speaks `ms` into the running engine's microphone, in real time, without pressing anything. */
+async function speak(t: ReturnType<typeof setup>, ms: number) {
   for (let done = 0; done < ms; done += 32) {
     t.capture.speak(32);
     await t.clock.advance(32);
   }
-  t.controller.release(t.clock.now());
+}
+
+/** One push-to-talk turn, through its answer. Returns when push-to-talk went up. */
+async function talk(t: ReturnType<typeof setup>, ms: number): Promise<number> {
+  t.controller.press();
+  await speak(t, ms);
+  const releasedAt = t.clock.now();
+  t.controller.release(releasedAt);
   await t.clock.advance(1_500);
   await settle(100);
   await t.clock.advance(300);
+  return releasedAt;
 }
 
 describe("CaptureController in fake mode", () => {
@@ -296,7 +310,7 @@ describe("CaptureController in fake mode", () => {
 
   it("carries the session's audio clock across `H`, so a new engine's utterances come after the old one's", async () => {
     const t = setup();
-    const fake = createFakeVoice(SCENARIO);
+    const fake = createFakeVoice(THREE_LINES);
     t.controller.start({ selection: null, fake });
     await settle(100);
     await t.clock.advance(200);
@@ -306,10 +320,7 @@ describe("CaptureController in fake mode", () => {
     await settle(100);
     await t.clock.advance(200);
     expect(t.controller.getState().capture.state).toBe("armed");
-    for (let done = 0; done < fake.holdMs; done += 32) {
-      t.capture.speak(32);
-      await t.clock.advance(32);
-    }
+    await speak(t, fake.holdMs);
     t.controller.toggleHandsFree(); // engine 2 ends its turn as it stops; engine 3 is push-to-talk
     await settle(100);
     await t.clock.advance(1_500);
@@ -342,6 +353,75 @@ describe("CaptureController in fake mode", () => {
     expect(utterances.map((u) => [u.text, u.startMs])).toEqual([
       ["Met Dana Lee at Acme Corp", 0],
       ["That is all", 1_600],
+    ]);
+    t.controller.dispose();
+  });
+
+  it("counts and marks the turn that `H` ends mid-press, and moves on to the scenario's next line", async () => {
+    const t = setup();
+    const fake = createFakeVoice(THREE_LINES);
+    t.controller.start({ selection: null, fake });
+    await settle(100);
+    await t.clock.advance(200);
+    const utterances = () =>
+      t.controller
+        .getState()
+        .store?.getState()
+        .projections.utterances.map((u) => u.text);
+    const paint = async () => {
+      const proposals = t.controller.getState().store?.getState().projections.proposals ?? [];
+      for (const proposal of proposals)
+        t.controller.cardPainted(proposal.proposalId, t.clock.now());
+      await settle(50);
+      await t.clock.advance(300);
+    };
+
+    // `H` while push-to-talk is still held: the switch releases it, and the old engine ends the
+    // turn as it stops.
+    t.controller.press();
+    await speak(t, fake.holdMs);
+    const switchedAt = t.clock.now();
+    t.controller.toggleHandsFree();
+    await settle(100);
+    await t.clock.advance(1_500);
+    expect(t.controller.getState()).toMatchObject({
+      mode: "hands_free",
+      turnsSent: 1,
+      fake: { nextLine: "That is all" },
+    });
+    expect(utterances()).toEqual(["Met Dana Lee at Acme Corp"]);
+    // Its marks are whole, in its own mode, with the speech ending at the switch.
+    await paint();
+    const metrics = () =>
+      t.server.received.flatMap((m) =>
+        m.t === "metric" ? [{ turnId: m.turnId, ...m.marks }] : [],
+      );
+    expect(metrics()).toEqual([
+      expect.objectContaining({ mode: "push_to_talk", speechEndMs: switchedAt }),
+    ]);
+
+    // The hands-free engine says the next line, not the first again, and its turn counts too.
+    await speak(t, fake.holdMs);
+    t.controller.toggleHandsFree();
+    await settle(100);
+    await t.clock.advance(1_500);
+    expect(t.controller.getState()).toMatchObject({
+      turnsSent: 2,
+      fake: { nextLine: "Dana Lee wants the pricing deck by Friday" },
+    });
+
+    // So does engine 3, and its marks start from its own release, not the switch's.
+    const releasedAt = await talk(t, fake.holdMs);
+    await paint();
+    expect(utterances()).toEqual([
+      "Met Dana Lee at Acme Corp",
+      "That is all",
+      "Dana Lee wants the pricing deck by Friday",
+    ]);
+    expect(t.controller.getState()).toMatchObject({ turnsSent: 3, fake: { nextLine: null } });
+    expect(metrics().map((marks) => [marks.mode, marks.speechEndMs])).toEqual([
+      ["push_to_talk", switchedAt],
+      ["push_to_talk", releasedAt],
     ]);
     t.controller.dispose();
   });
