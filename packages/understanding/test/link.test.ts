@@ -12,6 +12,7 @@ import {
   decide,
   type EntityKind,
   FEATURE_NAMES,
+  finalDecision,
   findCandidates,
   fitLogistic,
   type GridItem,
@@ -269,7 +270,7 @@ describe("features", () => {
 });
 
 describe("the decision rule", () => {
-  const thresholds = { tauLink: 0.8, delta: 0.2, tauNew: 0.3 };
+  const thresholds = { tauLink: 0.8, delta: 0.2, tauNew: 0.3, thetaD: 0.1 };
 
   it("links a clear winner, and asks on a tie at any height", () => {
     expect(decide([0.95, 0.1], true, thresholds)).toBe("linked");
@@ -289,12 +290,15 @@ describe("the decision rule", () => {
     expect(linked("Zephyr Renewal", "company").decision).toBe("new");
   });
 
-  it("searches the spec's grid for the most coverage within the limits", () => {
+  it("searches the spec's grid, and θ_d, for the most correct decisions within the limits", () => {
     expect(THRESHOLD_GRID.tauLink).toHaveLength(15);
     expect(THRESHOLD_GRID.tauLink[0]).toBe(0.7);
     expect(THRESHOLD_GRID.tauLink.at(-1)).toBe(0.98);
     expect(THRESHOLD_GRID.delta).toEqual([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]);
     expect(THRESHOLD_GRID.tauNew).toEqual([0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]);
+    expect(THRESHOLD_GRID.thetaD).toHaveLength(20);
+    expect(THRESHOLD_GRID.thetaD[0]).toBe(0.02);
+    expect(THRESHOLD_GRID.thetaD.at(-1)).toBe(0.4);
     const item = (p: number[], gold: string | null, newAllowed = true): GridItem => ({
       p,
       ids: p.map((_, k) => `r${k}`),
@@ -306,7 +310,8 @@ describe("the decision rule", () => {
       item([0.75, 0.1], "r1"), // linked only below τ_link 0.75, and wrongly
       item([0.75, 0.1], "r0"),
       item([0.05], null),
-      { ...item([0.99], "r0"), abstain: true },
+      // A snapped new name: an exact-looking link the witness's "new" reading turns into a question.
+      { ...item([0.99], null), witness: { p: [], ids: [], distance: 0.5 } },
     ];
     const result = searchThresholds(items, {
       maxWrongAccountRate: 0.015,
@@ -314,8 +319,9 @@ describe("the decision rule", () => {
     });
     expect(result.feasible).toBe(true);
     expect(result.thresholds.tauLink).toBeGreaterThan(0.75);
-    expect(result.decided).toBe(51); // 50 links and the new one; the abstainer never decides
+    expect(result.decided).toBe(51); // 50 links and the new one; the witness stops the snap
     expect(result.wrongLinks).toBe(0);
+    expect(result.points).toBe(15 * 8 * 7 * 20);
     const strict = searchThresholds(items, { maxWrongAccountRate: 0, maxNewWhenExistingRate: 0 });
     expect(strict.feasible).toBe(true);
     const impossible = searchThresholds([item([0.99, 0.01], "r1")], {
@@ -323,6 +329,64 @@ describe("the decision rule", () => {
       maxNewWhenExistingRate: 0,
     });
     expect(impossible.feasible).toBe(false);
+  });
+
+  it("decides after the witness: a conflict at θ_d or more downgrades, an unavailable reading never does", () => {
+    const thresholds = { tauLink: 0.8, delta: 0.2, tauNew: 0.3, thetaD: 0.1 };
+    const snapped: GridItem = {
+      p: [0.99],
+      ids: ["r0"],
+      newAllowed: true,
+      gold: null,
+      witness: { p: [], ids: [], distance: 0.1 },
+    };
+    expect(finalDecision(snapped, thresholds)).toBe("ask");
+    expect(
+      finalDecision({ ...snapped, witness: { p: [], ids: [], distance: 0.09 } }, thresholds),
+    ).toBe("linked");
+    expect(finalDecision({ ...snapped, witness: null }, thresholds)).toBe("linked");
+    // The same record heard two ways is no conflict; an undecided biased reading stays as it is.
+    expect(
+      finalDecision({ ...snapped, witness: { p: [0.95], ids: ["r0"], distance: 0.5 } }, thresholds),
+    ).toBe("linked");
+    expect(
+      finalDecision(
+        {
+          ...snapped,
+          p: [0.5, 0.5],
+          ids: ["r0", "r1"],
+          witness: { p: [0.99], ids: ["r0"], distance: 0.5 },
+        },
+        thresholds,
+      ),
+    ).toBe("ask");
+  });
+
+  it("won't buy coverage with a snapped name the witness could catch", () => {
+    // 100 right links, and one snap the witness hears 0.09 away: θ_d at 0.10 or more lets it
+    // through as a wrong link (1 in 101, within the 1.5% limit) for one more decision.
+    const items: GridItem[] = [
+      ...Array.from({ length: 100 }, () => ({
+        p: [0.99],
+        ids: ["r0"],
+        newAllowed: true,
+        gold: "r0",
+      })),
+      {
+        p: [0.99],
+        ids: ["r0"],
+        newAllowed: true,
+        gold: null,
+        witness: { p: [], ids: [], distance: 0.09 },
+      },
+    ];
+    const result = searchThresholds(items, {
+      maxWrongAccountRate: 0.015,
+      maxNewWhenExistingRate: 0.05,
+    });
+    expect(result.thresholds.thetaD).toBe(0.02);
+    expect(result.wrongLinks).toBe(0);
+    expect(result.decided).toBe(100);
   });
 });
 
@@ -365,10 +429,11 @@ describe("the committed parameters", () => {
     expect(LINKER_PARAMS_V1.version).toBe("linker.v1");
     expect(LINKER_PARAMS_V1.features).toEqual([...FEATURE_NAMES]);
     expect(LINKER_PARAMS_V1.sources).toEqual([...CANDIDATE_SOURCES]);
-    const { tauLink, delta, tauNew } = LINKER_PARAMS_V1.thresholds;
+    const { tauLink, delta, tauNew, thetaD } = LINKER_PARAMS_V1.thresholds;
     expect(THRESHOLD_GRID.tauLink).toContain(tauLink);
     expect(THRESHOLD_GRID.delta).toContain(delta);
     expect(THRESHOLD_GRID.tauNew).toContain(tauNew);
+    expect(THRESHOLD_GRID.thetaD).toContain(thetaD);
     expect(LINKER_PARAMS_V1.provenance?.calibration.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(LINKER_PARAMS_V1.provenance?.fittedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
@@ -380,8 +445,14 @@ describe("the committed parameters", () => {
     );
     expect(() => parseLinkerParams({ ...good, weights: { exact: 1 } })).toThrow(/finite/);
     expect(() =>
-      parseLinkerParams({ ...good, thresholds: { tauLink: 1.2, delta: 0.1, tauNew: 0.1 } }),
+      parseLinkerParams({
+        ...good,
+        thresholds: { tauLink: 1.2, delta: 0.1, tauNew: 0.1, thetaD: 0.1 },
+      }),
     ).toThrow(/tauLink/);
+    expect(() =>
+      parseLinkerParams({ ...good, thresholds: { tauLink: 0.8, delta: 0.1, tauNew: 0.1 } }),
+    ).toThrow(/thetaD/);
     expect(() => parseLinkerParams({ ...good, sources: ["exact", "exact"] })).toThrow(/twice/);
   });
 });

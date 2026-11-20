@@ -37,7 +37,8 @@
   "thresholds": {
     "tauLink": 0.72,
     "delta": 0.4,
-    "tauNew": 0.4
+    "tauNew": 0.4,
+    "thetaD": 0.02
   },
   "provenance": {
     "fittedAt": "2026-11-20",
@@ -61,19 +62,20 @@
       },
       "thresholdSearch": {
         "on": "5-fold out-of-fold probabilities, stratified by class",
+        "objective": "most correct decisions within the limits, after the witness",
+        "witness": "each mention's unbiased reading, by alignment, scored by the same fold's model and compared at θ_d (spec §4.6); E2 and G included",
         "limits": {
           "maxWrongAccountRate": 0.015,
           "maxNewWhenExistingRate": 0.05
         },
-        "witnessOnlyClassesAs": "ask",
-        "points": 840,
-        "feasiblePoints": 840,
+        "points": 16800,
+        "feasiblePoints": 4480,
         "feasible": true,
         "items": 240,
-        "decided": 207,
-        "coverage": 0.8625,
+        "decided": 202,
+        "coverage": 0.8416666666666667,
         "wrongLinks": 1,
-        "wrongAccountRate": 0.004830917874396135,
+        "wrongAccountRate": 0.0049504950495049506,
         "newWhenExisting": 0,
         "newWhenExistingRate": 0
       }

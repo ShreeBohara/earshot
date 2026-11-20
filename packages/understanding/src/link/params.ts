@@ -1,6 +1,6 @@
 // The linker's frozen parameters (spec WP4 step 7): the model's weights over its feature list,
-// the candidate sources, the thresholds, and where they came from (the calibration split's hash
-// and the date). `pnpm --filter @earshot/evals linker:fit` writes params.v1.json from the
+// the candidate sources, the thresholds (the second witness's θ_d among them, WP5), and where
+// they came from (the calibration split's hash and the date). `pnpm --filter @earshot/evals linker:fit` writes params.v1.json from the
 // confusable-name set's calibration split; nothing here is tuned on the test split.
 
 import { CANDIDATE_SOURCES, type CandidateSource } from "./candidates";
@@ -92,6 +92,7 @@ export function parseLinkerParams(value: unknown): LinkerParams {
     tauLink: probabilityIn(value.thresholds.tauLink, "tauLink"),
     delta: probabilityIn(value.thresholds.delta, "delta"),
     tauNew: probabilityIn(value.thresholds.tauNew, "tauNew"),
+    thetaD: probabilityIn(value.thresholds.thetaD, "thetaD"),
   };
   return {
     version: value.version,
