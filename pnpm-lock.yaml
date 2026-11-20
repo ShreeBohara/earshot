@@ -635,6 +635,9 @@ importers:
       '@earshot/demo-crm':
         specifier: workspace:*
         version: link:../demo-crm
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../understanding
       '@earshot/voice':
         specifier: workspace:*
         version: link:../voice

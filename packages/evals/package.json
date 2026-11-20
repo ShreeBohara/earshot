@@ -2,20 +2,25 @@
   "name": "@earshot/evals",
   "version": "0.0.0",
   "private": true,
-  "description": "Eval harness v0: 30 synthetic debrief scripts with ground truth, their schema and coverage rules, the session context they run in, the renderer's timing contract, cassettes for both LLM adapters, and the fake-microphone eval's checks, report, baselines, and live budget guard.",
+  "description": "Eval harness: 30 synthetic debrief scripts with ground truth, their schema and coverage rules, the session context they run in, the renderer timing contract, cassettes for both LLM adapters, and the fake-microphone eval checks, report, baselines, and live budget guard; and the confusable-name set for entity linking, its mishearing simulator, metrics, and report.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./cassettes": "./src/cassettes.ts",
     "./cassettes/*": "./cassettes/*",
+    "./channel": "./src/channel/index.ts",
     "./debriefs/*": "./debriefs/*",
-    "./fixtures/*": "./fixtures/*"
+    "./fixtures/*": "./fixtures/*",
+    "./linking": "./src/linking/index.ts",
+    "./linking/*": "./linking/*"
   },
   "scripts": {
     "baseline:update": "tsx scripts/update-baseline.ts",
     "cassettes:gen": "tsx scripts/gen-cassettes.ts",
     "eval:budget": "tsx scripts/eval-live-budget.ts",
+    "eval:linking": "tsx scripts/eval-linking.ts",
     "eval:report": "tsx scripts/eval-report.ts",
+    "linking:gen": "tsx scripts/gen-confusable.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
   },
@@ -23,6 +28,7 @@
     "@earshot/agent": "workspace:*",
     "@earshot/core": "workspace:*",
     "@earshot/demo-crm": "workspace:*",
+    "@earshot/understanding": "workspace:*",
     "@earshot/voice": "workspace:*",
     "zod": "catalog:"
   },
