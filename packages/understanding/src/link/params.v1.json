@@ -1,0 +1,82 @@
+{
+  "version": "linker.v1",
+  "features": [
+    "exact",
+    "aliasShared",
+    "phonFull",
+    "phonHead",
+    "trgm",
+    "jw",
+    "tailCover",
+    "initials",
+    "kindMatch",
+    "parentCtx",
+    "focus",
+    "recent",
+    "tieCount",
+    "rivalContext"
+  ],
+  "weights": {
+    "exact": 0.5808094389843111,
+    "aliasShared": 0.3629680503129821,
+    "phonFull": 12.686817766251366,
+    "phonHead": 3.2226664701912227,
+    "trgm": 2.462964548416374,
+    "jw": -0.3585810851337581,
+    "tailCover": 1.552239927777515,
+    "initials": 0.9068301225942432,
+    "kindMatch": 6.019216482231273,
+    "parentCtx": 2.109982520589214,
+    "focus": 2.0840262740704634,
+    "recent": 5.00802777810722,
+    "tieCount": -2.580802157828461,
+    "rivalContext": -5.499268490079506
+  },
+  "bias": -22.75544170367004,
+  "sources": ["exact", "sound", "homophone", "trigram", "initials", "family"],
+  "thresholds": {
+    "tauLink": 0.72,
+    "delta": 0.4,
+    "tauNew": 0.4
+  },
+  "provenance": {
+    "fittedAt": "2026-11-20",
+    "calibration": {
+      "set": "confusable.v1",
+      "split": "calibration",
+      "sha256": "155e430c8fef0bb9bb0857dc45a59b946f8d52af43fe0702fd734200285984dc",
+      "items": 228,
+      "excludedClasses": ["E2", "G"],
+      "rows": 1401,
+      "positives": 199
+    },
+    "fit": {
+      "model": "L2 logistic regression, Newton's method, standardized features",
+      "lambda": 1,
+      "iterations": 12,
+      "converged": true,
+      "candidateRecall": {
+        "found": 199,
+        "of": 199
+      },
+      "thresholdSearch": {
+        "on": "5-fold out-of-fold probabilities, stratified by class",
+        "limits": {
+          "maxWrongAccountRate": 0.015,
+          "maxNewWhenExistingRate": 0.05
+        },
+        "witnessOnlyClassesAs": "ask",
+        "points": 840,
+        "feasiblePoints": 840,
+        "feasible": true,
+        "items": 240,
+        "decided": 207,
+        "coverage": 0.8625,
+        "wrongLinks": 1,
+        "wrongAccountRate": 0.004830917874396135,
+        "newWhenExisting": 0,
+        "newWhenExistingRate": 0
+      }
+    }
+  }
+}
