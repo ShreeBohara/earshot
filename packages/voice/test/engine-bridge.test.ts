@@ -6,7 +6,7 @@ import { createSessionClient } from "../src/session/client";
 import { connectEngine } from "../src/session/engine-bridge";
 import { FakeCaptureSource } from "../src/testing/fake-capture";
 import { FakePageLifecycle } from "../src/testing/fake-page";
-import { FakeSessionServer } from "../src/testing/fake-session-server";
+import { FakeSessionServer, NO_TARGET } from "../src/testing/fake-session-server";
 import { settle } from "../src/testing/fake-socket";
 import { createFakeSttAdapter, fakeCredential } from "../src/testing/fake-stt";
 import { counterIds } from "./support/ids";
@@ -105,7 +105,7 @@ describe("the Debrief engine through SessionClient to SessionDO (fakes end to en
       propose: (turn) =>
         turn.utterances.map((utterance) => ({
           type: "note",
-          targetEntityId: null,
+          target: NO_TARGET,
           fields: {
             body: {
               value: utterance.text,

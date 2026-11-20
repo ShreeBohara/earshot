@@ -26,6 +26,7 @@ import {
   type FakeProposal,
   FakeSessionServer,
   type FakeSessionServerOptions,
+  NO_TARGET,
 } from "../src/testing/fake-session-server";
 import { settle } from "../src/testing/fake-socket";
 import { counterIds } from "./support/ids";
@@ -61,7 +62,7 @@ const newTurnId = () => {
 
 const proposalFor = (quoted: UtteranceFinalV2): FakeProposal => ({
   type: "task",
-  targetEntityId: null,
+  target: NO_TARGET,
   fields: {
     title: {
       value: "Send the proposal",
@@ -677,6 +678,40 @@ describe("SessionClient: answers and errors", () => {
     await h.flush();
     expect(h.client.store.getState().pending).toBe(0);
     expect(h.server.commits.get(id ?? "")).toBe(1);
+  });
+
+  it("sends the open account and each record's parent in start, and nothing for no account", async () => {
+    const entities = [
+      { id: "co_1", kind: "company" as const, name: "Acme Dynamics", aliases: ["Acme"] },
+      { id: "ct_1", kind: "contact" as const, name: "Dana Lee", aliases: [], parentId: "co_1" },
+    ];
+    const open_ = harness();
+    await open(open_);
+    open_.client.sendStart({
+      providers: PROVIDERS,
+      startedAt: "2026-11-19T12:00:00.000Z",
+      entities,
+      focusEntityId: "co_1",
+    });
+    await open_.flush();
+    expect(open_.server.received.find((message) => message.t === "start")).toMatchObject({
+      entities,
+      focusEntityId: "co_1",
+    });
+    expect(open_.server.log.map((event) => event.type)).toEqual(["session.started"]);
+
+    const none = harness();
+    await open(none);
+    none.client.sendStart({
+      providers: PROVIDERS,
+      startedAt: "2026-11-19T12:00:00.000Z",
+      entities,
+      focusEntityId: null,
+    });
+    await none.flush();
+    expect(none.server.received.find((message) => message.t === "start")).not.toHaveProperty(
+      "focusEntityId",
+    );
   });
 
   it("drops a message refused for good, and retries one refused for now", async () => {
