@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 4 WP7 built the normalizers and the faithfulness check in `@earshot/understanding` (`./normalize`, `./faithfulness`). WP8 (2026-11-20) calls them from `understand()` in `SessionDO` on every field, retires `@earshot/agent`'s `risk.ts` patterns, and settles what `unsupported` means (see "WP8: the risk patterns, and `unsupported`"). Builds on ADR-0027 (the v2 contracts: `FieldNorm` and the seven new risk kinds) and follows the Phase 4 build spec's decisions 9 to 13.
+Accepted (2026-11-20). Phase 4 WP7 built the normalizers and the faithfulness check in `@earshot/understanding` (`./normalize`, `./faithfulness`). WP8 (2026-11-20) calls them from `understand()` in `SessionDO` on every field, retires `@earshot/agent`'s `risk.ts` patterns, and settles what `unsupported` means (see "WP8: the risk patterns, and `unsupported`"). WP10's 200 debriefs check them end to end: the product's normalizers agree with the evals' resolvers on all 1,351 dates, times, and amounts, and the pipeline catches every seeded wrong date and amount (ADR-0031). Builds on ADR-0027 (the v2 contracts: `FieldNorm` and the seven new risk kinds) and follows the Phase 4 build spec's decisions 9 to 13.
 
 ## Context and problem
 
