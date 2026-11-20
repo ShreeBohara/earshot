@@ -7,18 +7,23 @@
 //
 // - `GET /v1/e2e/scenario`: the demo session, answered by `@earshot/agent`'s demo cassettes.
 // - `GET /v1/e2e/scenario?script=d001`: an eval debrief (`@earshot/evals`), with
-//   `DEMO_SESSION_ENTITIES` and the script's call time and time zone, answered by its eval
-//   cassette (src/e2e.ts finds it by that call time).
+//   `DEMO_SESSION_ENTITIES`, the script's open account, and its call time and time zone, answered
+//   by its eval cassette (src/e2e.ts finds it by that call time).
 // - `&llm=groq` names Groq instead of Anthropic in either; both have cassettes.
+//
+// From Phase 4 (WP8) the prompt names the account open in Earshot instead of listing the CRM, so
+// a scenario's `focusEntityId` is part of what the cassettes were recorded with, and the fake mode
+// sends it in `start` with the entities.
 import { LLM_MODELS } from "@earshot/agent";
 import {
   DEMO_CALL_TIME,
   DEMO_ENTITIES,
+  DEMO_FOCUS_ID,
   DEMO_TIME_ZONE,
   DEMO_UTTERANCES,
 } from "@earshot/agent/testing";
 import type { EntityRef, LlmProvider } from "@earshot/core";
-import { DEBRIEFS, DEMO_SESSION_ENTITIES, turnTranscript } from "@earshot/evals";
+import { DEBRIEFS, sessionContext, turnTranscript } from "@earshot/evals";
 
 export const E2E_SCENARIO_PATH = "/v1/e2e/scenario";
 
@@ -27,10 +32,12 @@ export interface E2eScenario {
   readonly version: 1;
   /** `demo-session`, or the eval script's id. */
   readonly name: string;
-  /** Send these three unchanged in `start`: every recorded request was made with them. */
+  /** Send these four unchanged in `start`: every recorded request was made with them. */
   readonly startedAt: string;
   readonly timeZone: string;
   readonly entities: readonly EntityRef[];
+  /** The account open in Earshot, one of `entities`, or null for none. */
+  readonly focusEntityId: string | null;
   /** The LLM to name in `turn_end`, whose cassettes answer. Any well-formed key will do. */
   readonly llm: { readonly provider: LlmProvider; readonly model: string };
   /** What the rep says, one line per push-to-talk press, in order. */
@@ -47,6 +54,7 @@ export function e2eScenario(provider: LlmProvider = "anthropic"): E2eScenario {
     startedAt: DEMO_CALL_TIME,
     timeZone: DEMO_TIME_ZONE,
     entities: DEMO_ENTITIES,
+    focusEntityId: DEMO_FOCUS_ID,
     llm: llmOf(provider),
     turns: DEMO_UTTERANCES.map((utterance) => ({ text: utterance.text })),
   };
@@ -62,12 +70,14 @@ export function evalScenario(
 ): E2eScenario | undefined {
   const script = DEBRIEFS.find((candidate) => candidate.id === scriptId);
   if (!script) return undefined;
+  const context = sessionContext(script);
   return {
     version: 1,
     name: script.id,
-    startedAt: script.callTime,
-    timeZone: script.timeZone,
-    entities: DEMO_SESSION_ENTITIES,
+    startedAt: context.callTime,
+    timeZone: context.timeZone,
+    entities: context.entities,
+    focusEntityId: context.focusEntityId,
     llm: llmOf(provider),
     turns: script.turns.map((turn) => ({ text: turnTranscript(turn) })),
   };

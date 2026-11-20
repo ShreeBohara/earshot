@@ -3,7 +3,12 @@
 
 import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { env, exports } from "cloudflare:workers";
-import { DEMO_CALL_TIME, DEMO_ENTITIES, DEMO_TIME_ZONE } from "@earshot/agent/testing";
+import {
+  DEMO_CALL_TIME,
+  DEMO_ENTITIES,
+  DEMO_FOCUS_ID,
+  DEMO_TIME_ZONE,
+} from "@earshot/agent/testing";
 import {
   type ClientMessageOf,
   DEV_SESSION_TICKET_SECRET,
@@ -236,6 +241,8 @@ export function startMessage(
     startedAt: DEMO_CALL_TIME,
     entities: DEMO_ENTITIES.map((entity) => ({ ...entity, aliases: [...entity.aliases] })),
     timeZone: DEMO_TIME_ZONE,
+    // The demo cassettes were recorded with Acme Corp open: prompt v2 names it.
+    focusEntityId: DEMO_FOCUS_ID,
     ...overrides,
   };
 }

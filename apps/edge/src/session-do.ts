@@ -7,7 +7,12 @@
 //   commit together, so a resend gets the same answer and changes nothing.
 // - A client resumes from its last seq after any drop: `hello` replays what it missed.
 // - `turn_end` runs extraction through `@earshot/agent`'s `runTurn`, one turn at a time, with the
-//   turn's LLM key used for that call and referenced nowhere else.
+//   turn's LLM key used for that call and referenced nowhere else. From Phase 4 (WP8) the turn
+//   runs the understanding step too (spec §4.3): the extractor quotes the words that named each
+//   record, and the entity linker resolves them against `start`'s records, with the account open
+//   in Earshot and the session's earlier links as context. The link index is built lazily, once
+//   per instance: after every wake, from the stored entities. Extraction reads only the biased
+//   witness's utterances.
 // - The log flushes to Postgres through a Queue (WP7), and the object deletes itself a day after
 //   Postgres confirms the whole session; `purge()` deletes it at once, for account deletion.
 //
@@ -33,6 +38,7 @@ import {
   uuidv7,
 } from "@earshot/core";
 import type { EventEnvelope } from "@earshot/events";
+import { buildLinkIndex, type LinkIndex } from "@earshot/understanding/link";
 import type { PriceResult, SttUsageInput } from "@earshot/voice/prices";
 import type { TurnAgent, TurnResult } from "./agent";
 import { type FlushSink, packFlushMessages, type SessionIdentity } from "./flush-message";
@@ -128,6 +134,26 @@ function readEntities(stored: string | undefined): EntityRef[] {
   }
 }
 
+/** The session's earlier links, as `link_recent` stores them, or none. */
+function readRecent(stored: string | undefined): string[] {
+  if (!stored) return [];
+  try {
+    const recent: unknown = JSON.parse(stored);
+    return Array.isArray(recent) ? recent.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** How many of a turn's targets the linker linked, asked about, made new, or left without one. */
+function countDecisions(
+  proposals: TurnResult["proposals"],
+): Record<"linked" | "ask" | "new" | "none", number> {
+  const counts = { linked: 0, ask: 0, new: 0, none: 0 };
+  for (const proposal of proposals) counts[proposal.target.decision] += 1;
+  return counts;
+}
+
 /** Close codes an endpoint may send (RFC 6455 §7.4): 1004–1006 and 1015 are reserved. */
 function isSendableCloseCode(code: number): boolean {
   return (
@@ -169,6 +195,12 @@ export class SessionRuntime extends DurableObject<Env> {
   #alarmAt: number | null = null;
   /** Set once `purge()` runs in this instance; `meta.purged_ms` says the same across instances. */
   #purged = false;
+  /**
+   * The linker's index of `start`'s records, built on the first turn that needs it. The
+   * constructor runs again after every hibernation and eviction, so a woken object builds it anew
+   * from the stored entities (spec WP8 step 4).
+   */
+  #linkIndex: LinkIndex | null = null;
 
   constructor(ctx: DurableObjectState, env: Env, deps: SessionDeps) {
     super(ctx, env);
@@ -413,10 +445,22 @@ export class SessionRuntime extends DurableObject<Env> {
           store.set("call_time", message.startedAt);
           if (message.timeZone) store.set("time_zone", message.timeZone);
           store.set("entities", JSON.stringify(message.entities));
+          // The protocol has checked it's one of the entities.
+          if (message.focusEntityId) store.set("focus_entity_id", message.focusEntityId);
         },
       },
     );
-    this.#log.info("session started", { entities: message.entities.length });
+    this.#linkIndex = null;
+    this.#log.info("session started", {
+      entities: message.entities.length,
+      focus: message.focusEntityId !== undefined,
+    });
+  }
+
+  /** The linker's index of the session's records: built once per instance, on first use. */
+  #index(): LinkIndex {
+    this.#linkIndex ??= buildLinkIndex(readEntities(this.#store.get("entities")));
+    return this.#linkIndex;
   }
 
   /** `utterance.final` v2. The same utterance under a new msgId gets the first one's seq. */
@@ -509,12 +553,20 @@ export class SessionRuntime extends DurableObject<Env> {
     this.#controllers.add(controller);
     let result: TurnResult;
     try {
+      // Validated as `utterance.final` v2 when they arrived. Extraction never reads the second
+      // witness's words (spec §4.2): only the biased stream's are the turn's transcript.
+      const utterances = (
+        store.turnUtterances(message.turnId) as unknown as UtteranceFinalV2[]
+      ).filter((utterance) => utterance.witness !== "unbiased");
       result = await agent.runTurn({
         extractor,
         turnId: message.turnId,
-        // Validated as `utterance.final` v2 when they arrived.
-        utterances: store.turnUtterances(message.turnId) as unknown as UtteranceFinalV2[],
-        entities: readEntities(store.get("entities")),
+        utterances,
+        session: {
+          index: this.#index(),
+          focusEntityId: store.get("focus_entity_id") ?? null,
+          recent: readRecent(store.get("link_recent")),
+        },
         callTime:
           store.get("call_time") ??
           new Date(store.getNumber("capture_started_ms", this.#now())).toISOString(),
@@ -542,7 +594,7 @@ export class SessionRuntime extends DurableObject<Env> {
     const events: NewEvent[] = [
       ...result.proposals.map((proposal) => ({
         type: "proposal.created",
-        schemaVersion: 1,
+        schemaVersion: 2,
         // Model output: cleaned of anything Postgres's jsonb would refuse.
         payload: toStorable(proposal) as unknown as Record<string, unknown>,
       })),
@@ -565,6 +617,7 @@ export class SessionRuntime extends DurableObject<Env> {
       this.#commit(message.msgId, events, {
         during: () => {
           if (usage) this.#addToMeter(usage);
+          store.set("link_recent", JSON.stringify(result.recent));
         },
         error: result.error,
       });
@@ -577,6 +630,8 @@ export class SessionRuntime extends DurableObject<Env> {
     this.#log.info("turn completed", {
       outcome: result.outcome,
       proposals: result.proposals.length,
+      // Counts only, never names or ids: how the linker decided this turn's targets.
+      targets: countDecisions(result.proposals),
       attempts: result.completed.attempts,
       llmMs: result.completed.llmMs,
       failure: result.failure,
@@ -980,6 +1035,7 @@ export class SessionRuntime extends DurableObject<Env> {
     for (const ws of this.ctx.getWebSockets()) closeWith(ws, "session_ended");
     await this.ctx.storage.deleteAll();
     this.#store.forget();
+    this.#linkIndex = null;
     this.#alarmAt = null;
   }
 
@@ -1036,6 +1092,7 @@ export class SessionRuntime extends DurableObject<Env> {
     for (const ws of this.ctx.getWebSockets()) closeWith(ws, "session_ended");
     await this.ctx.storage.deleteAll();
     this.#store.forget();
+    this.#linkIndex = null;
     const now = this.#now();
     this.#store.transaction(() => this.#store.set("purged_ms", now));
     this.#alarmAt = now + FLUSH_TIMING.tombstoneMs;
