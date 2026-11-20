@@ -1,8 +1,21 @@
 // The understanding report as Markdown (Phase 4 WP10 step 6): the headline metrics per provider,
-// proposals by type, the flags, the seeded errors the normalizers caught, and the gate's verdict.
+// proposals by type, the flags, the seeded errors the normalizers caught, the likely-edit tiers
+// (Phase 5 WP4), and the gate's verdict.
 import { ProposalTypeV2 as ProposalTypes, type ProposalTypeV2 } from "@earshot/core";
+import {
+  LOUD_ORDER,
+  type LoudReasonKind,
+  QUIET_ORDER,
+  type QuietReasonKind,
+} from "@earshot/understanding/tiers";
 import { ERROR_KINDS, type ErrorKind } from "./cassettes";
 import type { Ratio, UnderstandingMetrics } from "./metrics";
+import {
+  LOUD_SHARE_INTERIM_CEILING,
+  LOUD_SHARE_TARGET,
+  MARKED_SHARE_BUDGET,
+  SURFACING_RECALL_BUDGET,
+} from "./tiers";
 
 const pct = (value: number | null | undefined) =>
   value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`;
@@ -12,6 +25,26 @@ const ERROR_LABELS: Readonly<Record<ErrorKind, string>> = {
   wrong_date: "Wrong dates, replaced by their words' reading and flagged `value_mismatch`",
   wrong_amount: "Wrong amounts, replaced by their words' reading and flagged `value_mismatch`",
   paraphrased_target: "Paraphrased target quotes, left unlinked and flagged `unsupported`",
+};
+
+const LOUD_LABELS: Readonly<Record<LoudReasonKind, string>> = {
+  witness_conflict: "The two witnesses heard the words differently",
+  ask: "The linker asked which record",
+  unsupported: "The words aren't in what was said",
+  new_sound_alike: "A new record, with a sound-alike in the CRM",
+  ambiguous_value: "The words have two readings",
+  value_mismatch: "A value that disagrees with its words, not fixed",
+};
+
+const QUIET_LABELS: Readonly<Record<QuietReasonKind, string>> = {
+  implied_target: "Open account assumed",
+  new_entity: "A new record, nothing like it in the CRM",
+  value_corrected: "Corrected from the model's value",
+  negation: "Said in a negation",
+  low_confidence: "Low transcription confidence",
+  weak_support: "Loosely backed by its words",
+  date: "Phase 3's date flag",
+  number: "Phase 3's number flag",
 };
 
 const TYPE_LABELS: Readonly<Record<ProposalTypeV2, string>> = {
@@ -93,7 +126,7 @@ export function understandingMarkdown(
       "Conflict recall",
       (m) => `${pct(m.conflicts.recall)} (${m.conflicts.caught}/${m.conflicts.expected})`,
     ),
-    row("Flag share (target 35% or less)", (m) => of(m.flags)),
+    row("Flag share (any flag; the 35% budget is the marked share's)", (m) => of(m.flags)),
     "",
     "### Proposals by type",
     "",
@@ -119,6 +152,50 @@ export function understandingMarkdown(
           ...ERROR_KINDS.map((kind) => row(ERROR_LABELS[kind], (m) => of(m.seeded[kind]))),
         ]),
     "",
+    "### Likely-edit tiers",
+    "",
+    "Each final proposal's tier from `tierOf` (`@earshot/understanding/tiers`). Precision is the share the ground truth says needs a choice, an edit, or a rejection.",
+    "",
+    head,
+    rule,
+    row(
+      `Loud share (budget ${pct(LOUD_SHARE_TARGET)}; gated at the interim ceiling, ${pct(LOUD_SHARE_INTERIM_CEILING)})`,
+      (m) => of(m.tiers.loud),
+    ),
+    row("Loud floor: asks, conflicts, unsupported values", (m) => of(m.tiers.loudFloor)),
+    row(`Marked share, loud or a card note (budget ${pct(MARKED_SHARE_BUDGET)})`, (m) =>
+      of(m.tiers.marked),
+    ),
+    row("Name-note share, the name note alone", (m) => of(m.tiers.nameNoteOnly)),
+    row(`Surfacing recall, seeded errors marked (budget ${pct(SURFACING_RECALL_BUDGET)})`, (m) =>
+      of(m.tiers.surfacing),
+    ),
+    row("Precision, loud (aim 50%)", (m) => of(m.tiers.precision.loud)),
+    row("Precision, quiet card notes", (m) => of(m.tiers.precision.quiet)),
+    row("Precision, the name note alone", (m) => of(m.tiers.precision.nameNote)),
+    row("Wrong accounts with no marker", (m) => String(m.tiers.hiddenWrongAccounts)),
+    "",
+    `#### By reason (${providers[0]})`,
+    "",
+    "| Tier | Reason | Proposals | Share | Precision |",
+    "|---|---|---|---|---|",
+    ...LOUD_ORDER.flatMap((kind) => {
+      const entry = first.tiers.loudKinds[kind];
+      return entry
+        ? [
+            `| Loud | ${LOUD_LABELS[kind]} (\`${kind}\`) | ${entry.of} | ${pct(entry.of / first.tiers.proposals)} | ${of(entry)} |`,
+          ]
+        : [];
+    }),
+    ...QUIET_ORDER.flatMap((kind) => {
+      const count = first.tiers.quietKinds[kind];
+      return count === undefined
+        ? []
+        : [
+            `| Quiet | ${QUIET_LABELS[kind]} (\`${kind}\`) | ${count} | ${pct(count / first.tiers.proposals)} | |`,
+          ];
+    }),
+    "",
     `### Flags (${providers[0]})`,
     "",
     "Proposals carrying each kind, after the second witness; and for the kinds the scripts expect, how many of the expected ones came.",
@@ -143,7 +220,7 @@ export function understandingMarkdown(
     lines.push("", "### Gate", "");
     if (all.length === 0) {
       lines.push(
-        "Passes: evidence coverage 100%, the end-to-end wrong-account rate at most 2%, and no key metric or expected flag's catch rate more than 3 points below `baselines/understanding.json`.",
+        `Passes: evidence coverage 100%, the end-to-end wrong-account rate at most 2%, no key metric or expected flag's catch rate more than 3 points below \`baselines/understanding.json\`, loud on at most ${pct(LOUD_SHARE_INTERIM_CEILING)} of proposals (the interim ceiling; the budget is ${pct(LOUD_SHARE_TARGET)}), a card marker on at most ${pct(MARKED_SHARE_BUDGET)}, and at least ${pct(SURFACING_RECALL_BUDGET)} of the seeded errors marked.`,
       );
     } else lines.push(...all.map((failure) => `- **${failure}**`));
   }

@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ConcurrencyError, EventValidationError, StreamError, UnknownEventError } from "./errors";
 import { fromJsonl, toJsonl } from "./jsonl";
+import type { TierOf } from "./review-rules";
 import { type EventDraft, type EventStore, NO_EVENTS } from "./store";
 
 /** The type, version, and payload of an event, before it gets an id, seq, and timestamp. */
@@ -197,6 +198,16 @@ export function review(
     payload: { proposalId: uuid(3000 + n), decision, reviewerMs: 1500, ...extra },
   };
 }
+
+/**
+ * A tier function for the writer rules' own tests: any flag marks a proposal, loud, and none
+ * leaves it unmarked. The product passes `tierOf` from `@earshot/understanding/tiers` (Phase 5
+ * WP4), which this package doesn't depend on; this stand-in keeps the rules' tests on the
+ * contracts alone. Never pass it outside tests.
+ */
+export const anyFlagTier: TierOf = (proposal) => ({
+  tier: proposal.riskFlags.length > 0 ? "loud" : "none",
+});
 
 /** The reviewer the Phase 5 builders name: a person who signed in with a passkey. */
 export const REVIEWER = {

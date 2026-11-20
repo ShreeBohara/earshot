@@ -17,8 +17,9 @@
 // | Negation accuracy | Turns tagged `negation` whose proposals are all right, as for joint action accuracy (a turn that expects nothing must propose nothing) ÷ those turns |
 // | Evidence coverage | Fields and named targets whose evidence is the words the model quoted, once folded, ÷ all of them; a target whose words aren't in the transcript and is linked anyway counts against it (gate G2b) |
 // | Conflict precision, recall | Proposals flagged `witness_conflict` that the script expects to conflict ÷ proposals flagged; ÷ proposals expected to |
-// | Flag share | Final proposals with any risk flag ÷ final proposals: the guard against a sea of color (target 35% or less) |
+// | Flag share | Final proposals with any risk flag ÷ final proposals. Reported: since Phase 5 the guard against a sea of color, 35% or less, is the tiers' marked share (`tiers`, ADR-0031's option 2) |
 // | Seeded catches | Labelled cassette errors the pipeline caught: a wrong date or amount replaced by its words' reading and flagged `value_mismatch`; a paraphrased target left unlinked and flagged `unsupported` |
+// | Likely-edit tiers | The loud, marked, and name-note shares, the loud floor, surfacing recall, per-tier precision, and hidden wrong accounts (tiers.ts, Phase 5 WP4) |
 import { locateQuote, type ToolProposal } from "@earshot/agent";
 import {
   ProposalTypeV2 as ProposalTypes,
@@ -31,6 +32,7 @@ import { clopperPearsonUpper } from "../linking/metrics";
 import { type ExpectedProposal, KEY_FIELDS } from "../schema";
 import { ERROR_KINDS, type ErrorKind, type ErrorLabels } from "./cassettes";
 import type { FinalProposal, ScriptRun, TurnRun } from "./run";
+import { type TierItem, type TierMetrics, tierMetrics } from "./tiers";
 
 export interface Ratio {
   readonly n: number;
@@ -76,6 +78,8 @@ export interface UnderstandingMetrics {
   /** For each flag kind the scripts expect: proposals expected to carry it, and how many did. */
   readonly expectedFlags: Readonly<Partial<Record<RiskKindV2, Ratio>>>;
   readonly seeded: Readonly<Record<ErrorKind, Ratio>>;
+  /** The likely-edit tiers over the final proposals and the seeded errors (Phase 5 WP4). */
+  readonly tiers: TierMetrics;
   /** Requests the cassettes couldn't answer: must be 0. */
   readonly misses: number;
 }
@@ -237,6 +241,8 @@ export function understandingMetrics(
     ErrorKind,
     number
   >;
+  const tierItems: TierItem[] = [];
+  const seededProposals: (FinalProposal | undefined)[] = [];
   const errorsByTurn = new Map<string, ErrorLabels["errors"]>();
   for (const error of labels.errors) {
     const key = `${error.script}:${error.turn}`;
@@ -254,6 +260,14 @@ export function understandingMetrics(
       const biased = result.biased;
       const matches = matchTurn(expected, final);
       const biasedMatches = matchTurn(expected, biased);
+      const expectedAt = new Map<number, ExpectedProposal>();
+      expected.forEach((proposal, index) => {
+        const at = matches[index] ?? -1;
+        if (at >= 0) expectedAt.set(at, proposal);
+      });
+      for (const [index, proposal] of final.entries()) {
+        tierItems.push({ proposal, expected: expectedAt.get(index) });
+      }
       for (const proposal of final) {
         perType[proposal.type].actual++;
         finalProposals++;
@@ -318,6 +332,7 @@ export function understandingMetrics(
       for (const error of errorsByTurn.get(`${run.script.id}:${turnIndex}`) ?? []) {
         seeded[error.kind]++;
         const actual = final[matches[error.proposal] ?? -1];
+        seededProposals.push(actual);
         if (!actual) continue;
         if (error.kind === "paraphrased_target") {
           const refused =
@@ -394,6 +409,7 @@ export function understandingMetrics(
     seeded: Object.fromEntries(
       ERROR_KINDS.map((kind) => [kind, ratio(caught[kind], seeded[kind])]),
     ) as Record<ErrorKind, Ratio>,
+    tiers: tierMetrics(tierItems, seededProposals),
     misses,
   };
 }

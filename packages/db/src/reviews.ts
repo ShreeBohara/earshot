@@ -17,7 +17,6 @@
 // step but one, so the audit lock is held only for the inserts and the checkpoint's signature.
 
 import {
-  anyFlagTier,
   checkReviews,
   checkSnooze,
   defaultRegistry,
@@ -35,6 +34,7 @@ import {
   toJsonl,
 } from "@earshot/events";
 import type { AuditSigner } from "@earshot/keys/server";
+import { tierOf as defaultTierOf } from "@earshot/understanding/tiers";
 import {
   and,
   asc,
@@ -223,7 +223,10 @@ export interface SessionReviewOptions {
   readonly now: Date;
   /** Event ids: UUIDv7 in the app. */
   readonly newId: () => string;
-  /** The likely-edit tier (`tierOf` from WP4); `anyFlagTier` until then. */
+  /**
+   * The likely-edit tier the rules read for "accept all": `tierOf` from
+   * `@earshot/understanding/tiers` (Phase 5 spec §4.4) unless a test passes another.
+   */
   readonly tierOf?: TierOf;
 }
 
@@ -324,7 +327,7 @@ export async function writeSessionReviews<
     }
   }
 
-  const tierOf = options.tierOf ?? anyFlagTier;
+  const tierOf = options.tierOf ?? defaultTierOf;
   const reviewCheck = checkReviews(
     proposals,
     newReviews.map((item) => item.payload),

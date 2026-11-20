@@ -32,7 +32,16 @@
         "implied_target": 1
       },
       "proposals": 751,
-      "decided": 633
+      "decided": 633,
+      "loudShare": 0.158455,
+      "markedShare": 0.300932,
+      "nameNoteShare": 0.157124,
+      "loudFloorShare": 0.157124,
+      "surfacingRecall": 1,
+      "loudPrecision": 0.655462,
+      "quietPrecision": 0,
+      "nameNotePrecision": 0.008475,
+      "hiddenWrongAccounts": 1
     },
     "groq": {
       "keyFieldAccuracy": 1,
@@ -61,7 +70,16 @@
         "implied_target": 1
       },
       "proposals": 751,
-      "decided": 633
+      "decided": 633,
+      "loudShare": 0.158455,
+      "markedShare": 0.300932,
+      "nameNoteShare": 0.157124,
+      "loudFloorShare": 0.157124,
+      "surfacingRecall": 1,
+      "loudPrecision": 0.655462,
+      "quietPrecision": 0,
+      "nameNotePrecision": 0.008475,
+      "hiddenWrongAccounts": 1
     }
   }
 }

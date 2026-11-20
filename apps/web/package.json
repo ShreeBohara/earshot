@@ -22,6 +22,7 @@
     "@earshot/events": "workspace:*",
     "@earshot/keys": "workspace:*",
     "@earshot/ui": "workspace:*",
+    "@earshot/understanding": "workspace:*",
     "@earshot/voice": "workspace:*",
     "@opennextjs/cloudflare": "catalog:",
     "better-auth": "catalog:",

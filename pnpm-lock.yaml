@@ -398,6 +398,9 @@ importers:
       '@earshot/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../../packages/understanding
       '@earshot/voice':
         specifier: workspace:*
         version: link:../../packages/voice
@@ -867,6 +870,9 @@ importers:
       '@earshot/events':
         specifier: workspace:*
         version: link:../events
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../understanding
       '@ricky0123/vad-web':
         specifier: 0.0.31
         version: 0.0.31

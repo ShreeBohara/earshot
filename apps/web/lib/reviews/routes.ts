@@ -12,8 +12,10 @@
 // - One `withViewerTenant` transaction per request: the session must be the viewer's own (404
 //   otherwise), sealed in Postgres (409 `not_sealed` otherwise, even after `ended_at` is set), and
 //   every review and snooze must keep the writers' rules (409 `stale` for a proposal decided,
-//   reopened, or replaced since its card loaded; 400 for anything else). Resends are idempotent by
-//   `reviewId` and `snoozeId`. `writeSessionReviews` in `@earshot/db` does the rest.
+//   reopened, or replaced since its card loaded; 400 for anything else), with "accept all" taking
+//   only what `tierOf` (`@earshot/understanding/tiers`) leaves unmarked, as SessionDO does.
+//   Resends are idempotent by `reviewId` and `snoozeId`. `writeSessionReviews` in `@earshot/db`
+//   does the rest.
 // - Each review records the viewer's sign-in: the method, and when the sign-in session began.
 // - Every answer is `cache-control: no-store` and quotes nothing from the request.
 import {
@@ -35,6 +37,7 @@ import {
 } from "@earshot/db";
 import type { ReviewRefusal } from "@earshot/events";
 import type { AuditSigner } from "@earshot/keys/server";
+import { tierOf } from "@earshot/understanding/tiers";
 import { and, eq } from "drizzle-orm";
 import { type AuditEnv, readAuditKeys } from "../audit/keys";
 import type { Mode } from "../auth/config";
@@ -164,7 +167,12 @@ export async function sessionReviewsRoute(
         .limit(1);
       // Another member's session is as missing as another workspace's.
       if (!row || row.userId !== viewer.user.id) return { ok: false, reason: "not_found" };
-      return writeSessionReviews(tx, id, { reviews, snoozes }, { signer, now, newId: uuidv7 });
+      return writeSessionReviews(
+        tx,
+        id,
+        { reviews, snoozes },
+        { signer, now, newId: uuidv7, tierOf },
+      );
     }, viewer);
 
     if (!outcome.ok) {

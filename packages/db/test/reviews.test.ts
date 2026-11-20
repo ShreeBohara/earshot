@@ -334,6 +334,63 @@ describe("writeSessionReviews", () => {
     expect(await new PgEventStore(db, A).read(S1)).toHaveLength(9);
   });
 
+  it("lets a batch take what tierOf leaves unmarked, and nothing it marks, the name note included", async () => {
+    const db = await fresh();
+    await seed(db, S1, [
+      draft(1, started()),
+      draft(2, utterance(1)),
+      // A flag, but no marker: the model took the rep's correction (spec §4.4's "none").
+      draft(
+        3,
+        proposalV2(
+          1,
+          { basis: "exact", p: 0.99 },
+          { riskFlags: [{ kind: "self_correction", field: "title" }] },
+        ),
+      ),
+      // Linked by sound below 0.97: only the name note, which is still a marker.
+      draft(4, proposalV2(2)),
+      // A value a unique reading replaced: a quiet note on the card ("corrected from …").
+      draft(
+        5,
+        proposalV2(
+          3,
+          { basis: "exact", p: 0.99 },
+          {
+            fields: {
+              dueDate: {
+                value: "2026-11-13",
+                evidence: {
+                  utteranceId: uuid(2001),
+                  span: [5, 9],
+                  audioMs: [1250, 1450],
+                  confidence: 0.9,
+                },
+                norm: { llmValue: "2026-11-12" },
+              },
+            },
+            riskFlags: [{ kind: "value_mismatch", field: "dueDate" }],
+          },
+        ),
+      ),
+      draft(6, ended()),
+      draft(7, sealed()),
+    ]);
+    const batchId = newId();
+    const batch = (n: number) => inboxReview(n, { mode: "batch", batchId });
+    expect(await write(db, S1, { reviews: [batch(2)], snoozes: [] })).toMatchObject({
+      ok: false,
+      reason: "refused",
+      refusal: "marked",
+    });
+    expect(await write(db, S1, { reviews: [batch(3)], snoozes: [] })).toMatchObject({
+      ok: false,
+      reason: "refused",
+      refusal: "marked",
+    });
+    expect(await write(db, S1, { reviews: [batch(1)], snoozes: [] })).toMatchObject({ ok: true });
+  });
+
   it("fails closed on reviews without a signer, and takes snoozes without one", async () => {
     const db = await fresh();
     await seed(db, S1, debrief(true));

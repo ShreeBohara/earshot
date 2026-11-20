@@ -332,6 +332,34 @@ describe("POST /api/sessions/:id/reviews", () => {
     expect(await eventsOf(sessionId)).toHaveLength(7);
   });
 
+  it("lets accept-all take what tierOf leaves unmarked: a lone self-correction, not the name note", async () => {
+    const viewer = await signIn("ana@acme.example");
+    const sessionId = await sessionWithLog(viewer, [
+      draft(1, started()),
+      draft(2, utterance(1)),
+      // Linked by sound below 0.97: the name note alone, a marker all the same.
+      draft(3, proposalV2(1)),
+      // A flag, but no marker: the model took the rep's correction (spec §4.4's "none").
+      draft(
+        4,
+        proposalV2(
+          2,
+          { basis: "exact", p: 0.99 },
+          { riskFlags: [{ kind: "self_correction", field: "title" }] },
+        ),
+      ),
+      draft(5, ended()),
+      draft(6, sealed()),
+    ]);
+    const batchId = uuidv7();
+    expect(
+      await answer(post(sessionId, { reviews: [review(1, { mode: "batch", batchId })] })),
+    ).toMatchObject({ status: 400, body: { error: "invalid_request" } });
+    expect(
+      await answer(post(sessionId, { reviews: [review(2, { mode: "batch", batchId })] })),
+    ).toMatchObject({ status: 200, body: { reviews: [{ seq: 6, recorded: "now" }] } });
+  });
+
   it("answers 413 for a body over 64 KiB", async () => {
     const viewer = await signIn("ana@acme.example");
     const sessionId = await sessionWithLog(viewer, debrief());

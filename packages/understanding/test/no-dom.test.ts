@@ -18,6 +18,7 @@ const ENTRIES = [
   "src/witness/index.ts",
   "src/normalize/index.ts",
   "src/faithfulness.ts",
+  "src/tiers/index.ts",
   "src/testing/index.ts",
 ].map((entry) => path.join(root, entry));
 

@@ -12,6 +12,8 @@ Accepted (2026-11-20). Drafted by Phase 4 WP10, which built:
 
 WP11 built the live smoke tier (below): its set, runner, noise band, and budget guards, off until the user turns it on (WP11b). WP12 accepted it, amended ADR-0026, and showed gate G3a: #49, which dropped the phonetic candidate sources, was blocked by `checks`. Builds on ADR-0026 (harness v0), ADR-0027 (contracts and the pipeline), ADR-0028 (the linker, the confusable set and its simulator), ADR-0029 (the second witness), and ADR-0030 (the normalizers).
 
+Amended 2026-11-20 by Phase 5 WP4: option 2 below is adopted (`link_uncertain` beside the record's name, not a card flag); option 1 waits for Phase 4's mined set; the understanding report gains the likely-edit tiers' metrics, and the gate their budgets, with the loud share held to an interim ceiling of 18% because asks, conflicts, and unsupported values alone are 15.7% of proposals. See "Phase 5: the likely-edit tiers", and ADR-0035.
+
 ## Context and problem
 
 Phase 4's gate needs two things from the debrief evals (spec §6):
@@ -219,11 +221,56 @@ CI's `checks` job runs `pnpm --filter @earshot/evals eval:understanding --check 
 
 **What WP10 changed:** nothing. The linker's thresholds and the flag rules are as WP4, WP5, WP7, and WP8 froze them.
 
-**The remedy proposed** (not applied; a decision for the linker's owner and Phase 5's highlighting):
+**The remedy proposed** (WP10 applied none of it; Phase 5 WP4 adopted option 2 and left option 1 for the mined set, below):
 
 1. **Raise `link_uncertain`'s bar for links by context to p below 0.90,** or put it only on links by sound. On this set the share falls to 34.9%, or 31.8%, with no decision changed: the flag is a badge, not a gate. Its 0.97 target came from the plan's first check, before calibration showed context links clustering at 0.93.
 2. **Make the tray show `link_uncertain` beside the record's name rather than as a badge.** Leave the badge colors to Phase 5's likely-edit highlighting, as spec §8's own response says ("flags are data; the UI shows a subset"). With no `link_uncertain` badge the share is 30.1%.
 3. **Before either, measure the flag's precision for likely edits on WP6's mined set,** which still waits for the user's approval. Synthetic context links may be more certain than real ones.
+
+### Phase 5: the likely-edit tiers (amended 2026-11-20, WP4)
+
+Phase 5's review cards mark proposals in two tiers, computed by one function, `tierOf` in `@earshot/understanding/tiers` (spec §4.4, decision 8; ADR-0035 has the rules). The eval measures them on the 200 debriefs, and the gate holds them to budgets.
+
+**Option 2 is adopted.** `link_uncertain` is a note beside the record's name ("matched by sound" or "matched in context"), not a card flag; the tray dropped its badge. No decision changed: the flag is still raised where it was. The 35% guard against a sea of color now applies to the marked share (loud or a quiet note on the card), 30.1%; the raw flag share, 45.8%, is still reported. **Option 1** (moving `link_uncertain`'s rule for context links to p below 0.90) **waits for Phase 4's mined set** (WP6), which measures the flag's real precision first (option 3); synthetic context links cluster at p 0.93 and are mostly right, and real ones may not be.
+
+**The new metrics** (`src/understanding/tiers.ts`), per provider:
+
+| Metric | Definition | Budget |
+|---|---|---|
+| Loud share | Final proposals with a loud reason ÷ final proposals | 15% (target); gated at the interim ceiling, 18% |
+| Loud floor | Final proposals with an ask, a witness conflict, or an unsupported value ÷ final proposals | Reported; sets the interim ceiling |
+| Marked share | Final proposals with a loud reason or a quiet note on the card ÷ final proposals | 35%, gated |
+| Name-note share | Final proposals whose only marker is the name note ÷ final proposals | Reported |
+| Surfacing recall | Seeded errors (`errors.json`'s 40) whose proposal carries any marker, the name note included ÷ 40 | 95%, gated |
+| Precision, per tier | Proposals in the tier the ground truth says need a choice, an edit, or a rejection ÷ proposals in the tier | Reported; aim 50% on loud |
+| Hidden wrong accounts | Matched proposals linked to a record the ground truth doesn't name, with no marker | Reported |
+
+"Needs a change" reads the ground truth: an extra proposal (a rejection); an expected ask, or a record the ground truth doesn't name, or a question that doesn't offer the record meant (a choice); a value stated differently or missing (an edit). A question that offers the record the ground truth names outright is a false alarm, so the 19 false conflicts count against loud precision rather than for it.
+
+**Measured** (both adapters alike; 751 final proposals):
+
+| Metric | Value |
+|---|---|
+| Loud share | 15.8% (119) |
+| Loud floor | 15.7% (118): 32 asks, 68 conflicts, 20 unsupported targets; 2 proposals are both an ask and a conflict |
+| Marked share | 30.1% (226) |
+| Name-note share | 15.7% (118) |
+| Surfacing recall | 100% (40 of 40) |
+| Precision: loud; quiet card notes; the name note alone | 65.5% (78 of 119); 0% (0 of 107); 0.8% (1 of 118) |
+| Loud precision by reason | unsupported 100% (20/20), conflicts 69.1% (47/68), asks 37.5% (12/32), new with a sound-alike 0% (0/1) |
+| Hidden wrong accounts | 1 (d037: a snapped new name linked by context at p 0.998, so no `link_uncertain`); the other wrong account, d193, carries the name note |
+
+Quiet precision is 0% by construction: the cassettes are the ground truth plus seeded errors, so a quiet note sits on a right value (a date the normalizers already fixed, a negation, an implied target, a new record). Real speech is Phase 4's mined set and Phase 8's question (spec Appendix B, #12).
+
+**The new gates.** `eval:understanding --check` also fails, for either provider, when:
+
+- the loud share is over **18%, an interim ceiling**, not the spec's 15%. Asks, conflicts, and unsupported values alone are over 15% (the floor above), and no display rule can quiet them, so the ceiling is the floor plus 2 points, rounded up to a whole percent (`LOUD_SHARE_INTERIM_CEILING`). The real fix is fewer false witness conflicts (22 of the 68 aren't conflicts the scripts expect, and 19 of those turned right links into asks): a linker or witness change once Phase 4's mined set has run, which WP4 didn't make. A test fails when the floor moves, so the ceiling is set again, or dropped for 15%, on purpose;
+- the marked share is over 35%;
+- surfacing recall is under 95%.
+
+A share with nothing to divide (no proposals or no seeded errors) isn't gated. Because the floor is over 15%, spec WP4 step 2's other remedy, raising a loud `new_entity`'s bar from p 0.05 to 0.20, wasn't applied: it would quiet one proposal of 751 and still leave loud over 15%.
+
+**The baseline**, re-recorded on purpose: every existing value is unchanged, and each provider gains `loudShare` 0.158455, `markedShare` 0.300932, `nameNoteShare` 0.157124, `loudFloorShare` 0.157124, `surfacingRecall` 1, `loudPrecision` 0.655462, `quietPrecision` 0, `nameNotePrecision` 0.008475, and `hiddenWrongAccounts` 1. The new values are recorded, not compared: the gate holds them to their budgets alone.
 
 ### The live smoke tier (WP11)
 
@@ -299,7 +346,8 @@ Tier (c): 30 debriefs as text through the live model, scored by the metrics abov
 - **The set isn't independent of the linker's calibration distribution.** It reuses `confusable.v1`'s simulator, decoys, and oracle, and linker v1 was fit on that set's calibration split. So the set measures the pipeline in the linker's own world. WP6's mined set, and Phase 8's recordings, are the counterweights.
 - **Conflict precision is 67.6%.** The unbiased channel's sound changes (about 2% of names) are the false conflicts that cost 19 right links. That's ADR-0028's finding again, at debrief scale.
 - **The baseline must be re-recorded whenever a script or the error seed changes,** even when nothing regressed. That's on purpose: the SHA binding makes a regenerated set a reviewed change.
-- **The flag share is 10.8 points over the guard,** pending the remedy above.
+- **The flag share is 10.8 points over the guard,** pending the remedy above. Phase 5 WP4 adopted option 2, so the guard now reads the marked share, 30.1%.
+- **The loud share is gated at an interim ceiling, 18%, not the spec's 15%** (Phase 5 WP4): the loud floor is 15.7% until false witness conflicts fall. The 200 debriefs over-represent hard cases by design (48 snapped names, 20 paraphrased targets), so their loud share is an upper reference for real use.
 - **Thirty live scripts can't resolve small effects** (spec decision 14). If the three baseline runs happen to agree, the band is 3 points, about 4 targets. If they don't, it's twice their spread. A test PR that only drops "quote names exactly" from the prompt may not move a model that quotes exactly anyway. The tool schema's descriptions repeat the rule, so the demonstration should drop it there too, or invert it.
 - **At about 96 targets decided, the 2% gate allows one wrong account.** Two fail the run.
 - **The smoke estimate's token count is an estimate.** The first live run's report shows the real usage.
@@ -309,7 +357,7 @@ Tier (c): 30 debriefs as text through the live model, scored by the metrics abov
 - Spec: `reports/Earshot Phase 4 build spec.md`, WP10, §4.5, §6, and decisions 13 to 15.
 - Format and coverage: `packages/evals/src/{schema,coverage,verify}.ts`.
 - The generator: `packages/evals/src/grammar/`. Regenerate with `pnpm --filter @earshot/evals debriefs:gen`, then `cassettes:gen`, then `eval:understanding --write-baseline`, and review the diffs.
-- The eval: `packages/evals/src/understanding/`, and `scripts/{eval-understanding,gen-cassettes,understanding-io}.ts`.
+- The eval: `packages/evals/src/understanding/`, and `scripts/{eval-understanding,gen-cassettes,understanding-io}.ts`. The tiers' metrics and budgets: `src/understanding/tiers.ts` (Phase 5 WP4); `tierOf`: `packages/understanding/src/tiers/`.
 - Files: `debriefs/generated/`, `cassettes/understanding/{anthropic,groq,errors}.json`, and `baselines/understanding.json`.
 - Run locally: `pnpm --filter @earshot/evals eval:understanding [--provider anthropic] [--json out.json]`.
 - The lab: `lab/tests/test_debrief_noise.py` checks that the renderer accepts every generated script's noise.

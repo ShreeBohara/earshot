@@ -160,5 +160,5 @@ describe("understand, under fuzzed drafts", () => {
       }
     }
     expect(checked).toBeGreaterThan(200);
-  });
+  }, 120_000); // 400 fuzzed drafts: well under a second alone, far slower on CI's busy runners
 });

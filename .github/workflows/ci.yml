@@ -65,9 +65,11 @@ jobs:
       # linker v1, the normalizers, and the second witness. Fails on evidence coverage under 100%,
       # an end-to-end wrong-account rate above 2%, a key metric or an expected risk flag's catch
       # rate more than 3 points below baselines/understanding.json, stale cassettes, or a baseline
-      # taken on other scripts.
+      # taken on other scripts. Also the likely-edit tiers' budgets (Phase 5 spec §4.4, WP4; gate
+      # G2a's 95%): loud on more than the 18% interim ceiling, a card marker on more than 35%, or
+      # fewer than 95% of the seeded errors marked.
       # Deterministic, a few seconds, and $0: no models, no providers.
-      - name: Understanding eval, gate G2b (200 debriefs, offline cassettes)
+      - name: Understanding eval, gate G2b and the tier budgets (200 debriefs, offline cassettes)
         run: pnpm --filter @earshot/evals eval:understanding --check --summary
       - name: Contracts are up to date
         run: |

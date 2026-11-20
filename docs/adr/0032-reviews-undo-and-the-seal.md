@@ -74,7 +74,7 @@ JSON Schema can't express a field that must be set exactly when another has some
 
 `checkReviews` checks a request (a `review` message or a web request): each review id and proposal once, and one batch id; then each review against the state before the request. `checkSnooze` needs an existing, unsuperseded, proposed proposal. Refusals carry a reason (`malformed`, `unknown_proposal`, `superseded`, `not_proposed`, `not_latest`, `nothing_to_reopen`, `target_required`, `target_not_offered`, `no_target`, `marked`, `machine_only`, or `policy_excluded`) for the writers to map to protocol errors and HTTP statuses.
 
-The tier function is passed in. Until WP4's `tierOf` (`@earshot/understanding/tiers`), `anyFlagTier` counts any flag as a marker.
+The tier function is passed in: `tierOf` from `@earshot/understanding/tiers` (WP4, ADR-0035), the same one every writer passes, so `@earshot/events` depends on the contracts alone. WP1's stand-in, `anyFlagTier` (any flag a marker), is a test helper in `@earshot/events/testing` now.
 
 ### Projections
 
@@ -167,7 +167,7 @@ Answers: 200 `{ sessionId, reviews, snoozes, lastSeq }` with each item's seq; 40
 - The seal delays the inbox: an ended session shows as "Finishing" for at least a minute after the tray's last write, plus its flush. Whether 60 s is enough for late usage and metrics on real networks, and whether the seal's alarm keeps the object from hibernating, are left for the first deploy (spec Appendix B, #8 and #9).
 - The whole path from the tray through the flush to the inbox needs both Workers on one Postgres, so CI tests each half (workerd and PGlite) and the first deploy checks the whole.
 - `ReviewView` dropped `reviewerMs`, so its readers changed, and the `reviewer_ms` column keeps a name that now means the handling time.
-- `anyFlagTier` marks more than WP4's tiers will (a lone `self_correction`, for one), so "accept all" takes less until WP4 lands.
+- Until WP4, `anyFlagTier` marked more than the tiers do (a lone `self_correction`, for one), so "accept all" took less; WP4 put `tierOf` in every writer.
 - A v2 review is several times the size of a v1 review, mostly `seen`, which grows logs and flush messages.
 
 ## More information
