@@ -50,8 +50,11 @@ describe("the package without the DOM", () => {
     expect(diagnostics).toEqual([]);
     expect(sources.some((file) => /lib\.dom(\.|$)/.test(path.basename(file)))).toBe(false);
     expect(sources.some((file) => file.includes("@types/node"))).toBe(false);
-    // Every source file is reachable from an entry, and nothing else of ours comes along.
-    const own = sources.filter((file) => file.startsWith(path.join(root, "src")));
+    // Every source file is reachable from an entry, and nothing else of ours comes along. A JSON
+    // module (the linker's params.v1.json) is data, not source, so only .ts files are compared.
+    const own = sources.filter(
+      (file) => file.startsWith(path.join(root, "src")) && file.endsWith(".ts"),
+    );
     expect(own.map((file) => path.relative(root, file)).sort()).toEqual(
       sourceFiles(path.join(root, "src")).sort(),
     );

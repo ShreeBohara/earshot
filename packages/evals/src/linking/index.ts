@@ -1,6 +1,8 @@
 // @earshot/evals/linking: the confusable-name set and its harness (Phase 4 spec, WP3). The set's
 // items and their schema, the generator that writes linking/confusable.v1.jsonl, the ground truth
-// it labels with, the decoys, the metrics and report, gate G1, and linker v0 (Phase 3's matcher).
+// it labels with, the decoys, the metrics and report, gate G1, linker v0 (Phase 3's matcher), and
+// linker v1 (WP4) with its fit on the calibration split and its ablations.
+export { type AblationRow, ablationTable } from "./ablations";
 export { ALIKE_HEAD_DISTANCE, alikeTo, DECOYS, type Decoy, inDemoCrm } from "./decoys";
 export {
   companyOf,
@@ -15,6 +17,18 @@ export {
   spokenForms,
 } from "./entities";
 export {
+  ABLATIONS,
+  type Ablation,
+  FIT_LIMITS,
+  type FitConfig,
+  type FittedLinker,
+  FOLDS,
+  FULL_FIT,
+  fitLinker,
+  LAMBDA,
+  WITNESS_ONLY_CLASSES,
+} from "./fit";
+export {
   BASELINE_FORMAT,
   G1,
   gateFailures,
@@ -28,15 +42,23 @@ export {
 } from "./gate";
 export { type ConfusableDraft, generateConfusableSet, POOLS, SET_SEED } from "./generate";
 export {
+  asLinkDecision,
   type CaseReading,
   LINKER_ORACLE,
   LINKER_V0,
+  LINKER_V1,
   LINKERS,
   type LinkDecision,
   type Linker,
+  type LinkerInput,
   type LinkingCase,
   type LinkPrediction,
+  linkerInput,
+  linkerV1,
   linkingCase,
+  SEES_ALL,
+  type Sees,
+  shown,
 } from "./linkers";
 export {
   asExpected,
@@ -67,7 +89,7 @@ export {
   soundMatches,
   TYPE_KINDS,
 } from "./oracle";
-export { type LinkingMarkdownOptions, linkingMarkdown } from "./report";
+export { ablationMarkdown, type LinkingMarkdownOptions, linkingMarkdown } from "./report";
 export {
   CALIBRATION_SHARE,
   CLASS_COUNTS,

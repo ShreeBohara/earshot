@@ -6,12 +6,23 @@
 // `attachEvidence` applies it: to the words the biased transcript has for the mention, among the
 // kinds the proposal type allows. A match links; no match is a new contact for a contact
 // proposal (Phase 3's `new_entity`) and no target otherwise. It has no probability and no witness.
-// WP4 adds linker v1 here.
+//
+// Linker v1 (WP4) is `link` from @earshot/understanding/link with its committed parameters, run
+// on the biased transcript's mention, the company said with it, the open account, and earlier
+// links. It has no witness yet (WP5 adds it), so its final decisions are its biased-only ones.
 //
 // The oracle is a reference: the set's ground truth run as a two-witness linker, the ceiling the
 // set allows under the simulator's rules.
 import { matchEntity, TARGET_KINDS } from "@earshot/agent";
 import type { EntityKind, EntityRef, ProposalType, TargetDecision } from "@earshot/core";
+import {
+  buildLinkIndex,
+  LINKER_PARAMS_V1,
+  type LinkerParams,
+  type LinkResult,
+  link,
+  type MentionInput,
+} from "@earshot/understanding/link";
 import { sameSoundPhrase } from "../channel/sound";
 import { type Observation, type Resolution, resolve } from "./oracle";
 import type { ConfusableItem, Span } from "./schema";
@@ -56,8 +67,17 @@ export interface LinkDecision {
   readonly decision: TargetDecision;
   /** Set exactly when the decision is "linked". */
   readonly entityId: string | null;
-  /** The calibrated probability of the link; null when the linker has none. */
+  /**
+   * The calibrated probability: of the link; for "new", of a new record; for "ask", of its best
+   * candidate (WP3's finding: the risk–coverage sweep needs it). Null when the linker has none.
+   */
   readonly p: number | null;
+  /**
+   * For an "ask" that only τ_link held back (its best candidate already leads the next by δ):
+   * the record it would link once τ_link fell to `p`. The risk–coverage sweep admits it there.
+   * Absent or null otherwise: an ask on a near tie never becomes a link by lowering τ_link.
+   */
+  readonly wouldLink?: string | null;
 }
 
 export interface LinkPrediction {
@@ -161,4 +181,118 @@ export const LINKER_ORACLE: Linker = {
   },
 };
 
-export const LINKERS: Readonly<Record<string, Linker>> = { v0: LINKER_V0, oracle: LINKER_ORACLE };
+/** What `link` is given for one witness's reading of a case. */
+export interface LinkerInput {
+  readonly mention: MentionInput;
+  readonly focusEntityId: string | null;
+  readonly recent: readonly string[];
+  readonly turnMentions: readonly MentionInput[];
+  readonly kinds: readonly EntityKind[];
+}
+
+/**
+ * A case as `link` reads it: the mention's words, the kind the extractor gave it, and the
+ * company said with it, from one witness's transcript; the open account; earlier links; and the
+ * kinds the proposal type allows. A confusable-set item names one record, so the turn has no
+ * other mentions.
+ */
+export function linkerInput(
+  linkingCase: LinkingCase,
+  witness: "biased" | "unbiased" = "biased",
+): LinkerInput {
+  const reading = linkingCase[witness];
+  return {
+    mention: {
+      text: reading.mention.text,
+      kind: linkingCase.kind,
+      companyText: reading.company?.text ?? null,
+    },
+    focusEntityId: linkingCase.focusEntityId,
+    recent: linkingCase.recent,
+    turnMentions: [],
+    kinds: TARGET_KINDS[linkingCase.type],
+  };
+}
+
+/** What a linker is shown besides the mention's words. An ablation can hide any of it. */
+export interface Sees {
+  /** The account open in Earshot. */
+  readonly focus: boolean;
+  /** Records linked earlier in the session. */
+  readonly recent: boolean;
+  /** The company said with the mention, and the turn's other mentions. */
+  readonly company: boolean;
+}
+
+export const SEES_ALL: Sees = { focus: true, recent: true, company: true };
+
+/**
+ * The input with what `sees` hides cleared. Clearing it from the input, rather than only dropping
+ * its features from the model, keeps it out of everything that reads it: the family source, the
+ * prefilter's context bonus, and the features derived from it (`rivalContext`).
+ */
+export function shown(input: LinkerInput, sees: Sees): LinkerInput {
+  return {
+    mention: sees.company ? input.mention : { ...input.mention, companyText: null },
+    focusEntityId: sees.focus ? input.focusEntityId : null,
+    recent: sees.recent ? input.recent : [],
+    turnMentions: sees.company ? input.turnMentions : [],
+    kinds: input.kinds,
+  };
+}
+
+/** A `link` result as the harness scores it; an ask carries what the risk–coverage sweep needs. */
+export function asLinkDecision(result: LinkResult, delta: number): LinkDecision {
+  if (result.decision === "linked") {
+    return { decision: "linked", entityId: result.entityId, p: result.p };
+  }
+  if (result.decision === "ask") {
+    const [first, second] = result.candidates.filter((candidate) => candidate.entityId !== null);
+    const leads = first !== undefined && first.p - (second?.p ?? 0) >= delta;
+    return {
+      decision: "ask",
+      entityId: null,
+      p: result.p,
+      wouldLink: leads ? (first?.entityId ?? null) : null,
+    };
+  }
+  return { decision: result.decision, entityId: null, p: result.p };
+}
+
+/**
+ * Linker v1 with a parameter set: the committed one, or an ablation's, with what that ablation
+ * hides (`sees`). Its final decisions are its biased-only ones until WP5 adds the witness.
+ */
+export function linkerV1(
+  params: LinkerParams = LINKER_PARAMS_V1,
+  options: {
+    readonly name?: string;
+    readonly baseline?: string | null;
+    readonly sees?: Sees;
+  } = {},
+): Linker {
+  const sees = options.sees ?? SEES_ALL;
+  return {
+    name: options.name ?? params.version,
+    witness: false,
+    gate: true,
+    baseline: options.baseline === undefined ? "linking-v1.json" : options.baseline,
+    predict(cases, entities) {
+      const index = buildLinkIndex(entities);
+      return cases.map((linkingCase) => {
+        const input = shown(linkerInput(linkingCase), sees);
+        const result = link(input.mention, { ...input, index, params });
+        const decision = asLinkDecision(result, params.thresholds.delta);
+        return { id: linkingCase.id, biased: decision, final: decision, flagged: false };
+      });
+    },
+  };
+}
+
+export const LINKER_V1: Linker = linkerV1();
+
+export const LINKERS: Readonly<Record<string, Linker>> = {
+  v0: LINKER_V0,
+  v1: LINKER_V1,
+  oracle: LINKER_ORACLE,
+};

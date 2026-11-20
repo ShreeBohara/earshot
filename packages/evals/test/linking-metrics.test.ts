@@ -169,6 +169,31 @@ describe("the metrics, against a hand-worked fixture", () => {
     expect(riskCoverage(rows, "final").aurc).toBeCloseTo(2 / 9, 12);
   });
 
+  it("admit an ask that only τ_link held back, at its best candidate's p (WP3's finding)", () => {
+    const held = (wouldLink: string | null, p: number): LinkDecision => ({
+      decision: "ask",
+      entityId: null,
+      p,
+      wouldLink,
+    });
+    const rows = score(
+      [item("a", "co_001", "link"), item("b", "co_002", "link"), item("c", "co_003", "ask")],
+      [
+        prediction("a", linked("co_001", 0.95)),
+        prediction("b", held("co_009", 0.6)), // would link the wrong record at τ_link ≤ 0.6
+        prediction("c", held(null, 0.9)), // a near tie: lowering τ_link never links it
+      ],
+    );
+    const curve = riskCoverage(rows, "final", [0.9, 0.6]);
+    expect(curve.points).toEqual([
+      { threshold: 0.9, coverage: 1 / 3, risk: 0 },
+      { threshold: 0.6, coverage: 2 / 3, risk: 1 / 2 },
+    ]);
+    // a alone: risk 0; then b: 1/2. The asks aren't decided, so the metrics don't count them.
+    expect(curve.aurc).toBeCloseTo(1 / 4, 12);
+    expect(linkingMetrics(rows, "final", false).decided).toBe(1);
+  });
+
   it("bin links by equal mass for ECE", () => {
     // Links with p: i7 0.6 right, i1 0.9 right, i5 0.95 wrong; one per bin with 3 links in 10 bins.
     const { bins, ece } = reliability(ROWS, "final");

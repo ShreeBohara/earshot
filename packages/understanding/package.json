@@ -2,7 +2,7 @@
   "name": "@earshot/understanding",
   "version": "0.0.0",
   "private": true,
-  "description": "Earshot's understanding step, pure TypeScript with no DOM and no Node APIs: the name toolkit (normalization, Double Metaphone, pg_trgm-compatible trigrams, Jaro-Winkler, initials, token alignment), and later the entity linker, the witness comparison, the value normalizers, and the faithfulness check.",
+  "description": "Earshot's understanding step, pure TypeScript with no DOM and no Node APIs: the name toolkit (normalization, Double Metaphone, pg_trgm-compatible trigrams, Jaro-Winkler, initials, token alignment, the homophone list), the entity linker (the per-session index, candidates, features, a calibrated logistic model, and the link / ask / new decision), and later the witness comparison, the value normalizers, and the faithfulness check.",
   "type": "module",
   "exports": {
     "./names": "./src/names/index.ts",

@@ -16,8 +16,16 @@ export interface Parsed {
   readonly flags: Map<string, string | true>;
 }
 
-/** `--name value`, `--name=value`, and `--switch`; everything else is positional. */
-export function parseArgs(argv: readonly string[], switches: readonly string[] = []): Parsed {
+/**
+ * `--name value`, `--name=value`, and `--switch`; everything else is positional. A flag in
+ * `optional` takes the next argument as its value unless that's missing or another flag, and is
+ * otherwise set to `true`, like a switch.
+ */
+export function parseArgs(
+  argv: readonly string[],
+  switches: readonly string[] = [],
+  optional: readonly string[] = [],
+): Parsed {
   const positionals: string[] = [];
   const flags = new Map<string, string | true>();
   for (let i = 0; i < argv.length; i++) {
@@ -29,7 +37,9 @@ export function parseArgs(argv: readonly string[], switches: readonly string[] =
     const [name, inline] = arg.slice(2).split(/=(.*)/s, 2) as [string, string | undefined];
     if (switches.includes(name)) flags.set(name, true);
     else if (inline !== undefined) flags.set(name, inline);
-    else {
+    else if (optional.includes(name) && (argv[i + 1] ?? "--").startsWith("--")) {
+      flags.set(name, true);
+    } else {
       const value = argv[++i];
       if (value === undefined) throw new Error(`--${name} needs a value`);
       flags.set(name, value);

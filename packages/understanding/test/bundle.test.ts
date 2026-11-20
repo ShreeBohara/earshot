@@ -1,7 +1,7 @@
 // The edge Worker will import this package (SessionDO links in memory), so each product entry must
 // bundle the way wrangler bundles a Worker: no Node built-ins, nothing from `./testing`, and
-// `double-metaphone` carried along. The bundled `./names` then runs on its own, outside Vitest's
-// module graph.
+// `double-metaphone` carried along. The bundled `./names` and `./link` (with the linker's
+// parameters inside) then run on their own, outside Vitest's module graph.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -49,6 +49,11 @@ describe("the Worker bundle", () => {
     // Small enough to sit in the edge Worker unnoticed: today about 30 KB, unminified.
     expect(names.text.length).toBeLessThan(60_000);
 
+    // The linker carries its parameters (params.v1.json) inside the bundle.
+    const linker = result.outputFiles.find((file) => path.basename(file.path) === "link.js");
+    if (!linker) throw new Error("no link bundle");
+    expect(linker.text.length).toBeLessThan(150_000);
+
     const dir = mkdtempSync(path.join(tmpdir(), "earshot-understanding-bundle-"));
     try {
       const file = path.join(dir, "names.mjs");
@@ -59,6 +64,22 @@ describe("the Worker bundle", () => {
       };
       expect(bundled.phoneticKeys(["Knight Security"])).toEqual(["NT", "SKRT"]);
       expect(bundled.similarity("Akme", "Acme")).toBe(0.25);
+
+      const linkFile = path.join(dir, "link.mjs");
+      writeFileSync(linkFile, linker.text);
+      const { buildLinkIndex, link, LINKER_PARAMS_V1 } = (await import(
+        /* @vite-ignore */ pathToFileURL(linkFile).href
+      )) as typeof import("../src/link");
+      const index = buildLinkIndex([
+        { id: "co_1", kind: "company", name: "Knight Security", aliases: [] },
+        { id: "co_2", kind: "company", name: "Basalt Mining", aliases: [] },
+      ]);
+      const result = link(
+        { text: "Knight Security", kind: "company" },
+        { index, focusEntityId: null, recent: [], turnMentions: [], params: LINKER_PARAMS_V1 },
+      );
+      expect(LINKER_PARAMS_V1.version).toBe("linker.v1");
+      expect(result).toMatchObject({ decision: "linked", entityId: "co_1", basis: "exact" });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
