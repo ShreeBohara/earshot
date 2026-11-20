@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-20). Phase 4 WP1 built the contracts below: proposal schema v2 with its upcaster, two new event types, the protocol additions, and migration 0012. WP8 (2026-11-20) built the pipeline: tool schema v2, prompt v2, `understand()`, and `SessionDO` writing `proposal.created` v2, with the web app sending the open account and each record's parent. The second witness's message and comparison in `SessionDO` are WP9's. Amends ADR-0020 (see its "Phase 4 event types") and ADR-0025 (no CRM list, tool schema v2).
+Accepted (2026-11-20). Phase 4 WP1 built the contracts below: proposal schema v2 with its upcaster, two new event types, the protocol additions, and migration 0012. WP8 (2026-11-20) built the pipeline: tool schema v2, prompt v2, `understand()`, and `SessionDO` writing `proposal.created` v2, with the web app sending the open account and each record's parent. The second witness's message and comparison in `SessionDO` are WP9's, which built them on 2026-11-20 (ADR-0029). Amends ADR-0020 (see its "Phase 4 event types") and ADR-0025 (no CRM list, tool schema v2).
 
 ## Context and problem
 

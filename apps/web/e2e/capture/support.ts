@@ -14,11 +14,14 @@ export const LINES = [
   "They want a revised proposal with the security add-on, so move the deal to the proposal stage.",
 ] as const;
 
-/** Signs in a new user and opens the capture screen in fake mode, ready to start. */
-export async function openFakeCapture(page: Page): Promise<Locator> {
+/**
+ * Signs in a new user and opens the capture screen in fake mode, ready to start. `query` adds fake
+ * mode's other flags, such as `&script=d003` for an eval debrief.
+ */
+export async function openFakeCapture(page: Page, query = ""): Promise<Locator> {
   test.skip(Boolean(process.env.BASE_URL), "Fake mode exists only under next dev.");
   await signInAsNewUser(page);
-  await page.goto("/capture?voice=fake");
+  await page.goto(`/capture?voice=fake${query}`);
   await expect(page.getByRole("heading", { level: 1, name: "Debrief" })).toBeVisible();
   await expect(page.getByText("Fake voice (development)")).toBeVisible();
   const start = page.getByRole("button", { name: "Start debrief" });

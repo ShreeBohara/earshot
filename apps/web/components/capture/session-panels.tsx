@@ -45,8 +45,13 @@ export function SessionPanels({
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const utterances = state?.projections.utterances;
   const proposals = state?.projections.proposals;
+  // The transcript is the biased stream's: the second witness's words show only where the two
+  // disagree, on the card (Phase 4 WP9).
   const lines = useMemo(
-    () => (utterances ?? []).map((u) => ({ id: u.utteranceId, text: u.text })),
+    () =>
+      (utterances ?? [])
+        .filter((u) => u.witness !== "unbiased")
+        .map((u) => ({ id: u.utteranceId, text: u.text })),
     [utterances],
   );
   const quotes = useMemo(

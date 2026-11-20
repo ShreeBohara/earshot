@@ -15,6 +15,15 @@ import {
 import { TurnMarksRecorder } from "@/lib/capture/marks";
 import { evidenceSpans, findMentions, segmentText } from "@/lib/capture/mentions";
 import { choiceLabel, defaultSelection, providerChoices } from "@/lib/capture/providers";
+import {
+  readWitnessSetting,
+  WITNESS_COPY,
+  WITNESS_SETTING_EVENT,
+  WITNESS_SETTING_KEY,
+  witnessPromptDue,
+  witnessStatus,
+  writeWitnessSetting,
+} from "@/lib/capture/witness";
 
 const ACME: EntityRef = { id: "co_1", kind: "company", name: "Acme Corp", aliases: ["Acme"] };
 const DANA: EntityRef = { id: "ct_1", kind: "contact", name: "Dana Lee", aliases: [] };
@@ -335,5 +344,53 @@ describe("the stories' session fixture", () => {
       ["task", "proposed", "linked"],
     ]);
     expect(state.meter.costUsd).toBeCloseTo(0.00063, 9);
+  });
+});
+
+describe("the second witness's setting (decision 8)", () => {
+  const groq = [{ provider: "groq" as const }];
+  const none: { provider: "assemblyai" }[] = [{ provider: "assemblyai" }];
+
+  it("asks once per device, only with a Groq key here, and runs only on a yes", () => {
+    expect(witnessPromptDue(null, groq)).toBe(true);
+    expect(witnessPromptDue(null, none)).toBe(false); // off without a Groq key, unasked
+    expect(witnessPromptDue("off", groq)).toBe(false); // answered: never asked again
+    expect(witnessPromptDue("groq", groq)).toBe(false);
+    expect(witnessStatus(null, groq)).toBe("off"); // unanswered is off
+    expect(witnessStatus("off", groq)).toBe("off");
+    expect(witnessStatus("groq", groq)).toBe("on");
+    expect(witnessStatus("groq", none)).toBe("no_key");
+  });
+
+  it("keeps the answer in the device's storage, and tells this tab", () => {
+    const items = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, value),
+    };
+    const events = new EventTarget();
+    let told = 0;
+    events.addEventListener(WITNESS_SETTING_EVENT, () => {
+      told += 1;
+    });
+    expect(readWitnessSetting(storage)).toBeNull();
+    writeWitnessSetting("groq", { storage, events });
+    expect(items.get(WITNESS_SETTING_KEY)).toBe("groq");
+    expect(readWitnessSetting(storage)).toBe("groq");
+    expect(told).toBe(1);
+    items.set(WITNESS_SETTING_KEY, "maybe");
+    expect(readWitnessSetting(storage)).toBeNull();
+    const throwing = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+    };
+    expect(readWitnessSetting(throwing)).toBeNull();
+  });
+
+  it("says the spec's line", () => {
+    expect(WITNESS_COPY.line).toBe(
+      "Sends each turn’s audio to Groq too, about $0.001 per debrief.",
+    );
   });
 });

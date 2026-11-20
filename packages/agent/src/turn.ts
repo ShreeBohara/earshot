@@ -17,6 +17,7 @@ import { roundUsd } from "./prices";
 import { DEFAULT_RETRY_POLICY, nextRetryDelay, type RetryPolicy } from "./retry";
 import { type LinkSession, understandTurn } from "./understand";
 import { addUsage, hasTokens, type TokenUsage, ZERO_USAGE } from "./usage";
+import type { ProposalLink } from "./witness";
 
 /** What the client sees while a turn runs: SessionDO's `working` message, never logged. */
 export type WorkingState =
@@ -53,6 +54,11 @@ export interface TurnResult {
   readonly outcome: TurnOutcome;
   /** `proposal.created` v2 payloads, to append in order before the others. */
   readonly proposals: readonly ProposalCreatedV2[];
+  /**
+   * For each proposal, what its target's linker read: SessionDO keeps them with the turn, so the
+   * second witness is compared with the same context when it arrives (WP9, `witnessTurn`).
+   */
+  readonly links: readonly ProposalLink[];
   /**
    * The session's earlier links once this turn's are added, most recent first, at most 20: what
    * SessionDO keeps as `link_recent`. The input's, unchanged, when the turn proposed nothing.
@@ -144,9 +150,11 @@ export async function runTurn(input: RunTurnInput): Promise<TurnResult> {
     proposals: readonly ProposalCreatedV2[],
     failure: ExtractionError | null,
     recent: readonly string[] = session.recent,
+    links: readonly ProposalLink[] = [],
   ): TurnResult => ({
     outcome,
     proposals,
+    links,
     recent,
     usage: hasTokens(usage)
       ? {
@@ -211,11 +219,18 @@ export async function runTurn(input: RunTurnInput): Promise<TurnResult> {
           timeZone: input.timeZone,
         });
         const proposals = understood.proposals.map((draft) => ({ proposalId: newId(), ...draft }));
+        const links = proposals.flatMap((proposal, index): ProposalLink[] => {
+          const link = understood.links[index];
+          return link
+            ? [{ proposalId: proposal.proposalId, target: proposal.target, ...link }]
+            : [];
+        });
         return settle(
           proposals.length > 0 ? "proposals" : "nothing_to_propose",
           proposals,
           null,
           understood.recent,
+          links,
         );
       } catch (error) {
         if (!(error instanceof ExtractionError)) throw error;

@@ -1,4 +1,5 @@
-// `@earshot/voice`: the browser voice runtime. The pure parts have their own entries:
+// `@earshot/voice`: the browser voice runtime, the second witness included. The pure parts have
+// their own entries:
 // `@earshot/voice/machines` and `@earshot/voice/prices` (no DOM, for the edge Worker too),
 // `@earshot/voice/session` (the client session runtime), and `@earshot/voice/testing` (fakes,
 // never in production).
@@ -126,3 +127,31 @@ export {
   loadHandsFreeVad,
   VAD_ASSET_PATH,
 } from "./vad/hands-free";
+// The second witness (Phase 4 WP9): its runner, Groq Whisper, and each turn's audio
+export {
+  audioMsOf,
+  createGroqWitness,
+  encodeWav,
+  GROQ_REQUEST_TIMEOUT_MS,
+  GROQ_TRANSCRIPTIONS_URL,
+  type GroqWitnessOptions,
+  groqUtterance,
+  isTranscribed,
+  MAX_TURN_AUDIO_MS,
+  MIN_WITNESS_AUDIO_MS,
+  type TranscribeOptions,
+  TURN_AUDIO_TAIL_MS,
+  type TurnAudio,
+  TurnAudioRecorder,
+  type TurnAudioRecorderOptions,
+  TurnAudioRecording,
+  UNKNOWN_CONFIDENCE,
+  type UnbiasedUtterance,
+  WAV_HEADER_BYTES,
+  WITNESS_MODEL,
+  WITNESS_PROVIDER,
+  type WitnessFailure,
+  type WitnessLog,
+  type WitnessResult,
+  type WitnessRunner,
+} from "./witness";

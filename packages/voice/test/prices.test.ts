@@ -26,7 +26,7 @@ describe("speech-to-text prices", () => {
       audioMs: 1 * MINUTE,
       socketMs: 2.5 * MINUTE,
     });
-    expect(result).toEqual({ ok: true, costUsd: 0.007916667, priceTable: "2026-11-15" });
+    expect(result).toEqual({ ok: true, costUsd: 0.007916667, priceTable: "2026-11-20" });
   });
 
   it("drops the keyterm add-on when no keyterms were sent", () => {
@@ -56,6 +56,46 @@ describe("speech-to-text prices", () => {
     });
     expect(flux).toMatchObject({ ok: true, costUsd: 0.0078 });
     expect(findSttPrice("deepgram", "nova-3")?.billedOn).toBe("socket");
+  });
+
+  it("prices the second witness, Groq Whisper turbo, at $0.04/hr of audio with 10 s billed at least per request", () => {
+    const price = findSttPrice("groq", "whisper-large-v3-turbo");
+    expect(price).toMatchObject({
+      usdPerHour: 0.04,
+      keytermUsdPerHour: 0,
+      billedOn: "audio",
+      minBilledMsPerRequest: 10_000,
+    });
+    // A 3 s turn bills 10 s; a 15 s turn bills 15 s. Socket time means nothing to a batch request.
+    const short = priceStt({
+      provider: "groq",
+      model: "whisper-large-v3-turbo",
+      audioMs: 3_000,
+      socketMs: 0,
+    });
+    expect(short).toEqual({ ok: true, costUsd: 0.000111111, priceTable: PRICE_TABLE_DATE });
+    const long = priceStt({
+      provider: "groq",
+      model: "whisper-large-v3-turbo",
+      audioMs: 15_000,
+      socketMs: 99_000,
+    });
+    expect(long).toMatchObject({ ok: true, costUsd: 0.000166667 });
+    // Spec §4.7: a 2-minute debrief's turns bill about 100–120 s, about $0.0012.
+    const debrief = [12_000, 30_000, 8_000, 45_000, 6_000].reduce((sum, audioMs) => {
+      const turn = priceStt({
+        provider: "groq",
+        model: "whisper-large-v3-turbo",
+        audioMs,
+        socketMs: 0,
+      });
+      return sum + (turn.ok ? turn.costUsd : Number.NaN);
+    }, 0);
+    expect(debrief).toBeCloseTo((107_000 / 3_600_000) * 0.04, 8);
+    // The other rows have no minimum: a short AssemblyAI socket bills what it was open.
+    expect(findSttPrice("assemblyai", "universal-streaming-english")?.minBilledMsPerRequest).toBe(
+      undefined,
+    );
   });
 
   it("prices the fake at zero, so dev and CI sessions meter cleanly", () => {

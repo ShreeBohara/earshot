@@ -131,7 +131,8 @@ export function DockedSession() {
   useCaptureShortcuts(controller, "dock", { enabled: docked && canTalk });
 
   if (!docked) return null;
-  const utterances = state?.projections.utterances ?? [];
+  // The biased stream's lines: the second witness's never stand in for what was heard.
+  const utterances = (state?.projections.utterances ?? []).filter((u) => u.witness !== "unbiased");
   return (
     <>
       {/* Keeps the page's end clear of the fixed bar. */}

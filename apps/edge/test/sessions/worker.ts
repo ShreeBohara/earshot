@@ -8,6 +8,7 @@
 //   them and scan them for leaks. `failSink` makes the recorder throw.
 import { type Cassette, cassette, createCassetteFetch } from "@earshot/agent/testing";
 import type { LlmProvider } from "@earshot/core";
+import { evalCassette } from "@earshot/evals/cassettes";
 import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
 import { productionAgent, withFetch } from "../../src/agent";
 import { demoCassette } from "../../src/e2e";
@@ -50,13 +51,14 @@ export function recordedFlushes(sql: SqlStorage): FlushMessage[] {
 
 /**
  * The cassette a session's next turn replays: `<scenario>` for one of `@earshot/agent`'s
- * scenarios, `<scenario>:slow` for the same answers 400 ms late, or every demo turn by default.
+ * scenarios, or `d001`–`d030` for an eval script's (`@earshot/evals`); `:slow` for the same
+ * answers 400 ms late; or every demo turn by default.
  */
 function sessionCassette(sql: SqlStorage, provider: LlmProvider): Cassette {
   const choice = testSetting(sql, "cassette");
   if (!choice) return demoCassette(provider);
   const [name = "", mode] = choice.split(":");
-  const chosen = cassette(provider, name);
+  const chosen = /^d\d{3}$/.test(name) ? evalCassette(provider, name) : cassette(provider, name);
   if (mode !== "slow") return chosen;
   return {
     ...chosen,

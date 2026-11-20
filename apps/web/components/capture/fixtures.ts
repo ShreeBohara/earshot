@@ -195,6 +195,40 @@ export function demoState(options: { reviewed?: boolean; lines?: number } = {}) 
 
 export const PROPOSALS: readonly ProposalView[] = demoState().projections.proposals;
 
+/**
+ * The task about "Dana" after the second witness heard "Donna" there (Phase 4 WP9): the link by
+ * sound became a question, flagged, with the two readings.
+ */
+export const WITNESS_CONFLICT: ProposalView = (() => {
+  const task = PROPOSALS[2];
+  if (!task?.target.mention) throw new Error("the fixture's task has no mention");
+  return {
+    ...task,
+    targetEntityId: null,
+    target: {
+      ...task.target,
+      decision: "ask",
+      entityId: null,
+      candidates: [
+        { entityId: "ct_145", p: 0.81 },
+        { entityId: null, p: 0.6 },
+      ],
+    },
+    riskFlags: [...task.riskFlags, { kind: "witness_conflict", field: "target" }],
+    conflicts: [
+      {
+        field: "target",
+        biased: { text: "Dana", evidence: task.target.mention.evidence },
+        unbiased: {
+          text: "Donna",
+          utteranceId: "01a1c6e2-f5b8-7d83-a268-13560deb2999",
+          audioMs: [2_100, 2_380],
+        },
+      },
+    ],
+  };
+})();
+
 export const QUOTES: ReadonlyMap<string, string> = new Map(
   LINES.map((text, index) => [UTTERANCE_IDS[index] ?? "", text]),
 );

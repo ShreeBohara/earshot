@@ -1,9 +1,14 @@
 // Wires a voice engine to a SessionClient: finals go out as `utterance`, turn ends as `turn_end`
 // with this turn's LLM key, and closed speech sockets as `usage`. Partials, levels, and engine
 // states stay on the device: they're for the screen, never for SessionDO (spec §4.1).
+//
+// With a second witness (Phase 4 WP9), each turn whose `turn_end` went out is handed to it with
+// the turn's audio (`turn_audio`, which never leaves the browser but for the witness's provider)
+// and the span of its finals, and it sends the turn's `witness` message itself.
 import type { LlmProvider } from "@earshot/core";
 import type { VoiceEngine } from "../engine";
 import type { SessionClient } from "./client";
+import type { SessionWitness } from "./witness";
 
 export interface EngineBridgeOptions {
   /** The LLM the turn's extraction uses. */
@@ -13,6 +18,11 @@ export interface EngineBridgeOptions {
    * device holds none: the turn isn't sent, and the screen gets a `missing_key` issue.
    */
   readonly key: () => string | undefined;
+  /**
+   * The session's second witness, shared by every engine the session runs. Without one, no turn
+   * gets a `witness` message.
+   */
+  readonly witness?: Pick<SessionWitness, "finalHeard" | "turnEnded" | "turnDropped" | "turnAudio">;
 }
 
 /** Sends the engine's finals, turn ends, and usage through `client`. Returns the unsubscribe. */
@@ -21,25 +31,34 @@ export function connectEngine(
   client: Pick<SessionClient, "sendUtterance" | "sendTurnEnd" | "sendUsage" | "reportIssue">,
   options: EngineBridgeOptions,
 ): () => void {
+  const { witness } = options;
   return engine.on((event) => {
     switch (event.type) {
       case "final":
         client.sendUtterance(event.turnId, event.utterance);
+        witness?.finalHeard(event.turnId, event.utterance);
         return;
       case "turn_end": {
         const key = options.key();
         if (!key) {
           client.reportIssue({ code: "missing_key", retryable: false });
+          witness?.turnDropped(event.turnId);
           return;
         }
-        client.sendTurnEnd({
+        const msgId = client.sendTurnEnd({
           turnId: event.turnId,
           trigger: event.trigger,
           llm: options.llm(),
           key,
         });
+        // The witness follows its turn's `turn_end` into the outbox, never ahead of it.
+        if (msgId === null) witness?.turnDropped(event.turnId);
+        else witness?.turnEnded(event.turnId);
         return;
       }
+      case "turn_audio":
+        witness?.turnAudio(event.turnId, event.audio);
+        return;
       case "usage":
         client.sendUsage(event);
         return;

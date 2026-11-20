@@ -1,6 +1,7 @@
 // `@earshot/voice/session`: the client session runtime (spec WP8). `SessionClient` speaks the
 // session socket protocol to SessionDO and folds its events into a `SessionStore` the screen
-// subscribes to; the store also takes a recorded log, for `/demo`'s replay.
+// subscribes to; the store also takes a recorded log, for `/demo`'s replay. `SessionWitness`
+// runs the second witness on each turn's audio and sends its transcript (Phase 4 WP9).
 export {
   createSessionClient,
   type MessageAck,
@@ -8,6 +9,7 @@ export {
   type SendStartInput,
   type SendTurnEndInput,
   type SendUsageInput,
+  type SendWitnessInput,
   SessionClient,
   type SessionClientOptions,
   SessionClosedError,
@@ -53,3 +55,11 @@ export {
   type TicketFetcherOptions,
   type TicketRouteFailure,
 } from "./ticket";
+export {
+  fitWitnessUtterance,
+  SessionWitness,
+  type SessionWitnessOptions,
+  TURN_AUDIO_WAIT_MS,
+  WITNESS_WINDOW_MARGIN_MS,
+  type WitnessSetup,
+} from "./witness";

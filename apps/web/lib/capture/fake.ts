@@ -4,7 +4,7 @@
 // behind `process.env.NODE_ENV === "development"`, which production builds replace with false;
 // the Worker bundle check fails if it ever reaches a bundle (scripts/check-worker-bundle.mjs).
 import type { EntityRef, LlmProvider, SessionProviders } from "@earshot/core";
-import type { SttAdapter, TempCredential } from "@earshot/voice";
+import type { SttAdapter, TempCredential, WitnessRunner } from "@earshot/voice";
 
 /**
  * The e2e scenario that `wrangler dev src/e2e.ts` serves (apps/edge/src/e2e.ts): a scripted
@@ -43,6 +43,11 @@ export interface FakeVoice {
   credential(): TempCredential;
   /** How long to hold push-to-talk for a whole line to be heard. */
   readonly holdMs: number;
+  /**
+   * The scripted second witness, when the page asked for one (`FAKE_WITNESS_GLOBAL`); null runs
+   * the session with the witness off. It never looks at the audio, and nothing leaves the page.
+   */
+  createWitness(): WitnessRunner | null;
 }
 
 /** The query flag that asks for fake mode under `next dev`: `/capture?voice=fake`. */
@@ -93,3 +98,14 @@ export interface FakeVoiceStats {
 }
 
 export const FAKE_STATS_GLOBAL = "__earshotFakeVoiceStats";
+
+/**
+ * What the second witness hears in fake mode, for the e2e test of a mishearing: one entry per
+ * press, its transcript, or null for the line as said. A test puts it on the page before the page
+ * loads, in `globalThis[FAKE_WITNESS_GLOBAL]`; without it, fake mode runs no witness.
+ */
+export interface FakeWitnessScript {
+  readonly turns: readonly (string | null)[];
+}
+
+export const FAKE_WITNESS_GLOBAL = "__earshotFakeWitness";

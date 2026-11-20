@@ -31,6 +31,7 @@ import {
   ticketSubprotocol,
   type UtteranceFinalV2,
   uuidv7,
+  type WitnessReason,
 } from "@earshot/core";
 import type { EventRegistry, SessionEvent } from "@earshot/events";
 import { type BackoffOptions, backoffDelay } from "../machines/backoff";
@@ -52,6 +53,7 @@ import {
   type SocketLike,
   systemClock,
 } from "../stt/socket";
+import type { UnbiasedUtterance } from "../witness/runner";
 import { browserPageLifecycle, type PageEvent, type PageLifecycle } from "./lifecycle";
 import { Outbox, type OutboxItem, type OutboxMessage } from "./outbox";
 import { type ConnectionView, type SessionIssue, SessionStore } from "./store";
@@ -140,6 +142,22 @@ export interface SendUsageInput {
   readonly audioMs: number;
   readonly socketMs: number;
 }
+
+/**
+ * A turn's second witness (Phase 4 WP9): its unbiased transcript, or why there's none. The audio
+ * and the witness's key went from the browser to its provider; neither is here.
+ */
+export type SendWitnessInput = {
+  readonly turnId: string;
+  /** The witness's provider and model, such as `groq` and `whisper-large-v3-turbo`. */
+  readonly provider: string;
+  readonly model: string;
+  /** How long the witness took, by the client's clock. */
+  readonly latencyMs?: number;
+} & (
+  | { readonly outcome: "transcribed"; readonly utterance: UnbiasedUtterance }
+  | { readonly outcome: "failed" | "skipped"; readonly reason: WitnessReason }
+);
 
 /** What SessionDO answered a message with. */
 export interface MessageAck {
@@ -346,6 +364,28 @@ export class SessionClient {
       audioMs: Math.max(0, Math.round(input.audioMs)),
       socketMs: Math.max(0, Math.round(input.socketMs)),
     });
+  }
+
+  /**
+   * A turn's second witness, after that turn's `turn_end`: SessionDO compares it with the turn's
+   * proposals and flags where the two witnesses disagree.
+   */
+  sendWitness(input: SendWitnessInput): string | null {
+    const base = {
+      t: "witness" as const,
+      msgId: this.#createId(),
+      turnId: input.turnId,
+      provider: input.provider,
+      model: input.model,
+      ...(input.latencyMs === undefined
+        ? {}
+        : { latencyMs: Math.max(0, Math.round(input.latencyMs)) }),
+    };
+    return this.#enqueue(
+      input.outcome === "transcribed"
+        ? { ...base, outcome: "transcribed", utterance: input.utterance }
+        : { ...base, outcome: input.outcome, reason: input.reason },
+    );
   }
 
   /** One turn's latency marks, on the client's clock; SessionDO records `turn.measured`. */

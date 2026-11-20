@@ -2,6 +2,7 @@
 // LLM in SessionDO) implements it now; the Conversation engine (speech-to-speech, WP12) later.
 import type { UtteranceFinalV2 } from "@earshot/core";
 import type { EngineState, TurnTrigger, VoiceErrorCode } from "./codes";
+import type { TurnAudio } from "./witness/turn-audio";
 
 export type VoiceEvent =
   /** A live transcript for the UI only; never sent to SessionDO. Times in session audio ms. */
@@ -10,6 +11,13 @@ export type VoiceEvent =
   | { type: "final"; turnId: string; utterance: UtteranceFinalV2 }
   /** The turn's speech is over and its finals have all been emitted. */
   | { type: "turn_end"; turnId: string; trigger: TurnTrigger }
+  /**
+   * The turn's audio, for the second witness: only from an engine that records it
+   * (`turnAudio`), once per `turn_end` and right after it, or as soon as the audio's tail is in.
+   * Null for a turn with no audio of its own (a late final delivered as a turn). Never sent to
+   * SessionDO: the browser sends it to the witness's provider itself.
+   */
+  | { type: "turn_audio"; turnId: string; audio: TurnAudio | null }
   /** Levels for the orb, 0 to 1, about 31 times a second. */
   | { type: "level"; mic: number; agent: number }
   /** Conversation engine only. */

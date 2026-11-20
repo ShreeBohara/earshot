@@ -26,3 +26,9 @@ export {
   fakeCredential,
   spreadWords,
 } from "./fake-stt";
+export {
+  createFakeWitness,
+  type FakeWitness,
+  type FakeWitnessOptions,
+  type FakeWitnessTurn,
+} from "./fake-witness";

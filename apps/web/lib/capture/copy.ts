@@ -168,6 +168,19 @@ export function riskLabel(flag: RiskFlagV2): string {
   return `${label}: ${fieldLabel(flag.field).toLowerCase()}`;
 }
 
+/**
+ * A conflict between the two witnesses (Phase 4 WP9): the live transcript's words, and what the
+ * second witness heard over the same audio. Phase 4's tray only shows it; Phase 5 resolves it.
+ */
+export const CONFLICT_COPY = {
+  pill: "Heard two ways",
+  list: "Where the transcripts disagree",
+  biased: "Live transcript",
+  unbiased: "Second witness",
+  /** The second witness had no words there. */
+  unheard: "nothing",
+} as const;
+
 /** A question names candidates at least this likely, or the most likely one alone. */
 export const ASK_MIN_P = 0.05;
 

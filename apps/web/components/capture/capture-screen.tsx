@@ -7,8 +7,10 @@ import { captureErrorKind } from "@earshot/voice/machines";
 import { FlaskConicalIcon, PauseIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { linkButton } from "@/components/link-button";
+import type { WitnessView } from "@/lib/capture/controller";
 import type { FakeVoice, FakeVoiceSetup } from "@/lib/capture/fake";
 import { defaultSelection, type ProviderSelection, providerChoices } from "@/lib/capture/providers";
+import { WITNESS_COPY, witnessPromptDue } from "@/lib/capture/witness";
 import {
   CaptureNotice,
   FakeEdgeNotice,
@@ -32,6 +34,8 @@ import {
 } from "./session-provider";
 import { ShortcutsDialog } from "./shortcuts-dialog";
 import { useCaptureShortcuts } from "./use-capture-shortcuts";
+import { useWitnessSetting } from "./use-witness-setting";
+import { WitnessPrompt } from "./witness-prompt";
 
 /** The rep's choice to hear confirmations, per device. Off unless they turn it on. */
 const SPEAK_PREFERENCE = "earshot.capture.speak";
@@ -43,6 +47,40 @@ const RUNNING = new Set([
   "reconnecting",
   "provider_unavailable",
 ]);
+
+/** The session's second witness in a line (Phase 4 WP9), and how many names it disagreed on. */
+function WitnessStatus({ witness, conflicts }: { witness: WitnessView; conflicts: number }) {
+  const text =
+    witness.status === "on"
+      ? witness.source === "fake"
+        ? WITNESS_COPY.status.fake
+        : WITNESS_COPY.status.on
+      : WITNESS_COPY.status[witness.status];
+  return (
+    <p className="text-muted-foreground text-xs" data-slot="witness-status">
+      {text}
+      {witness.status === "on" && conflicts > 0 ? (
+        <>
+          {" "}
+          · <span className="font-mono tabular-nums">{conflicts}</span>{" "}
+          {conflicts === 1 ? "name heard two ways" : "names heard two ways"}
+        </>
+      ) : null}
+      {witness.source === "groq" ? (
+        <>
+          {" "}
+          ·{" "}
+          <CaptureLink
+            href="/settings/capture"
+            className="rounded-sm underline underline-offset-4 outline-none hover:text-foreground focus-visible:focus-ring"
+          >
+            Change
+          </CaptureLink>
+        </>
+      ) : null}
+    </p>
+  );
+}
 
 /**
  * The capture screen (spec WP9): pick providers from the keys on this device, start, and hold to
@@ -57,6 +95,7 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
   const [helpOpen, setHelpOpen] = useState(false);
   const [picked, setPicked] = useState<ProviderSelection | null>(null);
   const [fakeVoice, setFakeVoice] = useState<FakeVoice | null>(null);
+  const [witnessSetting, saveWitnessSetting] = useWitnessSetting();
 
   useEffect(() => {
     void controller.loadKeys();
@@ -88,6 +127,15 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
 
   const keys = ui.keys.status === "ready" ? ui.keys.keys : [];
   const choices = useMemo(() => providerChoices(keys), [keys]);
+  // Turns the second witness disagreed on, from SessionDO's `turn.witnessed` events.
+  const witnessConflicts = useMemo(
+    () =>
+      (state?.events ?? []).reduce(
+        (sum, event) => (event.type === "turn.witnessed" ? sum + event.payload.conflicts : sum),
+        0,
+      ),
+    [state],
+  );
   const selection = picked ?? defaultSelection(choices);
   const fakeMode = fakeSetup !== null;
   const canStart =
@@ -178,6 +226,9 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
               disabled={ui.phase === "starting"}
             />
           )}
+          {!fakeMode && witnessPromptDue(witnessSetting, keys) ? (
+            <WitnessPrompt onAnswer={saveWitnessSetting} />
+          ) : null}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <Button size="lg" onClick={start} disabled={!canStart}>
               {ui.phase === "starting" ? "Starting…" : "Start debrief"}
@@ -213,6 +264,9 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
               <p className="font-medium" data-slot="capture-status">
                 {captureStatus(ui)}
               </p>
+              {ui.witness ? (
+                <WitnessStatus witness={ui.witness} conflicts={witnessConflicts} />
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"

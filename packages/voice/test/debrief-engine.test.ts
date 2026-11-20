@@ -664,3 +664,154 @@ describe("the session audio clock", () => {
     expect(h.fake.stats().baseOffsetsMs).toEqual([90_000, 90_000, 91_816]);
   });
 });
+
+describe("each turn's audio for the second witness (turnAudio)", () => {
+  /** Records every sample the fake provider's sockets get, in order. */
+  function tapSent(h: Harness): number[] {
+    const sent: number[] = [];
+    const original = h.fake.connect.bind(h.fake);
+    h.fake.connect = async (options) => {
+      const connection = await original(options);
+      const send = connection.send.bind(connection);
+      connection.send = (pcm) => {
+        sent.push(...pcm);
+        send(pcm);
+      };
+      return connection;
+    };
+    return sent;
+  }
+
+  it("follows each turn_end with the turn's audio: the press to the release plus 200 ms, on the session's clock", async () => {
+    const h = harness({ turnAudio: true, audioClockStartMs: 90_000 });
+    const sent = tapSent(h);
+    await h.start();
+    await h.talk(512, 0); // before the press, in whole frames: no turn's
+    await press(h, 1_800);
+    expect(h.story()).toEqual(["final 1 Acme renewed for two years", "turn_end 1 ptt_release"]);
+    expect(h.of("turn_audio")).toEqual([]); // its 200 ms tail is still coming in
+    await h.talk(320, 0);
+    const [event] = h.of("turn_audio");
+    expect(event?.turnId).toBe(h.of("turn_end")[0]?.turnId);
+    const audio = event?.audio;
+    // The press's 1,792 ms of whole frames, then 200 ms after the release: the press's last
+    // partial frame (8 ms), and 192 ms the speech stream never got.
+    expect(audio).toMatchObject({ startMs: 90_000, durationMs: 1_992 });
+    expect(audio?.pcm?.length).toBe(31_872);
+    // Sample for sample what the biased stream heard, so word times line up between the two.
+    expect(Array.from(audio?.pcm?.subarray(0, 28_800) ?? [])).toEqual(sent.slice(0, 28_800));
+    // turn_audio comes once, after its turn_end.
+    const order = h.events.flatMap((e) =>
+      e.type === "turn_end" || e.type === "turn_audio" ? [e.type] : [],
+    );
+    expect(order).toEqual(["turn_end", "turn_audio"]);
+
+    // The next turn starts where the clock is: after turn 1's audio and its 12 ms of padding.
+    await h.clock.advance(2_000);
+    await press(h, 1_600);
+    await h.talk(320, 0);
+    expect(h.of("turn_audio")[1]?.audio).toMatchObject({ startMs: 91_812 });
+  });
+
+  it("keeps no audio, and emits no turn_audio, without turnAudio", async () => {
+    const h = harness();
+    await h.start();
+    await press(h, 1_800);
+    await h.talk(320, 0);
+    expect(h.of("turn_end")).toHaveLength(1);
+    expect(h.of("turn_audio")).toEqual([]);
+  });
+
+  it("drops a turn's audio past the cap, and says how long the turn ran", async () => {
+    const h = harness({ turnAudio: { maxMs: 1_000 } });
+    await h.start();
+    await press(h, 1_800);
+    await h.talk(320, 0);
+    expect(h.of("turn_audio")[0]?.audio).toEqual({ startMs: 0, durationMs: 1_992, pcm: null });
+  });
+
+  it("gives a late final's turn no audio of its own", async () => {
+    const h = harness({ turnAudio: true, fake: { faults: { finalDelayMs: 4_000 } } });
+    await h.start();
+    await press(h, 1_800);
+    await h.talk(320, 0);
+    await h.clock.advance(1_500);
+    await h.clock.advance(2_500);
+    expect(h.story()).toEqual([
+      "turn_end 1 ptt_release",
+      "final 2 Acme renewed for two years",
+      "turn_end 2 manual",
+    ]);
+    const audio = h.of("turn_audio");
+    expect(audio.map((event) => event.audio === null)).toEqual([false, true]);
+  });
+
+  it("ends a turn's tail when capture stops, and still sends its audio", async () => {
+    const h = harness({ turnAudio: true });
+    await h.start();
+    h.engine.pushToTalk(true);
+    await h.talk(1_800);
+    const stopping = h.engine.stop();
+    await h.clock.advance(0);
+    await h.clock.advance(2_000);
+    await stopping;
+    expect(h.of("turn_audio")).toHaveLength(1);
+    expect(h.of("turn_audio")[0]?.audio?.durationMs).toBeGreaterThanOrEqual(1_792);
+  });
+
+  it("cuts hands-free turns at each turn end, the next starting where the last one stopped", async () => {
+    const h = harness({ turnAudio: true, fake: { timeline: "absolute", endpointingMs: 600 } });
+    await h.start();
+    await h.engine.setHandsFree(true);
+    h.vad.speechStart();
+    await h.talk(3_300);
+    expect(h.story()).toEqual(["final 1 Acme renewed for two years", "turn_end 1 provider_eot"]);
+    const [first] = h.of("turn_audio");
+    expect(first?.audio?.startMs).toBe(0);
+    const firstEnd = (first?.audio?.startMs ?? 0) + (first?.audio?.durationMs ?? 0);
+    await h.talk(3_900);
+    expect(h.story().at(-1)).toBe("turn_end 2 provider_eot");
+    const second = h.of("turn_audio")[1]?.audio;
+    expect(second?.startMs).toBe(firstEnd);
+    expect(second?.pcm?.length).toBe((second?.durationMs ?? 0) * 16);
+  });
+
+  it("splits a hands-free turn just past its last word when the next sentence starts before the end of turn lands", async () => {
+    const script = {
+      turns: [
+        { text: "Acme renewed for two years", startMs: 1_000, endMs: 2_600 },
+        { text: "Initech wants a demo", startMs: 2_900, endMs: 4_400 },
+      ],
+    };
+    // Each end of turn comes 1 s after the turn's last word: turn 1's, 700 ms into turn 2.
+    const h = harness({
+      turnAudio: true,
+      fake: { script, timeline: "absolute", endpointingMs: 1_000 },
+    });
+    const sent = tapSent(h);
+    await h.start();
+    await h.engine.setHandsFree(true);
+    h.vad.speechStart();
+    await h.talk(3_700);
+    expect(h.story()).toEqual(["final 1 Acme renewed for two years", "turn_end 1 provider_eot"]);
+    const firstWordsEnd = h.of("final")[0]?.utterance.endMs ?? Number.NaN;
+    expect(firstWordsEnd).toBeLessThanOrEqual(2_600);
+    // To the last word's end and its 200 ms tail, not to where the end of turn found the capture
+    // (3,600 ms, well into turn 2).
+    const split = firstWordsEnd + 200;
+    expect(h.of("turn_audio")[0]?.audio).toMatchObject({ startMs: 0, durationMs: split });
+    await h.talk(1_800);
+    expect(h.story().slice(-2)).toEqual([
+      "final 2 Initech wants a demo",
+      "turn_end 2 provider_eot",
+    ]);
+    const secondWordsEnd = h.of("final")[1]?.utterance.endMs ?? Number.NaN;
+    const second = h.of("turn_audio")[1]?.audio;
+    expect(second).toMatchObject({ startMs: split, durationMs: secondWordsEnd + 200 - split });
+    // "Initech", from 2,900 ms, is the second turn's to check: its audio, sample for sample.
+    expect(split).toBeLessThan(2_900);
+    expect(Array.from(second?.pcm?.subarray(0, 1_000 * 16) ?? [])).toEqual(
+      sent.slice(split * 16, (split + 1_000) * 16),
+    );
+  });
+});
