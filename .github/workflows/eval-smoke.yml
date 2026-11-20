@@ -14,8 +14,8 @@ name: eval-smoke
 # - it paces requests at 60 a minute at most, after a slow start;
 # - the log and the report hold numbers only: no key, prompt, transcript, or model output.
 #
-# It runs on pull requests that touch the prompt, the agent, or the understanding code (the
-# `changes` job decides, so a required `eval-smoke` check passes when it's skipped), and by hand.
+# It runs on pull requests that touch anything the live run executes or reads (the `changes` job
+# decides, so a required `eval-smoke` check passes when it's skipped), and by hand.
 # By hand, `baseline` records the three-run baseline instead, as an artifact to review and commit.
 # While EVAL_SMOKE_ENABLED isn't "true", both jobs are skipped, and a skipped job counts as passing
 # for a required check, as ci's and eval's do.
@@ -51,9 +51,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      # What the live model's answers pass through (spec WP11 step 3): the prompt and the adapters,
-      # the linker, normalizers, and witness, and the smoke set and runner; plus the smoke eval's
-      # own CLI, its baseline, and this workflow.
+      # Everything the live run executes or reads, beyond the spec's paths (WP11 step 3): the
+      # prompt and adapters, the contracts, the linker, normalizers, and witness, the demo CRM, the
+      # price table, the evals code the runner and scoring share with WP10, the debriefs, and the
+      # smoke set; plus the smoke CLI, its baseline, and this workflow. Tests and the offline
+      # cassettes don't count. (Codex found the first filter missed the shared runner, #50.)
       - id: paths
         env:
           EVENT: ${{ github.event_name }}
@@ -63,7 +65,7 @@ jobs:
             echo "smoke=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          pattern='^(packages/agent/src/|packages/understanding/|packages/evals/(smoke\.json|src/smoke/|scripts/(eval|baseline)-smoke\.ts|baselines/smoke-)|\.github/workflows/eval-smoke\.yml)'
+          pattern='^(packages/(agent|core)/src/|packages/understanding/|packages/demo-crm/|packages/voice/src/prices\.ts|packages/evals/(smoke\.json|src/|debriefs/|scripts/((eval|baseline)-smoke|smoke-io|understanding-io|args)\.ts|baselines/smoke-)|\.github/workflows/eval-smoke\.yml)'
           if git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE "$pattern"; then
             echo "smoke=true" >> "$GITHUB_OUTPUT"
             echo "This PR touches what the live smoke eval measures."

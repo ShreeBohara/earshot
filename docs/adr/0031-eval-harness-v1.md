@@ -275,7 +275,7 @@ Tier (c): 30 debriefs as text through the live model, scored by the metrics abov
 
 **The workflow (`.github/workflows/eval-smoke.yml`).**
 
-- **Triggers:** every pull request, plus `workflow_dispatch`. A `changes` job decides from the spec's paths, plus the smoke CLI, its baseline, and the workflow itself.
+- **Triggers:** every pull request, plus `workflow_dispatch`. A `changes` job runs it when a PR touches anything the live run executes or reads. That's the spec's paths, plus the contracts, the demo CRM, the price table, the evals code the runner and scoring share with WP10, the debriefs, the smoke CLI, its baseline, and the workflow itself. Tests and the offline cassettes don't trigger it. Codex found that the first filter missed the shared runner (#50).
 - **Gating:** both jobs carry the spec's `if:`, so with `EVAL_SMOKE_ENABLED` unset everything is skipped, and a skipped `eval-smoke` passes a required check. The key reaches only the step that calls the model, in the `eval-smoke` environment.
 - **Steps:** the budget guard runs first, with no key. The report goes to the job summary and an artifact, as numbers, ids, and fixed codes only.
 - **The baseline by hand:** `workflow_dispatch` with `baseline` records the three runs as an artifact to review and commit.

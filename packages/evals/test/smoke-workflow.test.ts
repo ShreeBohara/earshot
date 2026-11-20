@@ -271,7 +271,7 @@ describe("the eval-smoke workflow", () => {
     expect(jobs["eval-smoke"]?.needs).toBe("changes");
   });
 
-  it("decides what to run on the spec's paths, and its own", () => {
+  it("decides what to run on everything the live run executes or reads, and its own", () => {
     const run = jobs.changes?.steps.find((step) => step.id === "paths")?.run ?? "";
     const quoted = /pattern='([^']+)'/.exec(run)?.[1];
     if (!quoted) throw new Error("no path pattern");
@@ -286,14 +286,26 @@ describe("the eval-smoke workflow", () => {
       "packages/evals/scripts/eval-smoke.ts",
       "packages/evals/baselines/smoke-anthropic.json",
       ".github/workflows/eval-smoke.yml",
+      // What the smoke runner and its scoring share with WP10's offline eval, and its inputs.
+      "packages/evals/src/understanding/run.ts",
+      "packages/evals/src/understanding/metrics.ts",
+      "packages/evals/src/schema.ts",
+      "packages/evals/scripts/smoke-io.ts",
+      "packages/evals/debriefs/d003.json",
+      "packages/evals/debriefs/generated/d033.json",
+      "packages/core/src/contracts/session-protocol.ts",
+      "packages/demo-crm/src/companies.ts",
+      "packages/voice/src/prices.ts",
     ]) {
       expect(pattern.test(path), path).toBe(true);
     }
     for (const path of [
       "packages/agent/test/requests.test.ts",
       "packages/agent/cassettes/anthropic.json",
-      "packages/evals/src/understanding/run.ts",
+      "packages/evals/test/understanding.test.ts",
+      "packages/evals/cassettes/understanding/anthropic.json",
       "packages/evals/baselines/understanding.json",
+      "packages/voice/src/engines/debrief/debrief-engine.ts",
       "apps/web/app/page.tsx",
       "README.md",
     ]) {
