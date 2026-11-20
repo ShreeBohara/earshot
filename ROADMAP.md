@@ -2,7 +2,7 @@
 
 Earshot v2 is a rebuild in ten phases. Each phase ships something that can be demoed and ends with a pass/fail gate. Targets such as latency and error rates are goals, not results.
 
-**Current status:** Phase 1 (reset and foundations) is in progress.
+**Current status (2026-11-20):** Phases 1–4 are built and merged, and Phase 5 is next. Nothing is deployed yet, and the checks that need live providers wait on the maintainer's keys. Each phase's status note says what shipped, what moved, and what's still to run.
 
 The core loop is **capture, understand, verify, sync, remember**. The design principles behind it are in the README, and the decisions are in [docs/adr](docs/adr/README.md).
 
@@ -23,6 +23,8 @@ The core loop is **capture, understand, verify, sync, remember**. The design pri
 - A PR spins up the web app, the edge Worker, and its own database branch.
 - Storybook is published with the tokens and core components.
 
+**Status:** built. The Fumadocs site (`apps/docs`) was cut. Per-PR environments, deploys, and the published Storybook wait on the Cloudflare, Neon, and Chromatic accounts and their secrets.
+
 ## Phase 2: Event-sourced core, auth, and data (weeks 3-5)
 
 **Goal.** The backbone everything writes to: users, encrypted keys, a replayable event log, and tenant isolation you can prove.
@@ -39,6 +41,8 @@ The core loop is **capture, understand, verify, sync, remember**. The design pri
 - The isolation tests pass in CI: one user sees none of another user's data.
 - Replaying a session file rebuilds identical projections.
 - Tests show that no response or log contains a key, and that the server never stores an AI key unless the vault is on.
+
+**Status:** built; the gate's tests run in CI. Real Neon and Cloudflare are unverified until the first deploy.
 
 ## Phase 3: Voice engine v2 and the capture experience (weeks 6-8)
 
@@ -58,6 +62,8 @@ The core loop is **capture, understand, verify, sync, remember**. The design pri
 - A forced network drop loses no events.
 - The fake-microphone end-to-end test runs in CI.
 
+**Status:** built, except the Conversation engine (speech-to-speech), which was cut. The fake-microphone eval and the network-drop test run in CI. The provider spike and the latency gate need the maintainer's keys (about $1), and the release waits on a deploy.
+
 **Release:** v2.0-alpha.
 
 ## Phase 4: Understanding: proposals, entity linking, two witnesses (weeks 9-11)
@@ -76,6 +82,12 @@ The core loop is **capture, understand, verify, sync, remember**. The design pri
 - On the confusable-name set, the wrong-account rate is at most 2% while still deciding at least 85% of cases.
 - Every proposal field carries evidence.
 - The CI eval gate is live.
+
+**Status:** built. On the confusable-name set's test split, linker v1 with the second witness decides 86.9% of mentions with a 0.6% wrong-account rate (gate G1a). The $0 gates run in CI's required `checks` job. What moved and what's still to run:
+- Moved to Phase 5: `ask_followup`, follow-up drafts, and the methodology lenses (spec WP14, cut first).
+- Moved to Phase 6: embeddings and Postgres search, with the mirror's sync (spec WP13, cut second). The linker uses aliases, sound, trigrams, and context.
+- The regression gate on all 200 debriefs runs at $0 on offline cassettes. The live smoke eval on a real model is built but off until the maintainer adds its key.
+- Waiting on the maintainer: the live smoke eval's baseline (about $0.15), the second witness's live check (under $0.01), and confusion mining on real speech-to-text (under $0.50).
 
 ## Phase 5: The trust layer: review inbox and approval policies (weeks 12-13)
 
