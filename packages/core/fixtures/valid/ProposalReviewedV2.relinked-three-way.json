@@ -1,0 +1,47 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d10",
+  "proposalId": "01a1c6e2-e5dc-79b1-a045-4bf227d9db20",
+  "decision": "approved",
+  "target": {
+    "entityId": "crm-deal-4412"
+  },
+  "mode": "single",
+  "batchId": null,
+  "policy": null,
+  "undoes": null,
+  "reason": null,
+  "seen": {
+    "tier": "loud",
+    "fields": {
+      "amount": {
+        "proposed": 80000,
+        "base": 60000,
+        "current": 72000
+      },
+      "closeDateConfirmed": {
+        "proposed": false,
+        "base": null
+      }
+    },
+    "target": {
+      "entityId": null,
+      "offered": [null]
+    },
+    "relinked": "crm-deal-4412",
+    "clip": "available"
+  },
+  "timing": {
+    "decisionMs": 9100,
+    "handlingMs": 9100
+  },
+  "input": "keyboard",
+  "surface": "inbox",
+  "syncEligibleAt": "2026-11-20T21:08:30.000Z",
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": {
+      "method": "unknown",
+      "signedInAt": "2026-11-19T22:00:00.000Z"
+    }
+  }
+}

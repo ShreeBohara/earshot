@@ -1,0 +1,11 @@
+{
+  "snoozeId": "01a1c6e4-2c30-7d4e-8f5a-6b7c8d9e0f01",
+  "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": {
+      "method": "passkey",
+      "signedInAt": "2026-11-20T08:12:40.000Z"
+    }
+  }
+}

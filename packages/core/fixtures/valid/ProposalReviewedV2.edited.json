@@ -1,0 +1,52 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d03",
+  "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
+  "decision": "edited",
+  "target": null,
+  "editDiff": {
+    "title": {
+      "before": "Send Dana the pricing breakdown",
+      "after": "Send Dana the pricing breakdown for the security add-on"
+    },
+    "priority": {
+      "before": null,
+      "after": "high"
+    }
+  },
+  "mode": "single",
+  "batchId": null,
+  "policy": null,
+  "undoes": null,
+  "reason": null,
+  "seen": {
+    "tier": "quiet",
+    "fields": {
+      "title": {
+        "proposed": "Send Dana the pricing breakdown"
+      },
+      "dueDate": {
+        "proposed": "2026-11-12"
+      }
+    },
+    "target": {
+      "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+      "offered": ["01a0f831-ac00-75a0-a2b2-cb79eb1835bf", "01a0f831-ad20-7c4f-9e5a-1b2c3d4e5f60"]
+    },
+    "relinked": null,
+    "clip": "played"
+  },
+  "timing": {
+    "decisionMs": 2300,
+    "handlingMs": 11200
+  },
+  "input": "pointer",
+  "surface": "inbox",
+  "syncEligibleAt": "2026-11-20T21:05:12.600Z",
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": {
+      "method": "passkey",
+      "signedInAt": "2026-11-20T08:12:40.000Z"
+    }
+  }
+}

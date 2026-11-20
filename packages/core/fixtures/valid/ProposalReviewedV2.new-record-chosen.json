@@ -1,0 +1,44 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d09",
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c114",
+  "decision": "approved",
+  "target": {
+    "entityId": null
+  },
+  "mode": "single",
+  "batchId": null,
+  "policy": null,
+  "undoes": null,
+  "reason": null,
+  "seen": {
+    "tier": "loud",
+    "fields": {
+      "name": {
+        "proposed": "Dana Lee"
+      },
+      "title": {
+        "proposed": "VP of Operations"
+      }
+    },
+    "target": {
+      "entityId": null,
+      "offered": ["01a0f831-b320-7e3f-9a5b-6c7d8e9f0a12", null]
+    },
+    "relinked": null,
+    "clip": "available"
+  },
+  "timing": {
+    "decisionMs": 7400,
+    "handlingMs": 7400
+  },
+  "input": "voice",
+  "surface": "pilot",
+  "syncEligibleAt": "2026-11-20T21:07:45.000Z",
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": {
+      "method": "magic_link",
+      "signedInAt": "2026-11-20T07:55:02.120-05:00"
+    }
+  }
+}
