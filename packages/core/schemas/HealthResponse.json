@@ -69,6 +69,25 @@
       ],
       "additionalProperties": false,
       "title": "DbHealth"
+    },
+    "audit": {
+      "type": "object",
+      "properties": {
+        "signingKey": {
+          "type": "string",
+          "enum": [
+            "configured",
+            "development",
+            "missing",
+            "invalid"
+          ]
+        }
+      },
+      "required": [
+        "signingKey"
+      ],
+      "additionalProperties": false,
+      "title": "AuditHealth"
     }
   },
   "required": [

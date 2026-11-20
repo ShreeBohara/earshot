@@ -1,6 +1,36 @@
 // What server code needs from this package, without the browser-only device store: provider
-// validation, redaction, the vault, and the key-validation handler. Workers, Next route
-// handlers, and @earshot/db import "@earshot/keys/server"; it typechecks without the DOM lib.
+// validation, redaction, the vault, the key-validation handler, and the audit checkpoint signer.
+// Workers, Next route handlers, and @earshot/db import "@earshot/keys/server"; it typechecks
+// without the DOM lib.
+export {
+  AUDIT_RETIRED_KEYS_ENV,
+  AUDIT_SIGNING_ALG,
+  AUDIT_SIGNING_KEY_ENV,
+  AuditKeyError,
+  type AuditPublicKey,
+  type AuditSigner,
+  type AuditSigningState,
+  auditKeySecretValues,
+  auditPublicKeys,
+  type CheckpointClaims,
+  type CheckpointVerdict,
+  checkpointMessage,
+  DEV_AUDIT_KID,
+  DEV_AUDIT_SIGNING_KEY,
+  fromBase64Url,
+  fromHex,
+  type GeneratedAuditKey,
+  generateAuditSigningKey,
+  isAuditPublicKey,
+  isDevelopmentAuditKey,
+  loadAuditSigningKey,
+  parseRetiredAuditKeys,
+  type SignedCheckpoint,
+  signCheckpoint,
+  toBase64Url,
+  toHex,
+  verifyCheckpoint,
+} from "./audit-signing";
 export {
   type FetchLike,
   isProviderId,

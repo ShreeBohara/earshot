@@ -1,5 +1,6 @@
 // Auth configuration read from the Worker's environment (env.d.ts), checked once per isolate.
 // Pure: no Cloudflare or Next imports, so tests pass whatever environment they need.
+import { auditKeySecretValues } from "@earshot/keys/server";
 
 /** `development` is `next dev` only. Every built bundle, previews included, is `production`. */
 export type Mode = "development" | "production";
@@ -149,6 +150,7 @@ export function secretValues(
     DATABASE_URL?: string | undefined;
     EARSHOT_VAULT_MASTER_KEY?: string | undefined;
     EARSHOT_SESSION_TICKET_SECRET?: string | undefined;
+    EARSHOT_AUDIT_SIGNING_KEY?: string | undefined;
   },
 ): string[] {
   return [
@@ -159,5 +161,7 @@ export function secretValues(
     env.DATABASE_URL,
     env.EARSHOT_VAULT_MASTER_KEY,
     env.EARSHOT_SESSION_TICKET_SECRET,
+    // The whole JWK and its private "d" alone, which survives JSON escaping.
+    ...auditKeySecretValues(env.EARSHOT_AUDIT_SIGNING_KEY),
   ].filter((secret): secret is string => Boolean(secret?.trim()));
 }

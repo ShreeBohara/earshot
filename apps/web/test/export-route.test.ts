@@ -30,7 +30,13 @@ vi.mock("next/headers", () => ({
   },
   headers: async () => new Headers(scope.cookie ? { cookie: scope.cookie } : {}),
 }));
-vi.mock("@/lib/auth", () => ({ getAuth: async () => scope.auth }));
+vi.mock("@/lib/auth", () => ({
+  getAuth: async () => scope.auth,
+  log: { info: () => {}, warn: () => {}, error: () => {} },
+}));
+// No audit signing key: the export still downloads, with no public keys (test/audit-routes.test.ts
+// covers the chain, the checkpoints, and the keys).
+vi.mock("@opennextjs/cloudflare", () => ({ getCloudflareContext: () => ({ env: {} }) }));
 vi.mock("@/lib/db", () => ({ getDb: async () => scope.db }));
 
 const { GET } = await import("@/app/api/account/export/route");

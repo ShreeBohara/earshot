@@ -20,6 +20,18 @@ const DbHealth = z
   })
   .meta({ title: "DbHealth" });
 
+const AuditHealth = z
+  .strictObject({
+    /**
+     * Whether the web Worker can sign audit checkpoints (docs/adr/0033): `configured` (a usable
+     * EARSHOT_AUDIT_SIGNING_KEY), `development` (the committed development key, `next dev`
+     * only), `missing`, or `invalid`. Writes that need a checkpoint fail closed with either of
+     * the last two. Never the key itself.
+     */
+    signingKey: z.enum(["configured", "development", "missing", "invalid"]),
+  })
+  .meta({ title: "AuditHealth" });
+
 /** Response of `GET /api/health`: proves web → edge → Durable Object and web → Postgres. */
 export const HealthResponse = z
   .strictObject({
@@ -28,6 +40,8 @@ export const HealthResponse = z
     env: z.string(),
     edge: EdgeHealth,
     db: DbHealth,
+    /** Reported, not part of `status`: optional because older web Workers don't send it. */
+    audit: AuditHealth.optional(),
   })
   .meta({ title: "HealthResponse", description: "Response of GET /api/health." });
 

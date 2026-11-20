@@ -1,6 +1,7 @@
 // Account lifecycle on the owner connection: the personal workspace a user gets at sign-up, the
 // export of everything a user's workspaces hold, and the deletes that run before the user row
 // goes (docs/adr/0006, docs/adr/0019).
+import type { AuditPublicKey, AuditSigner } from "@earshot/keys/server";
 import {
   and,
   asc,
@@ -19,8 +20,10 @@ import type {
   PgTransaction,
   SelectedFields,
 } from "drizzle-orm/pg-core";
+import { AUDIT_FORM_VERSION, exportAuditChain, recordAudit, writeCheckpoint } from "./audit-chain";
 import {
   account,
+  auditCheckpoints,
   auditLog,
   credentials,
   crmConnections,
@@ -159,9 +162,19 @@ export type AccountExport = {
   workspaces: {
     id: string;
     role: string;
-    /** Every tenant table's rows for this workspace, keyed by table name. */
+    /**
+     * Every tenant table's rows for this workspace, keyed by table name. `audit_log` is the
+     * workspace's hash chain in seq order, each row with its hashes in hex and its canonical text,
+     * and `audit_checkpoints` the signed heads (docs/adr/0033).
+     */
     tables: Record<string, Record<string, unknown>[]>;
   }[];
+  /**
+   * What an offline check of the chains needs besides the rows: the canonical text's form and the
+   * deployment's public signing keys, active and retired. `pnpm --filter @earshot/db
+   * db:audit-verify <file>` checks the links, the hashes, the canonical texts, and the signatures.
+   */
+  audit: { form: typeof AUDIT_FORM_VERSION; keys: AuditPublicKey[] };
 };
 
 /**
@@ -202,7 +215,18 @@ async function readTenantTables<
   tx: PgTransaction<TQueryResult, TFullSchema, TSchema>,
 ): Promise<Record<string, Record<string, unknown>[]>> {
   const tables: Record<string, Record<string, unknown>[]> = {};
+  // The chain and its checkpoints in seq order, with hashes in hex, the canonical texts, and times
+  // exactly as hashed and signed, so the export verifies offline.
+  const chain = await exportAuditChain(tx);
   for (const table of tenantTables) {
+    if (table === auditLog) {
+      tables[getTableName(table)] = chain.entries as unknown as Record<string, unknown>[];
+      continue;
+    }
+    if (table === auditCheckpoints) {
+      tables[getTableName(table)] = chain.checkpoints as unknown as Record<string, unknown>[];
+      continue;
+    }
     const selection = exportSelections.get(table);
     // Row-level security already limits these reads to the transaction's workspace.
     const rows = selection ? await tx.select(selection).from(table) : await tx.select().from(table);
@@ -220,6 +244,12 @@ async function readTenantTables<
  *
  * Records an `account.exported` audit entry in each workspace, in the same transaction as the
  * reads, so the export includes the entry and a failed export leaves none.
+ *
+ * `auditKeys` are the deployment's public signing keys (`/api/audit/keys`), carried in the export
+ * so its chains and checkpoints verify offline. With a `signer`, each workspace's head, its
+ * `account.exported` entry included, is signed as an `export` checkpoint in the same
+ * transaction, so the exported chain is signed through its end. Without one (no signing key is
+ * configured) the export still works, and its newest entries show as unsigned when checked.
  */
 export async function buildAccountExport<
   TQueryResult extends PgQueryResultHKT,
@@ -229,6 +259,10 @@ export async function buildAccountExport<
   db: AnyPgDatabase<TQueryResult, TFullSchema, TSchema>,
   userId: string,
   now: Date = new Date(),
+  {
+    auditKeys = [],
+    signer,
+  }: { readonly auditKeys?: readonly AuditPublicKey[]; readonly signer?: AuditSigner } = {},
 ): Promise<AccountExport> {
   const [profile] = await db
     .select({
@@ -277,6 +311,7 @@ export async function buildAccountExport<
       expiresAt: session.expiresAt,
       ipAddress: session.ipAddress,
       userAgent: session.userAgent,
+      signInMethod: session.signInMethod,
     })
     .from(session)
     .where(eq(session.userId, userId))
@@ -294,14 +329,10 @@ export async function buildAccountExport<
       db,
       { userId, workspaceId: membership.workspaceId },
       async (tx) => {
-        await tx.insert(auditLog).values({
-          workspaceId: membership.workspaceId,
-          actorUserId: userId,
-          action: "account.exported",
-          subjectType: "user",
-          subjectId: userId,
-          at: now,
-        });
+        const { head } = await recordAudit(tx, [
+          { action: "account.exported", subjectType: "user", subjectId: userId },
+        ]);
+        if (signer) await writeCheckpoint(tx, signer, head, "export", now);
         return readTenantTables(tx);
       },
     );
@@ -317,5 +348,6 @@ export async function buildAccountExport<
     passkeys,
     signInSessions,
     workspaces: exported,
+    audit: { form: AUDIT_FORM_VERSION, keys: [...auditKeys] },
   };
 }

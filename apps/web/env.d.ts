@@ -70,4 +70,20 @@ interface CloudflareEnv {
    * (docs/vault-key-rotation.md), or stored keys stop opening.
    */
   EARSHOT_VAULT_MASTER_KEY?: string;
+
+  /**
+   * Signs the audit chain's checkpoints (docs/adr/0033): a private Ed25519 JWK,
+   * {"kty":"OKP","crv":"Ed25519","d":…,"x":…,"kid":…}, from
+   * `pnpm --filter @earshot/keys audit-key:new`, set as a secret on both Workers. Without a usable
+   * one outside development, writes that need a checkpoint fail closed and /api/health says so;
+   * `next dev` falls back to the committed development key, which is refused anywhere else.
+   * Rotating it: add the old public JWK to EARSHOT_AUDIT_RETIRED_KEYS, then set the new secret.
+   */
+  EARSHOT_AUDIT_SIGNING_KEY?: string;
+  /**
+   * Public and optional: the public JWKs of signing keys rotated out, as a JSON array, each with
+   * an optional `retiredAt` time, so /api/audit/keys still serves them and old checkpoints still
+   * verify. An entry holding a private key ("d") is refused, and the key list isn't served.
+   */
+  EARSHOT_AUDIT_RETIRED_KEYS?: string;
 }

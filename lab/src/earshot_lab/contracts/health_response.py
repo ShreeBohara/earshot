@@ -43,6 +43,20 @@ class Db(BaseModel):
     migrations: Annotated[int | None, Field(ge=0, le=9007199254740991)] = None
 
 
+class SigningKey(StrEnum):
+    configured = 'configured'
+    development = 'development'
+    missing = 'missing'
+    invalid = 'invalid'
+
+
+class Audit(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    signingKey: SigningKey
+
+
 class HealthResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -52,3 +66,4 @@ class HealthResponse(BaseModel):
     env: str
     edge: Annotated[Edge, Field(title='EdgeHealth')]
     db: Annotated[Db, Field(title='DbHealth')]
+    audit: Annotated[Audit | None, Field(title='AuditHealth')] = None

@@ -11,6 +11,7 @@
     "./vault": "./src/vault.ts"
   },
   "scripts": {
+    "audit-key:new": "tsx scripts/new-audit-key.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -19,6 +20,7 @@
     "@earshot/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "fake-indexeddb": "^6.2.0",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -1,0 +1,8 @@
+{
+  "status": "ok",
+  "version": "5b731bd",
+  "env": "production",
+  "edge": { "status": "ok" },
+  "db": { "status": "ok" },
+  "audit": { "signingKey": "configured", "kid": "audit-2026-11-20-a1b2" }
+}

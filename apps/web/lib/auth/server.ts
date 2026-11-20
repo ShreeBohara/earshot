@@ -25,6 +25,7 @@ import {
   type SendMagicLink,
 } from "./email";
 import { FRESH_SESSION_SECONDS } from "./fresh";
+import { signInMethodFor } from "./sign-in-method";
 import { allowMagicLinkFor } from "./throttle";
 
 /** Magic links work once and expire after five minutes (Better Auth's default). */
@@ -110,7 +111,14 @@ export function createAuth({
       ...(config.social.github ? { github: config.social.github } : {}),
       ...(config.social.google ? { google: config.social.google } : {}),
     },
-    session: { freshAge: FRESH_SESSION_SECONDS },
+    session: {
+      freshAge: FRESH_SESSION_SECONDS,
+      additionalFields: {
+        // How this sign-in happened (migration 0013, docs/adr/0033). Set by the hook below when the
+        // session is created, never from a request (input: false), and returned with the session.
+        signInMethod: { type: "string", required: false, input: false, defaultValue: "unknown" },
+      },
+    },
     user: {
       deleteUser: {
         enabled: true,
@@ -136,6 +144,15 @@ export function createAuth({
       },
     },
     databaseHooks: {
+      session: {
+        create: {
+          // Runs inside the endpoint that is signing the user in, so its route says how: a magic
+          // link, a passkey, or an OAuth callback (lib/auth/sign-in-method.ts).
+          before: async (_session, context) => ({
+            data: { signInMethod: signInMethodFor(context) },
+          }),
+        },
+      },
       user: {
         create: {
           // Runs after the user row commits. If it fails, sign-in still succeeds and the next
