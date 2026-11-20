@@ -269,6 +269,8 @@ Per class, v1 decides:
 
 Sound carries the linker, and context separates the homophones. The open account alone is worth 11 points of coverage, and without it one item outside E2 and G links to the wrong record. Trigrams add nothing on this set: its mishearings keep their codes by construction (see Consequences). They stay, because they're cheap, and because real speech-to-text errors that change a code are what they're for. WP6's mined set will say whether that holds.
 
+It's the sound *features* that carry it, not the Double Metaphone candidate source alone. Dropping only `"sound"` from the frozen parameters' sources, and keeping the homophone source and the features, still passes G1a with no regression: the other sources find the same candidates. Dropping both phonetic sources turns the features off as well, and with the frozen thresholds G1a fails at 58.9% coverage and a 2.4% wrong-account rate (WP12, 2026-11-20; the gate G3a demonstration, #49).
+
 **Speed.** 1,000 mentions against the 250 records take about 0.2 s in Node, including the index (target: under 1 s). That's about 0.13 ms per mention at the median and 0.5 ms at p95, against the understanding step's 20 ms budget.
 
 ### The second witness (WP5)
