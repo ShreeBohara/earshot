@@ -71,6 +71,16 @@ jobs:
       # Deterministic, a few seconds, and $0: no models, no providers.
       - name: Understanding eval, gate G2b and the tier budgets (200 debriefs, offline cassettes)
         run: pnpm --filter @earshot/evals eval:understanding --check --summary
+      # The recap's checks in code (Phase 5 spec §4.9, WP10; ADR-0037): all 200 debriefs' recaps
+      # through each LLM adapter's offline cassettes, built from the ground truth with seeded bad
+      # sentences (quotes not in the transcript, or paraphrased) and invented lens quotes, then
+      # `runRecap` and its checks. Fails unless every kept sentence carries evidence, every seeded
+      # bad sentence was dropped, every recap has a headline, every ground-truth sentence was kept,
+      # every invented lens quote came back "not mentioned", and the weak-support share is within
+      # 3 points of baselines/recap.json, recorded on these scripts and labels. Deterministic, a
+      # second or so, and $0: no models, no providers.
+      - name: Recap eval, the quote checks (200 debriefs, offline cassettes)
+        run: pnpm --filter @earshot/evals eval:recap --check --summary
       - name: Contracts are up to date
         run: |
           pnpm contracts:gen
