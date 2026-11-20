@@ -177,6 +177,7 @@ These are written for any extractor, so WP11 can score a live model's runs the s
 CI's `checks` job runs `pnpm --filter @earshot/evals eval:understanding --check --summary` after the linking gate. For either provider, it fails on any of these:
 
 - a key metric more than 3 points below `baselines/understanding.json`. The key metrics are key-field, proposal precision and recall, joint action, target, date, amount, and negation accuracy, conflict precision and recall, and the three seeded catch rates;
+- an expected risk kind's catch rate more than 3 points below the baseline: of the proposals the scripts expect to carry `negation`, `new_entity`, `witness_conflict`, `ambiguous_target`, or `implied_target`, the share that did. Values and targets can stay right while a warning stops coming, and the accuracy metrics wouldn't notice; one lost `negation` flag of 26 fails it. Codex found the gap on #48;
 - evidence coverage under 100%;
 - an end-to-end wrong-account rate above 2%;
 - a cassette miss;

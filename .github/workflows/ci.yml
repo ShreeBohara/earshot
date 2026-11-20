@@ -63,8 +63,9 @@ jobs:
       # Gate G2b and the understanding regression check (Phase 4 spec §6, WP10): all 200 debriefs
       # through each LLM adapter's offline cassettes (with seeded, labelled model-like errors),
       # linker v1, the normalizers, and the second witness. Fails on evidence coverage under 100%,
-      # an end-to-end wrong-account rate above 2%, a key metric more than 3 points below
-      # baselines/understanding.json, stale cassettes, or a baseline taken on other scripts.
+      # an end-to-end wrong-account rate above 2%, a key metric or an expected risk flag's catch
+      # rate more than 3 points below baselines/understanding.json, stale cassettes, or a baseline
+      # taken on other scripts.
       # Deterministic, a few seconds, and $0: no models, no providers.
       - name: Understanding eval, gate G2b (200 debriefs, offline cassettes)
         run: pnpm --filter @earshot/evals eval:understanding --check --summary

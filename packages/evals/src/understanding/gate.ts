@@ -2,11 +2,15 @@
 // `eval:understanding --check` fails, for either provider's cassettes, when:
 //
 // - a key metric (`KEY_METRICS`) drops by more than 3 points against baselines/understanding.json;
+// - so does the catch rate of any risk kind the scripts expect (`expectFlags`): the share of the
+//   proposals expected to carry it that did. Values and targets can stay right while a warning
+//   such as `negation` stops coming, and only this notices;
 // - evidence coverage is under 100% (a field or named target whose evidence isn't the words the
 //   model quoted, or an unquoted target linked anyway: G2b);
 // - the end-to-end wrong-account rate is above 2%;
 // - a cassette couldn't answer a request (the cassettes are stale: regenerate them);
 // - the baseline was recorded on other scripts or other seeded errors (re-record it on purpose).
+import { RiskKindV2 } from "@earshot/core";
 import { z } from "zod";
 import type { UnderstandingMetrics } from "./metrics";
 
@@ -45,6 +49,8 @@ export const UnderstandingSummary = z.strictObject({
   wrongAccountBound: z.number().min(0).max(1).nullable(),
   biasedOnlyWrongAccountRate: z.number().min(0).max(1).nullable(),
   flagShare: z.number().min(0).max(1).nullable(),
+  /** Each expected risk kind's catch rate: proposals expected to carry it that did. */
+  expectedFlags: z.partialRecord(RiskKindV2, z.number().min(0).max(1).nullable()),
   proposals: z.int().nonnegative(),
   decided: z.int().nonnegative(),
 });
@@ -81,6 +87,12 @@ export function summarize(metrics: UnderstandingMetrics): UnderstandingSummary {
     wrongAccountBound: round(metrics.wrongAccount.bound),
     biasedOnlyWrongAccountRate: round(metrics.wrongAccountBiasedOnly.rate),
     flagShare: round(metrics.flags.rate),
+    expectedFlags: Object.fromEntries(
+      Object.entries(metrics.expectedFlags).map(([kind, ratio]) => [
+        kind,
+        round(ratio?.rate ?? null),
+      ]),
+    ),
     proposals: metrics.proposals.actual,
     decided: metrics.wrongAccount.of,
   };
@@ -124,6 +136,18 @@ export function understandingGateFailures(
       if (now === null || now < then - UNDERSTANDING_GATE.maxDrop - 1e-9) {
         failures.push(
           `${at} regression: ${name} ${pct(now)} fell more than 3 points from ${pct(then)}`,
+        );
+      }
+    }
+    for (const [kind, then] of Object.entries(baseline.expectedFlags) as [
+      RiskKindV2,
+      number | null,
+    ][]) {
+      if (then === null) continue;
+      const now = metrics.expectedFlags[kind]?.rate ?? null;
+      if (now === null || now < then - UNDERSTANDING_GATE.maxDrop - 1e-9) {
+        failures.push(
+          `${at} regression: expected \`${kind}\` flags raised ${pct(now)}, more than 3 points below ${pct(then)}`,
         );
       }
     }

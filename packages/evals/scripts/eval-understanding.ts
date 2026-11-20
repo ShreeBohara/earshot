@@ -5,10 +5,10 @@
 //   pnpm --filter @earshot/evals eval:understanding [--provider anthropic | groq | all] [--check]
 //     [--summary ["$GITHUB_STEP_SUMMARY"]] [--json report.json] [--write-baseline]
 //
-// - `--check` exits 1 when, for either provider, a key metric falls more than 3 points below
-//   baselines/understanding.json, evidence coverage is under 100%, the end-to-end wrong-account
-//   rate is above 2%, a cassette misses, or the baseline was recorded on other scripts or other
-//   seeded errors. CI's `checks` job runs `--check --summary`.
+// - `--check` exits 1 when, for either provider, a key metric or an expected risk kind's catch
+//   rate falls more than 3 points below baselines/understanding.json, evidence coverage is under
+//   100%, the end-to-end wrong-account rate is above 2%, a cassette misses, or the baseline was
+//   recorded on other scripts or other seeded errors. CI's `checks` job runs `--check --summary`.
 // - `--write-baseline` records both providers' numbers, on purpose. Review the diff, then commit.
 // - `--summary` appends the report to a file, or to $GITHUB_STEP_SUMMARY when it names none.
 import { writeFileSync } from "node:fs";

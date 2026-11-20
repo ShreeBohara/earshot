@@ -130,7 +130,7 @@ export function understandingMarkdown(
     lines.push("", "### Gate", "");
     if (all.length === 0) {
       lines.push(
-        "Passes: evidence coverage 100%, the end-to-end wrong-account rate at most 2%, and no key metric more than 3 points below `baselines/understanding.json`.",
+        "Passes: evidence coverage 100%, the end-to-end wrong-account rate at most 2%, and no key metric or expected flag's catch rate more than 3 points below `baselines/understanding.json`.",
       );
     } else lines.push(...all.map((failure) => `- **${failure}**`));
   }

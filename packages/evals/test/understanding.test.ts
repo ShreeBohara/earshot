@@ -139,6 +139,15 @@ describe("the understanding eval over all 200 debriefs", () => {
     }
   });
 
+  it("records every expected risk kind's catch rate in the committed baseline", () => {
+    const baseline = readBaseline();
+    for (const provider of EVAL_PROVIDERS) {
+      expect(Object.keys(baseline?.providers[provider].expectedFlags ?? {}).sort()).toEqual(
+        Object.keys(metrics[provider]?.expectedFlags ?? {}).sort(),
+      );
+    }
+  });
+
   it("catches the seeded errors it was built to catch", () => {
     const found = metrics.anthropic as UnderstandingMetrics;
     expect(found.seeded.wrong_date.n).toBe(found.seeded.wrong_date.of);
@@ -444,5 +453,27 @@ describe("the gate", () => {
       expect.stringContaining("regenerate"),
     ]);
     expect(Object.keys(baseline)).toEqual(expect.arrayContaining(Object.keys(KEY_METRICS)));
+  });
+
+  it("fails when warnings the scripts expect stop coming, though every value and target stays right", () => {
+    const covered = { ...base, evidence: { n: 10, of: 10, rate: 1, unquotedLinked: 0 } };
+    const flagged = { ...covered, expectedFlags: { negation: { n: 26, of: 26, rate: 1 } } };
+    const baseline = summarize(flagged);
+    expect(baseline.expectedFlags).toEqual({ negation: 1 });
+    expect(understandingGateFailures("anthropic", flagged, baseline)).toEqual([]);
+    // One of 26 lost is 3.8 points; all of them lost, or the kind gone from the report, fails too.
+    for (const expectedFlags of [
+      { negation: { n: 25, of: 26, rate: 25 / 26 } },
+      { negation: { n: 0, of: 26, rate: 0 } },
+      {},
+    ]) {
+      expect(
+        understandingGateFailures("anthropic", { ...covered, expectedFlags }, baseline),
+      ).toEqual([expect.stringContaining("expected `negation` flags raised")]);
+    }
+    // The accuracy metrics, which read values and targets only, don't move.
+    const silent = { ...covered, expectedFlags: { negation: { n: 0, of: 26, rate: 0 } } };
+    expect(KEY_METRICS.negationAccuracy(silent)).toBe(KEY_METRICS.negationAccuracy(flagged));
+    expect(KEY_METRICS.jointActionAccuracy(silent)).toBe(KEY_METRICS.jointActionAccuracy(flagged));
   });
 });
