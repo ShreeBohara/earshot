@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { matchEntity, TARGET_KINDS } from "@earshot/agent";
 import { DEMO_CALL_TIME } from "@earshot/agent/testing";
-import { ProposalType } from "@earshot/core";
+import { ProposalType, ProposalTypeV2 } from "@earshot/core";
 import { contacts } from "@earshot/demo-crm";
 import { fieldKind } from "@earshot/understanding/faithfulness";
 import { normalizeName } from "@earshot/understanding/names";
@@ -14,17 +14,23 @@ import {
   DEBRIEFS,
   DEMO_SESSION_ENTITIES,
   DebriefScript,
+  DebriefScriptV1,
   debriefAt,
   demoEntity,
   ExpectedProposal,
+  ExpectedProposalV1,
   expectedDecision,
   expectedFields,
   KEY_FIELDS,
   localDate,
+  MAX_SNR_DB,
+  MIN_SNR_DB,
   NEGATION_PATTERN,
+  NOISE_KINDS,
   namedOf,
   parseUsd,
   resolveDatePhrase,
+  upgradeDebriefScript,
 } from "../src";
 
 const DIRECTORY = new URL("../debriefs/", import.meta.url);
@@ -107,10 +113,10 @@ describe("the script schema", () => {
     rejects({ ...withTurns([turn(), turn()]), extra: true });
   });
 
-  it("checks each proposal type's fields, target ids, dates, and amounts", () => {
+  it("checks each proposal type's fields, target ids, dates, and amounts (format v1)", () => {
     const note = { type: "note", target: "co_011", fields: { body: { value: "x", quote: "x" } } };
-    expect(ExpectedProposal.safeParse(note).success).toBe(true);
-    const bad = (value: unknown) => expect(ExpectedProposal.safeParse(value).success).toBe(false);
+    expect(ExpectedProposalV1.safeParse(note).success).toBe(true);
+    const bad = (value: unknown) => expect(ExpectedProposalV1.safeParse(value).success).toBe(false);
     bad({ ...note, target: "acme" });
     bad({
       ...note,
@@ -130,15 +136,131 @@ describe("the script schema", () => {
     });
   });
 
+  it("checks each format v2 target as a record and a decision that agree", () => {
+    const note = (target: unknown) => ({
+      type: "note",
+      target,
+      fields: { body: { value: "x", quote: "x" } },
+    });
+    const ok = (value: unknown) => expect(ExpectedProposal.safeParse(value).success).toBe(true);
+    const bad = (value: unknown) => expect(ExpectedProposal.safeParse(value).success).toBe(false);
+    ok(note({ id: "co_011", decision: "linked" }));
+    ok(note({ id: "co_011", decision: "ask" }));
+    ok(note({ id: null, decision: "ask" }));
+    ok(note({ id: null, decision: "new" }));
+    ok(note({ id: null, decision: "none" }));
+    bad(note({ id: null, decision: "linked" }));
+    bad(note({ id: "co_011", decision: "new" }));
+    bad(note({ id: "co_011", decision: "none" }));
+    bad(note("co_011"));
+    ok({ ...note({ id: "co_011", decision: "linked" }), expectFlags: ["link_uncertain"] });
+    bad({ ...note({ id: "co_011", decision: "linked" }), expectFlags: ["sarcasm"] });
+    bad({ ...note({ id: "co_011", decision: "linked" }), expectFlags: ["negation", "negation"] });
+    ok({
+      type: "meeting",
+      target: { id: "ct_045", decision: "linked" },
+      fields: { title: { value: "x", quote: "x" }, time: { value: "14:00", quote: "at 2 pm" } },
+    });
+    bad({
+      type: "meeting",
+      target: { id: "ct_045", decision: "linked" },
+      fields: { title: { value: "x", quote: "x" }, time: { value: "2pm", quote: "at 2 pm" } },
+    });
+  });
+
   it("covers every proposal type, and keys only fields each type has", () => {
+    const typesV1 = ExpectedProposalV1.options.map((option) => option.shape.type.value);
+    expect(typesV1.sort()).toEqual([...ProposalType.options].sort());
     const types = ExpectedProposal.options.map((option) => option.shape.type.value);
-    expect(types.sort()).toEqual([...ProposalType.options].sort());
-    expect(Object.keys(KEY_FIELDS).sort()).toEqual([...ProposalType.options].sort());
+    expect(types.sort()).toEqual([...ProposalTypeV2.options].sort());
+    expect(Object.keys(KEY_FIELDS).sort()).toEqual([...ProposalTypeV2.options].sort());
     for (const option of ExpectedProposal.options) {
       const type = option.shape.type.value;
       const fields = Object.keys(option.shape.fields.shape);
       for (const key of KEY_FIELDS[type]) expect(fields).toContain(key);
     }
+  });
+});
+
+describe("format v2 and the v1 upgrade", () => {
+  it("upgrades each v1 file in code: its targets become { id, decision }, and both witnesses heard its text", () => {
+    for (const id of EXPECTED_IDS) {
+      const raw = JSON.parse(readFileSync(new URL(`${id}.json`, DIRECTORY), "utf8"));
+      expect(raw.version, id).toBe(1);
+      const script = DebriefScript.parse(raw);
+      expect(script.version, id).toBe(2);
+      script.turns.forEach((turn, index) => {
+        expect(turn.heard, id).toEqual({ biased: turn.text, unbiased: turn.text });
+        turn.expect.forEach((proposal, n) => {
+          const before = raw.turns[index].expect[n];
+          const decision =
+            before.decision ??
+            (before.target !== null ? "linked" : before.type === "contact" ? "new" : "none");
+          expect(proposal.target, `${id} turn ${index + 1}`).toEqual({
+            id: before.target,
+            decision,
+          });
+          expect(proposal, `${id} turn ${index + 1}`).not.toHaveProperty("decision");
+        });
+      });
+      // An upgraded script is a valid v2 script, and parsing it again changes nothing.
+      expect(DebriefScript.parse(script)).toEqual(script);
+      expect(upgradeDebriefScript(DebriefScriptV1.parse(raw))).toEqual(script);
+    }
+  });
+
+  it("reads what each witness heard, the flags to expect, meetings, and noise", () => {
+    const base = { ...(DEBRIEFS[0] as DebriefScript) };
+    const turn = {
+      pauseBeforeMs: 1_500,
+      text: "Book a demo with Acme Dynamics on Friday at 2 pm.",
+      heard: { biased: "Book a demo with Akme Dynamics on Friday at 2 pm." },
+      expect: [
+        {
+          type: "meeting",
+          target: { id: "co_011", decision: "linked" },
+          named: { quote: "Akme Dynamics", kind: "company" },
+          expectFlags: ["link_uncertain"],
+          fields: {
+            title: { value: "Demo with Akme Dynamics", quote: "a demo" },
+            date: { value: "2026-11-20", quote: "on Friday" },
+            time: { value: "14:00", quote: "at 2 pm" },
+          },
+        },
+      ],
+    };
+    const script = DebriefScript.parse({
+      ...base,
+      noise: { kind: "cafe", snrDb: 12 },
+      turns: [turn, { ...turn, heard: undefined }],
+    });
+    expect(script.noise).toEqual({ kind: "cafe", snrDb: 12 });
+    expect(script.turns[0]?.heard).toEqual({ biased: turn.heard.biased, unbiased: turn.text });
+    expect(script.turns[1]?.heard).toEqual({ biased: turn.text, unbiased: turn.text });
+    const rejects = (value: unknown) => expect(DebriefScript.safeParse(value).success).toBe(false);
+    rejects({ ...base, noise: { kind: "rain", snrDb: 12 } });
+    rejects({ ...base, noise: { kind: "car", snrDb: MAX_SNR_DB + 1 } });
+    rejects({ ...base, noise: { kind: "car", snrDb: MIN_SNR_DB - 1 } });
+    rejects({ ...base, noise: { kind: "car" } });
+    rejects({ ...base, turns: [{ ...turn, heard: { biased: "Two  spaces." } }, turn] });
+    rejects({ ...base, turns: [{ ...turn, heard: { other: "x" } }, turn] });
+    rejects({ ...base, turns: [{ ...turn, tags: ["disfluency", "disfluency"] }, turn] });
+    // A v1 file can't use v2's fields.
+    rejects({
+      ...JSON.parse(readFileSync(new URL("d001.json", DIRECTORY), "utf8")),
+      noise: { kind: "car", snrDb: 5 },
+    });
+  });
+
+  it("holds noise to what lab/scripts/debrief_noise.py mixes", () => {
+    const python = readFileSync(
+      new URL("../../../lab/scripts/debrief_noise.py", import.meta.url),
+      "utf8",
+    );
+    expect(python).toContain(`MIN_SNR_DB = ${MIN_SNR_DB.toFixed(1)}\n`);
+    expect(python).toContain(`MAX_SNR_DB = ${MAX_SNR_DB.toFixed(1)}\n`);
+    const kinds = NOISE_KINDS.filter((kind) => kind !== "none").map((kind) => `"${kind}"`);
+    expect(python).toContain(`NOISE_KINDS: tuple[NoiseKind, ...] = (${kinds.join(", ")})\n`);
   });
 });
 
@@ -155,13 +277,13 @@ describe("the ground truth", () => {
   it("targets demo CRM records of a kind the proposal type allows, by their exact names", () => {
     for (const entry of PROPOSALS) {
       const { proposal } = entry;
-      if (proposal.target === null) continue;
-      const entity = demoEntity(proposal.target);
+      if (proposal.target.id === null) continue;
+      const entity = demoEntity(proposal.target.id);
       expect(TARGET_KINDS[proposal.type], label(entry)).toContain(entity.kind);
       expect(
         matchEntity(entity.name, DEMO_SESSION_ENTITIES, TARGET_KINDS[proposal.type])?.id,
         label(entry),
-      ).toBe(proposal.target);
+      ).toBe(proposal.target.id);
     }
   });
 
@@ -177,14 +299,14 @@ describe("the ground truth", () => {
       if (named.company !== undefined)
         expect(entry.turn.text, label(entry)).toContain(named.company);
       // A record the CRM doesn't hold needs its kind said.
-      if (entry.proposal.target === null) expect(named.kind, label(entry)).toBeDefined();
+      if (entry.proposal.target.id === null) expect(named.kind, label(entry)).toBeDefined();
     }
   });
 
   it("asks only about a record the script names, and opens only demo companies", () => {
     for (const entry of PROPOSALS) {
       if (expectedDecision(entry.proposal) === "ask") {
-        expect(entry.proposal.target, label(entry)).not.toBeNull();
+        expect(entry.proposal.target.id, label(entry)).not.toBeNull();
       }
     }
     for (const script of DEBRIEFS) {
@@ -209,10 +331,10 @@ describe("the ground truth", () => {
     for (const entry of PROPOSALS) {
       const { proposal } = entry;
       if (proposal.type !== "contact") continue;
-      if (proposal.target === null) {
+      if (proposal.target.id === null) {
         expect(names.has(proposal.fields.name.value.toLowerCase()), label(entry)).toBe(false);
       } else {
-        expect(proposal.fields.name.value, label(entry)).toBe(demoEntity(proposal.target).name);
+        expect(proposal.fields.name.value, label(entry)).toBe(demoEntity(proposal.target.id).name);
       }
     }
   });

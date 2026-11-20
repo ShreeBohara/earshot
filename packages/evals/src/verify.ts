@@ -211,6 +211,29 @@ export function parseUsd(quote: string): number | null {
   return sawNumber || total > 0 ? total + group : null;
 }
 
+/**
+ * The time of day a quoted phrase names, `HH:MM` on a 24-hour clock: "at 2 pm", "10:30 a.m.",
+ * "at noon". Null for anything else, a bare "at 3" included: it could be either, and the
+ * scripts only use times with their half of the day said.
+ */
+export function resolveTimePhrase(quote: string): string | null {
+  const words = trimTrailingPunctuation(quote.toLowerCase()).split(/\s+/).filter(Boolean);
+  if (words[0] === "at") words.shift();
+  if (words.length === 1 && (words[0] === "noon" || words[0] === "midday")) return "12:00";
+  const clock = words[0] ?? "";
+  const half = (words[1] ?? "").replaceAll(".", "");
+  if (words.length !== 2 || (half !== "am" && half !== "pm")) return null;
+  const [hourText, minuteText = "00", ...rest] = clock.split(":");
+  if (rest.length > 0 || !/^\d{1,2}$/.test(hourText ?? "") || !/^\d{2}$/.test(minuteText)) {
+    return null;
+  }
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (hour < 1 || hour > 12 || minute > 59) return null;
+  const hour24 = (hour % 12) + (half === "pm" ? 12 : 0);
+  return `${String(hour24).padStart(2, "0")}:${minuteText}`;
+}
+
 /** The negations `@earshot/agent`'s risk flags look for. */
 export const NEGATION_PATTERN =
   /\b(?:not|no|never|none|nobody|nothing|neither|nor|without|cannot|\w+n't)\b/iu;

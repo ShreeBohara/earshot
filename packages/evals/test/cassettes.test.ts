@@ -66,12 +66,14 @@ describe.each(EVAL_PROVIDERS)("replaying the %s cassettes through the real adapt
           // The linker's decision, from the words the cassette quotes (ADR-0027).
           const decision = expectedDecision(expected);
           expect(actual?.target.decision, label).toBe(decision);
-          if (decision === "linked") expect(actual?.target.entityId, label).toBe(expected.target);
+          if (decision === "linked") {
+            expect(actual?.target.entityId, label).toBe(expected.target.id);
+          }
           if (decision === "ask") {
             expect(
               actual?.target.candidates.map((candidate) => candidate.entityId),
               label,
-            ).toContain(expected.target);
+            ).toContain(expected.target.id);
           }
           expect(actual?.linker, label).toBe("linker.v1");
           const values = Object.fromEntries(
