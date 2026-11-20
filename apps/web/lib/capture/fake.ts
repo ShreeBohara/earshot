@@ -8,8 +8,9 @@ import type { SttAdapter, TempCredential } from "@earshot/voice";
 
 /**
  * The e2e scenario that `wrangler dev src/e2e.ts` serves (apps/edge/src/e2e.ts): a scripted
- * session the Worker's cassettes answer. Each cassette is keyed by the whole LLM request, so the session's
- * entities, call time, and time zone come from here too, not from the CRM.
+ * session the Worker's cassettes answer. Each cassette is keyed by the whole LLM request, so the
+ * session's open account, call time, and time zone come from here too, not from the CRM, and so
+ * do the entities the linker reads.
  */
 export interface FakeScenario {
   readonly version: 1;
@@ -17,6 +18,11 @@ export interface FakeScenario {
   readonly startedAt: string;
   readonly timeZone: string;
   readonly entities: readonly EntityRef[];
+  /**
+   * The account open in Earshot, one of `entities`: prompt v2 names it, so the cassettes were
+   * recorded with it (Phase 4 WP8). Null or absent for none.
+   */
+  readonly focusEntityId?: string | null;
   readonly llm: { readonly provider: LlmProvider; readonly model: string };
   readonly turns: readonly { readonly text: string }[];
 }

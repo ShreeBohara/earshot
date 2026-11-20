@@ -20,6 +20,8 @@ export type CrmEntity = {
 };
 
 export type RankedEntities = {
+  /** The selected account, when it's a company among the rows: the session's open account. */
+  account: CrmEntity | null;
   /**
    * Where keyterms come from, best first: the selected account, its contacts, its deals, then
    * the other companies, most recently updated first. Calendar attendees and recent mentions
@@ -67,7 +69,7 @@ export function rankEntities(
     ...ofKind("contact", (row) => !ranked.has(row)),
     ...ofKind("deal", (row) => !ranked.has(row)),
   ];
-  return { keytermSources, all };
+  return { account: account ?? null, keytermSources, all };
 }
 
 function byRecency(a: CrmEntity, b: CrmEntity): number {
@@ -107,15 +109,24 @@ export function estimateKeytermTokens(term: string): number {
 }
 
 /**
- * The keyterms for each provider, from sources in rank order: each source's name, then its
- * aliases, cleaned and deduplicated ignoring case, then trimmed to the provider's limits. A term
- * that doesn't fit (over 50 characters, or over Deepgram's remaining token budget) is skipped,
- * and later, smaller terms can still fill the list.
+ * The keyterms for each provider, from sources in rank order, cleaned and deduplicated ignoring
+ * case, then trimmed to the provider's limits. A term that doesn't fit (over 50 characters, or
+ * over Deepgram's remaining token budget) is skipped, and later, smaller terms can still fill the
+ * list.
+ *
+ * The order is fair to every company (Phase 4 WP8). The selected account's family comes first,
+ * each record's name and then its aliases, as before. Then every other company's name, and only
+ * then their aliases. Before, each company brought its aliases along, so with no account open
+ * the demo CRM's 60 companies and their 68 aliases ran past AssemblyAI's 100 terms at "Summit
+ * Ridge Capital": every company after it, alphabetically, was never boosted at all, "Willowbrook
+ * Pharma" among them. Now all 60 names fit, and the first 40 aliases. `familyCount` says how many
+ * sources are the account's family: the account, its contacts, and its deals; none without one.
  */
 export function sessionKeyterms(
   sources: readonly Pick<CrmEntity, "name" | "aliases">[],
+  familyCount = 0,
 ): SessionKeyterms {
-  const terms = candidateTerms(sources);
+  const terms = candidateTerms(sources, familyCount);
   const { assemblyai: aai, deepgram: dg } = KEYTERM_LIMITS;
   const assemblyai = terms.filter((term) => term.length <= aai.maxTermChars).slice(0, aai.maxTerms);
   const deepgram: string[] = [];
@@ -130,20 +141,45 @@ export function sessionKeyterms(
   return { assemblyai, deepgram };
 }
 
-function candidateTerms(sources: readonly Pick<CrmEntity, "name" | "aliases">[]): string[] {
+/**
+ * Every term in order: the first `familyCount` sources' names and aliases together, then the rest's
+ * names, then the rest's aliases.
+ */
+function candidateTerms(
+  sources: readonly Pick<CrmEntity, "name" | "aliases">[],
+  familyCount: number,
+): string[] {
+  const family = sources.slice(0, familyCount);
+  const rest = sources.slice(familyCount);
+  const ordered = [
+    ...family.flatMap(({ name, aliases }) => [name, ...aliases]),
+    ...rest.map(({ name }) => name),
+    ...rest.flatMap(({ aliases }) => aliases),
+  ];
   const seen = new Set<string>();
   const terms: string[] = [];
-  for (const { name, aliases } of sources) {
-    for (const raw of [name, ...aliases]) {
-      const term = cleanTerm(raw);
-      if (term === undefined) continue;
-      const folded = term.toLowerCase();
-      if (seen.has(folded)) continue;
-      seen.add(folded);
-      terms.push(term);
-    }
+  for (const raw of ordered) {
+    const term = cleanTerm(raw);
+    if (term === undefined) continue;
+    const folded = term.toLowerCase();
+    if (seen.has(folded)) continue;
+    seen.add(folded);
+    terms.push(term);
   }
   return terms;
+}
+
+/** How many of `keytermSources` are the selected account's family: it, its contacts, its deals. */
+export function accountFamilyCount(ranked: RankedEntities): number {
+  if (!ranked.account) return 0;
+  const { account } = ranked;
+  return ranked.keytermSources.filter(
+    (row) =>
+      row === account ||
+      (row.kind !== "company" &&
+        row.connectionId === account.connectionId &&
+        row.companyId === account.sourceId),
+  ).length;
 }
 
 /** A name as a keyterm: NFC, single spaces, trimmed; or undefined if it can't be one. */

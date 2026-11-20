@@ -167,6 +167,8 @@ interface SessionPlan {
     readonly entities: readonly EntityRef[];
     readonly startedAt: string;
     readonly timeZone: string;
+    /** The account open in Earshot, one of `entities`, or null. */
+    readonly focusEntityId: string | null;
   };
   readonly fake: FakeVoice | null;
 }
@@ -376,6 +378,7 @@ export class CaptureController {
           entities: scenario.entities,
           startedAt: scenario.startedAt,
           timeZone: scenario.timeZone,
+          focusEntityId: scenario.focusEntityId ?? null,
         }),
         fake,
       };
@@ -427,6 +430,7 @@ export class CaptureController {
         entities: created.entities,
         startedAt,
         timeZone: this.#deps.timeZone(),
+        focusEntityId: created.focusEntityId ?? null,
       }),
       fake: null,
     };

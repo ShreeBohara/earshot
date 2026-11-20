@@ -19,6 +19,9 @@ function isScenario(value: unknown): value is FakeScenario {
     typeof scenario.startedAt === "string" &&
     typeof scenario.timeZone === "string" &&
     EntityRef.array().safeParse(scenario.entities).success &&
+    (scenario.focusEntityId === undefined ||
+      scenario.focusEntityId === null ||
+      (scenario.entities ?? []).some((entity) => entity.id === scenario.focusEntityId)) &&
     (scenario.llm?.provider === "anthropic" || scenario.llm?.provider === "groq") &&
     typeof scenario.llm.model === "string" &&
     Array.isArray(scenario.turns) &&
