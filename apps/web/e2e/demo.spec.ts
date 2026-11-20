@@ -199,6 +199,12 @@ test("plays at 8×: every line and proposal in order, then the reviews, and noth
   expect(reviewSeen.every((index) => index > allIn)).toBe(true);
   expect(reviewSeen).toEqual([...reviewSeen].sort((a, b) => a - b));
 
+  // An edited proposal shows the value the reviewer approved, and the original struck through.
+  const edited = page.locator("[data-edited]");
+  await expect(edited).toHaveCount(1);
+  await expect(edited).toContainText("Send Dana the pricing breakdown for the security add-on");
+  await expect(edited.locator("del")).toHaveText("Send Dana the pricing breakdown");
+
   // No request left the page's origin (so none reached the edge Worker or a provider), none
   // called the app's own API (sessions, tickets, tokens), and no socket opened but next dev's.
   expect(requests, "the log saw the page itself").toContain(page.url());
