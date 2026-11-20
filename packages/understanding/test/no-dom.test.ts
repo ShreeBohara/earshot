@@ -1,8 +1,8 @@
 // `@earshot/understanding` must typecheck without the DOM library, because the edge Worker imports
 // it (spec §3), and without Node's types, because it runs in workerd and the browser too. This
 // compiles every entry the way the edge Worker's preset does (@earshot/tsconfig/worker.json:
-// ES2023, no ambient types) and fails on any diagnostic. A control program proves the setup would
-// catch a DOM or Node reference.
+// ES2023, no ambient types) and fails on any diagnostic, chrono-node's declarations included. A
+// control program proves the setup would catch a DOM or Node reference.
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -50,6 +50,11 @@ describe("the package without the DOM", () => {
     expect(diagnostics).toEqual([]);
     expect(sources.some((file) => /lib\.dom(\.|$)/.test(path.basename(file)))).toBe(false);
     expect(sources.some((file) => file.includes("@types/node"))).toBe(false);
+    // The date normalizer imports chrono-node's English parser alone ("chrono-node/en"), whose
+    // declarations need nothing beyond ES2023 either; its other 15 locales stay out.
+    const chrono = sources.filter((file) => file.includes("/chrono-node/"));
+    expect(chrono.some((file) => file.endsWith("/locales/en/index.d.ts"))).toBe(true);
+    expect(chrono.filter((file) => /\/locales\/(?!en\/)/.test(file))).toEqual([]);
     // Every source file is reachable from an entry, and nothing else of ours comes along. A JSON
     // module (the linker's params.v1.json) is data, not source, so only .ts files are compared.
     const own = sources.filter(
