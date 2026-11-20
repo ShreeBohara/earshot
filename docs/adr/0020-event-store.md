@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15). Amended for Phase 3 (2026-11-15) with three new event types; see "Phase 3 event types" below. Amended for Phase 4 (2026-11-19) with `proposal.created` v2 and its upcaster, and two new event types; see "Phase 4 event types" below and ADR-0027.
+Accepted (2026-11-15). Amended for Phase 3 (2026-11-15) with three new event types; see "Phase 3 event types" below. Amended for Phase 4 (2026-11-19) with `proposal.created` v2 and its upcaster, and two new event types; see "Phase 4 event types" below and ADR-0027. Amended for Phase 5 (2026-11-20) with `proposal.reviewed` v2 and its upcaster, and two new event types; see "Phase 5 event types" below and ADR-0032.
 
 ## Context and problem
 
@@ -130,6 +130,23 @@ Phase 4's entity linker and second witness change one payload and add two (ADR-0
 - **Postgres.** Migration 0012 adds `proposals.target` and `proposals.conflicts`, which `rebuildProjections` writes. `target_entity_id` holds `target.entityId`, and flags on the target are stored as `kind:target`.
 - **Stored events.** Nothing stored changes. `demo-session.jsonl` is byte-for-byte the same. Its committed projections were regenerated on purpose: each proposal gained its upcast `target` and an empty `conflicts`, and nothing else changed.
 - **Writers.** `SessionDO` wrote `proposal.created` v1 until Phase 4's WP8; from WP8 it writes v2 (ADR-0027), and every reader still upcasts the stored v1 events.
+
+## Phase 5 event types
+
+Phase 5's review inbox changes one payload and adds two (ADR-0032 has the shapes and the reasons):
+
+| Type, version | What changes |
+| --- | --- |
+| `proposal.reviewed` 2 | Adds the `reopened` decision, the record chosen, the mode (single, batch, policy, or system) with its batch or policy, the review a reopen undoes and why, what the reviewer saw, the review clock's two timings, the input and surface, `syncEligibleAt`, and the reviewer. |
+| `proposal.snoozed` 1 | A proposal set aside until a time, or woken. |
+| `session.sealed` 1 | The last event `SessionDO` writes for a session. After it, the web Worker writes the session's reviews. |
+
+- **The third upcaster.** `proposal.reviewed` v1 → v2 takes the event's own id as the `reviewId`, makes v1's `reviewerMs` both timings, sets the mode to `single`, and leaves everything else null, so nothing upcast is eligible to sync. A registry built without it fails when it loads.
+- **Projections.** `proposalsProjection` folds v2 reviews (a reopen returns the status to `proposed`), snoozes (`snoozedUntil`), and `supersedes` (the earlier proposal becomes `superseded`, with `supersededBy`). A reopen that doesn't name the latest review or names a reopen, a review or a snooze of a superseded proposal, and superseding an unknown or already-replaced proposal fail the replay. `sessionProjection` gains `sealedAt`; a seal before the end, or a second one, fails.
+- **Rules the writers keep.** `checkReview`, `checkReviews`, and `checkSnooze` in `@earshot/events` hold what the schema can't (ADR-0032).
+- **Postgres.** No migration yet: `reviewer_ms` holds a review's `handlingMs`, which is v1's `reviewerMs` for every stored review, so no row changes. Migration 0014 (WP3) adds columns for the rest.
+- **Stored events.** Nothing stored changes. `demo-session.jsonl` is byte-for-byte the same. Its committed projections were regenerated on purpose: the session gained `sealedAt`; each proposal gained `supersedes`, `supersededBy`, and `snoozedUntil`; and each review gained its upcast fields and lost `reviewerMs`.
+- **A second writer after the seal** is WP3's. ADR-0032 describes it; "Postgres store" above gains it when it's built.
 
 ## Consequences
 
