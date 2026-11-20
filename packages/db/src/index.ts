@@ -6,6 +6,26 @@ export {
   personalWorkspaceName,
   soleMemberWorkspaceSessionIds,
 } from "./account";
+export {
+  AUDIT_FORM_VERSION,
+  type AuditChainExport,
+  type AuditCheckpoint,
+  type AuditCheckpointExport,
+  type AuditEntryExport,
+  type AuditEntryInput,
+  type AuditHead,
+  AuditHeadError,
+  type AuditProblem,
+  type AuditProblemKind,
+  type AuditVerification,
+  type AuditWorkspaceReport,
+  exportAuditChain,
+  type RecordedAudit,
+  recordAudit,
+  verifyAuditExport,
+  writeCheckpoint,
+  ZERO_HASH_HEX,
+} from "./audit-chain";
 export { createHttpDb, createPoolDb, type HttpDb, type PoolDb } from "./client";
 export {
   DEMO_CRM_EXTERNAL_ID_PREFIX,
