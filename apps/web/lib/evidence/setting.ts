@@ -16,8 +16,30 @@ export const CLIPS_NOTICE_KEY = "earshot.capture.clips-notice.v1";
 
 export type ClipsSetting = "on" | "off";
 
+/**
+ * This browser's `localStorage`, or undefined while server rendering or where reading the property
+ * itself throws, as it does when policy blocks site storage. Every read and write of the setting,
+ * the notice, and the clips' owner goes through it, so blocked storage disables clips rather than
+ * breaking the page that renders them (Codex's review of #62).
+ */
+export function browserStorage(): Storage | undefined {
+  try {
+    return typeof window === "undefined" ? undefined : window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * This page's own choice, kept when the browser wouldn't save it (storage full or blocked), so a
+ * failed write can never turn clips back on after the rep turned them off. Shared by the settings
+ * page and the capture controller, since both read through `readClipsSetting`.
+ */
+let unsaved: ClipsSetting | null = null;
+
 /** Whether this device keeps clips: on unless it turned them off, and on where storage won't say. */
 export function readClipsSetting(storage?: Pick<Storage, "getItem"> | null): ClipsSetting {
+  if (unsaved !== null) return unsaved;
   try {
     return storage?.getItem(CLIPS_SETTING_KEY) === "off" ? "off" : "on";
   } catch {
@@ -25,17 +47,30 @@ export function readClipsSetting(storage?: Pick<Storage, "getItem"> | null): Cli
   }
 }
 
-/** Records the device's choice, and tells this tab's listeners. */
+/**
+ * Records the device's choice, and tells this tab's listeners. Where the browser won't save it, the
+ * choice still holds for the rest of this page (`unsaved`).
+ */
 export function writeClipsSetting(
   setting: ClipsSetting,
   target: { storage?: Pick<Storage, "setItem"> | null; events?: EventTarget | null } = {},
 ): void {
-  try {
-    target.storage?.setItem(CLIPS_SETTING_KEY, setting);
-  } catch {
-    // Storage full or blocked: the choice lasts for this page only.
+  if (!target.storage) {
+    unsaved = setting;
+  } else {
+    try {
+      target.storage.setItem(CLIPS_SETTING_KEY, setting);
+      unsaved = null;
+    } catch {
+      unsaved = setting;
+    }
   }
   target.events?.dispatchEvent(new Event(CLIPS_SETTING_EVENT));
+}
+
+/** For tests: forgets the page's unsaved choice. */
+export function forgetUnsavedClipsSetting(): void {
+  unsaved = null;
 }
 
 /**

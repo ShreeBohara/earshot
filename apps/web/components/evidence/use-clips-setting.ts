@@ -2,6 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 import {
+  browserStorage,
   CLIPS_SETTING_EVENT,
   CLIPS_SETTING_KEY,
   type ClipsSetting,
@@ -21,7 +22,7 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-const readClient = () => readClipsSetting(window.localStorage);
+const readClient = () => readClipsSetting(browserStorage());
 /** Server rendering knows nothing of the device: the default, which is on. */
 const readServer = (): ClipsSetting => "on";
 
@@ -29,7 +30,7 @@ const readServer = (): ClipsSetting => "on";
 export function useClipsSetting(): readonly [ClipsSetting, (setting: ClipsSetting) => void] {
   const setting = useSyncExternalStore(subscribe, readClient, readServer);
   const save = useCallback((next: ClipsSetting) => {
-    writeClipsSetting(next, { storage: window.localStorage, events: window });
+    writeClipsSetting(next, { storage: browserStorage(), events: window });
   }, []);
   return [setting, save] as const;
 }

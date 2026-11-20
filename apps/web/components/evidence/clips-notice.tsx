@@ -4,7 +4,7 @@ import { Button } from "@earshot/ui/components/button";
 import { AudioLinesIcon } from "lucide-react";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { CLIPS_COPY } from "@/lib/evidence/copy";
-import { clipsNoticeDue, markClipsNoticeSeen } from "@/lib/evidence/setting";
+import { browserStorage, clipsNoticeDue, markClipsNoticeSeen } from "@/lib/evidence/setting";
 import { CaptureLink } from "../capture/link";
 import { useEvidenceHub } from "./evidence-provider";
 import { useClipsSetting } from "./use-clips-setting";
@@ -26,10 +26,10 @@ export function useClipsNotice(): { readonly due: boolean; readonly seen: () => 
     () => false,
   );
   useEffect(() => {
-    setOwed(clipsNoticeDue(window.localStorage));
+    setOwed(clipsNoticeDue(browserStorage()));
   }, []);
   const seen = useCallback(() => {
-    markClipsNoticeSeen(window.localStorage);
+    markClipsNoticeSeen(browserStorage());
     setOwed(false);
   }, []);
   return { due: owed && setting === "on" && hub !== null && !unavailable, seen };

@@ -15,16 +15,25 @@ import {
   ClipStore,
   memoryClipBackend,
 } from "@earshot/voice/evidence";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { QUESTION, UPDATE } from "@/components/inbox/fixtures";
 import { signOutClearingClips } from "@/lib/evidence/browser";
 import { CLIPS_COPY, NO_AUDIO_COPY, PLAYING_COPY, playLabel } from "@/lib/evidence/copy";
 import { EvidenceHub, type HubPlayer, type VisibilityTarget } from "@/lib/evidence/hub";
 import {
+  CLIPS_OWNER_KEY,
+  claimClips,
+  clipsOwner,
+  forgetClipsOwner,
+  mayKeepClips,
+} from "@/lib/evidence/owner";
+import {
+  browserStorage,
   CLIPS_NOTICE_KEY,
   CLIPS_SETTING_EVENT,
   CLIPS_SETTING_KEY,
   clipsNoticeDue,
+  forgetUnsavedClipsSetting,
   markClipsNoticeSeen,
   readClipsSetting,
   writeClipsSetting,
@@ -545,18 +554,19 @@ describe("the page's evidence hub", () => {
 });
 
 describe("sign-out", () => {
-  it("stops capture, clears the clips, then signs out", async () => {
+  it("stops capture, clears the clips, forgets their owner, then signs out", async () => {
     const steps: string[] = [];
     await signOutClearingClips({
       stopCapture: () => steps.push("stop capture"),
       clearClips: async () => {
         steps.push("clear clips");
       },
+      forgetOwner: () => steps.push("forget owner"),
       signOut: async () => {
         steps.push("sign out");
       },
     });
-    expect(steps).toEqual(["stop capture", "clear clips", "sign out"]);
+    expect(steps).toEqual(["stop capture", "clear clips", "forget owner", "sign out"]);
   });
 
   it("signs out even when clearing fails", async () => {
@@ -566,11 +576,12 @@ describe("sign-out", () => {
       clearClips: async () => {
         throw new Error("IndexedDB is stuck");
       },
+      forgetOwner: () => steps.push("forget owner"),
       signOut: async () => {
         steps.push("sign out");
       },
     });
-    expect(steps).toEqual(["stop capture", "sign out"]);
+    expect(steps).toEqual(["stop capture", "forget owner", "sign out"]);
   });
 
   it("leaves the store empty: no clip of any session, and no key", async () => {
@@ -592,11 +603,161 @@ describe("sign-out", () => {
     await signOutClearingClips({
       stopCapture: () => {},
       clearClips: () => hub.clear(),
+      forgetOwner: () => {},
       signOut: async () => {},
     });
     expect(await store.list(SESSION_ID)).toEqual([]);
     expect(await store.list("01a1c6e2-0000-7000-8000-0000000a0092")).toEqual([]);
     expect(await backend.getDeviceKey()).toBeUndefined();
+  });
+});
+
+// The automated security review of #62: the clips belong to one signed-in user, so the next user
+// to sign in on this browser never inherits them, however the last session ended.
+describe("whose clips these are", () => {
+  function storage(initial: Record<string, string> = {}) {
+    const map = new Map(Object.entries(initial));
+    return {
+      map,
+      getItem: (key: string) => map.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        map.set(key, value);
+      },
+      removeItem: (key: string) => {
+        map.delete(key);
+      },
+    };
+  }
+  const ALICE = "01a1c6e2-0000-7000-8000-00000000a11c";
+  const BOB = "01a1c6e2-0000-7000-8000-000000000b0b";
+
+  it("keeps the store when it's already this user's", async () => {
+    const owned = storage({ [CLIPS_OWNER_KEY]: ALICE });
+    const clear = vi.fn(async () => {});
+    await expect(claimClips(ALICE, { storage: owned, clear })).resolves.toBe("kept");
+    expect(clear).not.toHaveBeenCalled();
+  });
+
+  it("clears another user's clips before claiming the store, however their session ended", async () => {
+    const owned = storage({ [CLIPS_OWNER_KEY]: ALICE });
+    const clear = vi.fn(async () => {});
+    await expect(claimClips(BOB, { storage: owned, clear })).resolves.toBe("cleared");
+    expect(clear).toHaveBeenCalledOnce();
+    expect(clipsOwner(owned)).toBe(BOB);
+  });
+
+  it("clears a store no one is recorded as owning", async () => {
+    const empty = storage();
+    const clear = vi.fn(async () => {});
+    await expect(claimClips(ALICE, { storage: empty, clear })).resolves.toBe("cleared");
+    expect(clear).toHaveBeenCalledOnce();
+    expect(clipsOwner(empty)).toBe(ALICE);
+  });
+
+  it("keeps a clip only for the viewer who owns the store", () => {
+    const owned = storage({ [CLIPS_OWNER_KEY]: ALICE });
+    expect(mayKeepClips(ALICE, owned)).toBe(true);
+    // A tab still running Alice's debrief after Bob signed in here, or after a sign-out elsewhere.
+    expect(mayKeepClips(BOB, owned)).toBe(false);
+    expect(mayKeepClips(ALICE, storage())).toBe(false);
+    expect(mayKeepClips(null, owned)).toBe(false);
+  });
+
+  it("keeps nothing where storage is blocked, rather than guess", async () => {
+    const blocked = {
+      getItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      setItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      removeItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+    };
+    const clear = vi.fn(async () => {});
+    await expect(claimClips(ALICE, { storage: blocked, clear })).resolves.toBe("cleared");
+    expect(mayKeepClips(ALICE, blocked)).toBe(false);
+    expect(() => forgetClipsOwner(blocked)).not.toThrow();
+  });
+
+  it("forgets the owner at sign-out, which other tabs hear as a storage event", () => {
+    const owned = storage({ [CLIPS_OWNER_KEY]: ALICE });
+    forgetClipsOwner(owned);
+    expect(clipsOwner(owned)).toBeNull();
+    expect(mayKeepClips(ALICE, owned)).toBe(false);
+  });
+});
+
+// Codex's review of #62: a refused write can't turn clips back on, a cleared or stopped hub plays
+// nothing it was still reading, and blocked storage disables clips without breaking the page.
+describe("the review's three fixes", () => {
+  const refusing = {
+    getItem: () => null,
+    setItem: () => {
+      throw new DOMException("full", "QuotaExceededError");
+    },
+  };
+  const saying = (value: string | null) => ({ getItem: () => value, setItem: () => {} });
+
+  it("keeps the rep's choice for the page when the browser won't save it", () => {
+    try {
+      writeClipsSetting("off", { storage: refusing });
+      // Storage still says nothing (on), but this page turned clips off: off it stays.
+      expect(readClipsSetting(saying(null))).toBe("off");
+      expect(readClipsSetting(undefined)).toBe("off");
+      // A choice the browser does save replaces it.
+      writeClipsSetting("on", { storage: saying(null) });
+      expect(readClipsSetting(saying(null))).toBe("on");
+      // No storage at all, as when it's blocked: the choice holds for the page.
+      writeClipsSetting("off", { storage: undefined });
+      expect(readClipsSetting(undefined)).toBe("off");
+    } finally {
+      forgetUnsavedClipsSetting();
+    }
+  });
+
+  it("reads blocked storage as no storage, never as a throw", () => {
+    const blocked = {};
+    Object.defineProperty(blocked, "localStorage", {
+      get() {
+        throw new DOMException("The operation is insecure.", "SecurityError");
+      },
+    });
+    vi.stubGlobal("window", blocked);
+    try {
+      expect(browserStorage()).toBeUndefined();
+      expect(readClipsSetting(browserStorage())).toBe("on");
+      expect(clipsNoticeDue(browserStorage())).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("plays nothing a clear or a stop caught still reading its clip", async () => {
+    for (const cancel of ["clear", "stop"] as const) {
+      const { hub, store, fake } = await hubWithStore();
+      await store.put({
+        sessionId: SESSION_ID,
+        turnId: TURN,
+        audio: { startMs: 2_000, durationMs: 4_000, pcm: new Int16Array(64_000) },
+      });
+      const clip = await store.find(SESSION_ID, 3_300);
+      expect(clip).not.toBeNull();
+      // The press is still reading its clip from IndexedDB when the clear (or stop) comes.
+      let deliver: (found: typeof clip) => void = () => {};
+      store.find = () =>
+        new Promise((resolve) => {
+          deliver = resolve;
+        });
+      const played = hub.play(SPAN);
+      await settle();
+      if (cancel === "clear") await hub.clear();
+      else hub.stop();
+      deliver(clip);
+      await expect(played).resolves.toBe("superseded");
+      expect(fake.played).toHaveLength(0);
+    }
   });
 });
 

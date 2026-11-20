@@ -234,17 +234,22 @@ export class EvidenceHub {
     if (state.kind !== "playable" && state.kind !== "pending") this.#say(NO_AUDIO_COPY[state.kind]);
   }
 
-  /** Stops the clip playing, if any. */
+  /**
+   * Stops the clip playing, if any, and any press still reading its clip: a play waiting on
+   * IndexedDB or decryption finds its ticket gone and doesn't start.
+   */
   stop(): void {
+    this.#plays += 1;
     this.#deps.player.stop();
   }
 
   /**
    * Deletes every clip and the store's key: sign-out, or clips turned off. Resolves once the store
-   * holds nothing, or at once where it never opened.
+   * holds nothing, or at once where it never opened. A press still reading its clip is cancelled
+   * first, so nothing read before the clear plays after it (Codex's review of #62).
    */
   async clear(): Promise<void> {
-    this.#deps.player.stop();
+    this.stop();
     let store: ClipStore;
     try {
       store = await this.store();
