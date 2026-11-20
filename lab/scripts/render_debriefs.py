@@ -364,16 +364,19 @@ def assemble(
     for start, end in spans:
         active[start:end] = True
     speech64 = audio24.astype(np.float64)
-    noise = scaled_noise(
-        speech64,
-        active,
-        script.noise,
-        audio_key=audio_key(script),
-        voice=script.voice,
-        rate=SOURCE_RATE,
-        tail=tail,
-        bank=bank or BabbleBank(synthesizer, SOURCE_RATE),
-    )
+    try:
+        noise = scaled_noise(
+            speech64,
+            active,
+            script.noise,
+            audio_key=audio_key(script),
+            voice=script.voice,
+            rate=SOURCE_RATE,
+            tail=tail,
+            bank=bank or BabbleBank(synthesizer, SOURCE_RATE),
+        )
+    except ValueError as error:
+        raise RenderError(f"{script.id} noise: {error}") from error
     mixed = (speech64 + noise).astype(np.float32)
     return to_pcm16(limit_peak(upsample_2x(mixed))), timed
 

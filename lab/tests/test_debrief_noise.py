@@ -290,6 +290,22 @@ def test_bad_noise_fails_with_the_file_name(tmp_path: Path, noise: object, messa
         rd.load_script(write_script(tmp_path, noise))
 
 
+class MumblingVoice:
+    """Too little audio for a babble loop: a few silent samples per line."""
+
+    def synthesize(self, text: str, voice: str, speed: float) -> NDArray[np.float32]:
+        return (
+            np.zeros(10, dtype=np.float32)
+            if voice != QUIET.voice
+            else np.ones(RATE, dtype=np.float32) * np.float32(0.3)
+        )
+
+
+def test_noise_that_cant_be_made_fails_as_a_render_error() -> None:
+    with pytest.raises(rd.RenderError, match=r"d000 noise: the voice \w+ produced too little"):
+        rd.assemble(noisy("cafe", 10.0), MumblingVoice())
+
+
 def test_render_shares_one_babble_bank_across_scripts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
