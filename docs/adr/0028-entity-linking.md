@@ -257,15 +257,15 @@ Per class, v1 decides:
 - **ECE** is 0.063 without E2 and G. The reliability table runs underconfident in the middle, at p 0.85–0.93.
 - **Calibration split** (in sample for the model): coverage 92.1%, wrong-account 5.9% (13: 10 in E2, 2 in G, and 1 E1 name linked), new-when-existing 0.0%. WP4 recorded both splits in `baselines/linking-v1.json`; WP5 replaced it with `baselines/linking.json`, recorded with the witness.
 
-**Ablations** (spec WP4 step 8; `eval:linking --linker v1` prints them). Each variant is refit on calibration without the signal, then scored on the test split, biased only. A removed input is cleared from what the linker is shown, in fitting and in prediction, so nothing derived from it (the prefilter's bonus, `rivalContext`) still carries it:
+**Ablations** (spec WP4 step 8; `eval:linking --linker v1` prints them). Each variant is refit on calibration without the signal, then scored on the test split, biased only. A removed input is cleared from what the linker is shown, in fitting and in prediction, so nothing derived from it (the prefilter's bonus, `rivalContext`) still carries it. The rows are as WP5's fit sets them, with its objective and θ_d; biased-only numbers don't use θ_d. Under WP4's objective, without sound decided 44.2%:
 
-| Variant | Removes | τ_link / δ / τ_new | Coverage | Wrong-account | Own wrong links (not E2, G) | New-when-existing |
+| Variant | Removes | τ_link / δ / τ_new / θ_d | Coverage | Wrong-account | Own wrong links (not E2, G) | New-when-existing |
 |---|---|---|---|---|---|---|
-| v1 | nothing | 0.72 / 0.40 / 0.40 | 93.3% | 5.4% | 0 | 0.0% |
-| Without sound | both sound sources, and every feature or tie built on codes or the homophone list | 0.76 / 0.40 / 0.20 | 44.2% | 6.3% | 5 | 3.8% |
-| Without trigrams | the trigram source, `trgm` | 0.72 / 0.40 / 0.40 | 93.3% | 5.4% | 0 | 0.0% |
-| Without context | the open account, earlier links, and the company said: the family source, `parentCtx`, `focus`, `recent`, `rivalContext` | 0.72 / 0.40 / 0.40 | 63.1% | 4.8% | 0 | 0.0% |
-| Without the open account | the open account, wherever it's read: the family source, the prefilter's bonus, `focus`, and its part in `rivalContext` | 0.70 / 0.40 / 0.35 | 82.5% | 5.1% | 1 | 0.0% |
+| v1 | nothing | 0.72 / 0.40 / 0.40 / 0.02 | 93.3% | 5.4% | 0 | 0.0% |
+| Without sound | both sound sources, and every feature or tie built on codes or the homophone list | 0.86 / 0.40 / 0.15 / 0.02 | 35.0% | 5.6% | 3 | 1.6% |
+| Without trigrams | the trigram source, `trgm` | 0.72 / 0.40 / 0.40 / 0.02 | 93.3% | 5.4% | 0 | 0.0% |
+| Without context | the open account, earlier links, and the company said: the family source, `parentCtx`, `focus`, `recent`, `rivalContext` | 0.72 / 0.40 / 0.40 / 0.02 | 63.1% | 4.8% | 0 | 0.0% |
+| Without the open account | the open account, wherever it's read: the family source, the prefilter's bonus, `focus`, and its part in `rivalContext` | 0.70 / 0.40 / 0.35 / 0.02 | 82.5% | 5.1% | 1 | 0.0% |
 
 Sound carries the linker, and context separates the homophones. The open account alone is worth 11 points of coverage, and without it one item outside E2 and G links to the wrong record. Trigrams add nothing on this set: its mishearings keep their codes by construction (see Consequences). They stay, because they're cheap, and because real speech-to-text errors that change a code are what they're for. WP6's mined set will say whether that holds.
 
