@@ -7,6 +7,14 @@ import { z } from "zod";
 import { containsKeyShape } from "../key-shapes";
 import { EntityRef } from "./entity-ref";
 import { EventEnvelope } from "./event-envelope";
+import { MAX_TARGET_CANDIDATES } from "./events/proposal-created";
+import {
+  ProposalReviewedV2,
+  ReviewSeen,
+  ReviewTarget,
+  SeenTarget,
+} from "./events/proposal-reviewed";
+import { ProposalSnoozedV1 } from "./events/proposal-snoozed";
 import { SessionProviders } from "./events/session-started";
 import { Timestamp } from "./events/shared";
 import { CaptureMode } from "./events/turn-measured";
@@ -52,6 +60,11 @@ export const MAX_ENTITY_NAME_CHARS = 200;
 export const MAX_ENTITY_ID_CHARS = 128;
 /** The most aliases one entity in a `start` message may carry. */
 export const MAX_ENTITY_ALIASES = 20;
+/**
+ * The most reviews one `review` message may carry (target): one decision, or one slice of an
+ * "accept all". A longer batch goes in several messages with the same `batchId`.
+ */
+export const MAX_REVIEWS_PER_MESSAGE = 25;
 /** Bounds on the length of `turn_end.key`. */
 export const TURN_KEY_MIN_LENGTH = 20;
 export const TURN_KEY_MAX_LENGTH = 512;
@@ -136,6 +149,38 @@ const SocketEntityRef = EntityRef.extend({
   aliases: z.array(EntityName).max(MAX_ENTITY_ALIASES),
   parentId: EntityId.optional(),
 });
+
+/** A record id in a review, capped like `start`'s; `null` is a new record. */
+const ReviewEntityId = EntityId.nullable();
+
+/**
+ * `proposal.reviewed` v2 as a person sends it: over the socket in a `review` message, and to the
+ * web route after the seal (Phase 5 spec §4.2). It leaves out `by` and `syncEligibleAt`, which
+ * the writer fills from the sender's sign-in and its own clock, and takes only the modes a person
+ * reviews in, so it carries no policy and reopens only to undo. Record ids are capped like
+ * `start`'s, and, like every client message, it's refused if anything in it is shaped like a key.
+ * `checkReview` in `@earshot/events` holds the rules a schema can't.
+ */
+export const ReviewInput = ProposalReviewedV2.omit({ by: true, syncEligibleAt: true })
+  .extend({
+    target: ReviewTarget.extend({ entityId: ReviewEntityId }).nullable(),
+    mode: z.enum(["single", "batch"]),
+    policy: z.null(),
+    reason: z.literal("undo").nullable(),
+    seen: ReviewSeen.extend({
+      target: SeenTarget.extend({
+        entityId: ReviewEntityId,
+        offered: z.array(ReviewEntityId).max(MAX_TARGET_CANDIDATES),
+      }).nullable(),
+      relinked: EntityId.nullable(),
+    }).nullable(),
+  })
+  .superRefine(refuseStrayKeys);
+export type ReviewInput = z.infer<typeof ReviewInput>;
+
+/** `proposal.snoozed` as a person sends it, without `by`, which the writer fills. */
+export const SnoozeInput = ProposalSnoozedV1.omit({ by: true });
+export type SnoozeInput = z.infer<typeof SnoozeInput>;
 
 const Hello = z.strictObject({
   t: z.literal("hello"),
@@ -257,6 +302,26 @@ const End = z.strictObject({
 });
 
 /**
+ * Reviews from the tray (Phase 5 spec §4.2), taken from `start` until the seal: one decision, or
+ * one slice of an "accept all", which `SessionDO` checks as one request and appends as
+ * `proposal.reviewed` v2. A resend is idempotent by `msgId`, and a repeated `reviewId` gets the
+ * first one's seq. Refused with `sealed` once the session is sealed: send them to the web route
+ * instead, with the same review ids.
+ */
+const Review = z.strictObject({
+  t: z.literal("review"),
+  msgId: MsgId,
+  reviews: z.array(ReviewInput).min(1).max(MAX_REVIEWS_PER_MESSAGE),
+});
+
+/** A snooze, or a wake (`until: null`), under the same rules as `review`. */
+const Snooze = z.strictObject({
+  t: z.literal("snooze"),
+  msgId: MsgId,
+  ...SnoozeInput.shape,
+});
+
+/**
  * Why `SessionDO` refused or failed a message. `retryable` on the `error` message says whether
  * resending can help.
  */
@@ -269,6 +334,11 @@ export const SessionErrorCode = z.enum([
   "not_started",
   /** A message that changes the session came after `end`. */
   "already_ended",
+  /**
+   * The session is sealed: `SessionDO` takes no more writes for it, ever. Not retryable; send
+   * reviews and snoozes to the web route instead. `hello` and `ack` still work.
+   */
+  "sealed",
   /** Too many messages a second on this socket. */
   "rate_limited",
   /** Too many turns in the session's window. */
@@ -397,6 +467,22 @@ const ErrorMessage = z.strictObject({
 const STRAY_KEY = "stray_key";
 
 /**
+ * Refuses anything shaped like a key, anywhere in `value`. For schemas that other writers parse
+ * on their own, such as `ReviewInput` in the web route, so the guard goes wherever they do.
+ */
+function refuseStrayKeys(value: object, ctx: z.RefinementCtx): void {
+  const path = findStrayKey(value, undefined);
+  if (path) {
+    ctx.addIssue({
+      code: "custom",
+      path,
+      message: "a key-shaped string can't be stored",
+      params: { reason: STRAY_KEY },
+    });
+  }
+}
+
+/**
  * A message from the browser to `SessionDO`. Anything shaped like a provider key is refused
  * everywhere except `turn_end.key`, and so is that turn's key itself, so a client bug can't put
  * a key into a stored event.
@@ -412,6 +498,8 @@ export const ClientMessage = z
     Metric,
     ClientAck,
     End,
+    Review,
+    Snooze,
   ])
   .superRefine((message, ctx) => {
     const turnKey = message.t === "turn_end" ? message.key : undefined;

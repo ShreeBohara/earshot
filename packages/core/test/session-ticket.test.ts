@@ -269,6 +269,104 @@ describe("secrets and claims", () => {
   });
 });
 
+describe("the sign-in claims, am and sat (Phase 5)", () => {
+  const signedIn = (overrides: Partial<TicketClaims> = {}) =>
+    claims({ am: "passkey", sat: NOW_S - 3_600, ...overrides });
+
+  it("round-trip, written last, after exp", async () => {
+    const ticket = await signTicket(SECRET, signedIn());
+    expect(await verifyTicket(SECRET, ticket, NOW)).toEqual({ ok: true, claims: signedIn() });
+    const [payload] = ticket.split(".");
+    const json = new TextDecoder().decode(
+      Uint8Array.from(atob((payload ?? "").replaceAll("-", "+").replaceAll("_", "/")), (c) =>
+        c.charCodeAt(0),
+      ),
+    );
+    expect(Object.keys(JSON.parse(json))).toEqual([
+      "v",
+      "sid",
+      "uid",
+      "wid",
+      "jti",
+      "iat",
+      "exp",
+      "am",
+      "sat",
+    ]);
+    expect(await forge(SECRET, JSON.parse(json))).toBe(ticket);
+  });
+
+  it("are optional: a ticket without them signs and verifies as it always did", async () => {
+    const ticket = await signTicket(SECRET, claims());
+    const verified = await verifyTicket(SECRET, ticket, NOW);
+    expect(verified).toEqual({ ok: true, claims: claims() });
+    expect(verified.ok && "am" in verified.claims).toBe(false);
+    expect(ticket).not.toBe(await signTicket(SECRET, signedIn()));
+  });
+
+  it("take every sign-in method, and nothing else", async () => {
+    for (const am of ["passkey", "magic_link", "github", "google", "unknown"] as const) {
+      const ticket = await signTicket(SECRET, signedIn({ am }));
+      expect((await verifyTicket(SECRET, ticket, NOW)).ok).toBe(true);
+    }
+    const password = await forge(SECRET, { ...signedIn(), am: "password" });
+    expect(await verifyTicket(SECRET, password, NOW)).toEqual({ ok: false, reason: "malformed" });
+  });
+
+  it("come together, or not at all", async () => {
+    const { sat: _, ...methodOnly } = signedIn();
+    const { am: __, ...timeOnly } = signedIn();
+    await expect(signTicket(SECRET, methodOnly as TicketClaims)).rejects.toThrow(
+      "invalid ticket claims: am",
+    );
+    await expect(signTicket(SECRET, timeOnly as TicketClaims)).rejects.toThrow(/am/);
+    for (const payload of [methodOnly, timeOnly]) {
+      expect(await verifyTicket(SECRET, await forge(SECRET, payload), NOW)).toEqual({
+        ok: false,
+        reason: "malformed",
+      });
+    }
+  });
+
+  it("refuse a sign-in after the ticket, beyond the clock skew, as milliseconds would be", async () => {
+    const { iat } = claims();
+    const justInside = signedIn({ sat: iat + TICKET_CLOCK_SKEW_SECONDS });
+    expect((await verifyTicket(SECRET, await signTicket(SECRET, justInside), NOW)).ok).toBe(true);
+    for (const sat of [iat + TICKET_CLOCK_SKEW_SECONDS + 1, (iat - 3_600) * 1000]) {
+      await expect(signTicket(SECRET, signedIn({ sat }))).rejects.toThrow(/sat/);
+      const forged = await forge(SECRET, signedIn({ sat }));
+      expect(await verifyTicket(SECRET, forged, NOW)).toEqual({ ok: false, reason: "malformed" });
+    }
+    await expect(signTicket(SECRET, signedIn({ sat: 1.5 }))).rejects.toThrow(/sat/);
+  });
+
+  it("are filled by ticketClaims from the web session's sign-in, in whole seconds", () => {
+    const at = new Date(NOW.getTime() - 3_600_000 - 999);
+    const filled = ticketClaims({
+      ...SESSION,
+      wid: WID,
+      now: NOW,
+      signIn: { method: "github", at },
+    });
+    expect(filled).toMatchObject({ am: "github", sat: NOW_S - 3_601 });
+    expect(ticketClaims({ ...SESSION, wid: WID, now: NOW })).not.toHaveProperty("am");
+  });
+
+  it("keep the longest ticket under the length limit, with room to spare", async () => {
+    // A uid JSON escapes in full doubles in the payload: the worst case there is.
+    const longest = claims({
+      uid: "\\".repeat(128),
+      iat: 2 ** 52,
+      exp: 2 ** 52 + 60,
+      am: "magic_link",
+      sat: 2 ** 52,
+    });
+    const length = (await signTicket(SECRET, longest)).length;
+    expect(length).toBeGreaterThan(MAX_TICKET_LENGTH / 2);
+    expect(length).toBeLessThan(MAX_TICKET_LENGTH * 0.75);
+  });
+});
+
 describe("the development secret", () => {
   it("is long enough to sign with, and says what it is", async () => {
     const bytes = new TextEncoder().encode(DEV_SESSION_TICKET_SECRET).byteLength;
