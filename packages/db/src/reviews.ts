@@ -281,6 +281,21 @@ export async function writeSessionReviews<
     }
     named.add(snooze.proposalId);
   }
+  // One id names one write. Two items sharing an id, even both new, would commit twice under it,
+  // and the retry that idempotency promises would then be refused: across reviews and snoozes.
+  const ids = new Set<string>();
+  for (const [index, review] of request.reviews.entries()) {
+    if (ids.has(review.reviewId)) {
+      return refused("review", index, "malformed", "a write id appears twice in the request");
+    }
+    ids.add(review.reviewId);
+  }
+  for (const [index, snooze] of request.snoozes.entries()) {
+    if (ids.has(snooze.snoozeId)) {
+      return refused("snooze", index, "malformed", "a write id appears twice in the request");
+    }
+    ids.add(snooze.snoozeId);
+  }
 
   const { proposals } = replay(log, { proposals: proposalsProjection });
   const recorded = recordedWrites(log);

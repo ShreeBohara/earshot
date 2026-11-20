@@ -269,6 +269,42 @@ describe("writeSessionReviews", () => {
     expect(reused).toMatchObject({ ok: false, reason: "refused", refusal: "malformed" });
   });
 
+  it("refuses one write id on two items in a request, even both new, and writes nothing", async () => {
+    const db = await fresh();
+    await seed(db, S1, debrief(true));
+    const shared = newId();
+    expect(
+      await write(db, S1, {
+        reviews: [],
+        snoozes: [
+          snoozed(1, null, { snoozeId: shared }).payload as never,
+          snoozed(2, null, { snoozeId: shared }).payload as never,
+        ],
+      }),
+    ).toMatchObject({
+      ok: false,
+      reason: "refused",
+      kind: "snooze",
+      index: 1,
+      refusal: "malformed",
+    });
+    expect(
+      await write(db, S1, {
+        reviews: [inboxReview(1, { reviewId: shared })],
+        snoozes: [snoozed(2, null, { snoozeId: shared }).payload as never],
+      }),
+    ).toMatchObject({
+      ok: false,
+      reason: "refused",
+      kind: "snooze",
+      index: 0,
+      refusal: "malformed",
+    });
+    // Nothing reached the log: it holds the seeded events alone.
+    expect(await new PgEventStore(db, A).read(S1)).toHaveLength(7);
+    expect(await db.select().from(auditLog)).toHaveLength(0);
+  });
+
   it("says which item broke a rule: stale decisions, and malformed requests", async () => {
     const db = await fresh();
     await seed(db, S1, debrief(true));
