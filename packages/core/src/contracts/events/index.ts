@@ -43,6 +43,7 @@ import {
   SeenField,
   SeenTarget,
   SignInMethod,
+  UNDO_WINDOW_MS,
 } from "./proposal-reviewed";
 import { ProposalSnoozedV1 } from "./proposal-snoozed";
 import { SessionEndedV1 } from "./session-ended";
@@ -148,6 +149,7 @@ export {
   TurnMeasuredV1,
   TurnOutcome,
   TurnWitnessedV1,
+  UNDO_WINDOW_MS,
   UsageKind,
   UsageRecordedV1,
   UtteranceFinalV1,

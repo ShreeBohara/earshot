@@ -40,6 +40,13 @@ export type ProposalReviewedV1 = z.infer<typeof ProposalReviewedV1>;
 // review (`reopened`), never a deletion, and a snooze is its own event (`proposal.snoozed`).
 // v1's exports above stay frozen: stored v1 reviews upcast to v2 on read (`@earshot/events`).
 
+/**
+ * The undo window (Phase 5 spec decision 3, target): an approval or an edit may sync to the CRM
+ * this long after it's made, not before. Each writer sets `syncEligibleAt` to its own clock plus
+ * this: `SessionDO` for the tray's reviews, the web Worker for the inbox's.
+ */
+export const UNDO_WINDOW_MS = 30_000;
+
 /** v1's three decisions, plus `reopened`: an undo, or a later conflict, returns it to proposed. */
 export const ReviewDecisionV2 = z.enum(["approved", "edited", "rejected", "reopened"]);
 export type ReviewDecisionV2 = z.infer<typeof ReviewDecisionV2>;
