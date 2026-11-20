@@ -1,0 +1,182 @@
+{
+  "recapId": "01a1c6e9-2a10-7b3c-8d4e-5f6a7b8c9d01",
+  "outcome": "created",
+  "reason": null,
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-5-5"
+  },
+  "sentences": [
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    }
+  ],
+  "dropped": 1,
+  "lens": null
+}

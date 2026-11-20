@@ -1,0 +1,12 @@
+{
+  "recapId": "01a1c6e9-2a10-7b3c-8d4e-5f6a7b8c9d04",
+  "outcome": "skipped",
+  "reason": "no_speech",
+  "llm": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-20b"
+  },
+  "sentences": [],
+  "dropped": 0,
+  "lens": null
+}

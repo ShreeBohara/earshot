@@ -1,0 +1,309 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "recapId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "created",
+        "failed",
+        "skipped"
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "no_key",
+            "no_speech",
+            "invalid_output",
+            "rate_limited",
+            "provider_error",
+            "timeout"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "llm": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProviderModel"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sentences": {
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "headline",
+              "next_step",
+              "commitment"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "evidence": {
+            "minItems": 1,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "utteranceId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "span": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "audioMs": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "utteranceId",
+                "span",
+                "audioMs",
+                "confidence"
+              ],
+              "additionalProperties": false,
+              "title": "Evidence"
+            }
+          },
+          "weakSupport": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "text",
+          "evidence",
+          "weakSupport"
+        ],
+        "additionalProperties": false,
+        "title": "RecapSentence"
+      }
+    },
+    "dropped": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "lens": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "enum": [
+                "meddic",
+                "spiced",
+                "bant"
+              ]
+            },
+            "fields": {
+              "minItems": 1,
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                  },
+                  "quote": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "evidence": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "utteranceId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "span": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            ],
+                            "items": false,
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "audioMs": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            ],
+                            "items": false,
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "confidence": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          }
+                        },
+                        "required": [
+                          "utteranceId",
+                          "span",
+                          "audioMs",
+                          "confidence"
+                        ],
+                        "additionalProperties": false,
+                        "title": "Evidence"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "field",
+                  "quote",
+                  "evidence"
+                ],
+                "additionalProperties": false,
+                "title": "RecapLensField"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "fields"
+          ],
+          "additionalProperties": false,
+          "title": "RecapLens"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "recapId",
+    "outcome",
+    "reason",
+    "llm",
+    "sentences",
+    "dropped",
+    "lens"
+  ],
+  "additionalProperties": false,
+  "title": "RecapCreatedV1",
+  "description": "Payload of `recap.created`, schema version 1: the debrief's recap, every kept sentence with the evidence of the rep's own words, or why there's none.",
+  "x-event-type": "recap.created",
+  "x-schema-version": 1,
+  "$defs": {
+    "ProviderModel": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "provider",
+        "model"
+      ],
+      "additionalProperties": false,
+      "title": "ProviderModel"
+    }
+  }
+}

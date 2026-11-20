@@ -1,0 +1,66 @@
+{
+  "recapId": "01a1c6e9-2a10-7b3c-8d4e-5f6a7b8c9d06",
+  "outcome": "created",
+  "reason": null,
+  "llm": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-20b"
+  },
+  "sentences": [
+    {
+      "kind": "headline",
+      "text": "Acme Corp's new VP of Operations, Dana Lee, wants the rollout expanded.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+          "span": [48, 84],
+          "audioMs": [4150, 6900],
+          "confidence": 0.91
+        },
+        {
+          "utteranceId": "01a1c6e2-b3c0-7d11-8a2e-5f6a7b8c9d01",
+          "span": [0, 38],
+          "audioMs": [9200, 11400],
+          "confidence": 0.88
+        }
+      ],
+      "weakSupport": false
+    }
+  ],
+  "dropped": 0,
+  "lens": {
+    "id": "spiced",
+    "fields": [
+      {
+        "field": "situation",
+        "quote": null,
+        "evidence": null
+      },
+      {
+        "field": "pain",
+        "quote": "onboarding took longer",
+        "evidence": {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [50, 72],
+          "audioMs": [18100, 19300],
+          "confidence": 0.9
+        }
+      },
+      {
+        "field": "impact",
+        "quote": null,
+        "evidence": null
+      },
+      {
+        "field": "critical_event",
+        "quote": null,
+        "evidence": null
+      },
+      {
+        "field": "decision",
+        "quote": null,
+        "evidence": null
+      }
+    ]
+  }
+}
