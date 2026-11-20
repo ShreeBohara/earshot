@@ -22,6 +22,12 @@
 // turn's audio goes from this browser to Groq Whisper, the Groq key decrypted for each request
 // and dropped, and the transcript goes to SessionDO as `witness`. Otherwise each turn's `witness`
 // says why there's none (off, or no key). `end` waits a little for the last turn's witness.
+//
+// The tray's reviews (Phase 5 WP6; ADR-0032, ADR-0035): the session client is the tray's writer
+// (`reviews`). After `end` it stays open until SessionDO seals the session (its `session.sealed`
+// arrives), or the rep leaves the capture screen, so the tray keeps reviewing over the socket in
+// the grace before the seal. A review the socket refuses with `sealed`, and every review once the
+// client has closed, goes to the web route (`createReviewRoute`) with the same review id.
 import type { EntityRef, LlmProvider, SessionProviders } from "@earshot/core";
 import type { ProviderId, StoredKeyMeta } from "@earshot/keys";
 import {
@@ -55,6 +61,7 @@ import {
 } from "@earshot/voice/machines";
 import {
   connectEngine,
+  createReviewRoute,
   createTicketFetcher,
   type SessionClient,
   type SessionClientOptions,
@@ -63,6 +70,7 @@ import {
   SessionWitness,
   type WitnessSetup,
 } from "@earshot/voice/session";
+import type { ReviewWriter } from "../inbox/sinks";
 import type { CreateSessionResponse, VoiceRouteError } from "../voice/types";
 import type { ActivityKind, ActivityRow } from "./activity";
 import { createSession, mintCredential } from "./api";
@@ -132,6 +140,13 @@ export interface CaptureUiState {
   readonly witness: WitnessView | null;
   /** Development fake mode: how long to hold, and the line the next press says. */
   readonly fake: { readonly holdMs: number; readonly nextLine: string | null } | null;
+  /**
+   * The tray's writer: the session client, whose reviews go over the socket until the seal and to
+   * the web route after it, under the same ids. Null before a session opens.
+   */
+  readonly reviews: ReviewWriter | null;
+  /** SessionDO sealed the session: the inbox has it from here on (the tray hands over). */
+  readonly sealed: boolean;
 }
 
 /**
@@ -232,6 +247,11 @@ interface LiveSession {
 
 /** After `end` is acknowledged, late events (the last turn's LLM usage) still arrive this long. */
 const LATE_EVENTS_MS = 5_000;
+/**
+ * The longest an ended session's client waits for the seal: SessionDO seals at most 30 minutes
+ * after `end` (`SEAL_TIMING`, target), and a minute more covers the flush and a late socket.
+ */
+const SEAL_WAIT_MAX_MS = 31 * 60_000;
 /** How long an ended session keeps trying to deliver what's still unacknowledged. */
 const MAX_DELIVERY_WAIT_MS = 60_000;
 const END_ACK_TIMEOUT_MS = 6_000;
@@ -300,6 +320,8 @@ export class CaptureController {
       turnsSent: 0,
       fake: null,
       witness: null,
+      reviews: null,
+      sealed: false,
     };
   }
 
@@ -394,6 +416,8 @@ export class CaptureController {
         ? { holdMs: input.fake.holdMs, nextLine: input.fake.scenario.turns[0]?.text ?? null }
         : null,
       witness: null,
+      reviews: null,
+      sealed: false,
     });
     this.#sessionReady = this.#openSession(generation, input);
     void this.#arm(generation, audioContext);
@@ -537,6 +561,8 @@ export class CaptureController {
         store,
         // A hidden iOS page: stop capture first, so the last turn reaches the outbox.
         onSuspend: () => this.#suspendCapture(),
+        // A sealed session's tray reviews go to the web route, with the same review ids.
+        reviewRoute: createReviewRoute({ sessionId: created.sessionId, fetch: this.#deps.fetch }),
         ...this.#deps.clientOptions,
       });
       const witnessSetup = plan.witness?.setup;
@@ -575,6 +601,8 @@ export class CaptureController {
         entities: begin.entities,
         providers: plan.providers,
         witness: plan.witness?.view ?? null,
+        reviews: client,
+        sealed: false,
       });
       return live;
     } catch {
@@ -941,6 +969,43 @@ export class CaptureController {
     if (this.#live !== live) return;
     live.turnKey = undefined;
     this.#update({ phase: "ended" });
+    this.#awaitSeal(live);
+  }
+
+  /**
+   * After `end` (spec WP6 step 3): the client stays open for the tray until the seal arrives, the
+   * rep leaves the capture screen (`leaveScreen`), or the seal's cap has passed; then it closes
+   * once what's in flight is delivered.
+   */
+  #awaitSeal(live: LiveSession): void {
+    if (this.#state.sealed) {
+      this.#stopWhenDelivered(live, 0);
+      return;
+    }
+    if (live.stopTimer) this.#timers.clearTimeout(live.stopTimer);
+    live.stopTimer = this.#timers.setTimeout(() => {
+      live.stopTimer = null;
+      this.#stopWhenDelivered(live, 0);
+    }, SEAL_WAIT_MAX_MS);
+  }
+
+  /** SessionDO sealed the session: the tray hands over, and an ended session's client closes. */
+  #onSealed(live: LiveSession): void {
+    if (this.#state.sealed) return;
+    this.#update({ sealed: true });
+    if (this.#state.phase !== "ended") return;
+    if (live.stopTimer) this.#timers.clearTimeout(live.stopTimer);
+    this.#stopWhenDelivered(live, 0);
+  }
+
+  /**
+   * The rep left the capture screen: an ended session's client stops waiting for the seal, and
+   * closes once what's in flight is delivered. SessionDO seals on its own; the inbox has it then.
+   */
+  leaveScreen(): void {
+    const live = this.#live;
+    if (!live || this.#state.phase !== "ended" || this.#state.sealed) return;
+    if (live.stopTimer) this.#timers.clearTimeout(live.stopTimer);
     this.#stopWhenDelivered(live, 0);
   }
 
@@ -996,6 +1061,8 @@ export class CaptureController {
       turnsSent: 0,
       fake: null,
       witness: null,
+      reviews: null,
+      sealed: false,
     });
   }
 
@@ -1038,6 +1105,8 @@ export class CaptureController {
       const at = state.receivedAt[index] ?? this.#deps.clock();
       if (event?.type === "proposal.created") {
         live.marks.proposalArrived(event.payload.proposalId, at);
+      } else if (event?.type === "session.sealed") {
+        this.#onSealed(live);
       } else if (event?.type === "turn.completed") {
         const { turnId, outcome, proposalIds } = event.payload;
         live.marks.turnCompleted(turnId, proposalIds);

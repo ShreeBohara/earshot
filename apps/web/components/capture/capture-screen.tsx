@@ -5,7 +5,7 @@ import { Kbd } from "@earshot/ui/components/kbd";
 import { Orb } from "@earshot/ui/components/orb";
 import { captureErrorKind } from "@earshot/voice/machines";
 import { FlaskConicalIcon, PauseIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { linkButton } from "@/components/link-button";
 import type { WitnessView } from "@/lib/capture/controller";
 import type { FakeVoice, FakeVoiceSetup } from "@/lib/capture/fake";
@@ -96,6 +96,20 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
   const [picked, setPicked] = useState<ProviderSelection | null>(null);
   const [fakeVoice, setFakeVoice] = useState<FakeVoice | null>(null);
   const [witnessSetting, saveWitnessSetting] = useWitnessSetting();
+  const mounts = useRef(0);
+
+  // Leaving the screen: an ended debrief's client stops waiting for the seal (spec WP6 step 3).
+  // React's development double mount unmounts and remounts in one go, so only an unmount with no
+  // remount after it counts.
+  useEffect(() => {
+    mounts.current += 1;
+    return () => {
+      mounts.current -= 1;
+      queueMicrotask(() => {
+        if (mounts.current === 0) controller.leaveScreen();
+      });
+    };
+  }, [controller]);
 
   useEffect(() => {
     void controller.loadKeys();
@@ -346,6 +360,7 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
             entities={ui.entities}
             partial={ui.paused ? null : ui.partial}
             activity={ui.activity}
+            reviews={ui.reviews}
             onPainted={(proposalId, at) => controller.cardPainted(proposalId, at)}
           />
 
@@ -359,11 +374,16 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
               </h2>
               {state ? <CostMeter costUsd={state.meter.costUsd} final /> : null}
               <p className="max-w-prose text-pretty text-muted-foreground text-sm">
-                Every proposal waits for your review; nothing has been written to your CRM.
+                {ui.sealed
+                  ? "Earshot has saved this debrief, and the inbox has whatever you haven't reviewed. Nothing has been written to your CRM."
+                  : "Review the proposals here while Earshot finishes saving the debrief; anything you leave waits in the inbox. Nothing has been written to your CRM."}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={() => controller.reset()}>Start another debrief</Button>
-                <CaptureLink href="/home" className={linkButton({ variant: "outline" })}>
+                <CaptureLink href="/inbox" className={linkButton({ variant: "outline" })}>
+                  Open the inbox
+                </CaptureLink>
+                <CaptureLink href="/home" className={linkButton({ variant: "ghost" })}>
                   Back to home
                 </CaptureLink>
               </div>

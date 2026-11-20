@@ -46,10 +46,25 @@ function inDialog(event: KeyboardEvent): boolean {
 }
 
 /**
+ * A key from the review list (the tray's cards, their editors, choices, and correction panels) or
+ * from what it opens in a portal (a card's More menu, a toast's Undo): the list's keys, never the
+ * screen's. Esc there closes an editor, a panel, or a menu; it must never end the session.
+ */
+function inReviewSurface(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return (
+    target.closest(
+      '[data-review-list], [role="menu"], [role="menuitem"], [data-slot="toast-viewport"]',
+    ) !== null
+  );
+}
+
+/**
  * The capture shortcuts. `screen` (the capture screen): hold Space to talk, `H` hands-free, `P`
  * pause live updates, `Esc` end, `?` shortcuts. `dock` (the mini-session on other pages): Space
  * only, so the rest of the app keeps its own keys. Space never fires in a text field, and leaves
- * other buttons to activate as usual.
+ * other buttons to activate as usual. The screen's letters, `Esc`, and `?` ignore keys from the
+ * review list and the popups it opens (Phase 5 WP6), which keep their own.
  */
 export function useCaptureShortcuts(
   controller: CaptureController,
@@ -79,6 +94,7 @@ export function useCaptureShortcuts(
         return;
       }
       if (scope !== "screen" || event.repeat || inDialog(event)) return;
+      if (inReviewSurface(event.target)) return;
       switch (event.key) {
         case "h":
         case "H":

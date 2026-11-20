@@ -19,6 +19,8 @@ import { CaptureController, type CaptureDeps } from "@/lib/capture/controller";
 import { createFakeVoice } from "@/lib/capture/dev/fake-voice";
 import type { FakeScenario } from "@/lib/capture/fake";
 import type { WitnessSetting } from "@/lib/capture/witness";
+import { decisionReview, undoReview } from "@/lib/inbox/review";
+import { socketSink } from "@/lib/inbox/sinks";
 import { ManualClock } from "./support/manual-clock";
 
 const SESSION_ID = "0000000a-0000-7000-8000-0000000ca901";
@@ -108,6 +110,27 @@ function setup(
     if (url.endsWith("/ticket")) {
       const next = ticket();
       return Response.json(next);
+    }
+    if (url === `/api/sessions/${SESSION_ID}/reviews`) {
+      // The web route, once the session is sealed: it writes what it's sent.
+      const body = JSON.parse(String(init?.body)) as {
+        reviews: { reviewId: string }[];
+        snoozes: { snoozeId: string }[];
+      };
+      return Response.json({
+        sessionId: SESSION_ID,
+        reviews: body.reviews.map((review, index) => ({
+          id: review.reviewId,
+          seq: 100 + index,
+          recorded: "now",
+        })),
+        snoozes: body.snoozes.map((snooze, index) => ({
+          id: snooze.snoozeId,
+          seq: 200 + index,
+          recorded: "now",
+        })),
+        lastSeq: 300,
+      });
     }
     if (url === "/api/voice/token") return Response.json(fakeCredential("assemblyai"));
     throw new Error(`unexpected request ${url}`);
@@ -445,6 +468,102 @@ describe("CaptureController in fake mode", () => {
     ]);
     t.controller.dispose();
   });
+});
+
+describe("CaptureController's tray after `end` (Phase 5 WP6)", () => {
+  /** A review of the session's first card, as the tray sends it. */
+  function trayReview(t: ReturnType<typeof setup>) {
+    const proposal = t.controller.getState().store?.getState().projections.proposals[0];
+    if (!proposal) throw new Error("no card");
+    return decisionReview({
+      proposal,
+      entities: {},
+      decision: "rejected",
+      timing: { decisionMs: 800, handlingMs: 800 },
+      input: "keyboard",
+      surface: "tray",
+    });
+  }
+
+  async function endedWithACard(t: ReturnType<typeof setup>) {
+    const fake = createFakeVoice(SCENARIO);
+    t.controller.start({ selection: null, fake });
+    await settle(100);
+    await t.clock.advance(200);
+    await talk(t, fake.holdMs);
+    const ending = t.controller.end();
+    await settle(100);
+    await t.clock.advance(1_000);
+    await ending;
+    expect(t.controller.getState().phase).toBe("ended");
+  }
+
+  const connection = (t: ReturnType<typeof setup>) =>
+    t.controller.getState().store?.getState().connection.state;
+
+  it("keeps the client open until the seal, takes the tray's reviews over the socket meanwhile, then hands over", async () => {
+    const t = setup();
+    await endedWithACard(t);
+    const writer = t.controller.getState().reviews;
+    expect(writer?.sessionId).toBe(SESSION_ID);
+    // Long past `end`'s late events: still open for the tray, unlike before Phase 5.
+    await t.clock.advance(20_000);
+    expect(connection(t)).toBe("open");
+
+    // A tray review in the grace goes over the socket, and SessionDO writes it.
+    const sink = socketSink(writer as NonNullable<typeof writer>);
+    const review = trayReview(t);
+    const sent = sink.send(SESSION_ID, { reviews: [review], snoozes: [] });
+    await settle(200);
+    await expect(sent).resolves.toEqual({ ok: true });
+    expect(t.server.log.at(-1)?.payload).toMatchObject({ reviewId: review.reviewId });
+
+    // The seal: the tray hands over, and the client closes once its late events are in.
+    t.server.seal();
+    await settle(200);
+    expect(t.controller.getState().sealed).toBe(true);
+    await t.clock.advance(6_000);
+    expect(connection(t)).toBe("closed");
+
+    // After it, a tray review goes to the web route, under the same id.
+    const proposal = t.controller.getState().store?.getState().projections.proposals[0];
+    if (!proposal) throw new Error("no card");
+    const reopened = undoReview({
+      proposal,
+      entities: {},
+      undoes: review.reviewId,
+      input: "pointer",
+      surface: "tray",
+    });
+    await expect(sink.send(SESSION_ID, { reviews: [reopened], snoozes: [] })).resolves.toEqual({
+      ok: true,
+    });
+    const posted = t.routes.filter((route) => route.url.endsWith("/reviews"));
+    expect(posted).toHaveLength(1);
+    const body = posted[0]?.body as { reviews: { reviewId: string }[] } | undefined;
+    expect(body?.reviews.map((posting) => posting.reviewId)).toEqual([reopened.reviewId]);
+    t.controller.dispose();
+  });
+
+  it("stops waiting for the seal when the rep leaves the capture screen", async () => {
+    const t = setup();
+    await endedWithACard(t);
+    t.controller.leaveScreen();
+    await t.clock.advance(6_000);
+    expect(connection(t)).toBe("closed");
+    expect(t.controller.getState().sealed).toBe(false);
+    t.controller.dispose();
+  });
+
+  it("gives up waiting at the seal's cap, 31 minutes after `end`", async () => {
+    const t = setup();
+    await endedWithACard(t);
+    await t.clock.advance(30 * 60_000);
+    expect(connection(t)).toBe("open");
+    await t.clock.advance(70_000);
+    expect(connection(t)).toBe("closed");
+    t.controller.dispose();
+  }, 120_000);
 });
 
 describe("CaptureController before a session", () => {
