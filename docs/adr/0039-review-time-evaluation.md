@@ -22,6 +22,8 @@ What the kit has to work around:
 - **Where the pilot runs:** **a static `/pilot` page with a local sink, like `/demo` (chosen)**; an account per participant on a deployment (needs a deploy, a sign-in, and a demo CRM each, and keeps data on a server); the real inbox over sample debriefs in a local workspace (needs a sign-in, and writes everything to a database).
 - **The set:** **built from the 200 debriefs on the offline cassettes, with seeded wrong accounts, by a seeded builder that reproduces it byte for byte (chosen)**; hand-written debriefs (no ground truth beyond the author, and no pipeline output); the 200's cards alone (no wrong accounts to catch).
 - **The silent errors' sibling:** **a seeded pick among the other members of a phonetic or spelling confusable group (chosen)**; the linker's own runner-up (often a deal or another kind of record, not a sound-alike); any confusable group (shared stems and abbreviations don't sound alike).
+- **The session's open account and silent errors:** **kept off both sides of a swap: neither the record the rep named nor the sibling shown may be the open account or belong to it (chosen)**; only the shown side (it left a first draft's three swaps away from the open account, or from one of its contacts, in place); no rule (that draft: three of four silent errors swapped away from the session's own account).
+- **Drawing the silent errors' sessions:** **the 4 carriers first, from the sessions that can carry one, spread over as many confusable groups as they allow, then the other sessions (chosen)**; all six other sessions at once (once the open account is out on both sides, only 5 of the 152 eligible scripts can carry one, and no draw of six in 100,000 held four of them); the carriers without regard to groups.
 - **Orders:** **a seeded, balanced Latin rectangle: five rows of a 10 × 10 Williams square (chosen)**; independent shuffles (no balance of positions or carry-over); one order for everyone (fatigue and learning land on the same sessions).
 - **Progress:** **`sessionStorage`, written only after "I agree" (chosen)**: a reload keeps the place, closing the tab keeps nothing; `localStorage` (outlives the tab, so something is kept); nothing (a reload loses the session).
 - **The consent text:** **docs/pilot/consent.md bundled as text and read into blocks at build time (chosen)**, so the two can't differ; a copy in the page with a test comparing them.
@@ -36,35 +38,40 @@ What the kit has to work around:
 - **The logs** are what SessionDO writes: `session.started`; per turn the biased utterance, the proposals, the usage, `turn.completed`, then the second witness's utterance, its `proposal.flagged` events, and `turn.witnessed`; then `session.ended` and `session.sealed { by: "session" }`, 60 s later. Each session's ids are rewritten in a block of its own (`01a1c6e9-<session>-7000-8000-<n>`), and its times come from the script's call time and the runner's utterance offsets, so nothing reads a clock.
 - **Flagged (4):** from the 48 snapped-name scripts, the proposal whose snapped name the pipeline's own witness conflict turned into a question with the snapped record first, as it came out. It must offer "New" among the card's numbered choices (p ≥ 0.05, the first four), so the right answer can be chosen, and carry no cassette error. **Caught:** "New" (an approval with a null record) or a rejection.
 - **Silent (4):** a correct link, with no flag at all and no company named with it, to a company or contact in a phonetic or spelling confusable group, swapped to a sibling drawn from the group: `basis: "sound"`, p drawn from 0.88–0.93, the right record second at (1 − p) × U(0.5, 0.9), the link's own lesser candidates after it, and only `link_uncertain:target`. The quote stays what the rep said. **Caught:** the right record (c, then its number) or a rejection.
-- **The draw:** a seeded lottery of 4 snapped-name scripts and 6 others, accepted when their proposals total 40 and at least 4 of the 6 can carry a silent error; one seeded error per session at most, so 8 of the 10 carry one. Two kinds of script are left out of the lottery, so the 8 seeded errors are the only wrong accounts a participant meets: the other snapped-name scripts (each holds an unseeded flagged wrong account), and any script whose run links a record other than the ground truth's (d037's hidden wrong account, for one). Nothing about tiers enters the draw.
+- **No silent error touches the session's open account** (`inOpenAccount`): neither the record the rep named nor the sibling the card shows may be the open account, or a contact or deal of it. Linker v1's open-account and family priors decide a link there by context: a link to the open account's family would read "matched in context", not "matched by sound", and a sound link away from a name the open account holds is one the linker wouldn't make. The card would also land under another account's sub-heading than its debrief's, a giveaway no real error has. A first draft without the rule swapped three of its four silent errors away from the open account or one of its contacts (Atlas Freight, Nite Security Group, and Dana Li at Akme Dynamics).
+- **The draw:** a seeded lottery of 4 snapped-name scripts, then the silent errors' carriers, 4 of the sessions that can carry one, then the 2 other sessions from the rest of the pool, accepted when the 10 hold 40 proposals and their carriers can spread over as many confusable groups as the whole eligible pool allows. The carriers come first because few sessions can carry a silent error: 5 of the 152 eligible scripts once the open account is out on both sides, and a draw of all six other sessions at once never held four of them in 100,000 tries; drawing them first loosens no rule. One seeded error per session at most, so 8 of the 10 carry one.
+- **The spread** (`bestSpread`): the 4 silent errors take as many distinct confusable groups as the drawn sessions allow, so no two share a group when that's possible and as few do as possible when it isn't; among equally spread choices, the earliest in a seeded order, so the seed breaks ties, never a tier. The builder throws if the spread falls short of the pool's widest.
+- **What the draw leaves out,** so the 8 seeded errors are the only wrong accounts a participant meets: the other snapped-name scripts (each holds an unseeded flagged wrong account), and any script whose run links a record other than the ground truth's (d037's hidden wrong account, for one). Nothing about tiers enters the draw.
 - **The practice:** a seeded pick of the hand-written scripts (d001–d030) with exactly 3 proposals and no seeded error of any kind.
 - **The orders:** rows of the 10 × 10 Williams square (row 0 is 0, 1, 9, 2, 8, 3, 7, 4, 6, 5; row r adds r), the sessions relabelled and five rows chosen by the seed. Across the five orders no session takes a position twice, and no session directly follows another twice. CI's order (`?p=ci`) is s01 to s10.
 - **The manifest** (`manifest.json`) holds each log's file, SHA-256, session id, open account, call time, time zone, and proposals; every seeded error with its kind, place, what the card shows, and the right answer; the orders; and the tier mix of every card. Its `sha256` is the set's hash: SHA-256 of the file's text without that line, which covers every log by its own hash. The pre-registration names it, and every results file carries it.
-- **The builder refuses to bend.** If the 200 can't supply 4 flagged and 4 silent errors as written, or `tierOf` reads a flagged one as anything but loud or a silent one as anything but the name note alone, it throws.
+- **The builder refuses to bend.** If the 200 can't supply 4 flagged and 4 silent errors as written, a silent error touches its session's open account, the spread falls short, or `tierOf` reads a flagged one as anything but loud or a silent one as anything but the name note alone, it throws.
 
-As built (SHA-256 `fb1ab8247ac781689f8924d902bc54a701f41da402f937f747c24430dc24b5ed`):
+As built (SHA-256 `443e6df7c384b7136549a22ff22e6f6057c60281ddba0eb5bb722e4432961c98`):
 
-| Session | Script | Cards | Seeded |
-|---|---|---|---|
-| s01 | d002 | 4 | silent: Donna Lee shown for Dana Li |
-| s02 | d023 | 3 | — |
-| s03 | d030 | 4 | silent: Atmos Industrial shown for Atlas Freight |
-| s04 | d056 | 4 | silent: Knight Security shown for Nite Security Group |
-| s05 | d057 | 5 | flagged: Delta Crossing Rail first; right answer new |
-| s06 | d061 | 4 | flagged: Oakmont Insurance first; right answer new |
-| s07 | d065 | 5 | flagged: Owen Moreau first; right answer new |
-| s08 | d080 | 3 | — |
-| s09 | d086 | 4 | silent: Globalex Systems shown for Glovex Systems |
-| s10 | d097 | 4 | flagged: Marshal Medical first; right answer new |
-| practice | d010 | 3 | — |
+| Session | Script | Open account | Cards | Seeded |
+|---|---|---|---|---|
+| s01 | d066 | Summit Ridge Medical | 4 | — |
+| s02 | d083 | none | 5 | silent (cg_02): said "Atmas" for Atmas Group; shows Atlas Freight |
+| s03 | d086 | none | 4 | silent (cg_03): said "Glovex Systems"; shows Globalex Systems |
+| s04 | d090 | Pacific Coast Electric | 3 | — |
+| s05 | d092 | none | 3 | silent (cg_32): said "Thomas Berg"; shows Tomas Berg |
+| s06 | d097 | Pier Logistics | 4 | flagged: "Marlow Medical" heard as Marshal Medical; right answer new |
+| s07 | d101 | Glovex Systems | 4 | flagged: "Quarry Lake Media" heard as Quarry Lane Media; right answer new |
+| s08 | d109 | Coastal Power Systems | 5 | flagged: "Bay Arbor Associates" heard as Bay Harbor Associates; right answer new |
+| s09 | d163 | Blue Harbor Analytics | 5 | silent (cg_02): said "Atmos Industrial"; shows Atmas Group |
+| s10 | d189 | Northwind Logistics | 3 | flagged: "Atmos Industries" heard as Atmos Industrial; right answer new |
+| practice | d010 | Harborview Marine | 3 | — |
+
+Five sessions could carry a silent error (d066, d083, d163 in cg_02; d086 in cg_03; d092 in cg_32), so the widest spread is three groups, and two of the four silent errors share cg_02 (d066's other candidate, Mohammed Hassan at Copperleaf Retail, already carries `link_uncertain` and was named with his company, so it can't be one).
 
 The tier mix, reported and never tuned (spec §8):
 
 | Cards | Loud | Quiet (card note) | Name note only | None |
 |---|---|---|---|---|
-| All 40 | 8 (20.0%) | 5 (12.5%) | 11 (27.5%) | 16 (40.0%) |
+| All 40 | 9 (22.5%) | 4 (10.0%) | 6 (15.0%) | 21 (52.5%) |
 | The 8 seeded | 4 | 0 | 4 | 0 |
-| The other 32 | 4 (12.5%) | 5 (15.6%) | 7 (21.9%) | 16 (50.0%) |
+| The other 32 | 5 (15.6%) | 4 (12.5%) | 2 (6.3%) | 21 (65.6%) |
 | Practice | 0 | 0 | 2 | 1 |
 
 ### The page, `/pilot`
@@ -100,8 +107,9 @@ The tier mix, reported and never tuned (spec §8):
 
 **Bad**
 
-- **The mix may miss the clock.** Unmarked cards are 40% of the 40 (50% of the other 32, close to the 200's 54.2%), against the 60–70% of short, unmarked, keyboard-decided cards a 4 s median needs (spec §8). The loud tier is 20% with the seeded errors (12.5% without). It's reported, not thinned.
-- **The silent errors are synthetic.** Some swap a name the rep said exactly, or one of the session's own accounts, which linker v1 wouldn't link by sound; a careful reader can see the spelling differ. That's the design (the record is wrong and only the name note says so), but real silent errors are subtler.
+- **The mix may miss the clock.** Unmarked cards are 52.5% of the 40 (65.6% of the other 32, against the 200's 54.2%), below the 60–70% of short, unmarked, keyboard-decided cards a 4 s median needs (spec §8). The loud tier is 22.5% with the seeded errors (15.6% without). It's reported, not thinned.
+- **The silent errors are concentrated.** Keeping the open account off both sides leaves 5 sessions that can carry one, so the draw has little room: 4 of the 6 other sessions come from those 5, three of the four silent errors sit in sessions with no open account, and two share a confusable group (cg_02: Atmos Industrial, Atlas Freight, Atmas Group), whose Atmos Industrial is also a flagged error's snapped record. A participant who notices one cg_02 swap may look harder at the next; the analysis reports silent errors apart, so it shows, but it can't be separated.
+- **The silent errors are synthetic.** Some swap a name the rep said exactly, which a careful reader can see differs from the record shown. That's the design (the record is wrong and only the name note says so), but real silent errors are subtler.
 - **A small set.** 40 seeded errors give a point estimate, not a bound (40 of 40 is needed for the interval to clear 90%), and five participants' [min, max] covers the median with probability 93.75%. The pilot checks the direction; Phase 8's E6 measures.
 - **Progress is per tab.** A participant who opens the page in a second tab starts over there, and a closed tab loses the session (the consent's promise, and the protocol's "fresh window").
 - **The network check runs on `next dev`,** whose page is rendered on request; the built page is prerendered static (`next build` lists `/pilot` as static), which the check doesn't load.
