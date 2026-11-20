@@ -690,39 +690,52 @@ function hhmm(hour: number, minute: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
+/** chrono's components of one end of a parsed expression (`chrono-node/en` doesn't name the type). */
+type ParsedComponents = ParsedResult["start"];
+
+/** One parsed time's readings, or null when it names no hour (or only a vague part of day). */
+function timeOf(components: ParsedComponents, text: string): TimeResolution | null {
+  const hour = components.get("hour");
+  if (hour === null) return null;
+  const minute = components.get("minute") ?? 0;
+  if (!components.isCertain("hour")) {
+    if (!/\b(?:morning|noon|afternoon|evening|tonight|night|midnight)\b/iu.test(text)) {
+      return null;
+    }
+    return { readings: [hhmm(hour, minute)], certain: false };
+  }
+  if (
+    components.isCertain("meridiem") ||
+    hour === 0 ||
+    hour > 12 ||
+    /\b(?:noon|midday)\b/iu.test(text)
+  ) {
+    return { readings: [hhmm(hour, minute)], certain: true };
+  }
+  const morning = hhmm(hour % 12, minute);
+  const afternoon = hhmm((hour % 12) + 12, minute);
+  if (hour === 12) return { readings: [hhmm(12, minute), hhmm(0, minute)], certain: true };
+  return { readings: hour >= 7 ? [morning, afternoon] : [afternoon, morning], certain: true };
+}
+
 /**
  * What a quoted time says, `HH:MM` (for the `meeting` type's `time` field): "3pm" is 15:00; "at
  * 3" could be either, so it has two readings, the business-hours one first (7 to 11 in the
- * morning, 12 to 6 in the afternoon). Null when the quote names no time.
+ * morning, 12 to 6 in the afternoon). A quote that names more than one time ("3pm or 4pm", "from
+ * 3pm to 4pm") has every reading, in order, so no single one can replace the model's value. Null
+ * when the quote names no time.
  */
 export function resolveTime(quote: string): TimeResolution | null {
-  const results = casual.parse(quote, { instant: TIME_REFERENCE, timezone: 0 });
-  for (const result of results) {
-    const components = result.start;
-    const hour = components.get("hour");
-    if (hour === null) continue;
-    const minute = components.get("minute") ?? 0;
-    if (!components.isCertain("hour")) {
-      if (!/\b(?:morning|noon|afternoon|evening|tonight|night|midnight)\b/iu.test(result.text)) {
-        continue;
-      }
-      return { readings: [hhmm(hour, minute)], certain: false };
+  const found: TimeResolution[] = [];
+  for (const result of casual.parse(quote, { instant: TIME_REFERENCE, timezone: 0 })) {
+    for (const components of [result.start, result.end]) {
+      const time = components ? timeOf(components, result.text) : null;
+      if (time) found.push(time);
     }
-    if (
-      components.isCertain("meridiem") ||
-      hour === 0 ||
-      hour > 12 ||
-      /\b(?:noon|midday)\b/iu.test(result.text)
-    ) {
-      return { readings: [hhmm(hour, minute)], certain: true };
-    }
-    const morning = hhmm(hour % 12, minute);
-    const afternoon = hhmm((hour % 12) + 12, minute);
-    if (hour === 12) return { readings: [hhmm(12, minute), hhmm(0, minute)], certain: true };
-    return {
-      readings: hour >= 7 ? [morning, afternoon] : [afternoon, morning],
-      certain: true,
-    };
   }
-  return null;
+  if (found.length === 0) return null;
+  return {
+    readings: [...new Set(found.flatMap((time) => time.readings))],
+    certain: found.every((time) => time.certain),
+  };
 }

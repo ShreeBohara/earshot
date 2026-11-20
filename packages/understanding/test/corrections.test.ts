@@ -137,6 +137,27 @@ describe("markers", () => {
     expect(correctionOf(text, "Wednesday", dates)?.[1]).toBe("Thursday");
     expect(correctionOf(text, "Thursday", dates)).toBeNull();
   });
+
+  it("follow a quote along its chain to the value the rep settled on (Codex on #45)", () => {
+    const text = "Make it 40 thousand, sorry, 45 thousand, no wait, 50 thousand.";
+    const whole = "40 thousand, sorry, 45 thousand, no wait, 50 thousand";
+    const start = text.indexOf(whole);
+    const found = findCorrection(text, [start, start + whole.length], amounts);
+    expect(found && text.slice(...found.retracted)).toBe("40 thousand");
+    expect(found && text.slice(...found.replacement)).toBe("50 thousand");
+    expect(found?.taken.map((range) => text.slice(...range))).toEqual([
+      "40 thousand",
+      "45 thousand",
+    ]);
+    expect(found?.spansMarker).toBe(true);
+    // A quote that stops at the middle value stops at a value taken back.
+    expect(correctionOf(text, "40 thousand, sorry, 45 thousand", amounts)).toEqual([
+      "40 thousand",
+      "50 thousand",
+      "sorry",
+      false,
+    ]);
+  });
 });
 
 describe("what isn't a correction", () => {

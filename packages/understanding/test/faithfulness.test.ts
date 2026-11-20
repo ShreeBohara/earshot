@@ -162,6 +162,17 @@ describe("times: a meeting's time against its readings", () => {
     });
   });
 
+  it("keeps a time that's one of several named (Codex on #45)", () => {
+    for (const quote of ["3pm or 4pm", "from 3pm to 4pm"]) {
+      const said = `Book the demo ${quote} on Thursday.`;
+      expect(check("time", "16:00", said, quote), quote).toMatchObject({
+        value: "16:00",
+        norm: { readings: ["15:00", "16:00"] },
+        verdict: "ambiguous",
+      });
+    }
+  });
+
   it("flags a time on a day the clocks change", () => {
     const said = "Book the call for 10am on Sunday.";
     const context = { timeZone: "America/Chicago", callTime: "2026-10-29T15:00:00.000Z" };
@@ -216,6 +227,16 @@ describe("amounts: the value equals the parsed amount", () => {
     expect(
       check("amount", 40_000, euros, "forty thousand euros", { currency: "EUR" }).verdict,
     ).toBe("supported");
+  });
+
+  it("never replaces a value with a number in another currency (Codex on #45)", () => {
+    const euros = "They signed at forty thousand euros.";
+    expect(check("amount", 44_000, euros, "forty thousand euros")).toEqual({
+      value: 44_000,
+      norm: { currency: "EUR" },
+      flags: [{ kind: "value_mismatch", field: "f" }],
+      verdict: "mismatch",
+    });
   });
 
   it("keeps the model's value for a range, with both readings", () => {
@@ -288,6 +309,25 @@ describe("corrections come before readings", () => {
         { kind: "value_mismatch", field: "f" },
       ],
       verdict: "mismatch",
+    });
+  });
+
+  it("holds a chain of corrections to the last value (Codex on #45)", () => {
+    const chain = "Make it 40 thousand, sorry, 45 thousand, no wait, 50 thousand.";
+    const quote = "40 thousand, sorry, 45 thousand, no wait, 50 thousand";
+    expect(check("amount", 50_000, chain, quote)).toEqual({
+      value: 50_000,
+      flags: [],
+      verdict: "supported",
+    });
+    expect(check("amount", 45_000, chain, quote)).toEqual({
+      value: 50_000,
+      norm: { llmValue: 45_000 },
+      flags: [
+        { kind: "self_correction", field: "f" },
+        { kind: "value_mismatch", field: "f" },
+      ],
+      verdict: "replaced",
     });
   });
 

@@ -67,13 +67,19 @@ export interface Correction {
   readonly replacement: readonly [number, number];
 }
 
-/** A correction as it bears on one quote. */
+/**
+ * A correction as it bears on one quote. In a chain ("40 thousand, sorry, 45 thousand, no wait, 50
+ * thousand"), `retracted` is the first value the quote touches, `replacement` the value the rep
+ * settled on, and `taken` every value taken back on the way.
+ */
 export interface QuoteCorrection extends Correction {
   /**
-   * Whether the quote runs past the marker into the new value ("Tuesday, no wait, Wednesday"),
-   * rather than stopping before the marker ("Tuesday").
+   * Whether the quote runs on into the value the rep settled on ("Tuesday, no wait, Wednesday"),
+   * rather than stopping at a value taken back ("Tuesday").
    */
   readonly spansMarker: boolean;
+  /** Every value taken back, from `retracted` to the last before `replacement`. */
+  readonly taken: readonly (readonly [number, number])[];
 }
 
 /** Words (not punctuation) strictly between two offsets. */
@@ -125,17 +131,25 @@ export function findCorrections(text: string, find: ValueFinder): Correction[] {
 
 /**
  * The correction that takes back a quote: the first whose retracted value the quote's `[start,
- * end)` span touches. A quote that only covers the new value ("one hundred eighty-five thousand")
- * isn't taken back: null.
+ * end)` span touches, followed along its chain to the value the rep settled on, since each later
+ * correction takes back the one before's replacement. A quote that only covers the final value
+ * ("one hundred eighty-five thousand") isn't taken back: null.
  */
 export function findCorrection(
   text: string,
   span: readonly [number, number],
   find: ValueFinder,
 ): QuoteCorrection | null {
-  for (const correction of findCorrections(text, find)) {
-    if (!overlaps(correction.retracted, span)) continue;
-    return { ...correction, spansMarker: overlaps(correction.replacement, span) };
+  const corrections = findCorrections(text, find);
+  const index = corrections.findIndex((correction) => overlaps(correction.retracted, span));
+  const first = corrections[index];
+  if (first === undefined) return null;
+  const taken = [first.retracted];
+  let replacement = first.replacement;
+  for (const next of corrections.slice(index + 1)) {
+    if (next.retracted[0] !== replacement[0] || next.retracted[1] !== replacement[1]) continue;
+    taken.push(next.retracted);
+    replacement = next.replacement;
   }
-  return null;
+  return { ...first, replacement, taken, spansMarker: overlaps(replacement, span) };
 }

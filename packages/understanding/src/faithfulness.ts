@@ -258,21 +258,22 @@ function checkReadings(
   const reading = reader.read(quote);
   const flags: FieldFlagKind[] = [];
   if (correction && !among(reader, value, reading)) {
-    // The quote runs on into the new value, and the model kept the old one.
-    if (among(reader, value, reader.read(slice(correction.retracted)))) {
+    // The quote runs on into the new value, and the model kept an old one.
+    if (correction.taken.some((range) => among(reader, value, reader.read(slice(range))))) {
       flags.push("self_correction");
     }
   }
   if (reading === null) return { value, flags: [...flags, "unsupported"], verdict: "unread" };
   const norm: FieldNorm = {};
   if (reading.currency) norm.currency = reading.currency;
-  if (fieldCurrency !== null && reading.currency && reading.currency !== fieldCurrency) {
-    // "forty thousand euros" in a field kept in dollars: no conversion, only a flag.
-    flags.push("value_mismatch");
-  }
   // The currency rides along on every outcome that doesn't set its own `norm`.
   const withNorm = (outcome: Outcome): Outcome =>
     outcome.norm || Object.keys(norm).length === 0 ? outcome : { ...outcome, norm };
+  if (fieldCurrency !== null && reading.currency && reading.currency !== fieldCurrency) {
+    // "forty thousand euros" in a field kept in dollars: never converted, and never replaced,
+    // since the words' number is in another currency. The model's value stands, flagged.
+    return withNorm({ value, flags: [...flags, "value_mismatch"], verdict: "mismatch" });
+  }
   if (!reading.certain) {
     return withNorm({ value, flags: [...flags, "ambiguous_value"], verdict: "ambiguous" });
   }

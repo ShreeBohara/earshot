@@ -401,6 +401,9 @@ describe("times", () => {
     expect(resolveTime("at 3")).toEqual({ readings: ["15:00", "03:00"], certain: true });
     expect(resolveTime("at 9")).toEqual({ readings: ["09:00", "21:00"], certain: true });
     expect(resolveTime("at 3:30")).toEqual({ readings: ["15:30", "03:30"], certain: true });
+    // More than one time named: every reading, so none replaces the model's value (Codex on #45).
+    expect(resolveTime("3pm or 4pm")).toEqual({ readings: ["15:00", "16:00"], certain: true });
+    expect(resolveTime("from 3pm to 4pm")).toEqual({ readings: ["15:00", "16:00"], certain: true });
   });
 
   it("guesses at a part of the day, and says so", () => {
