@@ -4,7 +4,7 @@
 -- by the owner; and checkpoints are append-only for the app and isolated by RLS. Ids come from
 -- test/fixtures/two-workspaces.sql, where each workspace's seeded entry is chain_seq 1.
 begin;
-select plan(47);
+select plan(50);
 
 -- The trigger and functions themselves (10)
 select has_trigger('public', 'audit_log', 'audit_log_chain', 'audit_log has the chaining trigger');
@@ -107,8 +107,10 @@ select is((select chain_seq from audit_log where id = 'a0000000-0000-4000-8000-0
 select is((select prev_hash from audit_log where id = 'a0000000-0000-4000-8000-000000000911'),
   (select entry_hash from audit_log where id = 'a0000000-0000-4000-8000-000000000011'),
   'prev_hash is the previous entry''s hash, not what the app sent');
-select is((select at from audit_log where id = 'a0000000-0000-4000-8000-000000000911'), now(),
-  'at is the transaction''s time, not what the app sent');
+select ok(
+  (select at >= now() and at <= clock_timestamp()
+   from audit_log where id = 'a0000000-0000-4000-8000-000000000911'),
+  'at is the clock when the entry joined the chain, not what the app sent');
 select is(
   (select entry_hash from audit_log where id = 'a0000000-0000-4000-8000-000000000911'),
   (select sha256(a.prev_hash || convert_to(public.audit_entry_canonical(a), 'UTF8'))
@@ -140,7 +142,7 @@ select throws_ok($$delete from audit_log where chain_seq = 5$$,
 select throws_ok('truncate audit_log', '42501', 'permission denied for table audit_log',
   'A can''t truncate the chain');
 
--- Checkpoints: A may append its own and read them, and nothing else (8)
+-- Checkpoints: A may append its own and read them, and nothing else (9)
 select lives_ok(
   $$insert into audit_checkpoints (workspace_id, chain_seq, entry_hash, signed_at, kid, signature, request)
     select workspace_id, chain_seq, entry_hash, now(), 'audit-test', decode(repeat('01', 64), 'hex'), 'review'
@@ -170,6 +172,11 @@ select throws_ok(
     select workspace_id, chain_seq, entry_hash, now(), 'audit-test', decode(repeat('01', 63), 'hex'), 'review'
     from audit_log where chain_seq = 5$$,
   '23514', null, 'a signature must be 64 bytes');
+select lives_ok(
+  $$insert into audit_checkpoints (workspace_id, chain_seq, entry_hash, signed_at, kid, signature, request)
+    select workspace_id, chain_seq, entry_hash, now(), 'audit-test', decode(repeat('01', 64), 'hex'), 'export'
+    from audit_log where chain_seq = 5$$,
+  'an account export may sign the head it exports');
 
 -- As B, in the same transaction: B's chain is its own (3)
 select set_config('app.user_id', 'user-b', true),
@@ -185,23 +192,27 @@ select results_eq('select chain_seq from audit_checkpoints', $$values (1::bigint
 select is(public.audit_chain_verify('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'), null,
   'as B, A''s chain is invisible: the check sees no rows to fault');
 
--- As the owner, who RLS doesn't stop and who can change rows: tampering is caught (12)
+-- As the owner, who RLS doesn't stop and who can change rows: time only moves forward, and
+-- tampering is caught (14)
 reset role;
--- Workspaces C to H, each with one member and a chain of four entries, inserted as the owner
+-- Workspaces C to I, each with one member and a chain of four entries, inserted as the owner
 insert into "user" (id, name, email)
-select 'user-' || w, 'User ' || w, w || '@chain.test' from unnest(array['c', 'd', 'e', 'f', 'g', 'h']) as w;
+select 'user-' || w, 'User ' || w, w || '@chain.test'
+from unnest(array['c', 'd', 'e', 'f', 'g', 'h', 'i']) as w;
 insert into workspaces (id, name)
 select (repeat(w, 8) || '-' || repeat(w, 4) || '-4' || repeat(w, 3) || '-8' || repeat(w, 3) || '-' || repeat(w, 12))::uuid,
        'Workspace ' || w
 from unnest(array['c', 'd', 'e', 'f']) as w;
 insert into workspaces (id, name) values
   ('99999999-9999-4999-8999-999999999999', 'Workspace g'),
-  ('88888888-8888-4888-8888-888888888888', 'Workspace h');
+  ('88888888-8888-4888-8888-888888888888', 'Workspace h'),
+  ('77777777-7777-4777-8777-777777777777', 'Workspace i');
 create temp table chain_ws (letter text primary key, id uuid not null) on commit drop;
 insert into chain_ws values
   ('c', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'), ('d', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'),
   ('e', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'), ('f', 'ffffffff-ffff-4fff-8fff-ffffffffffff'),
-  ('g', '99999999-9999-4999-8999-999999999999'), ('h', '88888888-8888-4888-8888-888888888888');
+  ('g', '99999999-9999-4999-8999-999999999999'), ('h', '88888888-8888-4888-8888-888888888888'),
+  ('i', '77777777-7777-4777-8777-777777777777');
 insert into workspace_members (workspace_id, user_id) select id, 'user-' || letter from chain_ws;
 insert into audit_log (workspace_id, actor_user_id, action, subject_type, subject_id, detail)
 select w.id, 'user-' || w.letter, 'proposal.approved', 'proposal', 'p-' || g, jsonb_build_object('n', g)
@@ -210,8 +221,29 @@ order by w.letter, g;
 
 select is(
   (select array_agg(public.audit_chain_verify(id) order by letter) from chain_ws),
-  array[null, null, null, null, null, null]::bigint[],
+  array[null, null, null, null, null, null, null]::bigint[],
   'every new chain verifies before anyone tampers with it'
+);
+
+-- Time never runs backwards along a chain: the clock is read once the lock is held, and never
+-- earlier than the head's (2)
+select is_empty(
+  $$select from (
+      select at, lag(at) over (partition by workspace_id order by chain_seq) as prev_at
+      from audit_log
+    ) t
+    where at < prev_at$$,
+  'in every workspace, at never decreases along the chain'
+);
+update audit_log set at = '2100-01-01T00:00:00Z'
+where workspace_id = '77777777-7777-4777-8777-777777777777' and chain_seq = 4;
+insert into audit_log (workspace_id, actor_user_id, action)
+values ('77777777-7777-4777-8777-777777777777', 'user-i', 'test.after-a-clock-step');
+select is(
+  (select at from audit_log
+   where workspace_id = '77777777-7777-4777-8777-777777777777' and chain_seq = 5),
+  '2100-01-01T00:00:00Z'::timestamptz,
+  'behind the head, the clock gives way: a new entry takes the head''s time, not an earlier one'
 );
 
 -- An edit to any covered column (4)

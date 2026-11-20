@@ -32,8 +32,9 @@ const filledByTrigger = () => sql`default`;
  *
  * The rows of each workspace form a hash chain (migration 0013, docs/adr/0033). A trigger sets
  * `chain_seq` (1, 2, 3, … per workspace), `prev_hash` (the previous row's `entry_hash`, or 32
- * zero bytes), `at` (the transaction's time), and `entry_hash`, SHA-256 of `prev_hash` and the
- * row's canonical text (`audit_entry_canonical`). The app can't choose any of them.
+ * zero bytes), `at` (the clock once the workspace's lock is held, never earlier than the row
+ * before), and `entry_hash`, SHA-256 of `prev_hash` and the row's canonical text
+ * (`audit_entry_canonical`). The app can't choose any of them.
  */
 export const auditLog = pgTable(
   "audit_log",
@@ -47,7 +48,10 @@ export const auditLog = pgTable(
     subjectType: text("subject_type"),
     subjectId: text("subject_id"),
     detail: jsonb().$type<Record<string, unknown>>().notNull().default({}),
-    /** Set by the trigger to the inserting transaction's time; a value the app sends is ignored. */
+    /**
+     * Set by the trigger: when the row joined the chain, never earlier than the row before it. A
+     * value the app sends is ignored.
+     */
     at: timestamp({ withTimezone: true }).notNull().defaultNow(),
     /** The row's place in its workspace's chain, from 1, with no gaps. Set by the trigger. */
     chainSeq: bigint("chain_seq", { mode: "number" }).notNull().$defaultFn(filledByTrigger),
@@ -65,15 +69,19 @@ export const auditLog = pgTable(
   ],
 );
 
-/** Why a checkpoint was signed: a web request with reviews, a flush message with them, a policy. */
-export const AUDIT_CHECKPOINT_REQUESTS = ["review", "flush", "policy"] as const;
+/**
+ * Why a checkpoint was signed: a web request with reviews, a flush message with them, a policy
+ * change, or an account export (which signs the head it exports).
+ */
+export const AUDIT_CHECKPOINT_REQUESTS = ["review", "flush", "policy", "export"] as const;
 export type AuditCheckpointRequest = (typeof AUDIT_CHECKPOINT_REQUESTS)[number];
 
 /**
- * Signed heads of the audit chain (docs/adr/0033): one per review request, signed with Ed25519 in
- * the Worker that wrote the rows. The signed text is `{"v":1,"wid":…,"seq":…,"head":…,"ts":…,
- * "kid":…}` (`checkpointMessage` in `@earshot/keys`), rebuilt from these columns: `head` is
- * `entry_hash` in hex and `ts` is `signed_at` in ISO form with milliseconds.
+ * Signed heads of the audit chain (docs/adr/0033): one per review request and per account export,
+ * signed with Ed25519 in the Worker that wrote the rows. The signed text is
+ * `{"v":1,"wid":…,"seq":…,"head":…,"ts":…,"kid":…}` (`checkpointMessage` in `@earshot/keys`),
+ * rebuilt from these columns: `head` is `entry_hash` in hex and `ts` is `signed_at` in ISO form
+ * with milliseconds.
  *
  * A tenant table with the audit log's rules: the app may only read and insert (migration 0013).
  * `(workspace_id, chain_seq)` must name an existing chain row.
@@ -102,7 +110,10 @@ export const auditCheckpoints = pgTable(
       foreignColumns: [auditLog.workspaceId, auditLog.chainSeq],
     }),
     index("audit_checkpoints_workspace_id_chain_seq_idx").on(t.workspaceId, t.chainSeq),
-    check("audit_checkpoints_request_check", sql`${t.request} in ('review', 'flush', 'policy')`),
+    check(
+      "audit_checkpoints_request_check",
+      sql`${t.request} in ('review', 'flush', 'policy', 'export')`,
+    ),
     check("audit_checkpoints_chain_seq_check", sql`${t.chainSeq} > 0`),
     check("audit_checkpoints_entry_hash_check", sql`octet_length(${t.entryHash}) = 32`),
     check("audit_checkpoints_signature_check", sql`octet_length(${t.signature}) = 64`),

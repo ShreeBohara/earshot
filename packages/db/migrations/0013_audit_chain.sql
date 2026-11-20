@@ -13,7 +13,7 @@ CREATE TABLE "audit_checkpoints" (
 	"kid" text NOT NULL,
 	"signature" "bytea" NOT NULL,
 	"request" text NOT NULL,
-	CONSTRAINT "audit_checkpoints_request_check" CHECK ("audit_checkpoints"."request" in ('review', 'flush', 'policy')),
+	CONSTRAINT "audit_checkpoints_request_check" CHECK ("audit_checkpoints"."request" in ('review', 'flush', 'policy', 'export')),
 	CONSTRAINT "audit_checkpoints_chain_seq_check" CHECK ("audit_checkpoints"."chain_seq" > 0),
 	CONSTRAINT "audit_checkpoints_entry_hash_check" CHECK (octet_length("audit_checkpoints"."entry_hash") = 32),
 	CONSTRAINT "audit_checkpoints_signature_check" CHECK (octet_length("audit_checkpoints"."signature") = 64),
@@ -100,7 +100,9 @@ CREATE INDEX "audit_checkpoints_workspace_id_chain_seq_idx" ON "audit_checkpoint
 -- The advisory lock serializes writers per workspace until their transactions end; after waiting
 -- for it, the read below takes a fresh snapshot (READ COMMITTED), so it sees the row the last
 -- holder committed. A writer at a stricter isolation level would collide on the unique key instead
--- of forking the chain.
+-- of forking the chain. The time is the clock's, read once the lock is held, and never earlier
+-- than the head's, so along each workspace's chain `at` never runs backwards: not for a writer
+-- that waited for the lock, nor if the clock steps back.
 CREATE FUNCTION public.audit_log_chain() RETURNS trigger
   LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = pg_catalog, pg_temp
@@ -108,16 +110,17 @@ AS $$
 DECLARE
   head_seq bigint;
   head_hash bytea;
+  head_at timestamptz;
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended('earshot.audit:' || NEW.workspace_id::text, 0));
-  SELECT a.chain_seq, a.entry_hash INTO head_seq, head_hash
+  SELECT a.chain_seq, a.entry_hash, a.at INTO head_seq, head_hash, head_at
     FROM public.audit_log a
     WHERE a.workspace_id = NEW.workspace_id
     ORDER BY a.chain_seq DESC
     LIMIT 1;
   NEW.chain_seq := coalesce(head_seq, 0) + 1;
   NEW.prev_hash := coalesce(head_hash, decode(repeat('00', 32), 'hex'));
-  NEW.at := now();
+  NEW.at := greatest(clock_timestamp(), head_at);
   NEW.entry_hash := sha256(NEW.prev_hash || convert_to(public.audit_entry_canonical(NEW), 'UTF8'));
   RETURN NEW;
 END

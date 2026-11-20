@@ -224,7 +224,7 @@
       "checkConstraints": {
         "audit_checkpoints_request_check": {
           "name": "audit_checkpoints_request_check",
-          "value": "\"audit_checkpoints\".\"request\" in ('review', 'flush', 'policy')"
+          "value": "\"audit_checkpoints\".\"request\" in ('review', 'flush', 'policy', 'export')"
         },
         "audit_checkpoints_chain_seq_check": {
           "name": "audit_checkpoints_chain_seq_check",
