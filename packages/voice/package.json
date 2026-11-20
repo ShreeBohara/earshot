@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./evidence": "./src/evidence/index.ts",
     "./machines": "./src/machines/index.ts",
     "./prices": "./src/prices.ts",
     "./session": "./src/session/index.ts",
@@ -32,6 +33,7 @@
     "@types/node": "catalog:",
     "@types/ws": "^8.18.1",
     "@vitest/browser-playwright": "catalog:",
+    "fake-indexeddb": "^6.2.0",
     "playwright": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

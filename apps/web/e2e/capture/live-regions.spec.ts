@@ -14,7 +14,8 @@ test("the transcript announces finished lines only: partials stay out of the liv
   await expect(log).toHaveAttribute("aria-live", "polite");
   await expect(log).toHaveAttribute("aria-relevant", "additions");
   // Nothing else on the capture screen speaks on its own: the feed and the status aren't live.
-  // (Outside it, the app's toaster and Next's route announcer have their own regions.)
+  // (Outside it, the app's toaster, the clip player's status line, and Next's route announcer have
+  // their own regions.)
   await expect(page.locator("main [aria-live]")).toHaveCount(1);
 
   // Record every node added to the live region while a line is said.

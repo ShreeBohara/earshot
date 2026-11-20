@@ -1,7 +1,12 @@
 // The capture controller end to end on WP8's fakes: an in-memory SessionDO, the fake adapter, a
 // scripted capture source, and a manual clock. No browser, no network, no provider.
 import type { StoredKeyMeta } from "@earshot/keys";
-import { createDebriefEngine, type SttAdapter, type WitnessRunner } from "@earshot/voice";
+import {
+  createDebriefEngine,
+  type DebriefEngineOptions,
+  type SttAdapter,
+  type WitnessRunner,
+} from "@earshot/voice";
 import { createSessionClient } from "@earshot/voice/session";
 import {
   createFakeSttAdapter,
@@ -15,7 +20,7 @@ import {
 } from "@earshot/voice/testing";
 import { describe, expect, it } from "vitest";
 import { SpokenConfirmations } from "@/lib/capture/audio-out";
-import { CaptureController, type CaptureDeps } from "@/lib/capture/controller";
+import { type CaptureClips, CaptureController, type CaptureDeps } from "@/lib/capture/controller";
 import { createFakeVoice } from "@/lib/capture/dev/fake-voice";
 import type { FakeScenario } from "@/lib/capture/fake";
 import type { WitnessSetting } from "@/lib/capture/witness";
@@ -54,6 +59,8 @@ function setup(
     /** The device's second-witness answer; absent, the app wires no witness. */
     witnessSetting?: WitnessSetting | null;
     createWitness?: (key: () => Promise<string | undefined>) => WitnessRunner;
+    /** Evidence clips (Phase 5 WP9); absent, the app wires none. */
+    clips?: CaptureClips;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -81,6 +88,8 @@ function setup(
   });
   /** One per engine, as each engine starts its own capture graph and closes it when it stops. */
   const captures: FakeCaptureSource[] = [];
+  /** What each engine was made with, in order. */
+  const engines: DebriefEngineOptions[] = [];
   const routes: { url: string; body: unknown }[] = [];
   const ticket = () => server.issueTicket();
   const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -156,7 +165,10 @@ function setup(
       };
     },
     createAudioContext: () => undefined,
-    createEngine: createDebriefEngine,
+    createEngine: (engineOptions) => {
+      engines.push(engineOptions);
+      return createDebriefEngine(engineOptions);
+    },
     createClient: createSessionClient,
     createAdapter: () => {
       if (options.adapter) return options.adapter();
@@ -166,6 +178,7 @@ function setup(
       ? { witnessSetting: () => options.witnessSetting ?? null }
       : {}),
     ...(options.createWitness ? { createWitness: options.createWitness } : {}),
+    ...(options.clips ? { clips: options.clips } : {}),
     clock: () => clock.now(),
     now: () => new Date("2026-11-19T12:00:00.000Z"),
     timeZone: () => "Europe/Lisbon",
@@ -208,6 +221,7 @@ function setup(
     controller,
     routes,
     chimes,
+    engines,
     micOpen: () => micOpen,
     grantMicrophone: () => grant?.(),
   };
@@ -738,5 +752,133 @@ describe("CaptureController with the second witness", () => {
     expect(types.indexOf("witness")).toBeGreaterThan(-1);
     expect(types.indexOf("witness")).toBeLessThan(types.indexOf("end"));
     t.controller.dispose();
+  });
+});
+
+describe("CaptureController with evidence clips (Phase 5 WP9)", () => {
+  /** Clips as the browser wires them, recording what they were asked to do. */
+  function clips(enabled: () => boolean = () => true) {
+    const kept: Parameters<CaptureClips["keep"]>[0][] = [];
+    let playing = false;
+    let stops = 0;
+    const sink: CaptureClips = {
+      enabled,
+      keep: (clip) => kept.push(clip),
+      playing: () => playing,
+      stop: () => {
+        stops += 1;
+        playing = false;
+      },
+    };
+    return {
+      sink,
+      kept,
+      setPlaying: (value: boolean) => {
+        playing = value;
+      },
+      stops: () => stops,
+    };
+  }
+
+  async function startFake(t: ReturnType<typeof setup>) {
+    t.controller.start({ selection: null, fake: createFakeVoice(SCENARIO) });
+    await settle(100);
+    await t.clock.advance(200);
+    expect(t.controller.getState().phase).toBe("live");
+  }
+
+  /** The microphone after a release: the turn's 200 ms tail comes in, then its audio. */
+  async function tail(t: ReturnType<typeof setup>) {
+    for (let done = 0; done < 320; done += 32) {
+      t.capture.silence(32);
+      await t.clock.advance(32);
+    }
+    await settle(100);
+  }
+
+  it("with clips on and no witness, records each turn and keeps its audio on the session's clock", async () => {
+    const c = clips();
+    const t = setup({ clips: c.sink });
+    await startFake(t);
+    expect(t.engines[0]?.turnAudio).toBe(true);
+    await talk(t, 1_600);
+    await tail(t);
+    const [turnEnd] = t.server.received.filter((m) => m.t === "turn_end");
+    expect(c.kept).toHaveLength(1);
+    const [clip] = c.kept;
+    expect(clip?.sessionId).toBe(SESSION_ID);
+    expect(clip?.turnId).toBe((turnEnd as { turnId: string }).turnId);
+    // From the press, on the session's clock, to the release plus its tail.
+    expect(clip?.audio.startMs).toBe(0);
+    expect(clip?.audio.pcm?.length).toBeGreaterThanOrEqual(1_600 * 16);
+    expect(clip?.audio.durationMs).toBe(Math.round((clip?.audio.pcm?.length ?? 0) / 16));
+    // The audio goes to the clip store only: no message to SessionDO carries it, nor a witness.
+    expect(t.server.received.some((m) => m.t === "witness")).toBe(false);
+    expect(t.routes.map((route) => route.url)).toEqual(["/api/sessions"]);
+    t.controller.dispose();
+  });
+
+  it("with clips off, records nothing for them and keeps nothing", async () => {
+    const c = clips(() => false);
+    const t = setup({ clips: c.sink });
+    await startFake(t);
+    expect(t.engines[0]?.turnAudio).toBe(false);
+    await talk(t, 1_600);
+    await tail(t);
+    expect(c.kept).toEqual([]);
+    t.controller.dispose();
+  });
+
+  it("stops keeping at the next turn once clips are turned off mid-debrief", async () => {
+    let on = true;
+    const c = clips(() => on);
+    const t = setup({ clips: c.sink });
+    await startFake(t);
+    await talk(t, 1_600);
+    await tail(t);
+    expect(c.kept).toHaveLength(1);
+    on = false;
+    await talk(t, 1_600);
+    await tail(t);
+    expect(c.kept).toHaveLength(1);
+    t.controller.dispose();
+  });
+
+  it("keeps the witness's own rule: with the witness off and clips on, no audio goes to it", async () => {
+    const c = clips();
+    const t = setup({ clips: c.sink, witnessSetting: null });
+    await startFake(t);
+    expect(t.controller.getState().witness).toEqual({ status: "off", source: "fake" });
+    await talk(t, 1_600);
+    await tail(t);
+    expect(c.kept).toHaveLength(1);
+    expect(t.server.received.filter((m) => m.t === "witness")).toMatchObject([
+      { outcome: "skipped", reason: "off" },
+    ]);
+    t.controller.dispose();
+  });
+
+  it("mutes a hands-free engine while a clip plays, and push-to-talk stops a clip", async () => {
+    const c = clips();
+    const handsFree = setup({ clips: c.sink });
+    handsFree.controller.toggleHandsFree();
+    await startFake(handsFree);
+    const muted = handsFree.engines[0]?.isMuted;
+    expect(muted?.()).toBe(false);
+    c.setPlaying(true);
+    expect(muted?.()).toBe(true);
+    c.setPlaying(false);
+    handsFree.controller.dispose();
+
+    const ptt = setup({ clips: c.sink });
+    await startFake(ptt);
+    // Push-to-talk's gate is shut between presses: nothing to mute.
+    expect(ptt.engines[0]?.isMuted).toBeUndefined();
+    c.setPlaying(true);
+    ptt.controller.press();
+    expect(c.stops()).toBe(1);
+    expect(ptt.controller.getState().pressed).toBe(true);
+    ptt.controller.release();
+    ptt.controller.dispose();
   });
 });
