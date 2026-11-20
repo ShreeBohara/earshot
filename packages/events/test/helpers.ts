@@ -4,6 +4,7 @@ import { type EventBody, SESSION_ID, tsFor, uuid } from "../src/testing";
 // The event builders live in src/testing.ts, exported as @earshot/events/testing, so other
 // packages' store tests can use them too.
 export {
+  anyFlagTier,
   draft,
   type EventBody,
   ended,

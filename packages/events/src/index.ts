@@ -30,7 +30,6 @@ export {
 } from "./registry";
 export { type ProjectionStates, type ReplayOptions, replay } from "./replay";
 export {
-  anyFlagTier,
   checkReview,
   checkReviews,
   checkSnooze,

@@ -48,8 +48,10 @@ export type ReviewsCheck =
     };
 
 /**
- * A proposal's likely-edit tier. `tierOf` in `@earshot/understanding/tiers` (Phase 5 WP4) fits,
- * since it returns `{ tier, reasons, nameNote }`; until it lands, use `anyFlagTier`.
+ * A proposal's likely-edit tier: `tierOf` from `@earshot/understanding/tiers` (Phase 5 spec §4.4),
+ * which returns `{ tier, reasons, nameNote }`. Every writer passes that one function, so "accept
+ * all" and policies take exactly what the inbox shows unmarked. It's passed in, rather than
+ * imported, so this package depends on the contracts alone.
  */
 export type TierOf = (proposal: ProposalView) => { readonly tier: LikelyEditTier };
 
@@ -61,15 +63,6 @@ export interface ReviewRuleContext {
    */
   readonly from: "client" | "session";
 }
-
-/**
- * WP1's stand-in for `tierOf`: any flag marks a proposal, so it counts as `loud`, the cautious
- * reading, and a proposal with none is unmarked. WP4's function refines this (a lone
- * `self_correction` is unmarked there, for one). It's for the checks here, not for display.
- */
-export const anyFlagTier: TierOf = (proposal) => ({
-  tier: proposal.riskFlags.length > 0 ? "loud" : "none",
-});
 
 const ok = { ok: true } as const;
 

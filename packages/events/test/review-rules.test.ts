@@ -1,7 +1,6 @@
 import { ProposalReviewedV2, ProposalSnoozedV1 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import {
-  anyFlagTier,
   checkReview,
   checkReviews,
   checkSnooze,
@@ -12,6 +11,7 @@ import {
   replay,
 } from "../src";
 import {
+  anyFlagTier,
   type EventBody,
   proposalV2,
   REVIEWER,
@@ -358,7 +358,7 @@ describe("checkSnooze", () => {
 });
 
 describe("the tier function", () => {
-  it("is passed in: until WP4's, any flag is a marker", () => {
+  it("is passed in: these tests' stand-in counts any flag as a marker", () => {
     const [linked, ask] = proposals;
     if (!linked || !ask) throw new Error("missing proposals");
     expect(anyFlagTier(linked)).toEqual({ tier: "none" });
