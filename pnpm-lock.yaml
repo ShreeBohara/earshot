@@ -398,6 +398,9 @@ importers:
       '@earshot/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../../packages/understanding
       '@earshot/voice':
         specifier: workspace:*
         version: link:../../packages/voice
