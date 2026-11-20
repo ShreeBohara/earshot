@@ -9,6 +9,9 @@
 // - each message's events and its answer are recorded together, so a resend gets the same ack and
 //   appends nothing, and a `turn_end` resent while its turn runs starts nothing;
 // - acks and errors go to every socket; `working` precedes a turn's events;
+// - a turn's `witness` (Phase 4 WP9) is refused for a turn with no `turn_end` and for a second
+//   witness, waits for a held turn, and appends the unbiased utterance, any flags `compare` gives,
+//   and `turn.witnessed`;
 // - `ping` gets `pong` (the runtime's auto-response).
 //
 // Faults are switches on the instance: drop a socket after a given event, skip one event once
@@ -22,6 +25,7 @@ import {
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
   type ProposalCreatedV2,
+  type ProposalFlaggedV1,
   parseClientMessage,
   SESSION_CLOSE_CODES,
   SESSION_PROTOCOL_VERSION,
@@ -83,6 +87,15 @@ export interface FakeSessionServerOptions {
   readonly newId?: () => string;
   /** Drafts proposals for a turn: the cassette extractor's stand-in. Defaults to none. */
   readonly propose?: (turn: FakeTurn) => readonly FakeProposal[];
+  /**
+   * Compares a turn's proposals with its unbiased transcript: the stand-in for SessionDO's
+   * witness comparison. Returns `proposal.flagged` payloads; defaults to none.
+   */
+  readonly compare?: (input: {
+    readonly turnId: string;
+    readonly proposals: readonly ProposalCreatedV2[];
+    readonly unbiased: UtteranceFinalV2;
+  }) => readonly ProposalFlaggedV1[];
 }
 
 export interface FakeSessionTicket {
@@ -165,6 +178,11 @@ export class FakeSessionServer {
   readonly #now: () => number;
   readonly #newId: () => string;
   readonly #propose: ((turn: FakeTurn) => readonly FakeProposal[]) | undefined;
+  readonly #compare: FakeSessionServerOptions["compare"];
+  /** Turns whose `turn_end` arrived, with their proposals once the turn has run. */
+  readonly #turnRuns = new Map<string, { proposals: ProposalCreatedV2[] | null }>();
+  /** Turns that have a witness. */
+  readonly #witnessed = new Set<string>();
   readonly #answers = new Map<string, Answer>();
   readonly #inflight = new Set<string>();
   readonly #held: (() => void)[] = [];
@@ -192,6 +210,7 @@ export class FakeSessionServer {
         random: (bytes) => bytes.fill(7),
       });
     this.#propose = options.propose;
+    this.#compare = options.compare;
     this.#rateClock = options.rateClock;
     this.#sockets.onConnection = (socket) => this.#onConnection(socket);
   }
@@ -350,6 +369,9 @@ export class FakeSessionServer {
       case "usage":
         this.#usage(message);
         return;
+      case "witness":
+        this.#witness(message);
+        return;
       case "metric":
         this.#metric(message);
         return;
@@ -442,6 +464,8 @@ export class FakeSessionServer {
       return;
     }
     this.#inflight.add(message.msgId);
+    if (!this.#turnRuns.has(message.turnId))
+      this.#turnRuns.set(message.turnId, { proposals: null });
     for (const connection of this.connections) {
       if (connection.isOpen && connection.helloed) {
         connection.send({ t: "working", turnId: message.turnId, state: "thinking" });
@@ -457,12 +481,13 @@ export class FakeSessionServer {
         utterances.length > 0
           ? (this.#propose?.({ turnId: message.turnId, utterances, llm: message.llm }) ?? [])
           : [];
-      const proposals = drafts.map((draft) => ({
+      const proposals: ProposalCreatedV2[] = drafts.map((draft) => ({
         proposalId: this.#newId(),
         supersedes: null,
         linker: "linker.v1",
         ...draft,
       }));
+      this.#turnRuns.set(message.turnId, { proposals });
       this.#commit(message.msgId, [
         ...proposals.map((proposal) => ({ type: "proposal.created", payload: proposal })),
         {
@@ -511,6 +536,60 @@ export class FakeSessionServer {
         },
       },
     ]);
+  }
+
+  #witness(message: ClientMessageOf<"witness">): void {
+    if (this.#answered(message.msgId) || this.#inflight.has(message.msgId)) return;
+    const refusal = this.#speechRefusal();
+    if (refusal) {
+      this.#refuse(message.msgId, refusal.code, refusal.retryable);
+      return;
+    }
+    // As SessionDO: no witness for a turn it never saw end, and one witness a turn.
+    if (!this.#turnRuns.has(message.turnId) || this.#witnessed.has(message.turnId)) {
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    this.#witnessed.add(message.turnId);
+    const run = () => {
+      this.#inflight.delete(message.msgId);
+      if (this.#answers.has(message.msgId)) return;
+      const proposals = this.#turnRuns.get(message.turnId)?.proposals ?? [];
+      const drafts: { type: string; payload: unknown }[] = [];
+      let flagged: readonly ProposalFlaggedV1[] = [];
+      if (message.outcome === "transcribed") {
+        drafts.push({ type: "utterance.final", payload: message.utterance });
+        flagged =
+          this.#compare?.({
+            turnId: message.turnId,
+            proposals,
+            unbiased: message.utterance,
+          }) ?? [];
+        for (const flag of flagged) drafts.push({ type: "proposal.flagged", payload: flag });
+      }
+      drafts.push({
+        type: "turn.witnessed",
+        payload: {
+          turnId: message.turnId,
+          outcome: message.outcome === "transcribed" ? "compared" : message.outcome,
+          provider: message.provider,
+          model: message.model,
+          utteranceIds: message.outcome === "transcribed" ? [message.utterance.utteranceId] : [],
+          conflicts: flagged.length,
+          latencyMs: message.latencyMs ?? null,
+          reason: message.outcome === "transcribed" ? null : message.reason,
+        },
+      });
+      const appended = this.#commit(message.msgId, drafts);
+      if (message.outcome === "transcribed" && appended[0]) {
+        this.#utterances.set(message.utterance.utteranceId, appended[0].seq);
+      }
+    };
+    // A witness for a turn still running waits for it, as SessionDO's does.
+    if (this.#turnRuns.get(message.turnId)?.proposals === null && this.holdTurns) {
+      this.#inflight.add(message.msgId);
+      this.#held.push(run);
+    } else run();
   }
 
   #metric(message: ClientMessageOf<"metric">): void {
