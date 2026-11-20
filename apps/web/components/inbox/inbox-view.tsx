@@ -5,6 +5,7 @@ import { Button } from "@earshot/ui/components/button";
 import { KeyboardIcon } from "lucide-react";
 import { Fragment, useEffect, useId, useState } from "react";
 import { CAUGHT_UP_COPY, SECTION_TITLES } from "@/lib/inbox/copy";
+import { publishInboxCount } from "@/lib/inbox/count-store";
 import { type ReviewSink, routeSink } from "@/lib/inbox/sinks";
 import type { InboxData } from "@/lib/inbox/types";
 import { CaptureLink } from "../capture/link";
@@ -100,6 +101,13 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
     }, FINISHING_POLL_MS);
     return () => window.clearInterval(timer);
   }, [finishing, reload, store, refreshNow]);
+
+  // The header's count follows the page's own reviews, once every debrief is loaded: then the
+  // inbox's open cards are exactly what the count query counts.
+  const everything = data.older === null;
+  useEffect(() => {
+    if (everything) publishInboxCount(sections.openCount);
+  }, [everything, sections.openCount]);
 
   async function loadOlder() {
     if (!data.older || loadingOlder) return;
