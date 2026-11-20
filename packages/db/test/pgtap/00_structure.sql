@@ -3,7 +3,7 @@
 -- with a workspace_id column but no RLS, grants the app a table that RLS doesn't protect, or
 -- lets the app write a user column that isn't bound to app.user_id.
 begin;
-select plan(90);
+select plan(95);
 
 create temp table tenant_tables (
   name text primary key,
@@ -26,7 +26,8 @@ insert into tenant_tables (name, key, privs, policies, ord) values
   ('sync_jobs', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 10),
   ('commitments', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 11),
   ('facts', 'workspace_id', '{DELETE,INSERT,SELECT,UPDATE}', '{tenant_isolation}', 12),
-  ('audit_log', 'workspace_id', '{INSERT,SELECT}', '{tenant_isolation,actor_insert}', 13);
+  ('audit_log', 'workspace_id', '{INSERT,SELECT}', '{tenant_isolation,actor_insert}', 13),
+  ('audit_checkpoints', 'workspace_id', '{INSERT,SELECT}', '{tenant_isolation}', 14);
 
 -- The role (4)
 select has_role('earshot_app', 'role earshot_app exists');
@@ -44,27 +45,27 @@ select ok(
   'the owner may SET ROLE earshot_app'
 );
 
--- Every tenant table has RLS enabled (13)
+-- Every tenant table has RLS enabled (14)
 select ok(c.relrowsecurity, format('%s has row-level security enabled', t.name))
 from tenant_tables t
 join pg_class c on c.oid = format('public.%I', t.name)::regclass
 order by t.ord;
 
--- ...with exactly the expected policies (13)...
+-- ...with exactly the expected policies (14)...
 select policies_are(
   'public', t.name::name, t.policies,
   format('%s has exactly the policies %s', t.name, array_to_string(t.policies, ', '))
 )
 from tenant_tables t order by t.ord;
 
--- ...including tenant_isolation for earshot_app (13)...
+-- ...including tenant_isolation for earshot_app (14)...
 select policy_roles_are(
   'public', t.name::name, 'tenant_isolation', array['earshot_app']::name[],
   format('%s: tenant_isolation applies to earshot_app', t.name)
 )
 from tenant_tables t order by t.ord;
 
--- ...which covers every command and checks the workspace in USING and WITH CHECK (13)
+-- ...which covers every command and checks the workspace in USING and WITH CHECK (14)
 select is(
   row(p.cmd, p.permissive, p.qual, p.with_check)::text,
   row('ALL', 'PERMISSIVE', e.expr, e.expr)::text,
@@ -190,7 +191,7 @@ select is_empty(
 );
 
 -- Grants: exactly what each tenant table needs; read-only membership, and an append-only
--- audit log and event log (13)...
+-- audit log, checkpoints, and event log (14)...
 select table_privs_are(
   'public', t.name::name, 'earshot_app', t.privs,
   format('earshot_app has exactly %s on %s', array_to_string(t.privs, ', '), t.name)

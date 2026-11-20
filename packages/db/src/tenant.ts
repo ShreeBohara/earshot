@@ -1,6 +1,7 @@
 import { asc, desc, eq, sql, type TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT, PgTransaction } from "drizzle-orm/pg-core";
 import {
+  auditCheckpoints,
   auditLog,
   commitments,
   credentials,
@@ -43,6 +44,7 @@ export const tenantTables = [
   commitments,
   facts,
   auditLog,
+  auditCheckpoints,
 ] as const;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

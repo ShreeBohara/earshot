@@ -4,7 +4,9 @@
 --   workspace B = bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb, user user-b
 --   A's rows are a0000000-0000-4000-8000-0000000000NN and B's are b0000000-…NN, where NN is
 --   01 credentials, 02 crm_connections, 03 crm_entities, 04 sessions, 05 session_events,
---   06 utterances, 07 proposals, 08 sync_jobs, 09 commitments, 10 facts, 11 audit_log.
+--   06 utterances, 07 proposals, 08 sync_jobs, 09 commitments, 10 facts, 11 audit_log,
+--   12 audit_checkpoints. The audit log's trigger (migration 0013) gives each entry chain_seq 1;
+--   each checkpoint names it, with a placeholder signature (nothing here verifies it).
 
 insert into "user" (id, name, email) values
   ('user-a', 'Ada Archer', 'ada@a.test'),
@@ -99,3 +101,13 @@ insert into audit_log (id, workspace_id, actor_user_id, action, subject_type, su
    'user-a', 'proposal.approved', 'proposal', 'a0000000-0000-4000-8000-000000000007'),
   ('b0000000-0000-4000-8000-000000000011', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
    'user-b', 'proposal.approved', 'proposal', 'b0000000-0000-4000-8000-000000000007');
+
+insert into audit_checkpoints
+  (id, workspace_id, chain_seq, entry_hash, signed_at, kid, signature, request)
+select v.id, a.workspace_id, a.chain_seq, a.entry_hash, '2026-11-15T19:00:00.000Z',
+       'audit-test-fixture', decode(repeat('0a', 64), 'hex'), 'review'
+from (values
+  ('a0000000-0000-4000-8000-000000000012'::uuid, 'a0000000-0000-4000-8000-000000000011'::uuid),
+  ('b0000000-0000-4000-8000-000000000012'::uuid, 'b0000000-0000-4000-8000-000000000011'::uuid)
+) as v(id, audit_id)
+join audit_log a on a.id = v.audit_id;

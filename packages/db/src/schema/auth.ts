@@ -5,8 +5,21 @@
 // edit, so the shapes stay what Better Auth expects; its Drizzle adapter checks them at run time.
 // These aren't tenant tables: the app's tenant role (earshot_app) has no privileges on them, and
 // Better Auth reads them as the owner.
-import { relations } from "drizzle-orm";
-import { bigint, boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+//
+// One addition the CLI generates from the app's config rather than its defaults: `session.sign_in_method`
+// (migration 0013, docs/adr/0033), the `signInMethod` additional field, which a database hook sets
+// from the endpoint that created the session.
+import { relations, sql } from "drizzle-orm";
+import {
+  bigint,
+  boolean,
+  check,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -36,8 +49,20 @@ export const session = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    /**
+     * How this sign-in happened: `passkey`, `magic_link`, `github`, `google`, or `unknown`
+     * (@earshot/core's `SignInMethod`). Set once, when the session is created; sessions from
+     * before migration 0013 are `unknown`. Reviews record it with the session's `created_at`.
+     */
+    signInMethod: text("sign_in_method").notNull().default("unknown"),
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [
+    index("session_userId_idx").on(table.userId),
+    check(
+      "session_sign_in_method_check",
+      sql`${table.signInMethod} in ('passkey', 'magic_link', 'github', 'google', 'unknown')`,
+    ),
+  ],
 );
 
 export const account = pgTable(

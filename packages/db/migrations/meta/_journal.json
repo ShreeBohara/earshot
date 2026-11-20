@@ -92,6 +92,13 @@
       "when": 1795140118109,
       "tag": "0012_proposal_targets",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795183488840,
+      "tag": "0013_audit_chain",
+      "breakpoints": true
     }
   ]
 }
