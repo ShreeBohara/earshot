@@ -2,7 +2,9 @@ import type { EventEnvelope } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import {
   type ActualTurn,
+  DEMO_SESSION_ENTITIES,
   type DebriefTurn,
+  datasetIdsFor,
   debrief,
   turnProblems,
   turnsFromEvents,
@@ -123,6 +125,28 @@ describe("turnProblems", () => {
     };
   }
   const exact = { exactTranscript: true };
+
+  it("maps a live session's database ids to the scripts' dataset ids before comparing targets", () => {
+    const targeted = script.turns.find((turn) => turn.expect.some((e) => e.target !== null));
+    if (!targeted) throw new Error("d001 has no targeted proposal");
+    // A live session's entities: the same records, with crm_entities' random UUIDs as ids.
+    const live = DEMO_SESSION_ENTITIES.map((entity, n) => ({ ...entity, id: uuid(5_000 + n) }));
+    const toLive = new Map(DEMO_SESSION_ENTITIES.map((entity, n) => [entity.id, uuid(5_000 + n)]));
+    const actual = asScripted(targeted);
+    const liveActual: ActualTurn = {
+      ...actual,
+      proposals: actual.proposals.map((proposal) => ({
+        ...proposal,
+        targetEntityId:
+          proposal.targetEntityId === null ? null : (toLive.get(proposal.targetEntityId) ?? null),
+      })),
+    };
+    const live_ = { exactTranscript: false };
+    expect(turnProblems(targeted, liveActual, live_).some((p) => p.includes("targets"))).toBe(true);
+    expect(
+      turnProblems(targeted, liveActual, { ...live_, targetIds: datasetIdsFor(live) }),
+    ).toEqual([]);
+  });
 
   it("finds nothing wrong with a turn that went as scripted, quiet turns included", () => {
     for (const turn of script.turns)

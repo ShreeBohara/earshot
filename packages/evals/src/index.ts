@@ -7,6 +7,7 @@
 export {
   type ActualProposal,
   type ActualTurn,
+  datasetIdsFor,
   type TurnCheckOptions,
   type TurnLatency,
   turnProblems,

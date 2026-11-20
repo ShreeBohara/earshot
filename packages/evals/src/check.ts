@@ -7,9 +7,9 @@
 //
 // Free text (a note's body, a task's title) isn't compared: CI's cassettes reproduce it word for
 // word, a live model won't, and Phase 4 scores it.
-import type { EventEnvelope, ProposalType, TurnOutcome } from "@earshot/core";
+import type { EntityRef, EventEnvelope, ProposalType, TurnOutcome } from "@earshot/core";
 import { type DebriefTurn, type ExpectedField, KEY_FIELDS } from "./schema";
-import { turnTranscript } from "./session";
+import { DEMO_SESSION_ENTITIES, turnTranscript } from "./session";
 
 /** The parts of a `proposal.created` payload an eval compares. */
 export interface ActualProposal {
@@ -121,6 +121,32 @@ export interface TurnCheckOptions {
    * adapter says exactly the script, so CI does; a live provider won't, so live runs don't.
    */
   readonly exactTranscript: boolean;
+  /**
+   * The session's entity ids mapped to the ground truth's dataset ids. A live session carries the
+   * demo CRM's database UUIDs (`crm_entities.id`), while the scripts name records by dataset id
+   * (`co_011`); without the map every correct target would count as wrong. Fake mode's scenario
+   * already uses dataset ids, so it needs none. See `datasetIdsFor`.
+   */
+  readonly targetIds?: ReadonlyMap<string, string>;
+}
+
+/**
+ * Maps a session's entities to the demo CRM's dataset ids, by kind and name: the session entity
+ * named like a dataset record of the same kind is that record. Names the dataset doesn't hold, or
+ * holds twice for one kind, are left out, so they're compared as they are.
+ */
+export function datasetIdsFor(sessionEntities: readonly EntityRef[]): Map<string, string> {
+  const byName = new Map<string, string | null>();
+  for (const entity of DEMO_SESSION_ENTITIES) {
+    const key = `${entity.kind}:${entity.name}`;
+    byName.set(key, byName.has(key) ? null : entity.id);
+  }
+  const ids = new Map<string, string>();
+  for (const entity of sessionEntities) {
+    const datasetId = byName.get(`${entity.kind}:${entity.name}`);
+    if (datasetId) ids.set(entity.id, datasetId);
+  }
+  return ids;
 }
 
 /** What's wrong with one turn, in words; empty when it went as the script says. */
@@ -148,9 +174,13 @@ export function turnProblems(
       problems.push(`${where} is a ${got.type}, not a ${expected.type}`);
       return;
     }
-    if (got.targetEntityId !== expected.target) {
+    const target =
+      got.targetEntityId === null
+        ? null
+        : (options.targetIds?.get(got.targetEntityId) ?? got.targetEntityId);
+    if (target !== expected.target) {
       problems.push(
-        `${where} targets ${got.targetEntityId ?? "a new record"}, not ${expected.target ?? "a new record"}`,
+        `${where} targets ${target ?? "a new record"}, not ${expected.target ?? "a new record"}`,
       );
     }
     const fields = expected.fields as Readonly<Record<string, ExpectedField | undefined>>;

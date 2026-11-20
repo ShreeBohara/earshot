@@ -14,11 +14,12 @@
 //   client, `turn.measured` (the latency) included.
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import type { EventEnvelope } from "@earshot/core";
+import type { EntityRef, EventEnvelope } from "@earshot/core";
 import {
   DEBRIEFS,
   type DebriefScript,
   DebriefTiming,
+  datasetIdsFor,
   debrief,
   type EvalScriptResult,
   isStubRender,
@@ -232,13 +233,26 @@ const SESSION_SOCKET = /^\/v1\/sessions\/[^/]+\/ws$/;
 export interface SessionTap {
   /** Every event the session socket has delivered so far, once each. */
   events(): EventEnvelope[];
+  /** The entities the client sent in `start`: database ids in live runs, dataset ids in CI. */
+  entities(): EntityRef[];
 }
 
 /** Listens to the session socket (and any that replace it) for the events it delivers. */
 export function tapSession(page: Page): SessionTap {
   const events = new Map<string, EventEnvelope>();
+  let entities: EntityRef[] = [];
   page.on("websocket", (socket) => {
     if (!SESSION_SOCKET.test(new URL(socket.url()).pathname)) return;
+    socket.on("framesent", ({ payload }) => {
+      try {
+        const message = JSON.parse(
+          typeof payload === "string" ? payload : payload.toString("utf8"),
+        );
+        if (message?.t === "start" && Array.isArray(message.entities)) entities = message.entities;
+      } catch {
+        // Heartbeats and other non-JSON frames.
+      }
+    });
     socket.on("framereceived", ({ payload }) => {
       let message: { t?: unknown; event?: EventEnvelope } | null = null;
       try {
@@ -249,7 +263,7 @@ export function tapSession(page: Page): SessionTap {
       if (message?.t === "event" && message.event?.id) events.set(message.event.id, message.event);
     });
   });
-  return { events: () => [...events.values()] };
+  return { events: () => [...events.values()], entities: () => entities };
 }
 
 /** Signs up a new user and loads the demo CRM, whose records every script names. */
@@ -349,6 +363,8 @@ export interface RunFacts {
   readonly playback: Playback | null;
   readonly probe: Probe | null;
   readonly events: readonly EventEnvelope[];
+  /** What the client sent in `start`, to map live database ids to the scripts' dataset ids. */
+  readonly entities: readonly EntityRef[];
   readonly problems: readonly string[];
 }
 
@@ -394,7 +410,10 @@ export function scriptResult(fx: Fixture, facts: RunFacts): EvalScriptResult {
         transcript: actual?.transcript ?? null,
         pressLateMs: facts.playback?.pressLateMs[index] ?? 0,
         latency: actual?.latency ?? null,
-        problems: turnProblems(turn, actual, { exactTranscript: facts.mode === "ci" }),
+        problems: turnProblems(turn, actual, {
+          exactTranscript: facts.mode === "ci",
+          targetIds: datasetIdsFor(facts.entities),
+        }),
       };
     }),
     problems,

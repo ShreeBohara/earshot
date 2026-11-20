@@ -265,7 +265,8 @@ function delta(now: number | null, then: number | undefined): string {
 }
 
 function cell(text: string): string {
-  return text.replace(/\|/g, "\\|").replace(/\s+/g, " ");
+  // Backslashes first, so an escaped pipe can't be undone by a backslash already in the text.
+  return text.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\s+/g, " ");
 }
 
 export interface ReportMarkdownOptions {

@@ -86,6 +86,7 @@ for (const { script, pair, title } of runs) {
       playback,
       probe: await readProbe(page).catch(() => null),
       events: tap.events(),
+      entities: tap.entities(),
       problems: failure
         ? [failure instanceof Error ? (failure.message.split("\n")[0] ?? "") : String(failure)]
         : [],
