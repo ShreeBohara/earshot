@@ -178,10 +178,21 @@ export function decisionWords(proposal: InboxProposal): string {
   }
 }
 
-/** A message for a key that can't act on the card it's pressed on. */
+/** What a card says when an action can't go ahead as it stands, with or without the keys on. */
 export const KEY_HINTS = {
   choose: "Choose a record first: press 1, 2, or 3, or pick one and accept.",
+  chooseWithoutKeys: "Choose a record first, then accept.",
   noRecord: "There's no record to add this to. Reject it, or correct it with C.",
-  noChoice: "This card has nothing numbered to choose.",
+  noRecordWithoutKeys: "There's no record to add this to. Reject it, or correct it from More.",
   nothingToUndo: "Nothing to undo yet.",
 } as const;
+
+/** The hint for a card that needs a record chosen first. */
+export function chooseHint(shortcuts: boolean): string {
+  return shortcuts ? KEY_HINTS.choose : KEY_HINTS.chooseWithoutKeys;
+}
+
+/** The hint for a card with no record to accept. */
+export function noRecordHint(shortcuts: boolean): string {
+  return shortcuts ? KEY_HINTS.noRecord : KEY_HINTS.noRecordWithoutKeys;
+}

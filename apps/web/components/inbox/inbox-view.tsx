@@ -20,9 +20,11 @@ import {
   actionMessage,
   CAUGHT_UP_COPY,
   cardWords,
+  chooseHint,
   failureMessage,
   KEY_HINTS,
   nameFinder,
+  noRecordHint,
   SECTION_TITLES,
   shownValue,
 } from "@/lib/inbox/copy";
@@ -416,7 +418,7 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
     if (!model || !entry) return;
     clock.decide(proposalId);
     if (model.acceptable === "no_record") {
-      hint(proposalId, KEY_HINTS.noRecord);
+      hint(proposalId, noRecordHint(shortcuts));
       return;
     }
     const picked = choices[proposalId];
@@ -425,7 +427,7 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
       return;
     }
     if (model.acceptable === "choose") {
-      hint(proposalId, KEY_HINTS.choose);
+      hint(proposalId, chooseHint(shortcuts));
       focusChooser(proposalId);
       return;
     }
@@ -458,11 +460,11 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
     if (!model) return;
     clock.decide(proposalId);
     if (model.acceptable === "no_record") {
-      hint(proposalId, KEY_HINTS.noRecord);
+      hint(proposalId, noRecordHint(shortcuts));
       return;
     }
     if (model.acceptable === "choose" && choices[proposalId] === undefined) {
-      hint(proposalId, KEY_HINTS.choose);
+      hint(proposalId, chooseHint(shortcuts));
       focusChooser(proposalId);
       return;
     }
