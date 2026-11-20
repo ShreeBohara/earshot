@@ -1,7 +1,8 @@
 // @earshot/agent: turn extraction for SessionDO (Phase 3 spec, WP5), and from Phase 4 the turn
 // pipeline (spec §4.3): extractor v2, then `understand` with the linker, the normalizers, and the
-// faithfulness check. Runs in workerd and Node. Cassettes and test scenarios live in
-// `@earshot/agent/testing`, which production code doesn't import.
+// faithfulness check, and from WP9 the second witness's comparison (`witnessTurn`). Runs in
+// workerd and Node. Cassettes and test scenarios live in `@earshot/agent/testing`, which
+// production code doesn't import.
 export { matchEntity } from "./entities";
 export {
   type CallFailure,
@@ -65,6 +66,7 @@ export {
 } from "./turn";
 export {
   draftMention,
+  type LinkDraft,
   type LinkSession,
   LOW_CONFIDENCE_THRESHOLD,
   linkerMention,
@@ -77,3 +79,9 @@ export {
   withRecentLinks,
 } from "./understand";
 export { addUsage, fromSdkUsage, type TokenUsage, ZERO_USAGE } from "./usage";
+export {
+  type ProposalLink,
+  type WitnessTurnInput,
+  type WitnessTurnResult,
+  witnessTurn,
+} from "./witness";

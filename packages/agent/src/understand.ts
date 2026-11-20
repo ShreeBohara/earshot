@@ -29,6 +29,7 @@
 // NegEx-style check, and `low_confidence` stays. `date` and `number`, raised on every date and
 // number, gave way to the normalizers' checks of the value itself (ADR-0030).
 import {
+  type EntityKind,
   type ProposalCreatedV2,
   type ProposalFieldV2,
   type ProposalTypeV2,
@@ -372,11 +373,34 @@ export function withRecentLinks(
   return out.slice(0, MAX_RECENT_LINKS);
 }
 
+/**
+ * What a proposal's target linker read: the mention as it read it (null when nothing was named),
+ * the kinds allowed, the earlier links the proposal saw, and the turn's other named records. The
+ * second witness is compared with the same context (WP9, `witnessTurn`).
+ */
+export interface LinkDraft {
+  readonly mention: MentionInput | null;
+  readonly kinds: readonly EntityKind[];
+  readonly recent: readonly string[];
+  readonly turnMentions: readonly MentionInput[];
+}
+
 export interface TurnUnderstanding {
   /** The turn's proposals, in the order the model drafted them, without the ones dropped. */
   readonly proposals: readonly ProposalDraft[];
+  /** For each proposal, in the same order: what its target's linker read. */
+  readonly links: readonly LinkDraft[];
   /** The session's earlier links once this turn's are added (`withRecentLinks`). */
   readonly recent: readonly string[];
+}
+
+/**
+ * The mention a proposal's target linker read: the target's quote (a contact's `name`), with the
+ * company said beside it, read as `linkedTarget` reads them. Null for a target with no words.
+ */
+function linkedMention(target: TargetV2): MentionInput | null {
+  if (target.mention === null) return null;
+  return linkerMention(target.mention.quote, target.kind, target.company?.quote ?? null);
 }
 
 /**
@@ -390,6 +414,7 @@ export function understandTurn(
   const mentions = drafts.map((draft) => draftMention(draft, ctx.utterances));
   let recent = [...ctx.session.recent];
   const proposals: ProposalDraft[] = [];
+  const links: LinkDraft[] = [];
   drafts.forEach((draft, index) => {
     const turnMentions = mentions.filter(
       (mention, other): mention is MentionInput => mention !== null && other !== index,
@@ -401,7 +426,13 @@ export function understandTurn(
     });
     if (proposal === null) return;
     proposals.push(proposal);
+    links.push({
+      mention: linkedMention(proposal.target),
+      kinds: TARGET_KINDS[draft.type],
+      recent,
+      turnMentions,
+    });
     recent = withRecentLinks(recent, [proposal]);
   });
-  return { proposals, recent };
+  return { proposals, links, recent };
 }
