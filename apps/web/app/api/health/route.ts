@@ -1,6 +1,8 @@
 import { HealthResponse } from "@earshot/core";
 import { createHttpDb, readDbHealth } from "@earshot/db";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { readAuditKeys } from "@/lib/audit/keys";
+import { log } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +20,19 @@ async function dbHealth(env: CloudflareEnv) {
   return readDbHealth(createHttpDb(env.DATABASE_URL));
 }
 
-/** Proves web → edge → Durable Object and web → Postgres (with the branch read from the database). */
+/**
+ * Proves web → edge → Durable Object and web → Postgres (with the branch read from the database),
+ * and says whether this Worker can sign audit checkpoints (docs/adr/0033), never with the key.
+ * The signing key is reported, not counted in `status`: until it's set, only the writes that need
+ * a checkpoint fail closed.
+ */
 export async function GET() {
   const { env } = getCloudflareContext();
-  const [edge, db] = await Promise.allSettled([edgeHealth(env), dbHealth(env)]);
+  const [edge, db, audit] = await Promise.allSettled([
+    edgeHealth(env),
+    dbHealth(env),
+    readAuditKeys(env, { log }),
+  ]);
 
   const body = HealthResponse.parse({
     status: edge.status === "fulfilled" && db.status === "fulfilled" ? "ok" : "degraded",
@@ -29,6 +40,7 @@ export async function GET() {
     env: env.DEPLOY_ENV,
     edge: edge.status === "fulfilled" ? edge.value : { status: "error" },
     db: db.status === "fulfilled" ? db.value : { status: "error" },
+    audit: { signingKey: audit.status === "fulfilled" ? audit.value.signing.status : "invalid" },
   });
 
   return Response.json(body, {

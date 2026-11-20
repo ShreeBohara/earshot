@@ -40,3 +40,10 @@ EDGE_DEV_URL=http://localhost:8787
 # or `openssl rand -base64 32`. Keep it with your other secrets: rows sealed with it don't open
 # without it, and changing it needs the rotation runbook (docs/vault-key-rotation.md).
 # EARSHOT_VAULT_MASTER_KEY=replace-with-32-random-bytes-base64
+
+# Audit checkpoints (docs/adr/0033). Without a key, `next dev` signs with the committed development
+# key, which every other environment refuses. Outside `next dev`, set a private Ed25519 JWK from
+# `pnpm --filter @earshot/keys audit-key:new` (the same value on the edge Worker); without one,
+# writes that need a checkpoint fail closed. Retired keys are public JWKs, as a JSON array.
+# EARSHOT_AUDIT_SIGNING_KEY={"kty":"OKP","crv":"Ed25519","d":"…","x":"…","kid":"audit-YYYY-MM-DD-xxxx"}
+# EARSHOT_AUDIT_RETIRED_KEYS=[{"kty":"OKP","crv":"Ed25519","x":"…","kid":"…","retiredAt":"2026-12-01T09:00:00Z"}]
