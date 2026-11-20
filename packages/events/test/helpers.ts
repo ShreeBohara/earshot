@@ -13,6 +13,7 @@ export {
   proposalV2,
   REVIEWER,
   readFixture,
+  recapCreated,
   reopen,
   review,
   reviewV2,

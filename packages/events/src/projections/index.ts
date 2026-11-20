@@ -4,7 +4,7 @@ import {
   proposalsProjection,
   type ReviewView,
 } from "./proposals";
-import { type SessionView, sessionProjection } from "./session";
+import { recapProblem, type SessionRecap, type SessionView, sessionProjection } from "./session";
 import { type UtteranceView, utterancesProjection } from "./utterances";
 
 /** The three projections the `sessions`, `utterances`, and `proposals` tables are built from. */
@@ -20,6 +20,8 @@ export {
   type ProposalView,
   proposalsProjection,
   type ReviewView,
+  recapProblem,
+  type SessionRecap,
   type SessionView,
   sessionProjection,
   type UtteranceView,

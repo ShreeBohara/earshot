@@ -300,6 +300,41 @@ export function sealed(payload: Record<string, unknown> = {}): EventBody {
   };
 }
 
+/**
+ * A created recap (Phase 5 WP10): a headline and a next step quoting utterance 1, with no lens.
+ * `payload` overrides any field.
+ */
+export function recapCreated(payload: Record<string, unknown> = {}): EventBody {
+  const evidence = {
+    utteranceId: uuid(2000 + 1),
+    span: [0, 12],
+    audioMs: [1200, 2400],
+    confidence: 0.92,
+  };
+  return {
+    type: "recap.created",
+    schemaVersion: 1,
+    payload: {
+      recapId: uuid(6000),
+      outcome: "created",
+      reason: null,
+      llm: { provider: "anthropic", model: "claude-haiku-5-5" },
+      sentences: [
+        {
+          kind: "headline",
+          text: "The rep met Dana Lee at Acme.",
+          evidence: [evidence],
+          weakSupport: false,
+        },
+        { kind: "next_step", text: "Send the quote.", evidence: [evidence], weakSupport: true },
+      ],
+      dropped: 1,
+      lens: null,
+      ...payload,
+    },
+  };
+}
+
 export function ended(payload: Record<string, unknown> = {}): EventBody {
   return {
     type: "session.ended",
