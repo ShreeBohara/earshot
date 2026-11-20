@@ -14,8 +14,8 @@ import {
 
 // axe (WCAG 2.2 AA tags, serious and critical) in every state the inbox has (Phase 5 spec WP5,
 // gate G3a), in the light theme and the dark: empty, finishing, a conflict open, editing, the
-// correction panel, undo shown, and the shortcuts dialog. One live region on the page: the
-// toaster's.
+// correction panel, undo shown, and the shortcuts dialog. One live region for review actions: the
+// toaster's (the clip player's status line, outside <main>, speaks only when a clip is pressed).
 test.setTimeout(240_000);
 
 /** axe in both themes, leaving the page in the light one. */
