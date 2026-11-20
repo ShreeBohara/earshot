@@ -1,0 +1,12 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c204",
+  "source": "witness",
+  "flags": [
+    {
+      "kind": "low_confidence",
+      "field": "attendees"
+    }
+  ],
+  "target": null,
+  "conflict": null
+}

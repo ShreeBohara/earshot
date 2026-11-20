@@ -1,11 +1,29 @@
 import {
   Evidence,
+  FieldNorm,
+  MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
+  ProposalCreatedV2,
   ProposalField,
+  ProposalFieldV2,
   ProposalType,
+  ProposalTypeV2,
   RiskFlag,
+  RiskFlagV2,
   RiskKind,
+  RiskKindV2,
+  TARGET_FIELD,
+  TargetBasis,
+  TargetCandidate,
+  TargetDecision,
+  TargetV2,
 } from "./proposal-created";
+import {
+  FlagSource,
+  ProposalFlaggedV1,
+  TargetDowngrade,
+  WitnessConflict,
+} from "./proposal-flagged";
 import { FieldEdit, ProposalReviewedV1, ReviewDecision } from "./proposal-reviewed";
 import { SessionEndedV1 } from "./session-ended";
 import {
@@ -18,6 +36,7 @@ import {
 import { FieldName, FieldValue } from "./shared";
 import { TurnCompletedV1, TurnOutcome } from "./turn-completed";
 import { CaptureMode, TurnMeasuredV1 } from "./turn-measured";
+import { TurnWitnessedV1, WitnessOutcome, WitnessReason } from "./turn-witnessed";
 import { UsageKind, UsageRecordedV1 } from "./usage-recorded";
 import { UtteranceFinalV1, UtteranceFinalV2, Witness, Word } from "./utterance-final";
 
@@ -38,6 +57,11 @@ export const eventPayloadContracts = [
   { type: "usage.recorded", schemaVersion: 1, schema: UsageRecordedV1 },
   { type: "turn.completed", schemaVersion: 1, schema: TurnCompletedV1 },
   { type: "turn.measured", schemaVersion: 1, schema: TurnMeasuredV1 },
+  // Phase 4: proposals whose target the entity linker resolved (v1 upcasts), and the second
+  // witness's records. `proposalsProjection` folds `proposal.flagged`; the rest ignore both.
+  { type: "proposal.created", schemaVersion: 2, schema: ProposalCreatedV2 },
+  { type: "proposal.flagged", schemaVersion: 1, schema: ProposalFlaggedV1 },
+  { type: "turn.witnessed", schemaVersion: 1, schema: TurnWitnessedV1 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
@@ -47,27 +71,46 @@ export {
   Evidence,
   FieldEdit,
   FieldName,
+  FieldNorm,
   FieldValue,
+  FlagSource,
+  MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
+  ProposalCreatedV2,
   ProposalField,
+  ProposalFieldV2,
+  ProposalFlaggedV1,
   ProposalReviewedV1,
   ProposalType,
+  ProposalTypeV2,
   ProviderModel,
   ReviewDecision,
   RiskFlag,
+  RiskFlagV2,
   RiskKind,
+  RiskKindV2,
   SessionEndedV1,
   SessionMode,
   SessionProviders,
   SessionStartedV1,
+  TARGET_FIELD,
+  TargetBasis,
+  TargetCandidate,
+  TargetDecision,
+  TargetDowngrade,
+  TargetV2,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnOutcome,
+  TurnWitnessedV1,
   UsageKind,
   UsageRecordedV1,
   UtteranceFinalV1,
   UtteranceFinalV2,
   VoiceEngine,
   Witness,
+  WitnessConflict,
+  WitnessOutcome,
+  WitnessReason,
   Word,
 };

@@ -91,6 +91,101 @@ export function proposal(n: number, type = "task", value: unknown = "Send the de
   };
 }
 
+/**
+ * A `proposal.created` v2 for proposal `uuid(3000 + n)`: a task linked to entity `uuid(6001)` by
+ * sound, quoting utterance 1. `target` overrides parts of the target.
+ */
+export function proposalV2(
+  n: number,
+  target: Record<string, unknown> = {},
+  payload: Record<string, unknown> = {},
+): EventBody {
+  const evidence = (span: [number, number]) => ({
+    utteranceId: uuid(2001),
+    span,
+    audioMs: [1000 + span[0] * 50, 1000 + span[1] * 50],
+    confidence: 0.9,
+  });
+  return {
+    type: "proposal.created",
+    schemaVersion: 2,
+    payload: {
+      proposalId: uuid(3000 + n),
+      type: "task",
+      target: {
+        decision: "linked",
+        entityId: uuid(6001),
+        kind: "company",
+        basis: "sound",
+        p: 0.91,
+        mention: { quote: "Akme", evidence: evidence([0, 4]) },
+        company: null,
+        candidates: [
+          { entityId: uuid(6001), p: 0.91 },
+          { entityId: uuid(6002), p: 0.06 },
+        ],
+        ...target,
+      },
+      fields: { title: { value: "Send the deck", evidence: evidence([5, 9]) } },
+      riskFlags: [{ kind: "link_uncertain", field: "target" }],
+      supersedes: null,
+      linker: "linker.v1",
+      ...payload,
+    },
+  };
+}
+
+/**
+ * A `proposal.flagged` from the second witness for proposal `uuid(3000 + n)`: a conflict on the
+ * target's mention ("Akme" against "Atmo", heard by unbiased utterance `uuid(2900)`), with no
+ * downgrade unless `payload` sets `target`.
+ */
+export function proposalFlagged(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "proposal.flagged",
+    schemaVersion: 1,
+    payload: {
+      proposalId: uuid(3000 + n),
+      source: "witness",
+      flags: [{ kind: "witness_conflict", field: "target" }],
+      target: null,
+      conflict: {
+        field: "target",
+        biased: {
+          text: "Akme",
+          evidence: {
+            utteranceId: uuid(2001),
+            span: [0, 4],
+            audioMs: [1000, 1200],
+            confidence: 0.9,
+          },
+        },
+        unbiased: { text: "Atmo", utteranceId: uuid(2900), audioMs: [990, 1210] },
+      },
+      ...payload,
+    },
+  };
+}
+
+/** Turn `uuid(5000 + n)`'s second witness: compared on Groq, one conflict. */
+export function turnWitnessed(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "turn.witnessed",
+    schemaVersion: 1,
+    payload: {
+      turnId: uuid(5000 + n),
+      outcome: "compared",
+      provider: "groq",
+      model: "whisper-large-v3-turbo",
+      utteranceIds: [uuid(2900)],
+      conflicts: 1,
+      latencyMs: 640,
+      reason: null,
+      ...payload,
+    },
+  };
+}
+
 export function review(
   n: number,
   decision: string,

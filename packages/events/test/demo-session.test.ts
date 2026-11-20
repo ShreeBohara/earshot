@@ -79,6 +79,29 @@ describe("demo-session.jsonl: what the replay demo relies on", () => {
     expect(quote(byType("deal_update"), "stage")).toBe("move the deal to the proposal stage");
   });
 
+  it("upcasts every proposal to v2: the new contact, and four exact links to Acme Corp", () => {
+    const stored = events.filter((e) => e.type === "proposal.created");
+    expect(stored.map((e) => e.schemaVersion)).toEqual([1, 1, 1, 1, 1]);
+    expect(Object.fromEntries(proposals.map((p) => [p.type, p.target.decision]))).toEqual({
+      contact: "new",
+      deal_update: "linked",
+      task: "linked",
+      note: "linked",
+      commitment: "linked",
+    });
+    for (const p of proposals) {
+      expect(p.targetEntityId, p.type).toBe(p.target.entityId);
+      expect(p.target, p.type).toMatchObject({
+        kind: null,
+        p: null,
+        mention: null,
+        candidates: [],
+      });
+      expect(p.target.basis, p.type).toBe(p.target.decision === "linked" ? "exact" : null);
+      expect(p.conflicts, p.type).toEqual([]);
+    }
+  });
+
   it("ends with one proposal rejected, one edited, and the rest approved", () => {
     expect(Object.fromEntries(proposals.map((p) => [p.type, p.status]))).toEqual({
       contact: "approved",

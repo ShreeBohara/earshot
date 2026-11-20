@@ -36,6 +36,13 @@ import { PRICE_TABLE_DATE, priceStt } from "../prices";
 import type { SocketFactory } from "../stt/socket";
 import { type FakeServerSocket, FakeSocketServer } from "./fake-socket";
 
+/**
+ * The schema version SessionDO writes for each event type where that isn't the latest: Phase 3's
+ * extractor drafts `proposal.created` v1, which readers upcast to v2, until Phase 4's extractor
+ * v2 (WP8) writes v2.
+ */
+const WRITTEN_VERSIONS: Readonly<Record<string, number>> = { "proposal.created": 1 };
+
 /** One turn as the fake's extractor sees it. */
 export interface FakeTurn {
   readonly turnId: string;
@@ -582,7 +589,7 @@ export class FakeSessionServer {
   }
 
   #append(type: string, payload: Record<string, unknown>): EventEnvelope {
-    const schemaVersion = defaultRegistry.latestVersion(type);
+    const schemaVersion = WRITTEN_VERSIONS[type] ?? defaultRegistry.latestVersion(type);
     if (schemaVersion === undefined) throw new Error(`unknown event type ${type}`);
     const event: EventEnvelope = {
       id: this.#newId(),

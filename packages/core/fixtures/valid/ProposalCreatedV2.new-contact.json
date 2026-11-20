@@ -1,0 +1,63 @@
+{
+  "proposalId": "01a1c6e2-b422-7d40-b863-98e9e102c203",
+  "type": "contact",
+  "target": {
+    "decision": "new",
+    "entityId": null,
+    "kind": "contact",
+    "basis": null,
+    "p": 0.83,
+    "mention": {
+      "quote": "Dana Lee",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [48, 56],
+        "audioMs": [4420, 4960],
+        "confidence": 0.85
+      }
+    },
+    "company": {
+      "quote": "Acme Dynamics",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [33, 46],
+        "audioMs": [3410, 4020],
+        "confidence": 0.91
+      },
+      "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf"
+    },
+    "candidates": [
+      {
+        "entityId": null,
+        "p": 0.83
+      }
+    ]
+  },
+  "fields": {
+    "name": {
+      "value": "Dana Lee",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [48, 56],
+        "audioMs": [4420, 4960],
+        "confidence": 0.85
+      }
+    },
+    "company": {
+      "value": "Acme Dynamics",
+      "evidence": {
+        "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+        "span": [33, 46],
+        "audioMs": [3410, 4020],
+        "confidence": 0.91
+      }
+    }
+  },
+  "riskFlags": [
+    {
+      "kind": "new_entity"
+    }
+  ],
+  "supersedes": null,
+  "linker": "linker.v1"
+}

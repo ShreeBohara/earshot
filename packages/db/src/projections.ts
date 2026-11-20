@@ -46,9 +46,10 @@ export type SessionProjections = ProjectionStates<typeof defaultProjections>;
  * `UnknownSessionError`, and a log that `replay` refuses gives replay's error; neither writes
  * anything.
  *
- * Two values are adjusted to fit the tables: a proposal's target is null unless that entity is
- * in the workspace's CRM mirror (the same as when the entity is deleted later), and a missing
- * cost is stored as `cost_usd` 0, rounded like any cost to four decimal places.
+ * Two values are adjusted to fit the tables: a proposal's `target_entity_id` is null unless that
+ * entity is in the workspace's CRM mirror (the same as when the entity is deleted later), and a
+ * missing cost is stored as `cost_usd` 0, rounded like any cost to four decimal places. The
+ * `target` column keeps the linker's decision as the events have it, entity id included.
  */
 export async function rebuildProjections<
   TQueryResult extends PgQueryResultHKT,
@@ -127,8 +128,10 @@ async function writeProposals(
       set: {
         type: excluded(proposals.type),
         targetEntityId: excluded(proposals.targetEntityId),
+        target: excluded(proposals.target),
         fields: excluded(proposals.fields),
         riskFlags: excluded(proposals.riskFlags),
+        conflicts: excluded(proposals.conflicts),
         status: excluded(proposals.status),
         editDiff: excluded(proposals.editDiff),
         reviewerMs: excluded(proposals.reviewerMs),
@@ -161,10 +164,13 @@ function proposalRow(view: ProposalView, sessionId: string, mirrored: ReadonlySe
     sessionId,
     type: view.type,
     targetEntityId: target !== undefined && mirrored.has(target) ? target : null,
+    target: view.target,
     fields: view.fields,
+    // A flag on the target is `kind:target`, like a flag on any field.
     riskFlags: view.riskFlags.map(({ kind, field }) =>
       field === undefined ? kind : `${kind}:${field}`,
     ),
+    conflicts: view.conflicts,
     status: view.status,
     editDiff: view.review?.editDiff ?? null,
     reviewerMs: view.review?.reviewerMs ?? null,

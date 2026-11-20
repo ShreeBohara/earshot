@@ -24,6 +24,10 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "parentId": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "required": [
@@ -34,5 +38,5 @@
   ],
   "additionalProperties": false,
   "title": "EntityRef",
-  "description": "A CRM record a session may mention: its id, kind, name, and aliases."
+  "description": "A CRM record a session may mention: its id, kind, name, aliases, and parent record."
 }

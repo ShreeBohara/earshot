@@ -27,3 +27,4 @@ class EntityRef(BaseModel):
     kind: Kind
     name: Annotated[str, Field(min_length=1)]
     aliases: list[Alias]
+    parentId: Annotated[str | None, Field(min_length=1)] = None
