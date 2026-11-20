@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "id": "d065",
+  "title": "Harborview Health: a note on Maren Dube, a new contact, Owen Moran, Maren Dube's details, and more",
+  "voice": "af_bella",
+  "callTime": "2026-12-18T17:00:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_001",
+  "noise": {
+    "kind": "car",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "For the record, Maren Dube says procurement wants a three-year term.",
+      "heard": {
+        "unbiased": "For the record, Maren Dupe says procurement wants a three-year term."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_082",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Maren Dube",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Procurement wants a three-year term.",
+              "quote": "procurement wants a three-year term"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "New contact: Owen Moran, procurement lead, phone 555-0128.",
+      "heard": {
+        "biased": "New contact: Owen Moreau, procurement lead, phone 555-0128."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "name": {
+              "value": "Owen Moreau",
+              "quote": "Owen Moreau"
+            },
+            "title": {
+              "value": "procurement lead",
+              "quote": "procurement lead"
+            },
+            "phone": {
+              "value": "555-0128",
+              "quote": "555-0128"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Maren Dube is, uh, now, um, facilities manager.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_082",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Maren Dube",
+              "quote": "Maren Dube"
+            },
+            "title": {
+              "value": "facilities manager",
+              "quote": "facilities manager"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Let's get the integration guide over to Harborview Health by December 31st.",
+      "heard": {
+        "unbiased": "Let's get the integration guide over to Harborview by December 31st."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_001",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview Health",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the integration guide over to Harborview Health",
+              "quote": "get the integration guide over to Harborview Health"
+            },
+            "dueDate": {
+              "value": "2026-12-31",
+              "quote": "by December 31st"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Mark the Harborview deal as appointment scheduled.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_001",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview",
+            "kind": "deal",
+            "company": "Harborview"
+          },
+          "fields": {
+            "stage": {
+              "value": "appointment scheduled",
+              "quote": "appointment scheduled"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

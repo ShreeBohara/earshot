@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "id": "d138",
+  "title": "Atlas Freight: a task for Signe Lindqvist, a meeting with Signe Lindqvist, the Atlas Freight deal",
+  "voice": "am_santa",
+  "callTime": "2027-02-15T10:30:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_005",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Schedule the kickoff with Signe Lindqvist by Monday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_041",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Signe Lindqvist",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Signe Lindqvist",
+              "quote": "Schedule the kickoff with Signe Lindqvist"
+            },
+            "dueDate": {
+              "value": "2027-02-22",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "We have a follow-up call with Signe Lindqvist from, from Atlas Freight on Monday.",
+      "heard": {
+        "unbiased": "We have a follow-up call with Signi Lindqvist from, from Atles Freight on Monday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_041",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Signe Lindqvist",
+            "kind": "contact",
+            "company": "Atlas Freight"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Signe Lindqvist",
+              "quote": "a follow-up call"
+            },
+            "date": {
+              "value": "2027-02-22",
+              "quote": "on Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Good news on the Atlas Freight deal, it's contract sent.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_013",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atlas Freight",
+            "kind": "deal",
+            "company": "Atlas Freight"
+          },
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "I didn't talk to Atmos Industrial this week, so there's no update there.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

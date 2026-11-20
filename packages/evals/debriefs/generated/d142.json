@@ -1,0 +1,155 @@
+{
+  "version": 2,
+  "id": "d142",
+  "title": "Northwind Logistics: a meeting with Northwind Logistics, a new contact, Rhiannon Price, a note on Northwind, and more",
+  "voice": "bf_alice",
+  "callTime": "2026-12-24T21:00:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_036",
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Meeting with the team at Northwind Logistics on January 3rd at 2:45 pm about the rollout timeline.",
+      "heard": {
+        "unbiased": "Meeting with the team at Northwend Logistics on January 3rd at 2:45 pm about the rollout timeline."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Logistics",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-01-03",
+              "quote": "on January 3rd"
+            },
+            "time": {
+              "value": "14:45",
+              "quote": "at 2:45 pm"
+            },
+            "title": {
+              "value": "Meeting with Northwind Logistics about the rollout timeline",
+              "quote": "the rollout timeline"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Rhiannon Price is the new VP of finance at Northwind.",
+      "heard": {
+        "biased": "Rhianon Price is the new VP of finance at Northwind.",
+        "unbiased": "Rhiannon Price is the new VP of finance at Northwint."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Rhianon Price",
+              "quote": "Rhianon Price"
+            },
+            "title": {
+              "value": "VP of finance",
+              "quote": "VP of finance"
+            },
+            "company": {
+              "value": "Northwind",
+              "quote": "Northwind"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Had a good call with Northwind this morning, and they loved the new reporting dashboard.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They loved the new reporting dashboard.",
+              "quote": "they loved the new reporting dashboard"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Send John Whitaker on, um, at Northwind Logistics the rollout plan.",
+      "heard": {
+        "unbiased": "Send Johm Whitaker on, um, at Northwind Logistics the rollout plan."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_148",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "John Whitaker",
+            "kind": "contact",
+            "company": "Northwind Logistics"
+          },
+          "fields": {
+            "title": {
+              "value": "Send John Whitaker the rollout plan",
+              "quote": "the rollout plan"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "I need to set up a demo for Northwind Logistics.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_036",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Logistics",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Set up a demo for Northwind Logistics",
+              "quote": "set up a demo for Northwind Logistics"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

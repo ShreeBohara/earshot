@@ -1,0 +1,110 @@
+{
+  "version": 2,
+  "id": "d044",
+  "title": "Ironbridge Textiles: a note on Ironbridge, a task for Joaquin Moreau, a meeting with Joaquin Moreau",
+  "voice": "am_adam",
+  "callTime": "2026-11-11T09:30:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_047",
+  "noise": {
+    "kind": "car",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Met with, uh, the team at Ironbridge, and they want weekly check-ins during onboarding.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_047",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ironbridge",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want weekly check-ins during onboarding.",
+              "quote": "they want weekly check-ins during onboarding"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Let's get the redlined contract over to Joaquin Moreau by the end of next month.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_110",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Joaquin Moreau",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the redlined contract over to Joaquin Moreau",
+              "quote": "get the redlined contract over to Joaquin Moreau"
+            },
+            "dueDate": {
+              "value": "2026-12-31",
+              "quote": "by the end of next month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Let's get a call going with Joaquin Moreau over at Ironbridge Textiles on November 20th, actually November 22nd at 8:45 am.",
+      "heard": {
+        "unbiased": "Let's get a call going with Joaquen Moreau over at Ironbridge Textiles on November 20th, actually November 22nd at 8:45 am."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_110",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Joaquin Moreau",
+            "kind": "contact",
+            "company": "Ironbridge Textiles"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Joaquin Moreau",
+              "quote": "a call"
+            },
+            "attendees": {
+              "value": "Joaquin Moreau",
+              "quote": "Joaquin Moreau"
+            },
+            "date": {
+              "value": "2026-11-22",
+              "quote": "November 22nd"
+            },
+            "time": {
+              "value": "08:45",
+              "quote": "at 8:45 am"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

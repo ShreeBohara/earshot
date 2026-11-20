@@ -1,0 +1,107 @@
+{
+  "version": 2,
+  "id": "d108",
+  "title": "Right Fabrication: the Right starter plan deal, a promise to Teodor Ferreira, a promise to Santiago Holm",
+  "voice": "af_aoede",
+  "callTime": "2026-12-21T20:40:00.000Z",
+  "timeZone": "America/Chicago",
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Revised, uh, revised pricing for the, uh, Right starter plan deal: ten thousand.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_011",
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Right starter plan",
+            "kind": "deal",
+            "company": "Right"
+          },
+          "expectFlags": [
+            "ambiguous_target"
+          ],
+          "fields": {
+            "amount": {
+              "value": 10000,
+              "quote": "ten thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "I told Teodor Ferreira over at Right Fabrication we'd share the training schedule by January 25th, actually January 24th.",
+      "heard": {
+        "biased": "I told Teodor Ferreera over at Right Fabrication we'd share the training schedule by January 25th, actually January 24th.",
+        "unbiased": "I told Teodor Ferreira over at Righd Fabrication we'd share the training schedule by January 25th, actually January 24th."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Ferreera",
+            "kind": "contact",
+            "company": "Right Fabrication"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Teodor Ferreera",
+              "quote": "Teodor Ferreera"
+            },
+            "text": {
+              "value": "Share the training schedule with Teodor Ferreera",
+              "quote": "share the training schedule"
+            },
+            "dueDate": {
+              "value": "2027-01-24",
+              "quote": "January 24th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "We owe Santiago Holm at Right Fabrication the migration plan.",
+      "heard": {
+        "biased": "We owe Santiaga Holm at Rite Fabrication the migration plan.",
+        "unbiased": "We owe Santiago Holm at Right Fabrikation the migration plan."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_063",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Santiaga Holm",
+            "kind": "contact",
+            "company": "Rite Fabrication"
+          },
+          "fields": {
+            "text": {
+              "value": "Send Santiaga Holm the migration plan",
+              "quote": "the migration plan"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "version": 2,
+  "id": "d198",
+  "title": "Acme Dynamics: a task for Preeya Nair, a task for Acme, a meeting with Muhammad Hassan, a meeting with Sean Murphy",
+  "voice": "af_river",
+  "callTime": "2026-11-11T21:00:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_011",
+  "noise": {
+    "kind": "car",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Ping Preeya Nair over at Acme about the pilot results by the end of the month.",
+      "heard": {
+        "unbiased": "Ping Preeya Nair over at Acne about the pilot results by the end of the month."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_089",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Preeya Nair",
+            "kind": "contact",
+            "company": "Acme"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Preeya Nair about the pilot results",
+              "quote": "about the pilot results"
+            },
+            "dueDate": {
+              "value": "2026-11-30",
+              "quote": "by the end of the month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Let's get the migration plan over to Acme by December 3rd.",
+      "heard": {
+        "unbiased": "Let's get the migration plan over to Akme by December 3rd."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Acme",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the migration plan over to Acme",
+              "quote": "get the migration plan over to Acme"
+            },
+            "dueDate": {
+              "value": "2026-12-03",
+              "quote": "by December 3rd"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Let's get a call going with, you know, Muhammad Hassan over at Harborview Marine tomorrow at 4 pm.",
+      "heard": {
+        "unbiased": "Let's get a call going with, you know, Muhemmad Hassan over at Harbor View Marine tomorrow at 4 pm."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_143",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Muhammad Hassan",
+            "kind": "contact",
+            "company": "Harborview Marine"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Muhammad Hassan",
+              "quote": "a call"
+            },
+            "attendees": {
+              "value": "Muhammad Hassan",
+              "quote": "Muhammad Hassan"
+            },
+            "date": {
+              "value": "2026-11-12",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "16:00",
+              "quote": "at 4 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Sean Murphy and, you know, I, you know, are doing a renewal review on Wednesday at 11:30 am.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_134",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sean Murphy",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Renewal review with Sean Murphy",
+              "quote": "a renewal review"
+            },
+            "date": {
+              "value": "2026-11-18",
+              "quote": "on Wednesday"
+            },
+            "time": {
+              "value": "11:30",
+              "quote": "at 11:30 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "To, to do: review the rollout timeline with Preeya Nair from Acme Dynamics by Wednesday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_089",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Preeya Nair",
+            "kind": "contact",
+            "company": "Acme Dynamics"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the rollout timeline with Preeya Nair",
+              "quote": "review the rollout timeline with Preeya Nair from Acme Dynamics"
+            },
+            "dueDate": {
+              "value": "2026-11-18",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

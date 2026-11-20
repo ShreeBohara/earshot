@@ -1,0 +1,111 @@
+{
+  "version": 2,
+  "id": "d169",
+  "title": "Atmos Industrial: a meeting with Atmos Industrial, a new contact, Ravi Patel, a promise to Atmos Industrial onboarding",
+  "voice": "af_river",
+  "callTime": "2026-12-15T20:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_009",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Atmos Industrial wants a site visit tomorrow.",
+      "heard": {
+        "unbiased": "Atmos Industriol wants a site visit tomorrow."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_009",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Site visit with Atmos Industrial",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2026-12-16",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "You can, um, reach Ravi Patel at 555-0176.",
+      "heard": {
+        "biased": "You can, um, reach Raj Patel at 555-0176.",
+        "unbiased": "You can, um, reach Ravi Padel at 555-0176."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "name": {
+              "value": "Raj Patel",
+              "quote": "Raj Patel"
+            },
+            "phone": {
+              "value": "555-0176",
+              "quote": "555-0176"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "For the Atmos Industrial onboarding deal, I promised the security questionnaire by December 20th.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "deal_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos Industrial onboarding",
+            "kind": "deal",
+            "company": "Atmos Industrial"
+          },
+          "fields": {
+            "text": {
+              "value": "Send the security questionnaire for the Atmos Industrial onboarding deal",
+              "quote": "the security questionnaire"
+            },
+            "dueDate": {
+              "value": "2026-12-20",
+              "quote": "by December 20th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Nothing, um, nothing changes for Atlas Freight today.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

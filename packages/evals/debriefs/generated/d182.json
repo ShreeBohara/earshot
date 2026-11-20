@@ -1,0 +1,162 @@
+{
+  "version": 2,
+  "id": "d182",
+  "title": "Lantern Hospitality: a task for Bruno Tanaka, a new contact, Tobiah Fairweather, and more",
+  "voice": "af_sarah",
+  "callTime": "2027-01-29T18:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_053",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Follow up with Bruno Tanaka on the reporting setup by the end of the week.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_122",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bruno Tanaka",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow up with Bruno Tanaka on the reporting setup",
+              "quote": "on the reporting setup"
+            },
+            "dueDate": {
+              "value": "2027-01-29",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Tobiah Fairweather is the new managing director at Lantern Hospitality.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Tobiah Fairweather",
+              "quote": "Tobiah Fairweather"
+            },
+            "title": {
+              "value": "managing director",
+              "quote": "managing director"
+            },
+            "company": {
+              "value": "Lantern Hospitality",
+              "quote": "Lantern Hospitality"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Revised pricing, uh, for the Lantern Hospitality starter plan deal: two hundred fifty thousand dollars. Ping Noor Castellano over at Lantern Hospitality about the rollout timeline Wednesday.",
+      "heard": {
+        "biased": "Revised pricing, uh, for the Lantern Hospitality starter plan deal: $250,000. Ping Noor Castellano over at Lantern Hospitality about the rollout timeline Wednesday.",
+        "unbiased": "Revised pricing, uh, for the Lantern Hospitality starter plan deal: $250,000. Ping Noor Castell Ano over at Lantern Hospitality about the rollout timeline Wednesday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_007",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Lantern Hospitality starter plan",
+            "kind": "deal",
+            "company": "Lantern Hospitality"
+          },
+          "fields": {
+            "amount": {
+              "value": 250000,
+              "quote": "$250,000"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_040",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Noor Castellano",
+            "kind": "contact",
+            "company": "Lantern Hospitality"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Noor Castellano about the rollout timeline",
+              "quote": "about the rollout timeline"
+            },
+            "dueDate": {
+              "value": "2027-02-03",
+              "quote": "Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "You can reach Linnea Sjoberg at 555-0108.",
+      "heard": {
+        "unbiased": "You can reach Linea Sjoberg at 555-0108."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Linnea Sjoberg",
+              "quote": "Linnea Sjoberg"
+            },
+            "phone": {
+              "value": "555-0108",
+              "quote": "555-0108"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Not to be confused with Marshal Medical, which is a different account.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "id": "d143",
+  "title": "Consolidated Parts & Supply: a task for Stephen Clarke, the Consolidated onboarding package deal",
+  "voice": "bm_daniel",
+  "callTime": "2026-12-18T08:20:00.000Z",
+  "timeZone": "Europe/London",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Send Stephen Clarke with, um, at Consolidated Parts & Supply the reference architecture tomorrow.",
+      "heard": {
+        "biased": "Send Sdephen Clarke with, um, at Consolidated Parts & Supply the reference architecture tomorrow.",
+        "unbiased": "Send Steven Clarke with, um, at Consolidated Parts & Supply the reference architecture tomorrow."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_124",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sdephen Clarke",
+            "kind": "contact",
+            "company": "Consolidated Parts & Supply"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Sdephen Clarke the reference architecture",
+              "quote": "the reference architecture"
+            },
+            "dueDate": {
+              "value": "2026-12-19",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "The Consolidated onboarding package number went up for, um, to fifty-seven thousand.",
+      "heard": {
+        "biased": "The Consolidated onboarding package number went up for, um, to 57,000.",
+        "unbiased": "The Consolidated onboarding package number went up for, um, to 57,000."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_015",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Consolidated onboarding package",
+            "kind": "deal",
+            "company": "Consolidated"
+          },
+          "fields": {
+            "amount": {
+              "value": 57000,
+              "quote": "57,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "That's, uh, it for, for Consolidated Parts & Supply today.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

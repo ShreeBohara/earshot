@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "id": "d056",
+  "title": "Nite Security Group: a note on Sarah Cohen, a note on Nite Security Group, a new contact, Rosalind Achterberg, and more",
+  "voice": "bf_isabella",
+  "callTime": "2027-02-10T17:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_012",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Sarah Cohen called back, and, and, and legal hasn't approved the data processing terms.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_149",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sarah Cohen",
+            "kind": "contact"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "Legal hasn't approved the data processing terms.",
+              "quote": "legal hasn't approved the data processing terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Just left left Nite Security Group. The new VP of operations is our sponsor now.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nite Security Group",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The new VP of operations is our sponsor now.",
+              "quote": "The new VP of operations is our sponsor now"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Add Rosalind Achterberg, head of operations at Nite Security Group.",
+      "heard": {
+        "biased": "Add Rosalind Achterberg, head of operations at Knight Security.",
+        "unbiased": "Add Rosalind Achterberg, head of operations at Night Security Group."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Rosalind Achterberg",
+              "quote": "Rosalind Achterberg"
+            },
+            "title": {
+              "value": "head of operations",
+              "quote": "head of operations"
+            },
+            "company": {
+              "value": "Knight Security",
+              "quote": "Knight Security"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Let's get the support plan over to Nite Security Group tomorrow.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nite Security Group",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the support plan over to Nite Security Group",
+              "quote": "get the support plan over to Nite Security Group"
+            },
+            "dueDate": {
+              "value": "2027-02-11",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": 2,
+  "id": "d106",
+  "title": "Northwind Foods: a note on Mohamed Hassan, a task for Freya Yilmaz, a task for Mohamed Hassan, and more",
+  "voice": "am_puck",
+  "callTime": "2027-01-27T11:00:00.000Z",
+  "timeZone": "Europe/London",
+  "noise": {
+    "kind": "car",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Spoke with Mohamed Hassan from Northwind Foods today. Their operations team is pushing hard for this.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_119",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mohamed Hassan",
+            "kind": "contact",
+            "company": "Northwind Foods"
+          },
+          "fields": {
+            "body": {
+              "value": "Their operations team is pushing hard for this.",
+              "quote": "Their operations team is pushing hard for this"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Put together the invoice breakdown for Freya Yilmaz.",
+      "heard": {
+        "biased": "Put together the invoice breakdown for Freya Yelmaz."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_046",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Freya Yelmaz",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the invoice breakdown for Freya Yelmaz",
+              "quote": "the invoice breakdown for Freya Yelmaz"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "To to, um, to to do: review the legal review with Mohamed Hassan from Northwind by February 21st.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_119",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mohamed Hassan",
+            "kind": "contact",
+            "company": "Northwind"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the legal review with Mohamed Hassan",
+              "quote": "review the legal review with Mohamed Hassan from Northwind"
+            },
+            "dueDate": {
+              "value": "2027-02-21",
+              "quote": "by February 21st"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I need to set up a demo for Northwind Foods by February 24th.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_010",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Foods",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Set up a demo for Northwind Foods",
+              "quote": "set up a demo for Northwind Foods"
+            },
+            "dueDate": {
+              "value": "2027-02-24",
+              "quote": "by February 24th"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

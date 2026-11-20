@@ -1,0 +1,168 @@
+{
+  "version": 2,
+  "id": "d031",
+  "title": "Right Fabrication: a task for Santiago Holm, a promise to Teodor Ferreira, the Right Fabrication starter deal, and more",
+  "voice": "af_nicole",
+  "callTime": "2026-12-25T18:10:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_026",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Schedule the kickoff with Santiago Holm.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_063",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Santiago Holm",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Santiago Holm",
+              "quote": "Schedule the kickoff with Santiago Holm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "We committed to getting Teodor Ferreira the redlined contract.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Ferreira",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Get Teodor Ferreira the redlined contract",
+              "quote": "getting Teodor Ferreira the redlined contract"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "The Right Fabrication starter deal is now at closed won, and the number is five thousand five hundred.",
+      "heard": {
+        "biased": "The Rite Fabrication starter deal is now at closed won, and the number is 5,500.",
+        "unbiased": "The Right Faprication starter deal is now at closed won, and the number is 5,500."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rite Fabrication starter",
+            "kind": "deal",
+            "company": "Rite Fabrication"
+          },
+          "fields": {
+            "stage": {
+              "value": "closed won",
+              "quote": "closed won"
+            },
+            "amount": {
+              "value": 5500,
+              "quote": "5,500"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Right has a new head of customer success, Tomasz Wrona, and the email is tomasz.wrona@right-fabrication.example.",
+      "heard": {
+        "biased": "Rite has a new head of customer success, Tomasz Wrona, and the email is tomasz.wrona@right-fabrication.example."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "company": {
+              "value": "Rite",
+              "quote": "Rite"
+            },
+            "title": {
+              "value": "head of customer success",
+              "quote": "head of customer success"
+            },
+            "name": {
+              "value": "Tomasz Wrona",
+              "quote": "Tomasz Wrona"
+            },
+            "email": {
+              "value": "tomasz.wrona@right-fabrication.example",
+              "quote": "tomasz.wrona@right-fabrication.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "I told Mary Allen over, uh, at Marsh Medical we'd share the ROI model on Wednesday.",
+      "heard": {
+        "unbiased": "I told Mary Alan over, uh, at Marsh Midical we'd share the ROI model on Wednesday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_135",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mary Allen",
+            "kind": "contact",
+            "company": "Marsh Medical"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Mary Allen",
+              "quote": "Mary Allen"
+            },
+            "text": {
+              "value": "Share the ROI model with Mary Allen",
+              "quote": "share the ROI model"
+            },
+            "dueDate": {
+              "value": "2026-12-30",
+              "quote": "on Wednesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

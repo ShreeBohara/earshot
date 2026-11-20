@@ -1,0 +1,131 @@
+{
+  "version": 2,
+  "id": "d085",
+  "title": "Atmas Group: the Atmas Group deal, a task for Leilani Tanaka, a note on Bay Arbor Associates, and more",
+  "voice": "bf_alice",
+  "callTime": "2027-01-08T18:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_014",
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Bump the, uh, Atmas Group deal to seven thousand five hundred dollars.",
+      "heard": {
+        "unbiased": "Bump the, uh, Atmos Group deal to seven thousand five hundred dollars."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_008",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmas Group",
+            "kind": "deal",
+            "company": "Atmas Group"
+          },
+          "fields": {
+            "amount": {
+              "value": 7500,
+              "quote": "seven thousand five hundred dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Next step is to send Leilani Tanaka the order form.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_051",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Leilani Tanaka",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Leilani Tanaka the order form",
+              "quote": "send Leilani Tanaka the order form"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Just left Bay Arbor Associates. Their IT team flagged the single sign-on setup.",
+      "heard": {
+        "biased": "Just left Bay Harbor Associates. Their IT team flagged the single sign-on setup."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Bay Harbor Associates",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "body": {
+              "value": "Their IT team flagged the single sign-on setup.",
+              "quote": "Their IT team flagged the single sign-on setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "That's, um, that's all for, uh, Atmas Group.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Schedule the kickoff with Pacific Crest Energy by Wednesday.",
+      "heard": {
+        "unbiased": "Schedule the kickoff with Pocific Crest Energy by Wednesday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_048",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Crest Energy",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Pacific Crest Energy",
+              "quote": "Schedule the kickoff with Pacific Crest Energy"
+            },
+            "dueDate": {
+              "value": "2027-01-13",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

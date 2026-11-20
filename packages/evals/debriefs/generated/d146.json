@@ -1,0 +1,116 @@
+{
+  "version": 2,
+  "id": "d146",
+  "title": "Cobalt Ridge Energy: the Cobalt deal, a meeting with Wanjiru Eriksen, a task for Meridian Supply Co",
+  "voice": "am_liam",
+  "callTime": "2027-01-11T21:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_057",
+  "noise": {
+    "kind": "car",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "The Cobalt deal should close by February 8th at eighteen thousand five hundred.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_029",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Cobalt",
+            "kind": "deal",
+            "company": "Cobalt"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-02-08",
+              "quote": "February 8th"
+            },
+            "amount": {
+              "value": 18500,
+              "quote": "eighteen thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Let's get a call going, you know, with Wanjiru Eriksen over at Midland Steel Corp on Friday at 9 am.",
+      "heard": {
+        "biased": "Let's get a call going, you know, with Wenjiru Eriksen over at Midland Steel Corp on Friday at 9 am.",
+        "unbiased": "Let's get a call going, you know, with Wanjiro Eriksen over at Midlend Steel Corp on Friday at 9 am."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_104",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Wenjiru Eriksen",
+            "kind": "contact",
+            "company": "Midland Steel Corp"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Wenjiru Eriksen",
+              "quote": "a call"
+            },
+            "attendees": {
+              "value": "Wenjiru Eriksen",
+              "quote": "Wenjiru Eriksen"
+            },
+            "date": {
+              "value": "2027-01-15",
+              "quote": "on Friday"
+            },
+            "time": {
+              "value": "09:00",
+              "quote": "at 9 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "I need to set up a demo for Meridian Supply Co by Thursday.",
+      "heard": {
+        "unbiased": "I need to set up a demo for Meridian Supbly Co by Thursday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_043",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Meridian Supply Co",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Set up a demo for Meridian Supply Co",
+              "quote": "set up a demo for Meridian Supply Co"
+            },
+            "dueDate": {
+              "value": "2027-01-14",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

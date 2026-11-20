@@ -1,0 +1,129 @@
+{
+  "version": 2,
+  "id": "d098",
+  "title": "Sigma Tooling: a note on Sigma Tooling, a task for Sigma, a new contact, Steven Clarkson, a promise to Sigma",
+  "voice": "am_liam",
+  "callTime": "2026-12-04T14:00:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_029",
+  "noise": {
+    "kind": "car",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Heads up on Sigma Tooling: their IT team flagged the single sign-on setup.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_029",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma Tooling",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Their IT team flagged the single sign-on setup.",
+              "quote": "their IT team flagged the single sign-on setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Next step, uh, next step is with, uh, to send Sigma the reference architecture two weeks from today.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_029",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Sigma the reference architecture",
+              "quote": "send Sigma the reference architecture"
+            },
+            "dueDate": {
+              "value": "2026-12-18",
+              "quote": "two weeks from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Got a new contact, Steven Clarkson, the procurement lead over at Sigma Tooling.",
+      "heard": {
+        "biased": "Got a new contact, Stephen Clarkson, the procurement lead over at Sigma Tooling.",
+        "unbiased": "Got a new contact, Steven Clarkson, the procurement lead over at Sigma Toolyng."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Stephen Clarkson",
+              "quote": "Stephen Clarkson"
+            },
+            "title": {
+              "value": "procurement lead",
+              "quote": "procurement lead"
+            },
+            "company": {
+              "value": "Sigma Tooling",
+              "quote": "Sigma Tooling"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "I promised Sigma a draft statement of work by Friday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_029",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Send Sigma a draft statement of work",
+              "quote": "a draft statement of work"
+            },
+            "dueDate": {
+              "value": "2026-12-11",
+              "quote": "by Friday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

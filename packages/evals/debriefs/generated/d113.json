@@ -1,0 +1,133 @@
+{
+  "version": 2,
+  "id": "d113",
+  "title": "Kestral Aero: a note on Imani Underhill, a promise to Imani Underhill, a meeting with Lanton Hospitality",
+  "voice": "am_santa",
+  "callTime": "2027-01-29T16:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_008",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Update from, um, Imani Underhill: our champion is moving to a new role.",
+      "heard": {
+        "unbiased": "Update from, um, Imani Undarhill: our champion is moving to a new role."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Imani Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Our champion is moving to a new role.",
+              "quote": "our champion is moving to a new role"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Had a good call for, um, with Imani Underhill this morning, and their CFO wants to see the ROI model.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Imani Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "I gave Imani Underhill my word we'd have a couple of customer references ready tomorrow.",
+      "heard": {
+        "unbiased": "I gave Imane Underhill my word we'd have a couple of customer references ready tomorrow."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Imani Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Imani Underhill",
+              "quote": "Imani Underhill"
+            },
+            "text": {
+              "value": "Have a couple of customer references ready for Imani Underhill",
+              "quote": "have a couple of customer references ready"
+            },
+            "dueDate": {
+              "value": "2027-01-30",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Set up a call with Lanton Hospitality Wednesday to go over the pricing tiers.",
+      "heard": {
+        "biased": "Set up a call with Lantern Hospitality Wednesday to go over the pricing tiers."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Lantern Hospitality",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "date": {
+              "value": "2027-02-03",
+              "quote": "Wednesday"
+            },
+            "title": {
+              "value": "Call with Lantern Hospitality to go over the pricing tiers",
+              "quote": "go over the pricing tiers"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

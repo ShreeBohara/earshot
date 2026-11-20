@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "id": "d151",
+  "title": "Thistle Software: a note on Thistle Software, a task for the account, a task for Thistle Software, and more",
+  "voice": "am_santa",
+  "callTime": "2027-02-22T18:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_023",
+  "noise": {
+    "kind": "street",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Thistle Software called back, and support tickets have dropped since the upgrade.",
+      "heard": {
+        "unbiased": "Thiztle Software called back, and support tickets have dropped since the upgrade."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_023",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Thistle Software",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Book a follow-up call.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_023",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Book a follow-up call",
+              "quote": "Book a follow-up call"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "I owe Thistle Software the support plan by tomorrow.",
+      "heard": {
+        "unbiased": "I owe Thistlesoftware the support plan by tomorrow."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_023",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Thistle Software",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Thistle Software the support plan",
+              "quote": "the support plan"
+            },
+            "dueDate": {
+              "value": "2027-02-23",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "I told Alan Foster we'd send over the onboarding checklist in three weeks.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_038",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Alan Foster",
+            "kind": "contact"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Alan Foster",
+              "quote": "Alan Foster"
+            },
+            "text": {
+              "value": "Send Alan Foster the onboarding checklist",
+              "quote": "send over the onboarding checklist"
+            },
+            "dueDate": {
+              "value": "2027-03-15",
+              "quote": "in three weeks"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

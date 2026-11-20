@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "id": "d199",
+  "title": "Verdant Agritech: a note on Verdant Agritech",
+  "voice": "bf_emma",
+  "callTime": "2026-12-14T15:50:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_055",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Met with the the team at Verdant Agritech, and the security review passed.",
+      "heard": {
+        "unbiased": "Met with the the team at Vertant Agritech, and the security review passed."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_055",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Verdant Agritech",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "the security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I, um, I didn't talk to Atmas Group this week, so there's no update there.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "That's it for Verdant Agritech today.",
+      "expect": []
+    }
+  ]
+}

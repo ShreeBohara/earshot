@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "id": "d053",
+  "title": "Sygma Tooling: a note on Sygma, a meeting with Sygma, a task for Marcus Kowalski, and more",
+  "voice": "bf_alice",
+  "callTime": "2027-01-12T23:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_052",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Just left Sygma. They're consolidating vendors next year.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_052",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sygma",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're consolidating vendors next year.",
+              "quote": "They're consolidating vendors next year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Sygma agreed to a workshop on the security review Wednesday.",
+      "heard": {
+        "biased": "Sigma agreed to a workshop on the security review Wednesday."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_052",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Workshop on the security review with Sigma",
+              "quote": "a workshop on the security review"
+            },
+            "date": {
+              "value": "2027-01-13",
+              "quote": "Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Ping Marcus Kowalski over at at at Sygma Tooling about the reporting setup by Monday, actually Tuesday.",
+      "heard": {
+        "biased": "Ping Marcus Kowalski over at at at Sigma Tooling about the reporting setup by Monday, actually Tuesday.",
+        "unbiased": "Ping Marcus Cowalski over at at at Sygmatooling about the reporting setup by Monday, actually Tuesday."
+      },
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_035",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Marcus Kowalski",
+            "kind": "contact",
+            "company": "Sigma Tooling"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Marcus Kowalski about the reporting setup",
+              "quote": "about the reporting setup"
+            },
+            "dueDate": {
+              "value": "2027-01-19",
+              "quote": "Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "I, uh, I set up, uh, I set up an onsite visit at Ironridge Textiles on Monday.",
+      "heard": {
+        "biased": "I, uh, I set up, uh, I set up an onsite visit at Ironbridge Textiles on Monday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Ironbridge Textiles",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Onsite visit at Ironbridge Textiles",
+              "quote": "an onsite visit"
+            },
+            "date": {
+              "value": "2027-01-18",
+              "quote": "on Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "I need to set up a demo for Sygma Tooling by Thursday.",
+      "heard": {
+        "biased": "I need to set up a demo for Sigma Tooling by Thursday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_052",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sigma Tooling",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Set up a demo for Sigma Tooling",
+              "quote": "set up a demo for Sigma Tooling"
+            },
+            "dueDate": {
+              "value": "2027-01-14",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

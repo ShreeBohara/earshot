@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "id": "d073",
+  "title": "Marsh Medical: a task for Mary Allen, a promise to Mary Allen, a note on Copperline Retail, a meeting with Marsh Medical",
+  "voice": "bm_fable",
+  "callTime": "2027-01-13T14:00:00.000Z",
+  "timeZone": "Europe/London",
+  "noise": {
+    "kind": "street",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Send Mary Allen at Marsh Medical a couple of customer references by Tuesday.",
+      "heard": {
+        "biased": "Send Mary Allen at Marsh a couple of customer references by Tuesday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_135",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mary Allen",
+            "kind": "contact",
+            "company": "Marsh"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Mary Allen a couple of customer references",
+              "quote": "a couple of customer references"
+            },
+            "dueDate": {
+              "value": "2027-01-19",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "I told Mary Allen over at Marsh we'd share the reference architecture in ten days.",
+      "heard": {
+        "unbiased": "I told Mary Allen over at Mersh we'd share the reference architecture in ten days."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_135",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mary Allen",
+            "kind": "contact",
+            "company": "Marsh"
+          },
+          "fields": {
+            "text": {
+              "value": "Share the reference architecture with Mary Allen",
+              "quote": "share the reference architecture"
+            },
+            "dueDate": {
+              "value": "2027-01-23",
+              "quote": "in ten days"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Had a good call with Copperline Retail this morning, and they want the integration live before the holidays.",
+      "heard": {
+        "biased": "Had a good call with Copperleaf Retail this morning, and they want the integration live before the holidays."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Copperleaf Retail",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "body": {
+              "value": "They want the integration live before the holidays.",
+              "quote": "they want the integration live before the holidays"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Booked the executive briefing with Marsh Medical on January 19th at 9:15 am.",
+      "heard": {
+        "unbiased": "Booked the executive briefing with Marsh Midical on January 19th at 9:15 am."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_033",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Marsh Medical",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Executive briefing with Marsh Medical",
+              "quote": "the executive briefing"
+            },
+            "date": {
+              "value": "2027-01-19",
+              "quote": "on January 19th"
+            },
+            "time": {
+              "value": "09:15",
+              "quote": "at 9:15 am"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

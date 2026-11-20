@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "id": "d173",
+  "title": "Globelex Systems: a note on Globelex Systems, a new contact, Thomas Bergman, Thomas Berg's details",
+  "voice": "am_michael",
+  "speed": 1.1,
+  "callTime": "2027-01-05T15:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_027",
+  "noise": {
+    "kind": "car",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Heads up on Globelex Systems: they're reviewing the proposal with legal this week.",
+      "heard": {
+        "biased": "Heads up on Globalex Systems: they're reviewing the proposal with legal this week."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globalex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "they're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "You can reach Thomas Bergman at 555-0135.",
+      "heard": {
+        "biased": "You can reach Thomas Berg at 555-0135.",
+        "unbiased": "You can reach Thomas Bergmon at 555-0135."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "name": {
+              "value": "Thomas Berg",
+              "quote": "Thomas Berg"
+            },
+            "phone": {
+              "value": "555-0135",
+              "quote": "555-0135"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "I met Thomas Berg, who's the facilities manager at Globelex Systems.",
+      "heard": {
+        "unbiased": "I met Thomaz Berg, who's the facilities manager at Globelexsystems."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_005",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Thomas Berg",
+              "quote": "Thomas Berg"
+            },
+            "title": {
+              "value": "facilities manager",
+              "quote": "facilities manager"
+            },
+            "company": {
+              "value": "Globelex Systems",
+              "quote": "Globelex Systems"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

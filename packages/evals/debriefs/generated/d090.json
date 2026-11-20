@@ -1,0 +1,97 @@
+{
+  "version": 2,
+  "id": "d090",
+  "title": "Pacific Coast Electric: a note on Wanjiru Garza, a promise to the account, a meeting with Pacific Coast Electric",
+  "voice": "af_bella",
+  "callTime": "2027-02-05T13:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_034",
+  "noise": {
+    "kind": "car",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Quick note on Wanjiru Garza: the pilot is going well and they want a formal quote.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_103",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Wanjiru Garza",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "I said we'd send over the migration plan by Monday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_034",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send over the migration plan",
+              "quote": "send over the migration plan"
+            },
+            "dueDate": {
+              "value": "2027-02-08",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "I set up an onsite visit at, um, Pacific Coast Electric tomorrow.",
+      "heard": {
+        "unbiased": "I set up an onsite visit at, um, Pacific Koast Electric tomorrow."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_034",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Coast Electric",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Onsite visit at Pacific Coast Electric",
+              "quote": "an onsite visit"
+            },
+            "date": {
+              "value": "2027-02-06",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

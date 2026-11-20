@@ -1,0 +1,127 @@
+{
+  "version": 2,
+  "id": "d095",
+  "title": "Coastal Power Systems: the Coastal Power Systems site rollout deal, a note on Coastal Power Systems, and more",
+  "voice": "am_fenrir",
+  "speed": 0.9,
+  "callTime": "2027-01-28T16:30:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_054",
+  "noise": {
+    "kind": "car",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "The Coastal Power Systems site rollout number went up to one hundred forty-five thousand dollars.",
+      "heard": {
+        "unbiased": "The Coaskal Power Systems site rollout number went up to one hundred forty-five thousand dollars."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Coastal Power Systems site rollout",
+            "kind": "deal",
+            "company": "Coastal Power Systems"
+          },
+          "fields": {
+            "amount": {
+              "value": 145000,
+              "quote": "one hundred forty-five thousand dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Just left Coastal Power Systems. They want to expand the rollout to two more sites.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_054",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Coastal Power Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to expand the rollout to two more sites.",
+              "quote": "They want to expand the rollout to two more sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Quick note on a, um, the Coastal Power Systems site rollout deal: the security review passed.",
+      "heard": {
+        "unbiased": "Quick note on a, um, the Coastal Powel Systems site rollout deal: the security review passed."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "deal_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Coastal Power Systems site rollout",
+            "kind": "deal",
+            "company": "Coastal Power Systems"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "the security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Ping Allen Foster over at Coastal Power Systems about the reporting setup by March 13th.",
+      "heard": {
+        "unbiased": "Ping Allen Foster over at Coastol Power Systems about the reporting setup by March 13th."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_129",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Allen Foster",
+            "kind": "contact",
+            "company": "Coastal Power Systems"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Allen Foster about the reporting setup",
+              "quote": "about the reporting setup"
+            },
+            "dueDate": {
+              "value": "2027-03-13",
+              "quote": "by March 13th"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

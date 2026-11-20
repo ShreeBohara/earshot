@@ -1,0 +1,162 @@
+{
+  "version": 2,
+  "id": "d033",
+  "title": "Globelex Systems: a note on Globelex Systems, a meeting with Globelex Systems, the Globelex annual deal, and more",
+  "voice": "bf_emma",
+  "callTime": "2027-01-08T21:50:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_027",
+  "noise": {
+    "kind": "street",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Debrief, you know, from Globelex Systems. They're reviewing the proposal with legal this week.",
+      "heard": {
+        "biased": "Debrief, you know, from Globalex Systems. They're reviewing the proposal with legal this week.",
+        "unbiased": "Debrief, you know, from Glopelex Systems. They're reviewing the proposal with legal this week."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globalex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "They're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "I set up an onsite visit at Globelex Systems on Wednesday.",
+      "heard": {
+        "biased": "I set up an onsite visit at Globalex Systems on Wednesday."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globalex Systems",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Onsite visit at Globalex Systems",
+              "quote": "an onsite visit"
+            },
+            "date": {
+              "value": "2027-01-13",
+              "quote": "on Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "The Globelex annual deal isn't at contract sent yet, it's still at appointment scheduled. Action item: book a site visit with Bryan Reilly by the end of the week.",
+      "heard": {
+        "unbiased": "The Globelex annual deal isn't at contract sent yet, it's still at appointment scheduled. Action item: book a site visit with Brian Reilly by the end of the week."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_026",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Globelex annual",
+            "kind": "deal",
+            "company": "Globelex"
+          },
+          "fields": {
+            "stage": {
+              "value": "appointment scheduled",
+              "quote": "appointment scheduled"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_080",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bryan Reilly",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Bryan Reilly",
+              "quote": "book a site visit with Bryan Reilly"
+            },
+            "dueDate": {
+              "value": "2027-01-08",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Please, uh, please add Thomas Bergman from Globelex Systems, number 555-0181.",
+      "heard": {
+        "biased": "Please, uh, please add Thomas Berg from Globalex Systems, number 555-0181."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "name": {
+              "value": "Thomas Berg",
+              "quote": "Thomas Berg"
+            },
+            "company": {
+              "value": "Globalex Systems",
+              "quote": "Globalex Systems"
+            },
+            "phone": {
+              "value": "555-0181",
+              "quote": "555-0181"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

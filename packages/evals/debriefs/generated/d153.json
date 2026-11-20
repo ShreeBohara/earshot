@@ -1,0 +1,105 @@
+{
+  "version": 2,
+  "id": "d153",
+  "title": "Willowbrook Pharma: a task for Petra Kowalski, a promise to Atmos Industries, and more",
+  "voice": "bf_emma",
+  "callTime": "2027-01-29T22:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Ping Petra Kowalski over at Willowbrook Pharma about the integration on Monday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_083",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Petra Kowalski",
+            "kind": "contact",
+            "company": "Willowbrook Pharma"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Petra Kowalski about the integration",
+              "quote": "about the integration"
+            },
+            "dueDate": {
+              "value": "2027-02-01",
+              "quote": "on Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "I, I promised Atmos Industries the reference architecture by March 9th.",
+      "heard": {
+        "biased": "I, I promised Atmos Industrial the reference architecture by March 9th."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send Atmos Industrial the reference architecture",
+              "quote": "the reference architecture"
+            },
+            "dueDate": {
+              "value": "2027-03-09",
+              "quote": "by March 9th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "The Willowbrook Pharma analytics add-on deal should close by March 7th at sixty-three thousand.",
+      "heard": {
+        "unbiased": "The Willuwbrook Pharma analytics add-on deal should close by March 7th at sixty-three thousand."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_031",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Willowbrook Pharma analytics add-on",
+            "kind": "deal",
+            "company": "Willowbrook Pharma"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-03-07",
+              "quote": "March 7th"
+            },
+            "amount": {
+              "value": 63000,
+              "quote": "sixty-three thousand"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

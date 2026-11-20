@@ -1,0 +1,103 @@
+{
+  "version": 2,
+  "id": "d150",
+  "title": "Acmi Dynamics: a note on Acmi Dynamics, a meeting with Donna Lee, a note on Donna Lee",
+  "voice": "af_alloy",
+  "callTime": "2027-02-11T23:50:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_040",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Update from Acmi Dynamics: their IT team flagged the single sign-on setup.",
+      "heard": {
+        "biased": "Update from Akme Dynamics: their IT team flagged the single sign-on setup.",
+        "unbiased": "Update from Acmi Dynamycs: their IT team flagged the single sign-on setup."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_040",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Akme Dynamics",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Their IT team flagged the single sign-on setup.",
+              "quote": "their IT team flagged the single sign-on setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Donna Lee can do a technical deep dive on Monday.",
+      "heard": {
+        "unbiased": "Dana Lee can do a technical deep dive on Monday."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_112",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Donna Lee",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Technical deep dive with Donna Lee",
+              "quote": "a technical deep dive"
+            },
+            "date": {
+              "value": "2027-02-15",
+              "quote": "on Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Got off the phone with Donna Lee, and they're consolidating vendors next year.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_112",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Donna Lee",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They're consolidating vendors next year.",
+              "quote": "they're consolidating vendors next year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Okay, that's everything at, um, about, um, on Acmi Dynamics.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

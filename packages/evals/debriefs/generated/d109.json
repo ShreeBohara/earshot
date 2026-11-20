@@ -1,0 +1,158 @@
+{
+  "version": 2,
+  "id": "d109",
+  "title": "Coastal Power Systems: the Coastal Power Systems site rollout deal, a task for Allen Foster, and more",
+  "voice": "bf_alice",
+  "callTime": "2026-11-05T16:30:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_054",
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "For the Coastal Power Systems site rollout deal, change the amount to one hundred thirty-nine thousand dollars and the stage to decision maker bought in. Make sure we loop in Allen Foster on the training plan by Monday.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_027",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Coastal Power Systems site rollout",
+            "kind": "deal",
+            "company": "Coastal Power Systems"
+          },
+          "fields": {
+            "amount": {
+              "value": 139000,
+              "quote": "one hundred thirty-nine thousand dollars"
+            },
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_129",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Allen Foster",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Loop in Allen Foster on the training plan",
+              "quote": "loop in Allen Foster on the training plan"
+            },
+            "dueDate": {
+              "value": "2026-11-09",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Can you add a task to get Luca Bianchi a pilot proposal by Thursday?",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_056",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Bianchi",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get Luca Bianchi a pilot proposal",
+              "quote": "get Luca Bianchi a pilot proposal"
+            },
+            "dueDate": {
+              "value": "2026-11-12",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "I said we'd, um, I said we'd get back to Bay Arbor Associates on the support contract Friday.",
+      "heard": {
+        "biased": "I said we'd, um, I said we'd get back to Bay Harbor Associates on the support contract Friday.",
+        "unbiased": "I said we'd, um, I said we'd get back to Bay Arbar Associates on the support contract Friday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Bay Harbor Associates",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "text": {
+              "value": "Get back to Bay Harbor Associates on the support contract",
+              "quote": "get back to Bay Harbor Associates on the support contract"
+            },
+            "dueDate": {
+              "value": "2026-11-06",
+              "quote": "Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Lunch with Luca Bianchi on December 5th with, uh, to talk about the single sign-on setup.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_056",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Luca Bianchi",
+            "kind": "contact"
+          },
+          "fields": {
+            "attendees": {
+              "value": "Luca Bianchi",
+              "quote": "Luca Bianchi"
+            },
+            "date": {
+              "value": "2026-12-05",
+              "quote": "on December 5th"
+            },
+            "title": {
+              "value": "Lunch with Luca Bianchi about the single sign-on setup",
+              "quote": "talk about the single sign-on setup"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

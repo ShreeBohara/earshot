@@ -1,0 +1,137 @@
+{
+  "version": 2,
+  "id": "d191",
+  "title": "Atmos Industrial: the Atmos Industrial onboarding package deal, a task for Raj Patel, and more",
+  "voice": "am_liam",
+  "callTime": "2026-12-22T19:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "noise": {
+    "kind": "car",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "We agreed on, on two hundred sixty thousand dollars for the Atmos Industrial onboarding package deal.",
+      "heard": {
+        "unbiased": "We agreed on, on two hundred sixty thousand dollars for the Atmos Industryal onboarding package deal."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos Industrial onboarding package",
+            "kind": "deal",
+            "company": "Atmos Industrial"
+          },
+          "fields": {
+            "amount": {
+              "value": 260000,
+              "quote": "two hundred sixty thousand dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Send Raj Patel at at Atmos Industrial the data processing agreement.",
+      "heard": {
+        "biased": "Send Raaj Patel at at Atmos Industrial the data processing agreement.",
+        "unbiased": "Send Raj Petel at at Atmos Industrial the data processing agreement."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_068",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Raaj Patel",
+            "kind": "contact",
+            "company": "Atmos Industrial"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Raaj Patel the data processing agreement",
+              "quote": "the data processing agreement"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "The Atmos Industrial deal should close by the end of the month at one hundred thirty-five thousand.",
+      "heard": {
+        "biased": "The Atmos deal should close by the end of the month at one hundred thirty-five thousand.",
+        "unbiased": "The Atmos deal should close by the end of the month at one hundred thirty-five thousand."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos",
+            "kind": "deal",
+            "company": "Atmos"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2026-12-31",
+              "quote": "the end of the month"
+            },
+            "amount": {
+              "value": 135000,
+              "quote": "one hundred thirty-five thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Raj Patel from Atmos Industrial is taking over as supply chain director.",
+      "heard": {
+        "unbiased": "Raj Patel from Atmos Industriar is taking over as supply chain director."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_068",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Raj Patel",
+              "quote": "Raj Patel"
+            },
+            "company": {
+              "value": "Atmos Industrial",
+              "quote": "Atmos Industrial"
+            },
+            "title": {
+              "value": "supply chain director",
+              "quote": "supply chain director"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

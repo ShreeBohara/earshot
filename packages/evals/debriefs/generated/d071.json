@@ -1,0 +1,137 @@
+{
+  "version": 2,
+  "id": "d071",
+  "title": "Atmos Industrial: the Atmos onboarding package deal, a note on Raj Patel, a promise to Atmos Industrial, and more",
+  "voice": "af_nicole",
+  "callTime": "2027-02-08T16:10:00.000Z",
+  "timeZone": "Europe/London",
+  "noise": {
+    "kind": "car",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The Atmos onboarding package deal is now at decision maker bought in, and the number is one hundred eighteen thousand.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos onboarding package",
+            "kind": "deal",
+            "company": "Atmos"
+          },
+          "fields": {
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            },
+            "amount": {
+              "value": 118000,
+              "quote": "one hundred eighteen thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Talked to Raj Patel at, um, Atmos Industrial about next, next steps, and their IT team flagged the single sign-on setup.",
+      "heard": {
+        "unbiased": "Talked to Raj Patel at, um, Atmos Intustrial about next, next steps, and their IT team flagged the single sign-on setup."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_068",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Raj Patel",
+            "kind": "contact",
+            "company": "Atmos Industrial"
+          },
+          "fields": {
+            "body": {
+              "value": "Their IT team flagged the single sign-on setup.",
+              "quote": "their IT team flagged the single sign-on setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Not to be confused with Atlas Freight, which is a different account.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "I'm on the hook to deliver the implementation timeline to Atmos Industrial by the end of the week.",
+      "heard": {
+        "unbiased": "I'm on the hook to deliver the implementation timeline to Atmosindustrial by the end of the week."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_009",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Deliver the implementation timeline to Atmos Industrial",
+              "quote": "deliver the implementation timeline to Atmos Industrial"
+            },
+            "dueDate": {
+              "value": "2027-02-12",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "We promised Bruno Bianchi a reference call with a similar customer by Tuesday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_003",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Bruno Bianchi",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Set up a reference call for Bruno Bianchi with a similar customer",
+              "quote": "a reference call with a similar customer"
+            },
+            "dueDate": {
+              "value": "2027-02-09",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

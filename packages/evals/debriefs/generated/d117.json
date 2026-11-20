@@ -1,0 +1,119 @@
+{
+  "version": 2,
+  "id": "d117",
+  "title": "Oakmont Insurance: a task for Signe Tanaka, a meeting with Meridian Steel Co, a note on Oakmont Insurance",
+  "voice": "bf_emma",
+  "speed": 1.05,
+  "callTime": "2026-12-01T18:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_013",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "To, to do: review the training plan with Signe Tanaka from Oakmont Insurance by Tuesday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_071",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Signe Tanaka",
+            "kind": "contact",
+            "company": "Oakmont Insurance"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the training plan with Signe Tanaka",
+              "quote": "review the training plan with Signe Tanaka from Oakmont Insurance"
+            },
+            "dueDate": {
+              "value": "2026-12-08",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Put a kickoff meeting on the calendar with Meridian Steel Co on December 27th.",
+      "heard": {
+        "biased": "Put a kickoff meeting on the calendar with Meridian Supply Co on December 27th.",
+        "unbiased": "Put a kickoff meeting on the calendar with Meridian Steel on December 27th."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Meridian Supply Co",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Meridian Supply Co",
+              "quote": "a kickoff meeting"
+            },
+            "attendees": {
+              "value": "Meridian Supply Co",
+              "quote": "Meridian Supply Co"
+            },
+            "date": {
+              "value": "2026-12-27",
+              "quote": "on December 27th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "That wraps up Oakmont Insurance.",
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Just, just left Oakmont Insurance. Nobody on their side has seen the contract yet.",
+      "heard": {
+        "unbiased": "Just, just left Oak Mont Insurance. Nobody on their side has seen the contract yet."
+      },
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_013",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Oakmont Insurance",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "Nobody on their side has seen the contract yet.",
+              "quote": "Nobody on their side has seen the contract yet"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

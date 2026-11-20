@@ -1,0 +1,146 @@
+{
+  "version": 2,
+  "id": "d067",
+  "title": "Summit Ridge Capital: a task for Felix Petrov, a task for Kittiwake Glassworks, a meeting with Summit, and more",
+  "voice": "am_puck",
+  "callTime": "2026-12-18T18:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_019",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I have to call Felix Petrov about the procurement process a week from today.",
+      "heard": {
+        "unbiased": "I have to call Felyx Petrov about the procurement process a week from today."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_095",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Felix Petrov",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Call Felix Petrov about the procurement process",
+              "quote": "call Felix Petrov about the procurement process"
+            },
+            "dueDate": {
+              "value": "2026-12-25",
+              "quote": "a week from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Remind me to send Kittiwake Glassworks the updated pricing by Tuesday.",
+      "heard": {
+        "unbiased": "Remind me to send Kitkiwake Glassworks the updated pricing by Tuesday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "named": {
+            "quote": "Kittiwake Glassworks",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "title": {
+              "value": "Send Kittiwake Glassworks the updated pricing",
+              "quote": "the updated pricing"
+            },
+            "dueDate": {
+              "value": "2026-12-22",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Nothing changes for, uh, nothing changes for Summit Ridge Medical today.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Meeting with the, um, team at Summit on Friday at 1 pm about the invoice dispute.",
+      "heard": {
+        "unbiased": "Meeting with the, um, team at Sommit on Friday at 1 pm about the invoice dispute."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_019",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2026-12-25",
+              "quote": "on Friday"
+            },
+            "time": {
+              "value": "13:00",
+              "quote": "at 1 pm"
+            },
+            "title": {
+              "value": "Meeting with Summit about the invoice dispute",
+              "quote": "the invoice dispute"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Ingrid Sandoval has a new email, ingrid.sandoval@summit-ridge-capital.example.",
+      "heard": {
+        "unbiased": "Ingred Sandoval has a new email, ingrid.sandoval@summit-ridge-capital.example."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_077",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Ingrid Sandoval",
+              "quote": "Ingrid Sandoval"
+            },
+            "email": {
+              "value": "ingrid.sandoval@summit-ridge-capital.example",
+              "quote": "ingrid.sandoval@summit-ridge-capital.example"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

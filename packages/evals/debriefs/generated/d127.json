@@ -1,0 +1,152 @@
+{
+  "version": 2,
+  "id": "d127",
+  "title": "Tidewater Biotech: a note on Tidewater, the Tidewater Biotech expansion deal, a task for Tidewater, and more",
+  "voice": "am_onyx",
+  "callTime": "2027-02-11T17:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_017",
+  "noise": {
+    "kind": "car",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Quick note on Tidewater: support tickets have dropped since the upgrade.",
+      "heard": {
+        "unbiased": "Quick note on Tidewader: support tickets have dropped since the upgrade."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tidewater",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Revised pricing for the Tidewater Biotech expansion deal: one hundred twenty-one thousand.",
+      "heard": {
+        "unbiased": "Revised pricing for the Tedewater Biotech expansion deal: one hundred twenty-one thousand."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tidewater Biotech expansion",
+            "kind": "deal",
+            "company": "Tidewater Biotech"
+          },
+          "fields": {
+            "amount": {
+              "value": 121000,
+              "quote": "one hundred twenty-one thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Schedule the kickoff with Tidewater Wednesday.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tidewater",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Tidewater",
+              "quote": "Schedule the kickoff with Tidewater"
+            },
+            "dueDate": {
+              "value": "2027-02-17",
+              "quote": "Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Tidewater is, you know, expecting the onboarding checklist from us.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tidewater",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Send Tidewater the onboarding checklist",
+              "quote": "the onboarding checklist"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Meeting with the team at Tidewater on Thursday at 10:45 am about the data migration.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Tidewater",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-02-18",
+              "quote": "on Thursday"
+            },
+            "time": {
+              "value": "10:45",
+              "quote": "at 10:45 am"
+            },
+            "title": {
+              "value": "Meeting with Tidewater about the data migration",
+              "quote": "the data migration"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

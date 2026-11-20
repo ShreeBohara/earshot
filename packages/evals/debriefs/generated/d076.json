@@ -1,0 +1,190 @@
+{
+  "version": 2,
+  "id": "d076",
+  "title": "Willowbrook Pharma: a meeting with Willowbrook Pharma, a promise to the account, and more",
+  "voice": "af_sky",
+  "callTime": "2027-01-07T15:40:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_007",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Meeting with the team at Willowbrook Pharma Wednesday, actually Monday at 1 pm about the invoice dispute.",
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_007",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Willowbrook Pharma",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-01-11",
+              "quote": "Monday"
+            },
+            "time": {
+              "value": "13:00",
+              "quote": "at 1 pm"
+            },
+            "title": {
+              "value": "Meeting with Willowbrook Pharma about the invoice dispute",
+              "quote": "the invoice dispute"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "I, um, I promised them the case study by Tuesday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_007",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send the case study",
+              "quote": "the case study"
+            },
+            "dueDate": {
+              "value": "2027-01-12",
+              "quote": "by Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Update on, uh, update on Willowbrook Pharma analytics add-on: qualified to buy, seven thousand five hundred, closing the end of the month. Let's, let's get the migration plan over to Petra Kowalski.",
+      "heard": {
+        "biased": "Update on, uh, update on Willowbrook analytics add-on: qualified to buy, seven thousand five hundred, closing the end of the month. Let's, let's get the migration plan over to Petra Kowalski."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_031",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Willowbrook analytics add-on",
+            "kind": "deal",
+            "company": "Willowbrook"
+          },
+          "fields": {
+            "stage": {
+              "value": "qualified to buy",
+              "quote": "qualified to buy"
+            },
+            "amount": {
+              "value": 7500,
+              "quote": "seven thousand five hundred"
+            },
+            "closeDate": {
+              "value": "2027-01-31",
+              "quote": "the end of the month"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_083",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Petra Kowalski",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the migration plan over to Petra Kowalski",
+              "quote": "get the migration plan over to Petra Kowalski"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Promised Willowbrook an answer on the invoice dispute by Wednesday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_007",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Willowbrook",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Give Willowbrook an answer on the invoice dispute",
+              "quote": "an answer on the invoice dispute"
+            },
+            "dueDate": {
+              "value": "2027-01-13",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "The Willowbrook Pharma analytics add-on deal isn't at contract sent yet, it's still at appointment scheduled.",
+      "heard": {
+        "biased": "The Willowbrook analytics add-on deal isn't at contract sent yet, it's still at appointment scheduled."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_031",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Willowbrook analytics add-on",
+            "kind": "deal",
+            "company": "Willowbrook"
+          },
+          "fields": {
+            "stage": {
+              "value": "appointment scheduled",
+              "quote": "appointment scheduled"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

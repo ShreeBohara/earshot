@@ -1,0 +1,152 @@
+{
+  "version": 2,
+  "id": "d057",
+  "title": "Kestrel Aero: a note on Kestrel Aero, the Kestrel Aero analytics add-on deal, a promise to Anders Dube, and more",
+  "voice": "af_kore",
+  "callTime": "2026-11-06T15:10:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_056",
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Kestrel Aero called back, and they asked for a case study from a similar customer.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_056",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kestrel Aero",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They asked for a case study from a similar customer.",
+              "quote": "they asked for a case study from a similar customer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "The Kestrel Aero analytics add-on deal should close by the end of the month at thirty-eight thousand.",
+      "heard": {
+        "biased": "The Kestral Aero analytics add-on deal should close by the end of the month at thirty-eight thousand.",
+        "unbiased": "The Keskrel Aero analytics add-on deal should close by the end of the month at thirty-eight thousand."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_006",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kestral Aero analytics add-on",
+            "kind": "deal",
+            "company": "Kestral Aero"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2026-11-30",
+              "quote": "the end of the month"
+            },
+            "amount": {
+              "value": 38000,
+              "quote": "thirty-eight thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "We owe Anders Dube at Kestrel Aero the integration guide.",
+      "heard": {
+        "biased": "We owe Anders Dube at Kestral Aero the integration guide."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_087",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Anders Dube",
+            "kind": "contact",
+            "company": "Kestral Aero"
+          },
+          "fields": {
+            "text": {
+              "value": "Send Anders Dube the integration guide",
+              "quote": "the integration guide"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Put together the redlined contract for Delta Crossing Trail Monday.",
+      "heard": {
+        "biased": "Put together the redlined contract for Delta Crossing Rail Monday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Delta Crossing Rail",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Put together the redlined contract for Delta Crossing Rail",
+              "quote": "the redlined contract for Delta Crossing Rail"
+            },
+            "dueDate": {
+              "value": "2026-11-09",
+              "quote": "Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "I owe Kestrel a pilot proposal.",
+      "heard": {
+        "biased": "I owe Kestral a pilot proposal."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_056",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kestral",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Kestral a pilot proposal",
+              "quote": "a pilot proposal"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "version": 2,
+  "id": "d123",
+  "title": "Zenith Packaging: a note on Erick Nilsson, a task for the account, a promise to the account, and more",
+  "voice": "bm_daniel",
+  "speed": 1.05,
+  "callTime": "2026-12-01T17:30:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_016",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Talked to, um, talked to Erick Nilsson at Zenith Packaging about next steps, and they won't sign before the budget review.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_039",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Erick Nilsson",
+            "kind": "contact",
+            "company": "Zenith Packaging"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "They won't sign before the budget review.",
+              "quote": "they won't sign before the budget review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "I need to put together a draft statement of work.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_016",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Put together a draft statement of work",
+              "quote": "put together a draft statement of work"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "I promised them a pilot proposal tomorrow.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_016",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send a pilot proposal",
+              "quote": "a pilot proposal"
+            },
+            "dueDate": {
+              "value": "2026-12-02",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "New contact: Tobiah Fairweather, general manager, phone 555-0110.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Tobiah Fairweather",
+              "quote": "Tobiah Fairweather"
+            },
+            "title": {
+              "value": "general manager",
+              "quote": "general manager"
+            },
+            "phone": {
+              "value": "555-0110",
+              "quote": "555-0110"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Okay, that's everything on Zenith Packaging.",
+      "expect": []
+    }
+  ]
+}

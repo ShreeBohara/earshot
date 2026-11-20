@@ -1,0 +1,133 @@
+{
+  "version": 2,
+  "id": "d140",
+  "title": "Pacific Coast Electric: a meeting with Pacific Coast Electric, a note on Pacific Coast Electric, and more",
+  "voice": "af_aoede",
+  "callTime": "2027-01-04T17:20:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_034",
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Pacific Coast Electric wants wants a site visit on Thursday.",
+      "heard": {
+        "biased": "Pacific Coast wants wants a site visit on Thursday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_034",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Coast",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Site visit with Pacific Coast",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2027-01-07",
+              "quote": "on Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Quick note note on Pacific Coast Electric: the pilot is going well and they want a formal quote.",
+      "heard": {
+        "unbiased": "Quick note note on Pacific Coastelectric: the pilot is going well and they want a formal quote."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_034",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Coast Electric",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "I need to set up a demo for Summit Peak Capital by the end of the month.",
+      "heard": {
+        "biased": "I need to set up a demo for Summit Peek Capital by the end of the month."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_024",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Peek Capital",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Set up a demo for Summit Peek Capital",
+              "quote": "set up a demo for Summit Peek Capital"
+            },
+            "dueDate": {
+              "value": "2027-01-31",
+              "quote": "by the end of the month"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "New contact: Lars Thorvaldsen, IT lead, phone 555-0192.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Lars Thorvaldsen",
+              "quote": "Lars Thorvaldsen"
+            },
+            "title": {
+              "value": "IT lead",
+              "quote": "IT lead"
+            },
+            "phone": {
+              "value": "555-0192",
+              "quote": "555-0192"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

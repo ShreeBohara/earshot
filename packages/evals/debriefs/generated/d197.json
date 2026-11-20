@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "id": "d197",
+  "title": "Pacific Crest Energy: a note on Pacific Crest Energy, a task for Yara Zielinski, a task for Lanton Hospitality",
+  "voice": "af_nicole",
+  "speed": 1.05,
+  "callTime": "2027-02-10T21:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Quick note on Pacific Crest Energy: they never got the updated pricing.",
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_048",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Crest Energy",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "They never got the updated pricing.",
+              "quote": "they never got the updated pricing"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Put together the case study for Yara Zielinski.",
+      "heard": {
+        "biased": "Put together the case study for Yara Zeelinski."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Zeelinski",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the case study for Yara Zeelinski",
+              "quote": "the case study for Yara Zeelinski"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "I owe Lanton Hospitality the product roadmap deck.",
+      "heard": {
+        "biased": "I owe Lantern Hospitality the product roadmap deck.",
+        "unbiased": "I owe Lanton Hospetality the product roadmap deck."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Lantern Hospitality",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Send Lantern Hospitality the product roadmap deck",
+              "quote": "the product roadmap deck"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

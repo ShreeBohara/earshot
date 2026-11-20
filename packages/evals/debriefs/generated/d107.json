@@ -1,0 +1,190 @@
+{
+  "version": 2,
+  "id": "d107",
+  "title": "Wright Fabrication: the Wright Fabrication site rollout deal, a task for Nadia Abara, and more",
+  "voice": "af_nicole",
+  "callTime": "2027-02-19T10:50:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_018",
+  "noise": {
+    "kind": "street",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "The Wright Fabrication site rollout deal is now at contract sent, and the number is one hundred seventeen thousand.",
+      "heard": {
+        "biased": "The Rite Fabrication site rollout deal is now at contract sent, and the number is 117,000.",
+        "unbiased": "The Wright Fabrikation site rollout deal is now at contract sent, and the number is 117,000."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_018",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rite Fabrication site rollout",
+            "kind": "deal",
+            "company": "Rite Fabrication"
+          },
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            },
+            "amount": {
+              "value": 117000,
+              "quote": "117,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Can you add a task to get Nadia Abara the implementation timeline by tomorrow?",
+      "heard": {
+        "unbiased": "Can you add a task to get Nadia Abarra the implementation timeline by tomorrow?"
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nadia Abara",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get Nadia Abara the implementation timeline",
+              "quote": "get Nadia Abara the implementation timeline"
+            },
+            "dueDate": {
+              "value": "2027-02-20",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The Wright Fabrication site number went up to one hundred thirty-three thousand dollars. Can you add a task to get Odette Zielinski the case study in two weeks?",
+      "heard": {
+        "biased": "The Right Fabrication site number went up to $133,000. Can you add a task to get Odette Zielinski the case study in two weeks?",
+        "unbiased": "The Wright Fabrication site number went up to $133,000. Can you add a task to get Odette Ziellinski the case study in two weeks?"
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_018",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Right Fabrication site",
+            "kind": "deal",
+            "company": "Right Fabrication"
+          },
+          "fields": {
+            "amount": {
+              "value": 133000,
+              "quote": "$133,000"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_132",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Odette Zielinski",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get Odette Zielinski the case study",
+              "quote": "get Odette Zielinski the case study"
+            },
+            "dueDate": {
+              "value": "2027-03-05",
+              "quote": "in two weeks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Had a good call with, with Wright Fabrication this morning, and they want to add the analytics module.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_018",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Wright Fabrication",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to add the analytics module.",
+              "quote": "they want to add the analytics module"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "I told Elena Moreau over on, uh, at Wright Fabrication we'd share the updated pricing by Wednesday.",
+      "heard": {
+        "unbiased": "I told Elena Moreou over on, uh, at Wright Fabrication we'd share the updated pricing by Wednesday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_069",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Elena Moreau",
+            "kind": "contact",
+            "company": "Wright Fabrication"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Elena Moreau",
+              "quote": "Elena Moreau"
+            },
+            "text": {
+              "value": "Share the updated pricing with Elena Moreau",
+              "quote": "share the updated pricing"
+            },
+            "dueDate": {
+              "value": "2027-02-24",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

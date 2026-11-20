@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "id": "d194",
+  "title": "Right Fabrication: the Right starter plan deal, a note on Teodor Ferreira, a meeting with Teodor Ferreira",
+  "voice": "am_onyx",
+  "callTime": "2026-12-21T08:30:00.000Z",
+  "timeZone": "Europe/London",
+  "noise": {
+    "kind": "street",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Bump, uh, bump the Right starter plan deal to one hundred thirty-five thousand dollars.",
+      "heard": {
+        "biased": "Bump, uh, bump the Rite starter plan deal to one hundred thirty-five thousand dollars."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_011",
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Rite starter plan",
+            "kind": "deal",
+            "company": "Rite"
+          },
+          "expectFlags": [
+            "ambiguous_target"
+          ],
+          "fields": {
+            "amount": {
+              "value": 135000,
+              "quote": "one hundred thirty-five thousand dollars"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Teodor Ferreira called back, and legal hasn't approved the data processing terms.",
+      "heard": {
+        "biased": "Teodor Ferreirra called back, and legal hasn't approved the data processing terms."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Ferreirra",
+            "kind": "contact"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "Legal hasn't approved the data processing terms.",
+              "quote": "legal hasn't approved the data processing terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Teodor Ferreira and I are doing a renewal review tomorrow at 3:45 pm.",
+      "heard": {
+        "biased": "Teodor Fereira and I are doing a renewal review tomorrow at 3:45 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Fereira",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Renewal review with Teodor Fereira",
+              "quote": "a renewal review"
+            },
+            "date": {
+              "value": "2026-12-22",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "15:45",
+              "quote": "at 3:45 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Not to be confused with Wright Fabrication, which is a different account.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

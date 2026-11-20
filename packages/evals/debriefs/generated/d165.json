@@ -1,0 +1,138 @@
+{
+  "version": 2,
+  "id": "d165",
+  "title": "Northwind Foods: a note on Northwind Foods, the Northwind Foods site rollout deal, a meeting with Atmos Industries",
+  "voice": "af_sarah",
+  "callTime": "2026-12-25T18:30:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_010",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Had a good call with Northwind Foods this morning, and they need their data to stay in the EU.",
+      "heard": {
+        "unbiased": "Had a good call with North Wind Foods this morning, and they need their data to stay in the EU."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_010",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Foods",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Update on Northwind Foods site rollout: presentation scheduled, one hundred eighty-five thousand dollars, closing January 19th.",
+      "heard": {
+        "biased": "Update on Northwind Foods site rollout: presentation scheduled, $185,000, closing January 19th.",
+        "unbiased": "Update on Northwind Foods site rollout: presentation scheduled, $185,000, closing January 19th."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_035",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Foods site rollout",
+            "kind": "deal",
+            "company": "Northwind Foods"
+          },
+          "fields": {
+            "stage": {
+              "value": "presentation scheduled",
+              "quote": "presentation scheduled"
+            },
+            "amount": {
+              "value": 185000,
+              "quote": "$185,000"
+            },
+            "closeDate": {
+              "value": "2027-01-19",
+              "quote": "January 19th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Can you set the Northwind Foods site rollout deal deal to nineteen thousand and move the close to February 24th?",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_035",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Foods site rollout",
+            "kind": "deal",
+            "company": "Northwind Foods"
+          },
+          "fields": {
+            "amount": {
+              "value": 19000,
+              "quote": "nineteen thousand"
+            },
+            "closeDate": {
+              "value": "2027-02-24",
+              "quote": "February 24th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Booked the executive briefing with Atmos Industries Monday.",
+      "heard": {
+        "biased": "Booked the executive briefing with Atmos Industrial Monday.",
+        "unbiased": "Booked the executive briefing with Atmos Induztries Monday."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Executive briefing with Atmos Industrial",
+              "quote": "the executive briefing"
+            },
+            "date": {
+              "value": "2026-12-28",
+              "quote": "Monday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "version": 2,
+  "id": "d174",
+  "title": "Summit Ridge Medical: a note on Summit Ridge Medical, the Summit Ridge Medical starter plan deal, and more",
+  "voice": "af_jessica",
+  "speed": 1.05,
+  "callTime": "2026-12-14T19:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_045",
+  "noise": {
+    "kind": "street",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "So for for, uh, so for for Summit Ridge Medical, procurement wants a three-year term.",
+      "heard": {
+        "unbiased": "So for for, uh, so for for Summitridge Medical, procurement wants a three-year term."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_045",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Ridge Medical",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Procurement wants a three-year term.",
+              "quote": "procurement wants a three-year term"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "The Summit Ridge Medical starter plan deal is now at contract sent, and the number is eighteen thousand dollars, make that seventeen thousand five hundred.",
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_016",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Ridge Medical starter plan",
+            "kind": "deal",
+            "company": "Summit Ridge Medical"
+          },
+          "fields": {
+            "stage": {
+              "value": "contract sent",
+              "quote": "contract sent"
+            },
+            "amount": {
+              "value": 17500,
+              "quote": "seventeen thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Let's get a call going with Petra Kowalski over at Willowbrook tomorrow at 9 am.",
+      "heard": {
+        "unbiased": "Let's get a call going with Petra Kowalsky over at Wyllowbrook tomorrow at 9 am."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_083",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Petra Kowalski",
+            "kind": "contact",
+            "company": "Willowbrook"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Petra Kowalski",
+              "quote": "a call"
+            },
+            "date": {
+              "value": "2026-12-15",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "09:00",
+              "quote": "at 9 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Sunita Varga wants a site visit Monday.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_096",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sunita Varga",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Site visit with Sunita Varga",
+              "quote": "a site visit"
+            },
+            "date": {
+              "value": "2026-12-21",
+              "quote": "Monday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "id": "d046",
+  "title": "Nite Security Group: a note on Sarah Cohen, a task for Teodor Costa, a meeting with Sarah Cohen, and more",
+  "voice": "af_jessica",
+  "callTime": "2027-02-04T21:00:00.000Z",
+  "timeZone": "America/Denver",
+  "focusEntityId": "co_012",
+  "noise": {
+    "kind": "car",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Spoke with Sarah Cohen from Nite today. They need their data to stay in the EU.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_149",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sarah Cohen",
+            "kind": "contact",
+            "company": "Nite"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "They need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Ping Teodor Costa over at Nite about the procurement process Thursday.",
+      "heard": {
+        "unbiased": "Ping Teodor Coska over at Night about the procurement process Thursday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_018",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Costa",
+            "kind": "contact",
+            "company": "Nite"
+          },
+          "fields": {
+            "title": {
+              "value": "Ping Teodor Costa about the procurement process",
+              "quote": "about the procurement process"
+            },
+            "dueDate": {
+              "value": "2027-02-11",
+              "quote": "Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Put a kickoff meeting on the, the calendar with Sarah Cohen on February 27th.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_149",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sarah Cohen",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Sarah Cohen",
+              "quote": "a kickoff meeting"
+            },
+            "attendees": {
+              "value": "Sarah Cohen",
+              "quote": "Sarah Cohen"
+            },
+            "date": {
+              "value": "2027-02-27",
+              "quote": "on February 27th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Let's get a call going with Wanjiru Yilmaz over at, you know, Quarry Lane Media on Wednesday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_146",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Wanjiru Yilmaz",
+            "kind": "contact",
+            "company": "Quarry Lane Media"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Wanjiru Yilmaz",
+              "quote": "a call"
+            },
+            "attendees": {
+              "value": "Wanjiru Yilmaz",
+              "quote": "Wanjiru Yilmaz"
+            },
+            "date": {
+              "value": "2027-02-10",
+              "quote": "on Wednesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

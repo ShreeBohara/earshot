@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "id": "d042",
+  "title": "Cobalt Ridge Energy: a task for Ingrid Kowalski, a task for Greta Brandt, a meeting with Rafael Zielinski",
+  "voice": "am_onyx",
+  "callTime": "2027-01-25T18:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_057",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "To, to do: review the training plan with Ingrid Kowalski from Cobalt Ridge Energy by February 16th.",
+      "heard": {
+        "unbiased": "To, to do: review the training plan with Ingrid Kowalski from Cobalt Rydge Energy by February 16th."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_057",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ingrid Kowalski",
+            "kind": "contact",
+            "company": "Cobalt Ridge Energy"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the training plan with Ingrid Kowalski",
+              "quote": "review the training plan with Ingrid Kowalski from Cobalt Ridge Energy"
+            },
+            "dueDate": {
+              "value": "2027-02-16",
+              "quote": "by February 16th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Follow up with Greta Brandt on the renewal terms tomorrow.",
+      "heard": {
+        "unbiased": "Follow up with Gretta Brandt on the renewal terms tomorrow."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_016",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Greta Brandt",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow up with Greta Brandt on the renewal terms",
+              "quote": "on the renewal terms"
+            },
+            "dueDate": {
+              "value": "2027-01-26",
+              "quote": "tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2000,
+      "text": "We're meeting, uh, we're meeting Rafael Zielinski tomorrow at 9 am for the quarterly business review.",
+      "heard": {
+        "unbiased": "We're meeting, uh, we're meeting Rafeel Zielinski tomorrow at 9 am for the quarterly business review."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_144",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rafael Zielinski",
+            "kind": "contact"
+          },
+          "fields": {
+            "attendees": {
+              "value": "Rafael Zielinski",
+              "quote": "Rafael Zielinski"
+            },
+            "date": {
+              "value": "2027-01-26",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "09:00",
+              "quote": "at 9 am"
+            },
+            "title": {
+              "value": "Quarterly business review with Rafael Zielinski",
+              "quote": "the quarterly business review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Not to be confused with Harborview Marine, which is a different account.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

@@ -273,6 +273,19 @@ def test_scripts_read_their_noise(tmp_path: Path) -> None:
     assert sample_hash(quiet) == sample_hash(none)
 
 
+def test_the_generated_debriefs_noise_is_what_the_renderer_mixes() -> None:
+    # d031 to d200 (Phase 4 WP10) aren't rendered by default (the fake-microphone eval plays the
+    # hand-written 30 in debriefs/), but their noise must be renderable when they are.
+    scripts = rd.load_scripts(rd.DEBRIEFS / "generated")
+    assert [script.id for script in scripts] == [f"d{n:03d}" for n in range(31, 201)]
+    kinds = {script.noise.kind for script in scripts if script.noise is not None}
+    assert kinds == set(dn.NOISE_KINDS)
+    assert any(script.noise is None for script in scripts)
+    for script in scripts:
+        if script.noise is not None:
+            assert dn.MIN_SNR_DB <= script.noise.snr_db <= dn.MAX_SNR_DB
+
+
 @pytest.mark.parametrize(
     ("noise", "message"),
     [

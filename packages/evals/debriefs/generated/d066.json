@@ -1,0 +1,144 @@
+{
+  "version": 2,
+  "id": "d066",
+  "title": "Summit Ridge Medical: a note on Summit Ridge Medical, a promise to Atmos Industrial, and more",
+  "voice": "af_sarah",
+  "callTime": "2027-02-23T21:30:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_045",
+  "noise": {
+    "kind": "car",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Heads up, up on Summit Ridge Medical: they want to add the analytics module.",
+      "heard": {
+        "unbiased": "Heads up, up on Summid Ridge Medical: they want to add the analytics module."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_045",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Ridge Medical",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want to add the analytics module.",
+              "quote": "they want to add the analytics module"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Promised Atmos Industrial an answer on the renewal terms by Wednesday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_009",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atmos Industrial",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Give Atmos Industrial an answer on the renewal terms",
+              "quote": "an answer on the renewal terms"
+            },
+            "dueDate": {
+              "value": "2027-02-24",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "We, um, we we owe Mohammed Hassan at Copperleaf Retail a revised quote a week from today.",
+      "heard": {
+        "unbiased": "We, um, we we owe Mohammed Hassan at Copperleaf Rettail a revised quote a week from today."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_088",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mohammed Hassan",
+            "kind": "contact",
+            "company": "Copperleaf Retail"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Mohammed Hassan",
+              "quote": "Mohammed Hassan"
+            },
+            "text": {
+              "value": "Send Mohammed Hassan a revised quote",
+              "quote": "a revised quote"
+            },
+            "dueDate": {
+              "value": "2027-03-02",
+              "quote": "a week from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "I gave Yara Yilmaz my word we'd have the ROI model ready.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_106",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Yilmaz",
+            "kind": "contact"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Yara Yilmaz",
+              "quote": "Yara Yilmaz"
+            },
+            "text": {
+              "value": "Have the ROI model ready for Yara Yilmaz",
+              "quote": "have the ROI model ready"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Summit Peak Capital is a separate account, so no changes there.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

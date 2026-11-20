@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "id": "d045",
+  "title": "Wright Fabrication: a note on Nadia Abara, a task for Nadia Abara, a meeting with Basil Mining",
+  "voice": "af_nova",
+  "callTime": "2027-02-11T19:20:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_018",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "For the, um, for the record, Nadia Abara says they need their data to stay in the EU.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nadia Abara",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Follow up up with with Nadia Abara on the invoice dispute by Wednesday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nadia Abara",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow up with Nadia Abara on the invoice dispute",
+              "quote": "on the invoice dispute"
+            },
+            "dueDate": {
+              "value": "2027-02-17",
+              "quote": "by Wednesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Set up, uh, set up a call with Basil Mining on Tuesday at 2 pm to go over the legal review.",
+      "heard": {
+        "biased": "Set up, uh, set up a call with Basalt Mining on Tuesday at 2 pm to go over the legal review.",
+        "unbiased": "Set up, uh, set up a call with Bassil Mining on Tuesday at 2 pm to go over the legal review."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Basalt Mining",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "date": {
+              "value": "2027-02-16",
+              "quote": "on Tuesday"
+            },
+            "time": {
+              "value": "14:00",
+              "quote": "at 2 pm"
+            },
+            "title": {
+              "value": "Call with Basalt Mining to go over the legal review",
+              "quote": "go over the legal review"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

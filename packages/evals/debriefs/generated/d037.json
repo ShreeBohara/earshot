@@ -1,0 +1,143 @@
+{
+  "version": 2,
+  "id": "d037",
+  "title": "Quarry Lane Media: the Quarry deal, a meeting with Priya Nair, the Quarry analytics add-on deal, and more",
+  "voice": "am_echo",
+  "speed": 1.1,
+  "callTime": "2027-02-26T18:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_020",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "The Quarry deal isn't, isn't at contract sent yet, it's still at presentation scheduled.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Quarry",
+            "kind": "deal",
+            "company": "Quarry"
+          },
+          "fields": {
+            "stage": {
+              "value": "presentation scheduled",
+              "quote": "presentation scheduled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Set up a call with Priya Nair on Tuesday to go over the onboarding plan.",
+      "heard": {
+        "unbiased": "Set up a call with Preya Nair on Tuesday to go over the onboarding plan."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_118",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Priya Nair",
+            "kind": "contact"
+          },
+          "fields": {
+            "attendees": {
+              "value": "Priya Nair",
+              "quote": "Priya Nair"
+            },
+            "date": {
+              "value": "2027-03-02",
+              "quote": "on Tuesday"
+            },
+            "title": {
+              "value": "Call with Priya Nair to go over the onboarding plan",
+              "quote": "go over the onboarding plan"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "The Quarry analytics add-on deal isn't at contract sent yet, it's still at decision maker bought in.",
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Quarry analytics add-on",
+            "kind": "deal",
+            "company": "Quarry"
+          },
+          "fields": {
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Quarry Lane Media has a new managing director, Priya Nash, and the email is priya.nash@quarry-lane-media.example.",
+      "heard": {
+        "biased": "Quarry Lane Media has a new managing director, Priya Nair, and the email is priya.nash@quarry-lane-media.example.",
+        "unbiased": "Quarry Lone Media has a new managing director, Priya Nash, and the email is priya.nash@quarry-lane-media.example."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "company": {
+              "value": "Quarry Lane Media",
+              "quote": "Quarry Lane Media"
+            },
+            "title": {
+              "value": "managing director",
+              "quote": "managing director"
+            },
+            "name": {
+              "value": "Priya Nair",
+              "quote": "Priya Nair"
+            },
+            "email": {
+              "value": "priya.nash@quarry-lane-media.example",
+              "quote": "priya.nash@quarry-lane-media.example"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

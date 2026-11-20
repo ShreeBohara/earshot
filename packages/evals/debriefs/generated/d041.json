@@ -1,0 +1,178 @@
+{
+  "version": 2,
+  "id": "d041",
+  "title": "Pier Logistics: a task for Leilani Petrov, a meeting with Leilani Petrov, a new contact, Olu Adebayo, and more",
+  "voice": "am_michael",
+  "callTime": "2026-12-17T14:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "noise": {
+    "kind": "street",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "To do: review the procurement process with Leilani Petrov from Pier Logistics by January 8th.",
+      "heard": {
+        "biased": "To do: review the procurement process with Leilani Petrov from Peer Logistics by January 8th.",
+        "unbiased": "To do: review the procurement process with Leilani Pekrov from Pier Logisdics by January 8th."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_079",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Leilani Petrov",
+            "kind": "contact",
+            "company": "Peer Logistics"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the procurement process with Leilani Petrov",
+              "quote": "review the procurement process with Leilani Petrov from Peer Logistics"
+            },
+            "dueDate": {
+              "value": "2027-01-08",
+              "quote": "by January 8th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "Lunch with Leilani Petrov Thursday at 2 pm to talk about the training plan.",
+      "heard": {
+        "biased": "Lunch with Leilani Pedrov Thursday at 2 pm to talk about the training plan."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_079",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Leilani Pedrov",
+            "kind": "contact"
+          },
+          "fields": {
+            "date": {
+              "value": "2026-12-24",
+              "quote": "Thursday"
+            },
+            "time": {
+              "value": "14:00",
+              "quote": "at 2 pm"
+            },
+            "title": {
+              "value": "Lunch with Leilani Pedrov about the training plan",
+              "quote": "talk about the training plan"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "You can reach Olu Adebayo at 555-0161.",
+      "heard": {
+        "unbiased": "You can reach Olu Adevayo at 555-0161."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Olu Adebayo",
+              "quote": "Olu Adebayo"
+            },
+            "phone": {
+              "value": "555-0161",
+              "quote": "555-0161"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "I told Geoffrey Walsh over at Juniper Bay Telecom we'd share the case study by Thursday.",
+      "heard": {
+        "unbiased": "I told Jeffrey Walsh over at Juniper Bay Telecom we'd share the case study by Thursday."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_092",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Geoffrey Walsh",
+            "kind": "contact",
+            "company": "Juniper Bay Telecom"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Geoffrey Walsh",
+              "quote": "Geoffrey Walsh"
+            },
+            "text": {
+              "value": "Share the case study with Geoffrey Walsh",
+              "quote": "share the case study"
+            },
+            "dueDate": {
+              "value": "2026-12-24",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "I'll need to walk Glovek Systems through the procurement process by Friday.",
+      "heard": {
+        "biased": "I'll need to walk Glovex Systems through the procurement process by Friday.",
+        "unbiased": "I'll need to walk Gloveksystems through the procurement process by Friday."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Glovex Systems",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "title": {
+              "value": "Walk Glovex Systems through the procurement process",
+              "quote": "walk Glovex Systems through the procurement process"
+            },
+            "dueDate": {
+              "value": "2026-12-18",
+              "quote": "by Friday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

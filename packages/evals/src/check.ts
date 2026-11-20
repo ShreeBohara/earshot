@@ -234,17 +234,14 @@ export function turnProblems(
     const toDataset = (id: string | null) =>
       id === null ? null : (options.targetIds?.get(id) ?? id);
     const decision = expectedDecision(expected);
+    const wanted = expected.target.id;
     const target = toDataset(got.targetEntityId);
-    if (got.decision !== decision || (decision === "linked" && target !== expected.target)) {
+    if (got.decision !== decision || (decision === "linked" && target !== wanted)) {
       problems.push(
-        `${where} targets ${describeTarget(got.decision, target)}, not ${describeTarget(decision, expected.target)}`,
+        `${where} targets ${describeTarget(got.decision, target)}, not ${describeTarget(decision, wanted)}`,
       );
-    } else if (
-      decision === "ask" &&
-      expected.target !== null &&
-      !got.candidates.map(toDataset).includes(expected.target)
-    ) {
-      problems.push(`${where} asks without offering ${expected.target}`);
+    } else if (decision === "ask" && !got.candidates.map(toDataset).includes(wanted)) {
+      problems.push(`${where} asks without offering ${wanted ?? "a new record"}`);
     }
     const fields = expected.fields as Readonly<Record<string, ExpectedField | undefined>>;
     for (const name of KEY_FIELDS[expected.type]) {

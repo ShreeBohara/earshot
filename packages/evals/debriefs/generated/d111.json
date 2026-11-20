@@ -1,0 +1,143 @@
+{
+  "version": 2,
+  "id": "d111",
+  "title": "Zenyth Packaging: the Zenyth starter plan deal, a task for Mireille Bianchi, and more",
+  "voice": "af_heart",
+  "callTime": "2027-01-05T21:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_002",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "We agreed on on seventy-three thousand for the Zenyth starter plan deal. Next step is to send Mireille Bianchi the implementation timeline in three weeks.",
+      "heard": {
+        "biased": "We agreed on on 73,000 for the Zenyth starter plan deal. Next step is to send Mireille Bianchi the implementation timeline in three weeks.",
+        "unbiased": "We agreed on on 73,000 for the Zenith starter plan deal. Next step is to send Mireile Bianchi the implementation timeline in three weeks."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_039",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenyth starter plan",
+            "kind": "deal",
+            "company": "Zenyth"
+          },
+          "fields": {
+            "amount": {
+              "value": 73000,
+              "quote": "73,000"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_013",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mireille Bianchi",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Mireille Bianchi the implementation timeline",
+              "quote": "send Mireille Bianchi the implementation timeline"
+            },
+            "dueDate": {
+              "value": "2027-01-26",
+              "quote": "in three weeks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Mark the Zenyth Packaging starter plan deal as qualified to buy.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_039",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenyth Packaging starter plan",
+            "kind": "deal",
+            "company": "Zenyth Packaging"
+          },
+          "fields": {
+            "stage": {
+              "value": "qualified to buy",
+              "quote": "qualified to buy"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Talia Brooks just joined Zenyth as their director of engineering.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Talia Brooks",
+              "quote": "Talia Brooks"
+            },
+            "company": {
+              "value": "Zenyth",
+              "quote": "Zenyth"
+            },
+            "title": {
+              "value": "director of engineering",
+              "quote": "director of engineering"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Action, uh, item: book a site visit with Mireille Bianchi.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_013",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Mireille Bianchi",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Book a site visit with Mireille Bianchi",
+              "quote": "book a site visit with Mireille Bianchi"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

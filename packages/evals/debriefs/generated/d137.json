@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "id": "d137",
+  "title": "Marshal Medical: a task for Ximena Okafor, a promise to Emeka Petrov, a meeting with the account, and more",
+  "voice": "af_sky",
+  "callTime": "2027-02-08T15:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_058",
+  "noise": {
+    "kind": "street",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Follow up, you know, with Ximena Okafor on the integration.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_032",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ximena Okafor",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow up with Ximena Okafor on the integration",
+              "quote": "on the integration"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "I'm on the hook to deliver a pilot proposal to Emeka Petrov two weeks from today.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_070",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Emeka Petrov",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Deliver a pilot proposal to Emeka Petrov",
+              "quote": "deliver a pilot proposal to Emeka Petrov"
+            },
+            "dueDate": {
+              "value": "2027-02-22",
+              "quote": "two weeks from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Booked a kickoff call on February 27th at 10:15 am.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_058",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Kickoff call",
+              "quote": "a kickoff call"
+            },
+            "date": {
+              "value": "2027-02-27",
+              "quote": "on February 27th"
+            },
+            "time": {
+              "value": "10:15",
+              "quote": "at 10:15 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Got off the phone with Glovek Systems, and their CFO wants to see the ROI model.",
+      "heard": {
+        "biased": "Got off the phone with Glovex Systems, and their CFO wants to see the ROI model.",
+        "unbiased": "Got off the phone with Glovek, and their CFO wants to see the ROI model."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Glovex Systems",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "body": {
+              "value": "Their CFO wants to see the ROI model.",
+              "quote": "their CFO wants to see the ROI model"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

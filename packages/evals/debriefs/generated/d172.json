@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "id": "d172",
+  "title": "Kestral Aero: the Kestral deal, a new contact, Tobiah Fairweather, a note on Imani Underhill, and more",
+  "voice": "bf_alice",
+  "callTime": "2027-01-09T00:50:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_008",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "The Kestral deal isn't at contract sent yet, it's still at decision maker bought in.",
+      "heard": {
+        "unbiased": "The Kesdral deal isn't at contract sent yet, it's still at decision maker bought in."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_022",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kestral",
+            "kind": "deal",
+            "company": "Kestral"
+          },
+          "fields": {
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Tobiah Fairweather's email is tobiah.fairweather@kestral-aero.example.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Tobiah Fairweather",
+              "quote": "Tobiah Fairweather"
+            },
+            "email": {
+              "value": "tobiah.fairweather@kestral-aero.example",
+              "quote": "tobiah.fairweather@kestral-aero.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "For this, um, the record, Imani Underhill says they asked for a case study from a similar customer.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Imani Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They asked for a case study from a similar customer.",
+              "quote": "they asked for a case study from a similar customer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2200,
+      "text": "Put a kickoff meeting on the calendar, uh, with, uh, Imani Underhill on January 28th, I mean January 26th at 1:15 pm.",
+      "heard": {
+        "unbiased": "Put a kickoff meeting on the calendar, uh, with, uh, Inani Underhill on January 28th, I mean January 26th at 1:15 pm."
+      },
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Imani Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Imani Underhill",
+              "quote": "a kickoff meeting"
+            },
+            "attendees": {
+              "value": "Imani Underhill",
+              "quote": "Imani Underhill"
+            },
+            "date": {
+              "value": "2027-01-26",
+              "quote": "January 26th"
+            },
+            "time": {
+              "value": "13:15",
+              "quote": "at 1:15 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "I said we'd get back to Imani Underhill on the legal review by Monday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Imani Underhill",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Get back to Imani Underhill on the legal review",
+              "quote": "get back to Imani Underhill on the legal review"
+            },
+            "dueDate": {
+              "value": "2027-01-11",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "version": 2,
+  "id": "d119",
+  "title": "Northwind Labs: a note on Northwind, a note on Zoey Park, a task for Ayesha Khan",
+  "voice": "bf_lily",
+  "callTime": "2026-12-10T18:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_021",
+  "noise": {
+    "kind": "car",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Northwind called back, and they're happy with the pricing but want better payment terms.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_021",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're happy with the pricing but want better payment terms.",
+              "quote": "they're happy with the pricing but want better payment terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Had a good call with Zoey Park this morning, and the rollout slipped because of a hiring freeze.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_140",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zoey Park",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The rollout slipped because of a hiring freeze.",
+              "quote": "the rollout slipped because of a hiring freeze"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Update from from, um, Northwind: they asked for a case study from a similar customer.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_021",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They asked for a case study from a similar customer.",
+              "quote": "they asked for a case study from a similar customer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Remind me to send Ayesha Khan the order form by the end of the week.",
+      "heard": {
+        "unbiased": "Remind me to send Aisha Khan the order form by the end of the week."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_042",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ayesha Khan",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Ayesha Khan the order form",
+              "quote": "the order form"
+            },
+            "dueDate": {
+              "value": "2026-12-11",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

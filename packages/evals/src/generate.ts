@@ -33,7 +33,13 @@ import {
 import type { LlmProvider, UtteranceFinalV2 } from "@earshot/core";
 import { buildLinkIndex, type LinkIndex } from "@earshot/understanding/link";
 import { DEBRIEFS } from "./debriefs";
-import { type DebriefScript, type ExpectedField, type ExpectedProposal, namedOf } from "./schema";
+import {
+  type DebriefScript,
+  type ExpectedField,
+  type ExpectedProposal,
+  heardText,
+  namedOf,
+} from "./schema";
 import { DEMO_SESSION_ENTITIES, demoEntity, sessionContext, turnTranscript } from "./session";
 
 export const EVAL_PROVIDERS: readonly LlmProvider[] = ["anthropic", "groq"];
@@ -46,8 +52,9 @@ function evalId(script: DebriefScript, turnIndex: number, kind: number): string 
 }
 
 /**
- * A turn's final as the fake adapter delivers it: one utterance with the turn's text. Only the
- * text reaches the request, so the timing here is a plain stand-in.
+ * A turn's final as the fake adapter delivers it: one utterance with what the production stream
+ * heard (`heard.biased`, the turn's text unless the script says otherwise). Only the text reaches
+ * the request, so the timing here is a plain stand-in.
  */
 export function evalUtterance(script: DebriefScript, turnIndex: number): UtteranceFinalV2 {
   const turn = script.turns[turnIndex];
@@ -55,7 +62,7 @@ export function evalUtterance(script: DebriefScript, turnIndex: number): Utteran
   const startMs = turnIndex * 15_000;
   return {
     utteranceId: evalId(script, turnIndex, 1),
-    text: turnTranscript(turn),
+    text: turnTranscript({ text: heardText(turn, "biased") }),
     confidence: 0.95,
     startMs,
     endMs: startMs + Math.max(1, turn.text.split(" ").length) * 400,
@@ -101,7 +108,8 @@ export function evalSession(script: DebriefScript): LinkSession {
 function toolTarget(expected: ExpectedProposal): ToolTarget | null {
   const named = namedOf(expected);
   if (named === null) return null;
-  const kind = named.kind ?? (expected.target === null ? null : demoEntity(expected.target).kind);
+  const id = expected.target.id;
+  const kind = named.kind ?? (id === null ? null : demoEntity(id).kind);
   if (kind === null) throw new TypeError("a named record that isn't in the CRM needs a kind");
   return {
     quote: named.quote,
@@ -160,6 +168,17 @@ export function toolProposal(expected: ExpectedProposal): ToolProposal {
           dueDate: textOrNull(expected.fields.dueDate),
         },
       };
+    case "meeting":
+      return {
+        type: "meeting",
+        target,
+        fields: {
+          title: text(expected.fields.title),
+          date: textOrNull(expected.fields.date),
+          time: textOrNull(expected.fields.time),
+          attendees: textOrNull(expected.fields.attendees),
+        },
+      };
   }
 }
 
@@ -177,7 +196,8 @@ function tokens(script: DebriefScript, turnIndex: number, proposals: number) {
   };
 }
 
-function response(
+/** The model's answer to one turn, in the provider's wire format: the proposals as its tool input. */
+export function evalResponse(
   provider: LlmProvider,
   script: DebriefScript,
   turnIndex: number,
@@ -219,7 +239,7 @@ export function evalScenario(
       callTime: context.callTime,
       timeZone: context.timeZone,
     },
-    responses: [response(provider, script, turnIndex, proposals)],
+    responses: [evalResponse(provider, script, turnIndex, proposals)],
     expect: { outcome: proposals.length > 0 ? "proposals" : "nothing_to_propose", attempts: 1 },
   };
 }

@@ -1,0 +1,120 @@
+{
+  "version": 2,
+  "id": "d103",
+  "title": "Granite State Builders: the Granite State Builders analytics add-on deal, the Granite analytics add-on deal, and more",
+  "voice": "am_onyx",
+  "speed": 0.9,
+  "callTime": "2026-12-03T19:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_059",
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "The Granite State Builders analytics add-on number went up to nineteen thousand five hundred.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Granite State Builders analytics add-on",
+            "kind": "deal",
+            "company": "Granite State Builders"
+          },
+          "fields": {
+            "amount": {
+              "value": 19500,
+              "quote": "nineteen thousand five hundred"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Update on Granite State Builders analytics add-on: closed won, two hundred ninety-five thousand, closing February 11th.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Granite State Builders analytics add-on",
+            "kind": "deal",
+            "company": "Granite State Builders"
+          },
+          "fields": {
+            "stage": {
+              "value": "closed won",
+              "quote": "closed won"
+            },
+            "amount": {
+              "value": 295000,
+              "quote": "two hundred ninety-five thousand"
+            },
+            "closeDate": {
+              "value": "2027-02-11",
+              "quote": "February 11th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "For the Granite analytics add-on deal, change the amount to one hundred ninety thousand and the stage to appointment scheduled. Put together the invoice breakdown for Shaun Murphy by Thursday.",
+      "heard": {
+        "unbiased": "For the Granitte analytics add-on deal, change the amount to one hundred ninety thousand and the stage to appointment scheduled. Put together the invoice breakdown for Shaun Murphy by Thursday."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Granite analytics add-on",
+            "kind": "deal",
+            "company": "Granite"
+          },
+          "fields": {
+            "amount": {
+              "value": 190000,
+              "quote": "one hundred ninety thousand"
+            },
+            "stage": {
+              "value": "appointment scheduled",
+              "quote": "appointment scheduled"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_074",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Shaun Murphy",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the invoice breakdown for Shaun Murphy",
+              "quote": "the invoice breakdown for Shaun Murphy"
+            },
+            "dueDate": {
+              "value": "2026-12-10",
+              "quote": "by Thursday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "version": 2,
+  "id": "d036",
+  "title": "Pacific Crest Energy: a note on Pacific, a meeting with Yara Zielinski, a note on Lantern",
+  "voice": "am_fenrir",
+  "callTime": "2027-02-05T17:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_048",
+  "turns": [
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Just left Pacific. The pilot isn't covering the warehouse sites.",
+      "heard": {
+        "unbiased": "Just left Pacyfic. The pilot isn't covering the warehouse sites."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_048",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "The pilot isn't covering the warehouse sites.",
+              "quote": "The pilot isn't covering the warehouse sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "We have a follow-up call with Yara Zielinski from Pacific Crest Energy on February 24th, sorry, February 22nd.",
+      "heard": {
+        "unbiased": "We have a follow-up call with Yare Zielinski from Pacific Crest Energy on February 24th, sorry, February 22nd."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_017",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Yara Zielinski",
+            "kind": "contact",
+            "company": "Pacific Crest Energy"
+          },
+          "fields": {
+            "title": {
+              "value": "Follow-up call with Yara Zielinski",
+              "quote": "a follow-up call"
+            },
+            "attendees": {
+              "value": "Yara Zielinski",
+              "quote": "Yara Zielinski"
+            },
+            "date": {
+              "value": "2027-02-22",
+              "quote": "February 22nd"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Met with the, the team at Lantern, and the pilot is going well and they want a formal quote.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_053",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Lantern",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

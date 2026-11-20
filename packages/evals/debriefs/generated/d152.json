@@ -1,0 +1,113 @@
+{
+  "version": 2,
+  "id": "d152",
+  "title": "Redwood Analytics: a note on Rafael Garza, a promise to Rafael Garza",
+  "voice": "af_nova",
+  "callTime": "2027-02-25T20:00:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "noise": {
+    "kind": "street",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Caught up with Rafael Garza over at Redwood Analytics, and the pilot is going well and they want a formal quote.",
+      "heard": {
+        "unbiased": "Caught up with Ravael Garza over at Redwoodanalytics, and the pilot is going well and they want a formal quote."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_008",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rafael Garza",
+            "kind": "contact",
+            "company": "Redwood Analytics"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Okay, that's everything on Redwood Analytics.",
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "We owe Rafael Garza at, on, um, at Redwood Analytics the redlined contract by the end of the week.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_008",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rafael Garza",
+            "kind": "contact",
+            "company": "Redwood Analytics"
+          },
+          "fields": {
+            "counterpart": {
+              "value": "Rafael Garza",
+              "quote": "Rafael Garza"
+            },
+            "text": {
+              "value": "Send Rafael Garza the redlined contract",
+              "quote": "the redlined contract"
+            },
+            "dueDate": {
+              "value": "2027-02-26",
+              "quote": "by the end of the week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "I promised Rafael Garza their data never leaves their region.",
+      "heard": {
+        "biased": "I promised Rafail Garza their data never leaves their region."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_008",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rafail Garza",
+            "kind": "contact"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "text": {
+              "value": "Their data never leaves their region.",
+              "quote": "their data never leaves their region"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

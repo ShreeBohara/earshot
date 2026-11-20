@@ -1,0 +1,127 @@
+{
+  "version": 2,
+  "id": "d144",
+  "title": "Blue Harbor Analytics: the Blue site deal, a meeting with Kathryn Moore, a new contact, Nkechi Obi",
+  "voice": "bm_lewis",
+  "callTime": "2026-12-21T17:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_037",
+  "noise": {
+    "kind": "street",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "The Blue site deal should close by February 3rd at two hundred twenty-five thousand dollars.",
+      "heard": {
+        "biased": "The Blue site deal should close by February 3rd at $225,000.",
+        "unbiased": "The Blue site deal should close by February 3rd at $225,000."
+      },
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_010",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Blue site",
+            "kind": "deal",
+            "company": "Blue"
+          },
+          "fields": {
+            "closeDate": {
+              "value": "2027-02-03",
+              "quote": "February 3rd"
+            },
+            "amount": {
+              "value": 225000,
+              "quote": "$225,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Put a kickoff meeting on the calendar with Kathryn Moore on Wednesday, I mean Friday at 4:15 pm.",
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_064",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kathryn Moore",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Kathryn Moore",
+              "quote": "a kickoff meeting"
+            },
+            "attendees": {
+              "value": "Kathryn Moore",
+              "quote": "Kathryn Moore"
+            },
+            "date": {
+              "value": "2026-12-25",
+              "quote": "Friday"
+            },
+            "time": {
+              "value": "16:15",
+              "quote": "at 4:15 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "New, new contact: Nkechi Obi, operations director, phone, phone 555-0113.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Nkechi Obi",
+              "quote": "Nkechi Obi"
+            },
+            "title": {
+              "value": "operations director",
+              "quote": "operations director"
+            },
+            "phone": {
+              "value": "555-0113",
+              "quote": "555-0113"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "I'm, you know, not touching the Bay Harbor Associates account today.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

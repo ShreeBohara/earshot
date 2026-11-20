@@ -1,0 +1,146 @@
+{
+  "version": 2,
+  "id": "d114",
+  "title": "Rite Fabrication: the Rite Fabrication starter plan deal, a task for Sunita Yilmaz, a new contact, Hana Okoro, and more",
+  "voice": "af_river",
+  "callTime": "2027-02-11T15:10:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_035",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "We agreed about, um, on ninety-four thousand dollars for the Rite Fabrication starter plan deal. Schedule the kickoff with Sunita Yilmaz.",
+      "heard": {
+        "biased": "We agreed about, um, on $94,000 for the Rite Fabrication starter plan deal. Schedule the kickoff with Sunita Yilmaz.",
+        "unbiased": "We agreed about, um, on $94,000 for the Rite Fabrication starter plan deal. Schedule the kickoff with Sunita Yilmaz."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rite Fabrication starter plan",
+            "kind": "deal",
+            "company": "Rite Fabrication"
+          },
+          "fields": {
+            "amount": {
+              "value": 94000,
+              "quote": "$94,000"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_076",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sunita Yilmaz",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Schedule the kickoff with Sunita Yilmaz",
+              "quote": "Schedule the kickoff with Sunita Yilmaz"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Add Hana Okoro, VP of finance at Rite Fabrication.",
+      "heard": {
+        "biased": "Add Hana Okoro, VP of finance at Rite.",
+        "unbiased": "Add Hona Okoro, VP of finance at Rite."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Hana Okoro",
+              "quote": "Hana Okoro"
+            },
+            "title": {
+              "value": "VP of finance",
+              "quote": "VP of finance"
+            },
+            "company": {
+              "value": "Rite",
+              "quote": "Rite"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Put a kickoff meeting on the calendar with Rite on March 6th at 1 pm.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_035",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rite",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Kickoff meeting with Rite",
+              "quote": "a kickoff meeting"
+            },
+            "date": {
+              "value": "2027-03-06",
+              "quote": "on March 6th"
+            },
+            "time": {
+              "value": "13:00",
+              "quote": "at 1 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Send them the order form.",
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_035",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Send the order form",
+              "quote": "the order form"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

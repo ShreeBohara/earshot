@@ -1,0 +1,118 @@
+{
+  "version": 2,
+  "id": "d039",
+  "title": "Pacific Crest Energy: a note on Teodor Ito, a note on Pacific Crest Energy, the the account deal, and more",
+  "voice": "am_santa",
+  "callTime": "2026-11-19T16:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_048",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 0
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Teodor Ito mentioned that, that they need their data to stay in the EU.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_138",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Ito",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Just just left Pacific Crest Energy. Their IT team flagged the single sign-on setup.",
+      "heard": {
+        "unbiased": "Just just left Pacific Crest Ennergy. Their IT team flagged the single sign-on setup."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_048",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Pacific Crest Energy",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Their IT team flagged the single sign-on setup.",
+              "quote": "Their IT team flagged the single sign-on setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2100,
+      "text": "Bump the deal to twenty-nine thousand.",
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_038",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "amount": {
+              "value": 29000,
+              "quote": "twenty-nine thousand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Update the title for Yara Zielinski to head of IT.",
+      "heard": {
+        "unbiased": "Update the title for Yara Zialinski to head of IT."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_017",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Yara Zielinski",
+              "quote": "Yara Zielinski"
+            },
+            "title": {
+              "value": "head of IT",
+              "quote": "head of IT"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

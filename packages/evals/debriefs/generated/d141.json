@@ -1,0 +1,98 @@
+{
+  "version": 2,
+  "id": "d141",
+  "title": "Northwind Labs: a note on Northwind, a promise to Juniper Bay Telecare, a task for Northwind Labs",
+  "voice": "af_nicole",
+  "callTime": "2026-12-28T16:40:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_021",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Just left Northwind. They're reviewing the proposal with legal this week.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_021",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're reviewing the proposal with legal this week.",
+              "quote": "They're reviewing the proposal with legal this week"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "I promised Juniper Bay Telecare the migration plan.",
+      "heard": {
+        "biased": "I promised Juniper Bay Telecom the migration plan."
+      },
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Juniper Bay Telecom",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "text": {
+              "value": "Send Juniper Bay Telecom the migration plan",
+              "quote": "the migration plan"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "Remind me, um, to send Northwind Labs the implementation timeline.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_021",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Northwind Labs",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Northwind Labs the implementation timeline",
+              "quote": "the implementation timeline"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Not to be confused with Northwind Foods, which is is a different account.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    }
+  ]
+}

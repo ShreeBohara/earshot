@@ -1,0 +1,98 @@
+{
+  "version": 2,
+  "id": "d159",
+  "title": "Opal Street Studios: a note on Kwame Fontaine, Odette Abara's details, Kwame Fontaine's details",
+  "voice": "am_michael",
+  "callTime": "2027-01-27T14:50:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_030",
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Quick note on Kwame Fontaine: the pilot is going well and they want a formal quote.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_031",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Kwame Fontaine",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The pilot is going well and they want a formal quote.",
+              "quote": "the pilot is going well and they want a formal quote"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Odette Abara is the new plant manager at Opal.",
+      "heard": {
+        "unbiased": "Odetke Abara is the new plant manager at Opel."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_137",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Odette Abara",
+              "quote": "Odette Abara"
+            },
+            "title": {
+              "value": "plant manager",
+              "quote": "plant manager"
+            },
+            "company": {
+              "value": "Opal",
+              "quote": "Opal"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Kwame Fontaine is now general manager.",
+      "heard": {
+        "unbiased": "Kwame Fontaini is now general manager."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_031",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Kwame Fontaine",
+              "quote": "Kwame Fontaine"
+            },
+            "title": {
+              "value": "general manager",
+              "quote": "general manager"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1500,
+      "text": "I didn't talk to Atmas Group this week, so there's no update there.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    }
+  ]
+}

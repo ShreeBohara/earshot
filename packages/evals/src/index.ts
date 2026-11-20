@@ -13,7 +13,19 @@ export {
   turnProblems,
   turnsFromEvents,
 } from "./check";
-export { COVERAGE_MINIMUMS, type Coverage, confusableTargets, coverageOf } from "./coverage";
+export {
+  COVERAGE_MINIMUMS,
+  COVERAGE_MINIMUMS_V1,
+  type Coverage,
+  confusableTargets,
+  coverageMarkdown,
+  coverageOf,
+  coverageRowsV1,
+  coverageShortfallsV0,
+  coverageShortfallsV1,
+  inConfusableGroup,
+  namesConfusable,
+} from "./coverage";
 export { DEBRIEF_FILES, DEBRIEFS, debrief, debriefAt } from "./debriefs";
 export {
   ASSEMBLYAI_STREAMS_PER_MINUTE,
@@ -53,29 +65,42 @@ export {
   scriptPassed,
 } from "./report";
 export {
+  DEBRIEF_FORMAT_V1,
   DEBRIEF_FORMAT_VERSION,
   DebriefScript,
-  DebriefTurn,
+  DebriefScriptFile,
+  DebriefScriptV1,
+  type DebriefTurn,
+  type DebriefTurnV1,
   DemoEntityId,
   type ExpectedField,
   ExpectedProposal,
+  ExpectedProposalV1,
+  ExpectedTarget,
   expectedDecision,
   expectedFields,
+  heardText,
   isNormalizedText,
   KEY_FIELDS,
   KOKORO_VOICES,
   KokoroVoice,
   MAX_PAUSE_MS,
   MAX_PROPOSALS_PER_TURN,
+  MAX_SNR_DB,
   MAX_TURN_CHARS,
   MAX_TURNS,
   MIN_LEAD_IN_MS,
   MIN_PAUSE_MS,
+  MIN_SNR_DB,
   MIN_TURNS,
   type Named,
+  NOISE_KINDS,
+  Noise,
   namedOf,
   TURN_TAGS,
   TurnTag,
+  upgradeDebriefScript,
+  upgradeProposal,
 } from "./schema";
 export {
   DEMO_SESSION_ENTITIES,
@@ -103,4 +128,5 @@ export {
   parseUsd,
   type ResolvedDate,
   resolveDatePhrase,
+  resolveTimePhrase,
 } from "./verify";

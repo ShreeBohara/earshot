@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "id": "d184",
+  "title": "Ironbridge Textiles: a meeting with Ironbridge Textiles, a meeting with Joaquin Moreau, and more",
+  "voice": "bf_emma",
+  "callTime": "2026-12-10T23:00:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_047",
+  "noise": {
+    "kind": "car",
+    "snrDb": 10
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Ironbridge Textiles agreed to a workshop on the reporting setup on December 24th at 9:15 am.",
+      "heard": {
+        "biased": "Ironbridge agreed to a workshop on the reporting setup on December 24th at 9:15 am."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_047",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ironbridge",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Workshop on the reporting setup with Ironbridge",
+              "quote": "a workshop on the reporting setup"
+            },
+            "date": {
+              "value": "2026-12-24",
+              "quote": "on December 24th"
+            },
+            "time": {
+              "value": "09:15",
+              "quote": "at 9:15 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Joaquin Moreau can, um, do a technical deep dive tomorrow at 8 am.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_110",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Joaquin Moreau",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Technical deep dive with Joaquin Moreau",
+              "quote": "a technical deep dive"
+            },
+            "date": {
+              "value": "2026-12-11",
+              "quote": "tomorrow"
+            },
+            "time": {
+              "value": "08:00",
+              "quote": "at 8 am"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "The Ironbridge Textiles annual renewal deal is now at closed lost, and the number is eighty-three thousand, I mean seventy-eight thousand.",
+      "heard": {
+        "biased": "The Ironbridge Textiles annual renewal deal is now at closed lost, and the number is 83,000, I mean 78,000.",
+        "unbiased": "The Ironbridge Textiles annual renewal deal is now at closed lost, and the number is 83,000, I mean 78,000."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_034",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Ironbridge Textiles annual renewal",
+            "kind": "deal",
+            "company": "Ironbridge Textiles"
+          },
+          "fields": {
+            "stage": {
+              "value": "closed lost",
+              "quote": "closed lost"
+            },
+            "amount": {
+              "value": 78000,
+              "quote": "78,000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Talia Brooks from Ironbridge Textiles is taking, you know, over as director of engineering.",
+      "heard": {
+        "unbiased": "Talio Brooks from Ironbridge Textiles is taking, you know, over as director of engineering."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Talia Brooks",
+              "quote": "Talia Brooks"
+            },
+            "company": {
+              "value": "Ironbridge Textiles",
+              "quote": "Ironbridge Textiles"
+            },
+            "title": {
+              "value": "director of engineering",
+              "quote": "director of engineering"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

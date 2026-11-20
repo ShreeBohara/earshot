@@ -1,0 +1,67 @@
+{
+  "format": 1,
+  "scriptsSha256": "3d2888f6147e715293ed7bef772027fbe007bd89278f550b866105e57d1fa020",
+  "errorsSha256": "3a69b1cd2a5ec2649da88731f4969167349452db38ff61412f0b5da345a9f31a",
+  "linker": "linker.v1",
+  "recordedAt": "2026-11-20",
+  "providers": {
+    "anthropic": {
+      "keyFieldAccuracy": 1,
+      "proposalPrecision": 1,
+      "proposalRecall": 1,
+      "jointActionAccuracy": 0.914601,
+      "targetAccuracy": 0.917443,
+      "dateAccuracy": 1,
+      "amountAccuracy": 1,
+      "negationAccuracy": 0.989247,
+      "conflictPrecision": 0.676471,
+      "conflictRecall": 0.958333,
+      "wrongDatesCaught": 1,
+      "wrongAmountsCaught": 1,
+      "paraphrasedTargetsRefused": 1,
+      "evidenceCoverage": 1,
+      "wrongAccountRate": 0.00316,
+      "wrongAccountBound": 0.009912,
+      "biasedOnlyWrongAccountRate": 0.0701,
+      "flagShare": 0.458056,
+      "expectedFlags": {
+        "negation": 1,
+        "new_entity": 0.947368,
+        "witness_conflict": 0.958333,
+        "ambiguous_target": 1,
+        "implied_target": 1
+      },
+      "proposals": 751,
+      "decided": 633
+    },
+    "groq": {
+      "keyFieldAccuracy": 1,
+      "proposalPrecision": 1,
+      "proposalRecall": 1,
+      "jointActionAccuracy": 0.914601,
+      "targetAccuracy": 0.917443,
+      "dateAccuracy": 1,
+      "amountAccuracy": 1,
+      "negationAccuracy": 0.989247,
+      "conflictPrecision": 0.676471,
+      "conflictRecall": 0.958333,
+      "wrongDatesCaught": 1,
+      "wrongAmountsCaught": 1,
+      "paraphrasedTargetsRefused": 1,
+      "evidenceCoverage": 1,
+      "wrongAccountRate": 0.00316,
+      "wrongAccountBound": 0.009912,
+      "biasedOnlyWrongAccountRate": 0.0701,
+      "flagShare": 0.458056,
+      "expectedFlags": {
+        "negation": 1,
+        "new_entity": 0.947368,
+        "witness_conflict": 0.958333,
+        "ambiguous_target": 1,
+        "implied_target": 1
+      },
+      "proposals": 751,
+      "decided": 633
+    }
+  }
+}

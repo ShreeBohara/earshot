@@ -1,0 +1,122 @@
+{
+  "version": 2,
+  "id": "d116",
+  "title": "Zenyth Packaging: a note on Zenyth Packaging, a note on Stephen Clarke, a task for Zenyth",
+  "voice": "af_jessica",
+  "callTime": "2026-12-28T21:00:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_002",
+  "noise": {
+    "kind": "street",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Met with the team at Zenyth Packaging, and the budget is approved for next quarter.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_002",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenyth Packaging",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The budget is approved for next quarter.",
+              "quote": "the budget is approved for next quarter"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "Spoke, uh, spoke with Stephen Clarke from CPS today. Their IT team flagged the single sign-on setup.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_124",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Stephen Clarke",
+            "kind": "contact",
+            "company": "CPS"
+          },
+          "fields": {
+            "body": {
+              "value": "Their IT team flagged the single sign-on setup.",
+              "quote": "Their IT team flagged the single sign-on setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Put, you know, together the implementation timeline for Zenyth by February 3rd, actually February 4th.",
+      "tags": [
+        "self_correction",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_002",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenyth",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Put together the implementation timeline for Zenyth",
+              "quote": "the implementation timeline for Zenyth"
+            },
+            "dueDate": {
+              "value": "2027-02-04",
+              "quote": "February 4th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2500,
+      "text": "Update from Zenyth Packaging: support tickets have dropped since the upgrade.",
+      "heard": {
+        "unbiased": "Update from Zenieth Packaging: support tickets have dropped since the upgrade."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_002",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Zenyth Packaging",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "Support tickets have dropped since the upgrade.",
+              "quote": "support tickets have dropped since the upgrade"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

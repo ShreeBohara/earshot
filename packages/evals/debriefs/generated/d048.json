@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "id": "d048",
+  "title": "Atlas Freight: the Atlas Freight pilot program deal, a meeting with Harborview Hotels, and more",
+  "voice": "bm_fable",
+  "callTime": "2027-02-24T13:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_005",
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "For, you know, the Atlas Freight pilot program deal, change this, um, the amount to one hundred ninety-five thousand and the stage to closed lost.",
+      "heard": {
+        "biased": "For, you know, the Atlas pilot program deal, change this, um, the amount to 195,000 and the stage to closed lost.",
+        "unbiased": "For, you know, the Atlas Freight pilot program deal, change this, um, the amount to 195,000 and the stage to closed lost."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_013",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atlas pilot program",
+            "kind": "deal",
+            "company": "Atlas"
+          },
+          "fields": {
+            "amount": {
+              "value": 195000,
+              "quote": "195,000"
+            },
+            "stage": {
+              "value": "closed lost",
+              "quote": "closed lost"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Meeting with the team at Harborview Hotels tomorrow about the reporting setup.",
+      "heard": {
+        "biased": "Meeting with the team at Harborview Health tomorrow about the reporting setup."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Harborview Health",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "date": {
+              "value": "2027-02-25",
+              "quote": "tomorrow"
+            },
+            "title": {
+              "value": "Meeting with Harborview Health about the reporting setup",
+              "quote": "the reporting setup"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Booked, uh, the executive briefing with, um, Signe Lindqvist on Friday.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_041",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Signe Lindqvist",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Executive briefing with Signe Lindqvist",
+              "quote": "the executive briefing"
+            },
+            "date": {
+              "value": "2027-02-26",
+              "quote": "on Friday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2600,
+      "text": "Bump the Atlas Freight pilot deal to one hundred fifty-five thousand, sorry, one hundred sixty-five thousand dollars.",
+      "heard": {
+        "biased": "Bump the Atlas pilot deal to $155,000, sorry, $165,000.",
+        "unbiased": "Bump the Atlas Freight pilot deal to $155,000, sorry, $165,000."
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_013",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Atlas pilot",
+            "kind": "deal",
+            "company": "Atlas"
+          },
+          "fields": {
+            "amount": {
+              "value": 165000,
+              "quote": "$165,000"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

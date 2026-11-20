@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "id": "d089",
+  "title": "Knight Security: a note on Knight, a new contact, Yasmin Haddad, a task for Idris Tanaka, and more",
+  "voice": "am_adam",
+  "callTime": "2027-02-10T17:40:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_028",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Just left Knight. The budget is approved for next quarter.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_028",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Knight",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "The budget is approved for next quarter.",
+              "quote": "The budget is approved for next quarter"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Yasmin Haddad's email is yasmin.haddad@knight-security.example.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Yasmin Haddad",
+              "quote": "Yasmin Haddad"
+            },
+            "email": {
+              "value": "yasmin.haddad@knight-security.example",
+              "quote": "yasmin.haddad@knight-security.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1000,
+      "text": "Can you add a task to to get Idris Tanaka the integration guide by Monday?",
+      "heard": {
+        "unbiased": "Can you add a task to to get Idris Tanoka the integration guide by Monday?"
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_105",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Idris Tanaka",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get Idris Tanaka the integration guide",
+              "quote": "get Idris Tanaka the integration guide"
+            },
+            "dueDate": {
+              "value": "2027-02-15",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "I'm not touching the, um, Nite Security Group account today.",
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1600,
+      "text": "I said we'd, we'd get back to Coastal Paper Systems on the onboarding plan.",
+      "heard": {
+        "biased": "I said we'd, we'd get back to Coastal Power Systems on the onboarding plan.",
+        "unbiased": "I said we'd, we'd get back to Coastal Paber Systems on the onboarding plan."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "named": {
+            "quote": "Coastal Power Systems",
+            "kind": "company"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "text": {
+              "value": "Get back to Coastal Power Systems on the onboarding plan",
+              "quote": "get back to Coastal Power Systems on the onboarding plan"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

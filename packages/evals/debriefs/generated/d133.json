@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "id": "d133",
+  "title": "Thistle Software: a note on Thistle Software, a new contact, Alan Fisher",
+  "voice": "af_nova",
+  "callTime": "2026-11-25T19:10:00.000Z",
+  "timeZone": "America/Los_Angeles",
+  "focusEntityId": "co_023",
+  "noise": {
+    "kind": "car",
+    "snrDb": 20
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Heads up, um, heads up on, um, Thistle Software: they're happy with the pricing but want better payment terms.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_023",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Thistle Software",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're happy with the pricing but want better payment terms.",
+              "quote": "they're happy with the pricing but want better payment terms"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Alan Fisher is the new procurement lead at Thistle Software.",
+      "heard": {
+        "biased": "Alan Foster is the new procurement lead at Thistle Software.",
+        "unbiased": "Allan Fisher is the new procurement lead at Thistle Sophtware."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "ask"
+          },
+          "expectFlags": [
+            "witness_conflict"
+          ],
+          "fields": {
+            "name": {
+              "value": "Alan Foster",
+              "quote": "Alan Foster"
+            },
+            "title": {
+              "value": "procurement lead",
+              "quote": "procurement lead"
+            },
+            "company": {
+              "value": "Thistle Software",
+              "quote": "Thistle Software"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Okay, that's everything on Thistle Software.",
+      "expect": []
+    }
+  ]
+}

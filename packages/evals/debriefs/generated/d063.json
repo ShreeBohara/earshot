@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "id": "d063",
+  "title": "Quarry Lane Media: a note on Quarry Lane Media, a meeting with Quarry Lane Media, a task for the account",
+  "voice": "af_jessica",
+  "speed": 1.1,
+  "callTime": "2027-02-15T09:30:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_020",
+  "noise": {
+    "kind": "street",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 2000,
+      "text": "Just left, um, Quarry Lane Media. They loved the new reporting dashboard.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Quarry Lane Media",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They loved the new reporting dashboard.",
+              "quote": "They loved the new reporting dashboard"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "Meeting with the team at, at Quarry Lane Media on Thursday at 11 am about the legal review.",
+      "heard": {
+        "unbiased": "Meeting with the team at, at Quary Lane Media on Thursday at 11 am about the legal review."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Quarry Lane Media",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2027-02-18",
+              "quote": "on Thursday"
+            },
+            "time": {
+              "value": "11:00",
+              "quote": "at 11 am"
+            },
+            "title": {
+              "value": "Meeting with Quarry Lane Media about the legal review",
+              "quote": "the legal review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "I need with, uh, to put together the redlined contract a week from today.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_020",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Put together the redlined contract",
+              "quote": "put together the redlined contract"
+            },
+            "dueDate": {
+              "value": "2027-02-22",
+              "quote": "a week from today"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

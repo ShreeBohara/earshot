@@ -1,0 +1,131 @@
+{
+  "version": 2,
+  "id": "d188",
+  "title": "Summit Ridge Medical: a note on Summit Ridge Medical, a new contact, Nkechi Obi, Sunita Varga's details, and more",
+  "voice": "af_aoede",
+  "callTime": "2027-01-28T23:30:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_045",
+  "turns": [
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Just left Summit Ridge Medical. They want the integration live before the holidays.",
+      "heard": {
+        "unbiased": "Just left Summit Redge Medical. They want the integration live before the holidays."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_045",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Ridge Medical",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They want the integration live before the holidays.",
+              "quote": "They want the integration live before the holidays"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "New, you know, contact: Nkechi Obi, director of engineering, phone 555-0101.",
+      "heard": {
+        "biased": "New, you know, contact: Nkekhi Obi, director of engineering, phone 555-0101."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "name": {
+              "value": "Nkekhi Obi",
+              "quote": "Nkekhi Obi"
+            },
+            "title": {
+              "value": "director of engineering",
+              "quote": "director of engineering"
+            },
+            "phone": {
+              "value": "555-0101",
+              "quote": "555-0101"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1800,
+      "text": "Sunita Varga is now facilities manager.",
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": "ct_096",
+            "decision": "linked"
+          },
+          "fields": {
+            "name": {
+              "value": "Sunita Varga",
+              "quote": "Sunita Varga"
+            },
+            "title": {
+              "value": "facilities manager",
+              "quote": "facilities manager"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Let's get the product roadmap deck over to Summit Ridge Medical on Monday. Scratch that, Tuesday.",
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_045",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Summit Ridge Medical",
+            "kind": "company"
+          },
+          "fields": {
+            "title": {
+              "value": "Get the product roadmap deck over to Summit Ridge Medical",
+              "quote": "get the product roadmap deck over to Summit Ridge Medical"
+            },
+            "dueDate": {
+              "value": "2027-02-02",
+              "quote": "Tuesday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "That's it for Summit Ridge Medical today.",
+      "expect": []
+    }
+  ]
+}

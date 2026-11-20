@@ -1,0 +1,94 @@
+{
+  "version": 2,
+  "id": "d128",
+  "title": "Harborview Marine: a note on Muhammad Hassan, the Harborview Marine annual renewal deal, a task for the account",
+  "voice": "am_eric",
+  "callTime": "2027-01-22T09:30:00.000Z",
+  "timeZone": "Europe/London",
+  "focusEntityId": "co_046",
+  "noise": {
+    "kind": "car",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Update from Muhammad Hassan: they need their data to stay in the EU.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_143",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Muhammad Hassan",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "They need their data to stay in the EU.",
+              "quote": "they need their data to stay in the EU"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "The Harborview Marine annual renewal deal isn't at contract sent yet, it's still at presentation scheduled.",
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_005",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Harborview Marine annual renewal",
+            "kind": "deal",
+            "company": "Harborview Marine"
+          },
+          "fields": {
+            "stage": {
+              "value": "presentation scheduled",
+              "quote": "presentation scheduled"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Book a follow-up call Tuesday, sorry, Wednesday.",
+      "tags": [
+        "self_correction"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "co_046",
+            "decision": "linked"
+          },
+          "expectFlags": [
+            "implied_target"
+          ],
+          "fields": {
+            "title": {
+              "value": "Book a follow-up call",
+              "quote": "Book a follow-up call"
+            },
+            "dueDate": {
+              "value": "2027-01-27",
+              "quote": "Wednesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

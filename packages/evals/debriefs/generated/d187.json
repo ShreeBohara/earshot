@@ -1,0 +1,106 @@
+{
+  "version": 2,
+  "id": "d187",
+  "title": "Quarry Lane Media: a meeting with Quarry, a promise to Quarry Lane Media, a task for Priya Nair",
+  "voice": "af_heart",
+  "speed": 1.1,
+  "callTime": "2026-11-30T13:40:00.000Z",
+  "timeZone": "America/New_York",
+  "noise": {
+    "kind": "cafe",
+    "snrDb": 15
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1200,
+      "text": "We're meeting Quarry Thursday at 10:15 am for the quarterly business review.",
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "co_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Quarry",
+            "kind": "company"
+          },
+          "fields": {
+            "date": {
+              "value": "2026-12-03",
+              "quote": "Thursday"
+            },
+            "time": {
+              "value": "10:15",
+              "quote": "at 10:15 am"
+            },
+            "title": {
+              "value": "Quarterly business review with Quarry",
+              "quote": "the quarterly business review"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 900,
+      "text": "We promised, you know, Quarry Lane Media a reference call with a similar customer by December 20th.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "co_020",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Quarry Lane Media",
+            "kind": "company"
+          },
+          "fields": {
+            "text": {
+              "value": "Set up a reference call for Quarry Lane Media with a similar customer",
+              "quote": "a reference call with a similar customer"
+            },
+            "dueDate": {
+              "value": "2026-12-20",
+              "quote": "by December 20th"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2400,
+      "text": "To, uh, do: review the legal review with Priya Nair from Quarry.",
+      "heard": {
+        "unbiased": "To, uh, do: review the legal review with Priya Nair from Quorry."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_118",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Priya Nair",
+            "kind": "contact",
+            "company": "Quarry"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the legal review with Priya Nair",
+              "quote": "review the legal review with Priya Nair from Quarry"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

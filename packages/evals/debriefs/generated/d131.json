@@ -1,0 +1,129 @@
+{
+  "version": 2,
+  "id": "d131",
+  "title": "Right Fabrication: the Right Fabrication starter plan deal, a task for Teodor Ferreira, and more",
+  "voice": "bm_lewis",
+  "callTime": "2026-12-18T14:00:00.000Z",
+  "timeZone": "America/New_York",
+  "focusEntityId": "co_026",
+  "turns": [
+    {
+      "pauseBeforeMs": 1900,
+      "text": "Can you set the Right Fabrication starter plan deal to fifty-five thousand and move move the close to January 24th? Next step is to send Teodor Ferreira the implementation timeline by tomorrow.",
+      "heard": {
+        "biased": "Can you set the Rite Fabrication starter plan deal to 55,000 and move move the close to January 24th? Next step is to send Teodor Ferreira the implementation timeline by tomorrow.",
+        "unbiased": "Can you set the Right Fabrication starter plan deal to 55,000 and move move the close to January 24th? Next step is to send Teodol Ferreira the implementation timeline by tomorrow."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_011",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Rite Fabrication starter plan",
+            "kind": "deal",
+            "company": "Rite Fabrication"
+          },
+          "fields": {
+            "amount": {
+              "value": 55000,
+              "quote": "55,000"
+            },
+            "closeDate": {
+              "value": "2027-01-24",
+              "quote": "January 24th"
+            }
+          }
+        },
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Ferreira",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Send Teodor Ferreira the implementation timeline",
+              "quote": "send Teodor Ferreira the implementation timeline"
+            },
+            "dueDate": {
+              "value": "2026-12-19",
+              "quote": "by tomorrow"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Right Fabrication has a new head of operations, Zoe Parker, and the email is zoe.parker@right-fabrication.example.",
+      "heard": {
+        "biased": "Right Fabrication has a new head of operations, Zoey Parker, and the email is zoe.parker@right-fabrication.example.",
+        "unbiased": "Right Fabrikation has a new head of operations, Zoe Parker, and the email is zoe.parker@right-fabrication.example."
+      },
+      "expect": [
+        {
+          "type": "contact",
+          "target": {
+            "id": null,
+            "decision": "new"
+          },
+          "expectFlags": [
+            "new_entity"
+          ],
+          "fields": {
+            "company": {
+              "value": "Right Fabrication",
+              "quote": "Right Fabrication"
+            },
+            "title": {
+              "value": "head of operations",
+              "quote": "head of operations"
+            },
+            "name": {
+              "value": "Zoey Parker",
+              "quote": "Zoey Parker"
+            },
+            "email": {
+              "value": "zoe.parker@right-fabrication.example",
+              "quote": "zoe.parker@right-fabrication.example"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1100,
+      "text": "Talked to Teodor Ferreira at Right about next steps, and they're comparing us with two other vendors.",
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_012",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Teodor Ferreira",
+            "kind": "contact",
+            "company": "Right"
+          },
+          "fields": {
+            "body": {
+              "value": "They're comparing us with two other vendors.",
+              "quote": "they're comparing us with two other vendors"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

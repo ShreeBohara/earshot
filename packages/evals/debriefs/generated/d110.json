@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "id": "d110",
+  "title": "Rite Fabrication: a note on Rite, a note on Marie Allen, a promise to Sunita Yilmaz",
+  "voice": "af_sarah",
+  "callTime": "2027-02-26T15:20:00.000Z",
+  "timeZone": "America/Chicago",
+  "focusEntityId": "co_035",
+  "turns": [
+    {
+      "pauseBeforeMs": 1600,
+      "text": "Got off the phone with Rite, and they're consolidating vendors next year.",
+      "heard": {
+        "biased": "Got off the phone with Right, and they're consolidating vendors next year.",
+        "unbiased": "Got off the phone with Right, and they're consolidating vendors next year."
+      },
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "co_035",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Right",
+            "kind": "company"
+          },
+          "fields": {
+            "body": {
+              "value": "They're consolidating vendors next year.",
+              "quote": "they're consolidating vendors next year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 2300,
+      "text": "Nothing changes for Wright Fabrication today.",
+      "tags": [
+        "negation"
+      ],
+      "expect": []
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "For the the record, Marie Allen says the security review passed.",
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_004",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Marie Allen",
+            "kind": "contact"
+          },
+          "fields": {
+            "body": {
+              "value": "The security review passed.",
+              "quote": "the security review passed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1300,
+      "text": "We committed to getting Sunita Yilmaz the implementation timeline on Tuesday.",
+      "expect": [
+        {
+          "type": "commitment",
+          "target": {
+            "id": "ct_076",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Sunita Yilmaz",
+            "kind": "contact"
+          },
+          "fields": {
+            "text": {
+              "value": "Get Sunita Yilmaz the implementation timeline",
+              "quote": "getting Sunita Yilmaz the implementation timeline"
+            },
+            "dueDate": {
+              "value": "2027-03-02",
+              "quote": "on Tuesday"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

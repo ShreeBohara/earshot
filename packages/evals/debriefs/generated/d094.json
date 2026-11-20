@@ -1,0 +1,177 @@
+{
+  "version": 2,
+  "id": "d094",
+  "title": "Wright Fabrication: a task for Elena Moreau, a meeting with Elena Moreau, a note on Nadia Abara, and more",
+  "voice": "bm_lewis",
+  "callTime": "2026-12-15T15:50:00.000Z",
+  "timeZone": "America/Chicago",
+  "noise": {
+    "kind": "car",
+    "snrDb": 5
+  },
+  "turns": [
+    {
+      "pauseBeforeMs": 1800,
+      "text": "To do: review the onboarding plan with Elena Moreau from Wright Fabrication two weeks from today.",
+      "heard": {
+        "biased": "To do: review the onboarding plan with Elena Moreau from Rite Fabrication two weeks from today."
+      },
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_069",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Elena Moreau",
+            "kind": "contact",
+            "company": "Rite Fabrication"
+          },
+          "fields": {
+            "title": {
+              "value": "Review the onboarding plan with Elena Moreau",
+              "quote": "review the onboarding plan with Elena Moreau from Rite Fabrication"
+            },
+            "dueDate": {
+              "value": "2026-12-29",
+              "quote": "two weeks from today"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1200,
+      "text": "Let's get a call going with Elena Moreau over at Wright Fabrication Thursday at 4:30 pm.",
+      "heard": {
+        "biased": "Let's get a call going with Elena Moriau over at Right Fabrication Thursday at 4:30 pm."
+      },
+      "expect": [
+        {
+          "type": "meeting",
+          "target": {
+            "id": "ct_069",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Elena Moriau",
+            "kind": "contact",
+            "company": "Right Fabrication"
+          },
+          "fields": {
+            "title": {
+              "value": "Call with Elena Moriau",
+              "quote": "a call"
+            },
+            "date": {
+              "value": "2026-12-17",
+              "quote": "Thursday"
+            },
+            "time": {
+              "value": "16:30",
+              "quote": "at 4:30 pm"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1400,
+      "text": "Talked to Nadia Abara on, um, at Wright Fabrication about next steps, and the pilot isn't covering the warehouse sites.",
+      "heard": {
+        "biased": "Talked to Nadia Apara on, um, at Rite Fabrication about next steps, and the pilot isn't covering the warehouse sites."
+      },
+      "tags": [
+        "negation",
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "note",
+          "target": {
+            "id": "ct_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nadia Apara",
+            "kind": "contact",
+            "company": "Rite Fabrication"
+          },
+          "expectFlags": [
+            "negation"
+          ],
+          "fields": {
+            "body": {
+              "value": "The pilot isn't covering the warehouse sites.",
+              "quote": "the pilot isn't covering the warehouse sites"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1700,
+      "text": "Let's, let's, you know, get a couple of customer references over to Nadia Abara by Monday.",
+      "heard": {
+        "unbiased": "Let's, let's, you know, get a couple of customer references over to Nadia Abarra by Monday."
+      },
+      "tags": [
+        "disfluency"
+      ],
+      "expect": [
+        {
+          "type": "task",
+          "target": {
+            "id": "ct_025",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Nadia Abara",
+            "kind": "contact"
+          },
+          "fields": {
+            "title": {
+              "value": "Get a couple of customer references over to Nadia Abara",
+              "quote": "get a couple of customer references over to Nadia Abara"
+            },
+            "dueDate": {
+              "value": "2026-12-21",
+              "quote": "by Monday"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "pauseBeforeMs": 1900,
+      "text": "The Wright site rollout deal isn't at contract sent yet, it's still at decision maker bought in.",
+      "heard": {
+        "biased": "The Right site rollout deal isn't at contract sent yet, it's still at decision maker bought in."
+      },
+      "tags": [
+        "negation"
+      ],
+      "expect": [
+        {
+          "type": "deal_update",
+          "target": {
+            "id": "deal_018",
+            "decision": "linked"
+          },
+          "named": {
+            "quote": "Right site rollout",
+            "kind": "deal",
+            "company": "Right"
+          },
+          "fields": {
+            "stage": {
+              "value": "decision maker bought in",
+              "quote": "decision maker bought in"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

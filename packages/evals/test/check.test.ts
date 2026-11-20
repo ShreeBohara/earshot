@@ -161,9 +161,9 @@ describe("turnProblems", () => {
       outcome: turn.expect.length > 0 ? "proposals" : "nothing_to_propose",
       proposals: turn.expect.map((expected) => ({
         type: expected.type,
-        targetEntityId: expectedDecision(expected) === "linked" ? expected.target : null,
+        targetEntityId: expectedDecision(expected) === "linked" ? expected.target.id : null,
         decision: expectedDecision(expected),
-        candidates: expected.target === null ? [] : [expected.target],
+        candidates: expected.target.id === null ? [] : [expected.target.id],
         fields: Object.fromEntries(
           Object.entries(expected.fields).map(([name, field]) => [name, { value: field?.value }]),
         ),
@@ -177,7 +177,7 @@ describe("turnProblems", () => {
   const exact = { exactTranscript: true };
 
   it("maps a live session's database ids to the scripts' dataset ids before comparing targets", () => {
-    const targeted = script.turns.find((turn) => turn.expect.some((e) => e.target !== null));
+    const targeted = script.turns.find((turn) => turn.expect.some((e) => e.target.id !== null));
     if (!targeted) throw new Error("d001 has no targeted proposal");
     // A live session's entities: the same records, with crm_entities' random UUIDs as ids.
     const live = DEMO_SESSION_ENTITIES.map((entity, n) => ({ ...entity, id: uuid(5_000 + n) }));
