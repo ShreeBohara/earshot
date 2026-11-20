@@ -313,13 +313,17 @@ function trimTrailing(text: string): string {
  * acme dot com" is "dana.lee@acme.com") and no spaces or closing punctuation.
  */
 export function normalizeEmail(text: string): string {
+  // Whitespace runs collapse first, in one linear pass, and the spoken forms then match single
+  // spaces. `/\s+at\s+/` retried from every position of a long whitespace run: quadratic time
+  // (CodeQL's js/polynomial-redos).
   const spoken = ` ${text.normalize("NFKC").toLowerCase().trim()} `
+    .replace(/\s+/gu, " ")
     .replace(/^ mailto:/u, " ")
-    .replace(/\s+at\s+/gu, "@")
-    .replace(/\s+dot\s+/gu, ".")
-    .replace(/\s+underscore\s+/gu, "_")
-    .replace(/\s+(?:dash|hyphen)\s+/gu, "-")
-    .replace(/\s+/gu, "");
+    .replaceAll(" at ", "@")
+    .replaceAll(" dot ", ".")
+    .replaceAll(" underscore ", "_")
+    .replace(/ (?:dash|hyphen) /gu, "-")
+    .replaceAll(" ", "");
   return trimTrailing(spoken);
 }
 

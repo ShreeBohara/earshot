@@ -64,6 +64,13 @@ describe("names, emails, and phones: equal to the quote once normalized", () => 
 
   it("writes out a spoken email address", () => {
     expect(normalizeEmail("Dana dot Lee at Acme dot com.")).toBe("dana.lee@acme.com");
+    expect(normalizeEmail("mailto: sam  underscore  ray at  north - wind dash co dot io")).toBe(
+      "sam_ray@north-wind-co.io",
+    );
+    // Linear in the length of a whitespace run: `/\s+at\s+/` took 0.8 s on 40,000 spaces.
+    const started = performance.now();
+    expect(normalizeEmail(`a${" ".repeat(200_000)}x`)).toBe("ax");
+    expect(performance.now() - started).toBeLessThan(500);
     const said = "Her email is dana dot lee at acme dot com.";
     expect(check("email", "dana.lee@acme.com", said, "dana dot lee at acme dot com").verdict).toBe(
       "supported",
