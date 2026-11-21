@@ -35,6 +35,7 @@
     "pilot:analyze": "tsx scripts/pilot-analyze.ts",
     "pilot:gen": "tsx scripts/gen-pilot.ts",
     "recap:gen": "tsx scripts/gen-recap-cassettes.ts",
+    "recap:live": "tsx scripts/recap-live-check.ts",
     "smoke:select": "tsx scripts/select-smoke.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
