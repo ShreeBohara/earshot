@@ -167,8 +167,10 @@ export class FakeSessionServer {
   readonly received: ClientMessage[] = [];
   /** How many times each msgId's work was committed: always 1 if dedupe works. */
   readonly commits = new Map<string, number>();
-  /** Keys that arrived on `turn_end`, in order: the one place a key may go. */
+  /** Keys that arrived on `turn_end`, in order: one of the two places a key may go. */
   readonly turnKeys: string[] = [];
+  /** Keys that arrived on `end.recap` (Phase 5 WP10), in order: the other. */
+  readonly recapKeys: string[] = [];
   /** Messages the token bucket refused (only with a `rateClock`). */
   rateRefusals = 0;
 
@@ -310,6 +312,7 @@ export class FakeSessionServer {
         endedAt: new Date(this.#now()).toISOString(),
         costUsd: this.#costUsd,
       }).seq;
+      this.append("recap.created", this.#recap(null));
     }
     const sealed = this.append("session.sealed", {
       sealedAt: new Date(this.#now()).toISOString(),
@@ -670,6 +673,7 @@ export class FakeSessionServer {
   }
 
   #end(message: ClientMessageOf<"end">): void {
+    if (message.recap) this.recapKeys.push(message.recap.key);
     if (this.#answered(message.msgId) || this.#inflight.has(message.msgId)) return;
     if (this.#startedSeq === undefined) {
       this.#refuse(message.msgId, "not_started", true);
@@ -686,12 +690,55 @@ export class FakeSessionServer {
         { type: "session.ended", payload: { endedAt: message.endedAt, costUsd: this.#costUsd } },
       ]);
       this.#endedSeq = ended?.seq;
+      // As SessionDO does (Phase 5 WP10), the recap right after the end.
+      this.append("recap.created", this.#recap(message.recap ?? null));
     };
     // As SessionDO does, `end` waits for any turn still running.
     if (this.#held.length > 0) {
       this.#inflight.add(message.msgId);
       this.#held.push(run);
     } else run();
+  }
+
+  /**
+   * The fake's recap, as SessionDO writes one (Phase 5 WP10), without a model: skipped, `no_key`,
+   * with no request; skipped, `no_speech`, with nothing said; otherwise created, a headline quoting
+   * the first sentence of the first thing the rep said.
+   */
+  #recap(request: ClientMessageOf<"end">["recap"] | null): Record<string, unknown> {
+    const base = { recapId: this.#newId(), sentences: [], dropped: 0, lens: null };
+    if (!request) return { ...base, outcome: "skipped", reason: "no_key", llm: null };
+    const llm = { provider: request.llm.provider, model: request.llm.model };
+    const first = this.log.find(
+      (event) =>
+        event.type === "utterance.final" &&
+        event.payload.witness !== "unbiased" &&
+        String(event.payload.text).trim() !== "",
+    )?.payload as UtteranceFinalV2 | undefined;
+    if (!first) return { ...base, outcome: "skipped", reason: "no_speech", llm };
+    const end = first.text.search(/[.!?](\s|$)/u);
+    const quote = end > 0 ? first.text.slice(0, end) : first.text;
+    return {
+      ...base,
+      outcome: "created",
+      reason: null,
+      llm,
+      sentences: [
+        {
+          kind: "headline",
+          text: `${quote}.`,
+          evidence: [
+            {
+              utteranceId: first.utteranceId,
+              span: [0, quote.length],
+              audioMs: [first.startMs, first.endMs],
+              confidence: first.confidence,
+            },
+          ],
+          weakSupport: false,
+        },
+      ],
+    };
   }
 
   #review(message: ClientMessageOf<"review">): void {
