@@ -7,6 +7,7 @@ import { understandingMetrics } from "../understanding/metrics";
 import type { SmokeEstimate } from "./budget";
 import {
   baselineRates,
+  baselineRecapRates,
   SMOKE_BASELINE_FORMAT,
   SMOKE_BASELINE_RUNS,
   type SmokeBaseline,
@@ -16,6 +17,7 @@ import {
   smokeGateFailures,
   smokeSummary,
 } from "./gate";
+import { type SmokeRecapSummary, smokeRecapSummary } from "./recap";
 import { SMOKE_REPORT_VERSION, type SmokeReport, smokeAttempt } from "./report";
 import { LIVE_LABELS, runSmoke, type SmokeRun, type SmokeRunOptions, scoredRuns } from "./run";
 
@@ -44,6 +46,7 @@ function gateOf(run: SmokeRun, options: SmokeEvalOptions): SmokeFailure[] {
   const scored = scoredRuns(run);
   return smokeGateFailures({
     metrics: scored.length === 0 ? null : understandingMetrics(scored, LIVE_LABELS),
+    recap: smokeRecapSummary(run.recaps),
     complete: run.complete,
     stopDetail: run.stop?.detail ?? null,
     baseline: options.baseline,
@@ -93,6 +96,8 @@ export async function smokeEval(options: SmokeEvalOptions): Promise<SmokeEvalRes
     baselineFile: options.baselineFile,
     estimate: {
       turns: estimate.turns,
+      recaps: estimate.recaps,
+      recapUsd: estimate.recapUsd,
       promptCache: estimate.promptCache,
       inputTokens: estimate.inputTokens,
       cachedInputTokens: estimate.cachedInputTokens,
@@ -105,8 +110,8 @@ export async function smokeEval(options: SmokeEvalOptions): Promise<SmokeEvalRes
     baseline: baseline
       ? {
           recordedAt: baseline.recordedAt,
-          median: { ...baseline.median },
-          spread: { ...baseline.spread },
+          median: { ...baseline.median, recapDropRate: baseline.recapMedian.dropRate },
+          spread: { ...baseline.spread, recapDropRate: baseline.recapSpread.dropRate },
         }
       : null,
     attempts: runs.map((run, index) => smokeAttempt(run, gates[index] ?? [])),
@@ -155,6 +160,12 @@ export async function recordSmokeBaseline(
   }
   const summaries = runs.map((run) => smokeSummary(understandingMetrics(run.runs, LIVE_LABELS)));
   const { median, spread } = baselineRates(summaries);
+  const recapRuns = runs.map((run) => {
+    const summary = smokeRecapSummary(run.recaps);
+    if (!summary) throw new Error("a baseline run wrote no recap; no baseline was written");
+    return summary;
+  }) as SmokeRecapSummary[];
+  const recapRates = baselineRecapRates(recapRuns);
   const { identity } = options;
   return {
     runs,
@@ -171,6 +182,9 @@ export async function recordSmokeBaseline(
       spentUsd: runs.map((run) => run.spentUsd),
       median,
       spread,
+      recapRuns,
+      recapMedian: recapRates.median,
+      recapSpread: recapRates.spread,
     },
   };
 }

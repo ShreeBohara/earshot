@@ -296,6 +296,12 @@ describe("the eval-smoke workflow", () => {
       "packages/core/src/contracts/session-protocol.ts",
       "packages/demo-crm/src/companies.ts",
       "packages/voice/src/prices.ts",
+      // The recap each script gets (Phase 5 WP10): its prompt, lens files, scoring, and cassettes.
+      "packages/agent/src/recap/prompt.ts",
+      "packages/agent/src/recap/lenses/meddic.json",
+      "packages/evals/src/smoke/recap.ts",
+      "packages/evals/src/recap/cassettes.ts",
+      "packages/evals/scripts/recap-io.ts",
     ]) {
       expect(pattern.test(path), path).toBe(true);
     }

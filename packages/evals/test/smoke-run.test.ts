@@ -6,14 +6,17 @@
 import { findLlmPrice, LLM_PRICES, type LlmPriceRow, llmCostUsd, ZERO_USAGE } from "@earshot/agent";
 import { createCassetteFetch, SCENARIO_API_KEY } from "@earshot/agent/testing";
 import { describe, expect, it } from "vitest";
+import { readRecapCassettes } from "../scripts/recap-io";
 import { readSmokeSet } from "../scripts/smoke-io";
 import { readErrorLabels, readUnderstandingCassettes } from "../scripts/understanding-io";
+import { runRecapScript } from "../src/recap";
 import {
   createPacer,
   LIVE_LABELS,
   runSmoke,
   type SmokeRunOptions,
   scoredRuns,
+  smokeRecapSummary,
   smokeScripts,
   smokeUtterances,
   spreadWords,
@@ -25,7 +28,7 @@ import {
   understandingDrafts,
   understandingMetrics,
 } from "../src/understanding";
-import { instantClock, perfectDrafts, scriptedAnthropic } from "./smoke-helpers";
+import { instantClock, isRecapRequest, perfectDrafts, scriptedAnthropic } from "./smoke-helpers";
 
 const HAIKU = findLlmPrice(LLM_PRICES, "anthropic", "claude-haiku-5-5") as LlmPriceRow;
 const SET = smokeScripts(readSmokeSet(), ALL_DEBRIEFS);
@@ -79,14 +82,36 @@ describe("runSmoke on the $0 cassettes", () => {
   it("scores the drafts the model returned exactly as the understanding eval scores its cassettes", async () => {
     const labels = readErrorLabels();
     const cassettes = readUnderstandingCassettes().anthropic;
+    const recaps = readRecapCassettes().anthropic;
     const run = await runSmoke(
       options({
         fetchFor: (script) =>
           createCassetteFetch(cassettes.cassettes[script.id] as never) as typeof globalThis.fetch,
+        // The recap's request is the recap eval's: its committed cassettes answer it exactly.
+        recapFetchFor: (script) =>
+          createCassetteFetch(recaps.cassettes[script.id] as never) as typeof globalThis.fetch,
       }),
     );
     expect(run.complete).toBe(true);
     expect(run.stop).toBeNull();
+    expect(run.recaps.map((recap) => recap.script)).toEqual(FEW.map((script) => script.id));
+    for (const { script, result } of run.recaps) {
+      const offline = await runRecapScript(
+        "anthropic",
+        FEW.find((candidate) => candidate.id === script) as (typeof FEW)[number],
+        recaps.cassettes[script] as never,
+      );
+      // The same sentences and spans; only the audio windows differ, since the live run's
+      // transcript carries word timings and the $0 eval's doesn't.
+      const shape = (sentences: typeof result.recap.sentences) =>
+        sentences.map((sentence) => ({
+          kind: sentence.kind,
+          text: sentence.text,
+          spans: sentence.evidence.map((evidence) => [evidence.utteranceId, evidence.span]),
+        }));
+      expect(shape(result.recap.sentences), script).toEqual(shape(offline.result.recap.sentences));
+      expect(result.recap.dropped).toBe(offline.result.recap.dropped);
+    }
     for (const script of run.runs) {
       script.turns.forEach((turn, index) => {
         expect(turn.drafts, `${script.script.id} turn ${index + 1}`).toEqual(
@@ -115,14 +140,22 @@ describe("runSmoke against a scripted model", () => {
     const pacer = createPacer({ now: clock.now, sleep: clock.sleep });
     const run = await runSmoke(options({ fetchFor: model.fetchFor, pacer }));
     const turns = FEW.reduce((n, script) => n + script.turns.length, 0);
+    // Each script's turns, then its recap (Phase 5 WP10): one more request each.
+    const calls = turns + FEW.length;
     expect(run.complete).toBe(true);
-    expect(model.requests).toHaveLength(turns);
-    expect(run.requests).toBe(turns);
-    expect(pacer.started).toBe(turns);
-    expect(run.calls).toBe(turns);
+    expect(model.requests).toHaveLength(calls);
+    expect(model.requests.filter(isRecapRequest)).toHaveLength(FEW.length);
+    expect(run.requests).toBe(calls);
+    expect(pacer.started).toBe(calls);
+    expect(run.calls).toBe(calls);
     const perCall = llmCostUsd({ ...ZERO_USAGE, inputTokens: 6_500, outputTokens: 250 }, HAIKU);
-    expect(run.spentUsd).toBeCloseTo(perCall * turns, 9);
-    expect(run.usage.inputTokens).toBe(6_500 * turns);
+    expect(run.spentUsd).toBeCloseTo(perCall * calls, 9);
+    expect(run.usage.inputTokens).toBe(6_500 * calls);
+    // The ground truth's recaps: every sentence kept, with evidence, and a headline each.
+    const recap = smokeRecapSummary(run.recaps);
+    expect(recap).toMatchObject({ recaps: FEW.length, created: FEW.length, dropRate: 0 });
+    expect(recap?.evidenceCoverage).toBe(1);
+    expect(recap?.headlines).toBe(FEW.length);
     expect(run.outcomes.proposals ?? 0).toBeGreaterThan(0);
     // A perfect model scores perfectly on what the drafts decide.
     const metrics = understandingMetrics(scoredRuns(run), LIVE_LABELS);
@@ -138,6 +171,11 @@ describe("runSmoke against a scripted model", () => {
     );
     for (const body of model.requests) {
       const tools = body.tools as { cache_control?: unknown }[];
+      if (isRecapRequest(body)) {
+        // The recap is one request per script: nothing to cache across (P5 §5).
+        expect(JSON.stringify(body)).not.toContain("cache_control");
+        continue;
+      }
       const system = body.system as { cache_control?: unknown }[];
       expect(tools[0]?.cache_control).toEqual({ type: "ephemeral" });
       expect(system[0]?.cache_control).toEqual({ type: "ephemeral" });

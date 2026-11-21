@@ -20,6 +20,7 @@ import {
   createBudgetMeter,
   estimateSmokeSpend,
   parseSmokeBudget,
+  recapTokens,
   SMOKE_ESTIMATE,
   smokeScripts,
   turnTokens,
@@ -68,6 +69,21 @@ describe("turnTokens", () => {
 
 describe("estimateSmokeSpend", () => {
   const two = SET.slice(0, 2);
+  /** Each script's recap (Phase 5 WP10): one uncached request, plus gpt-oss's reasoning on Groq. */
+  const recapsUsd = (price: LlmPriceRow) =>
+    two.reduce((sum, script) => {
+      const r = recapTokens(script);
+      return (
+        sum +
+        llmCostUsd(
+          usage({
+            uncached: r.input,
+            output: r.output + SMOKE_ESTIMATE.reasoningTokens[price.provider],
+          }),
+          price,
+        )
+      );
+    }, 0);
 
   it("prices every turn uncached without the cache, then adds a quarter", () => {
     let expected = 0;
@@ -80,14 +96,18 @@ describe("estimateSmokeSpend", () => {
         );
       });
     }
+    const recaps = recapsUsd(HAIKU);
+    expected += recaps;
     const estimate = estimateSmokeSpend(two, HAIKU, { promptCache: false });
     expect(estimate.turns).toBe(two.reduce((n, script) => n + script.turns.length, 0));
+    expect(estimate.recaps).toBe(2);
+    expect(estimate.recapUsd).toBeCloseTo(recaps, 6);
     expect(estimate.cachedInputTokens).toBe(0);
     expect(estimate.cacheWriteTokens).toBe(0);
     expect(estimate.usd).toBeCloseTo(expected, 6);
     expect(estimate.totalUsd).toBeCloseTo(expected * 1.25, 6);
     expect(estimate.uncachedTotalUsd).toBe(estimate.totalUsd);
-    expect(estimate.perCallUsd).toBeCloseTo((expected * 1.25) / estimate.turns, 6);
+    expect(estimate.perCallUsd).toBeCloseTo((expected * 1.25) / (estimate.turns + 2), 6);
   });
 
   it("follows the cache plan: the run writes the tool once, each script writes its system prompt once, and the rest is read", () => {
@@ -109,6 +129,8 @@ describe("estimateSmokeSpend", () => {
         );
       });
     });
+    // Recaps are never cached: the same price either way.
+    expected += recapsUsd(HAIKU);
     const estimate = estimateSmokeSpend(two, HAIKU, { promptCache: true });
     expect(estimate.promptCache).toBe(true);
     expect(estimate.cachedInputTokens).toBe(reads);
@@ -126,7 +148,7 @@ describe("estimateSmokeSpend", () => {
     expect(estimate.cachedInputTokens).toBe(0);
     const haiku = estimateSmokeSpend(two, HAIKU, { promptCache: false });
     expect(estimate.outputTokens - haiku.outputTokens).toBe(
-      SMOKE_ESTIMATE.reasoningTokens.groq * estimate.turns,
+      SMOKE_ESTIMATE.reasoningTokens.groq * (estimate.turns + estimate.recaps),
     );
   });
 
@@ -139,7 +161,21 @@ describe("estimateSmokeSpend", () => {
     // The v2 tool schema makes an uncached request about 6,500 tokens, not the spec's 2,000.
     const uncached = estimateSmokeSpend(SET, HAIKU, { promptCache: false });
     expect(uncached.totalUsd).toBeGreaterThan(0.1);
-    expect(uncached.inputTokens / uncached.turns).toBeGreaterThan(5_000);
+    expect(uncached.inputTokens / (uncached.turns + uncached.recaps)).toBeGreaterThan(5_000);
+  });
+
+  it("adds one recap per script, about $0.0004–0.0013 each (spec §4.10), never cached", () => {
+    const cached = estimateSmokeSpend(SET, HAIKU, { promptCache: true });
+    expect(cached.recaps).toBe(SET.length);
+    const perRecap = cached.recapUsd / cached.recaps;
+    expect(perRecap).toBeGreaterThan(0.0001);
+    expect(perRecap).toBeLessThan(0.0013);
+    expect(cached.recapUsd).toBeCloseTo(
+      estimateSmokeSpend(SET, HAIKU, { promptCache: false }).recapUsd,
+      9,
+    );
+    const groq = estimateSmokeSpend(SET, GPT_OSS, { promptCache: false });
+    expect(groq.recapUsd / groq.recaps).toBeLessThan(0.0013);
   });
 });
 

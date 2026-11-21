@@ -16,9 +16,11 @@ import {
   SmokeSummary,
   smokeSummary,
 } from "./gate";
+import { allowedRecapRise, SmokeRecapSummary, smokeRecapSummary } from "./recap";
 import { LIVE_LABELS, type SmokeRun, scoredRuns } from "./run";
 
-export const SMOKE_REPORT_VERSION = 1;
+/** 2 from Phase 5 WP10: each attempt's recap numbers, and the recaps in the estimate. */
+export const SMOKE_REPORT_VERSION = 2;
 
 const Count = z.int().nonnegative();
 const Usd = z.number().nonnegative();
@@ -61,6 +63,8 @@ const Attempt = z.strictObject({
   durationMs: Count,
   /** The scored scripts' numbers; null when none could be scored. */
   summary: SmokeSummary.nullable(),
+  /** The recaps' numbers (Phase 5 WP10); null when the run wrote none. */
+  recap: SmokeRecapSummary.nullable(),
   scripts: z.array(ScriptResult),
   gate: z.array(z.strictObject({ kind: z.string(), message: z.string() })),
 });
@@ -82,6 +86,8 @@ export const SmokeReport = z.strictObject({
   baselineFile: z.string(),
   estimate: z.strictObject({
     turns: Count,
+    recaps: Count,
+    recapUsd: Usd,
     promptCache: z.boolean(),
     inputTokens: Count,
     cachedInputTokens: Count,
@@ -122,6 +128,7 @@ export function smokeAttempt(run: SmokeRun, gate: readonly SmokeFailure[]): Smok
     failures: { ...run.failures },
     durationMs: run.durationMs,
     summary: metrics === null ? null : smokeSummary(metrics),
+    recap: smokeRecapSummary(run.recaps),
     scripts: run.runs.map((script) => {
       const m = understandingMetrics([script], LIVE_LABELS);
       return {
@@ -162,7 +169,7 @@ export function smokeEstimateMarkdown(
   return [
     `### Live smoke eval budget: ${over ? "over budget, not starting" : "within budget"}`,
     "",
-    `${label}: ${estimate.scripts} debriefs, ${estimate.turns} requests. Estimated at ${usd(estimate.totalUsd)}, the price table plus a quarter${estimate.promptCache ? ", with the prompt cache" : ""}, against a budget of ${usd(budgetUsd)} (EVAL_SMOKE_BUDGET_USD).${estimate.promptCache ? ` With no cache hit at all it would be ${usd(estimate.uncachedTotalUsd)}; the in-run guard stops the run if it passes the budget.` : ""}`,
+    `${label}: ${estimate.scripts} debriefs, ${estimate.turns} turn requests and ${estimate.recaps} recaps (${usd(estimate.recapUsd)} of it before the margin). Estimated at ${usd(estimate.totalUsd)}, the price table plus a quarter${estimate.promptCache ? ", with the prompt cache" : ""}, against a budget of ${usd(budgetUsd)} (EVAL_SMOKE_BUDGET_USD).${estimate.promptCache ? ` With no cache hit at all it would be ${usd(estimate.uncachedTotalUsd)}; the in-run guard stops the run if it passes the budget.` : ""}`,
     "",
     `Estimated tokens: ${n(estimate.inputTokens)} in (${n(estimate.cachedInputTokens)} cache reads, ${n(estimate.cacheWriteTokens)} cache writes), ${n(estimate.outputTokens)} out.`,
   ].join("\n");
@@ -222,11 +229,20 @@ export function smokeMarkdown(report: SmokeReport, baseline: SmokeBaseline | nul
       `| ${LABELS[name]} | ${pct(baseline?.median[name])} | ${pts(baseline?.spread[name])} | ${baseline ? pts(allowedDrop(baseline.spread[name])) : "n/a"} | ${pct(now)} |`,
     );
   }
+  const recap = last.recap;
   lines.push(
     `| Evidence coverage (G2c) | 100% required | | | ${pct(summary?.evidenceCoverage)} |`,
     `| End-to-end wrong-account rate | at most ${pct(SMOKE_GATE.maxWrongAccountRate)} | | | ${pct(summary?.wrongAccountRate)} (${summary?.decided ?? 0} decided) |`,
+    `| Recap evidence (kept sentences) | 100% required | | | ${pct(recap?.evidenceCoverage)} |`,
+    `| Recap drop rate (may rise by) | ${pct(baseline?.recapMedian.dropRate)} | ${pts(baseline?.recapSpread.dropRate)} | ${baseline ? pts(allowedRecapRise(baseline.recapSpread.dropRate)) : "n/a"} | ${pct(recap?.dropRate)} (${recap?.dropped ?? 0} of ${recap?.written ?? 0} sentences) |`,
     "",
   );
+  if (recap) {
+    lines.push(
+      `Recaps: ${recap.created} of ${recap.recaps} written, ${recap.headlines} with a headline, ${pct(recap.weakSupportShare)} of kept sentences with weak support.`,
+      "",
+    );
+  }
   if (report.attempts.length > 1) {
     lines.push(
       "Run 1 failed only on checks live sampling can trip by chance, and the budget covered one re-run (spec §8). The verdict is run 2's.",

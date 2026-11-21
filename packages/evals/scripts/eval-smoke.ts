@@ -1,6 +1,7 @@
 // The live smoke eval (Phase 4 WP11; gates G2c and G3b; ADR-0031): smoke.json's 30 debriefs as
 // text through a live model (Claude Haiku 5.5 by default), the understanding pipeline, and the
-// second witness, gated against baselines/smoke-<provider>.json. It spends money, so:
+// second witness, then each one's recap (Phase 5 WP10; ADR-0037), gated against
+// baselines/smoke-<provider>.json. It spends money, so:
 //
 // - it estimates the run first and refuses to start above the budget (EVAL_SMOKE_BUDGET_USD);
 // - it stops past the budget mid-run, and fails as incomplete;
@@ -13,8 +14,8 @@
 //     [--summary ["$GITHUB_STEP_SUMMARY"]] [--out <dir>]
 //
 // - `--estimate` stops after the estimate: no key, no call, $0.
-// - `--offline` runs the whole flow against the $0 understanding cassettes instead of a model,
-//   to check the plumbing; it can't pass the gate, which needs a live baseline.
+// - `--offline` runs the whole flow against the $0 understanding and recap cassettes instead of a
+//   model, to check the plumbing; it can't pass the gate, which needs a live baseline.
 // - `--check` exits 1 unless the gate passes (CI runs it).
 // - `--out` writes smoke-report.json and smoke-report.md there (CI uploads them).
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -32,6 +33,7 @@ import {
   smokeMarkdown,
 } from "../src/smoke";
 import { appendSummary, flag, parseArgs, userPath } from "./args";
+import { readRecapCassettes } from "./recap-io";
 import {
   chosenScripts,
   parseProvider,
@@ -93,6 +95,7 @@ async function main(): Promise<void> {
     throw new Error(`--rpm is between 1 and ${SMOKE_PACE.maxPerMinute}`);
   }
   let fetchFor: (script: (typeof scripts)[number]) => typeof globalThis.fetch;
+  let recapFetchFor: ((script: (typeof scripts)[number]) => typeof globalThis.fetch) | undefined;
   let apiKey: string;
   let pacer: ReturnType<typeof createPacer>;
   if (offline) {
@@ -100,6 +103,13 @@ async function main(): Promise<void> {
     fetchFor = (script) => {
       const cassette = cassettes.cassettes[script.id];
       if (!cassette) throw new Error(`no ${provider} understanding cassette for ${script.id}`);
+      return createCassetteFetch(cassette) as typeof globalThis.fetch;
+    };
+    // The recap's request is the recap eval's, so its committed cassettes answer it.
+    const recaps = readRecapCassettes()[provider];
+    recapFetchFor = (script) => {
+      const cassette = recaps.cassettes[script.id];
+      if (!cassette) throw new Error(`no ${provider} recap cassette for ${script.id}`);
       return createCassetteFetch(cassette) as typeof globalThis.fetch;
     };
     apiKey = SCENARIO_API_KEY;
@@ -134,6 +144,7 @@ async function main(): Promise<void> {
     scripts,
     apiKey,
     fetchFor,
+    ...(recapFetchFor ? { recapFetchFor } : {}),
     budgetUsd,
     estimate,
     promptCache,

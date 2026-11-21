@@ -1,6 +1,7 @@
 // Records the live smoke eval's baseline (Phase 4 WP11 step 5; ADR-0031): three runs of
-// smoke.json's debriefs on the live model, each within its own EVAL_SMOKE_BUDGET_USD, and their
-// median and spread per gated metric, written to baselines/smoke-<provider>.json. It spends
+// smoke.json's debriefs on the live model, each with its recaps (Phase 5 WP10), each within its own
+// EVAL_SMOKE_BUDGET_USD, and their median and spread per gated metric, the recap drop rate's
+// included, written to baselines/smoke-<provider>.json. It spends
 // money: about three times one run's estimate, which it prints before it starts. Run it only
 // with the user's approval (spec §9), then review the file and commit it.
 //
@@ -122,6 +123,7 @@ async function main(): Promise<void> {
       (name) =>
         `| ${name} | ${pct(baseline.median[name])} | ${pct(baseline.spread[name])} | ${baseline.runs.map((run) => pct(run[name])).join(", ")} |`,
     ),
+    `| recapDropRate | ${pct(baseline.recapMedian.dropRate)} | ${pct(baseline.recapSpread.dropRate)} | ${baseline.recapRuns.map((run) => pct(run.dropRate)).join(", ")} |`,
   ].join("\n");
   console.log(`\n${markdown}`);
   appendSummary(summaryFile, markdown);

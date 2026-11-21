@@ -4,11 +4,14 @@
 import { describe, expect, it } from "vitest";
 import {
   allowedDrop,
+  allowedRecapRise,
   baselineRates,
+  baselineRecapRates,
   LIVE_LABELS,
   SMOKE_BASELINE_FORMAT,
   SmokeBaseline,
   type SmokeIdentity,
+  type SmokeRecapSummary,
   type SmokeSummary,
   shouldRerun,
   smokeGateFailures,
@@ -53,14 +56,36 @@ function metrics(values: {
   };
 }
 
-/** A baseline from three runs' gated numbers. */
+/** A run's recap numbers (Phase 5 WP10): `dropped` of 100 sentences written, the rest kept. */
+function recapSummary(dropped: number, withoutEvidence = 0): SmokeRecapSummary {
+  const kept = 100 - dropped;
+  return {
+    recaps: 30,
+    created: 30,
+    written: 100,
+    kept,
+    withEvidence: kept - withoutEvidence,
+    dropped,
+    headlines: 30,
+    weak: 5,
+    evidenceCoverage: kept === 0 ? null : (kept - withoutEvidence) / kept,
+    dropRate: dropped / 100,
+    headlineRate: 1,
+    weakSupportShare: 5 / kept,
+  };
+}
+
+/** A baseline from three runs' gated numbers, and their recaps' drop rates (8, 10, 9 by default). */
 function baseline(
   runs: { keyFields: number; targets: number; f1: number }[],
   overrides: Partial<SmokeBaseline> = {},
+  drops: [number, number, number] = [8, 10, 9],
 ): SmokeBaseline {
   const summaries: SmokeSummary[] = runs.map((run) =>
     smokeSummary(metrics({ keyFields: run.keyFields, targets: run.targets, f1: run.f1 })),
   );
+  const recapRuns = drops.map((dropped) => recapSummary(dropped));
+  const recapRates = baselineRecapRates(recapRuns);
   return SmokeBaseline.parse({
     format: SMOKE_BASELINE_FORMAT,
     ...IDENTITY,
@@ -69,6 +94,9 @@ function baseline(
     runs: summaries,
     spentUsd: [0.03, 0.03, 0.03],
     ...baselineRates(summaries),
+    recapRuns,
+    recapMedian: recapRates.median,
+    recapSpread: recapRates.spread,
     ...overrides,
   });
 }
@@ -174,6 +202,67 @@ describe("the gate", () => {
       const failures = gate(metrics({ targets: 0.5 }), { ...STEADY, ...stale });
       expect(kinds(failures), JSON.stringify(stale)).toEqual(["stale_baseline"]);
     }
+  });
+});
+
+describe("the gate on each script's recap (Phase 5 WP10)", () => {
+  const recapGate = (recap: SmokeRecapSummary | null, b: SmokeBaseline | null = STEADY) =>
+    smokeGateFailures({
+      metrics: metrics({}),
+      recap,
+      complete: true,
+      stopDetail: null,
+      baseline: b,
+      identity: IDENTITY,
+      baselineFile: FILE,
+    });
+
+  it("takes the drop rate's median and spread across the baseline runs", () => {
+    expect(STEADY.recapMedian.dropRate).toBe(0.09);
+    expect(STEADY.recapSpread.dropRate).toBeCloseTo(0.02, 6);
+    expect(allowedRecapRise(0.02)).toBe(0.05);
+    expect(allowedRecapRise(0.04)).toBeCloseTo(0.08, 9);
+    expect(allowedRecapRise(null)).toBe(0.05);
+  });
+
+  it("passes a drop rate within max(5 points, 2 × the spread), and fails one above it", () => {
+    expect(recapGate(recapSummary(14))).toEqual([]);
+    const failures = recapGate(recapSummary(15));
+    expect(kinds(failures)).toEqual(["regression"]);
+    expect(failures[0]?.message).toContain("recap drop rate 15.0%");
+    // 6 points of spread allow 12 above the median.
+    const varied = baseline(
+      [
+        { keyFields: 0.9, targets: 0.9, f1: 0.95 },
+        { keyFields: 0.9, targets: 0.9, f1: 0.95 },
+        { keyFields: 0.9, targets: 0.9, f1: 0.95 },
+      ],
+      {},
+      [6, 9, 12],
+    );
+    expect(recapGate(recapSummary(21), varied)).toEqual([]);
+    expect(kinds(recapGate(recapSummary(22), varied))).toEqual(["regression"]);
+  });
+
+  it("fails a kept sentence without evidence, with no baseline or any, and never earns a re-run", () => {
+    expect(kinds(recapGate(recapSummary(9, 1)))).toEqual(["evidence"]);
+    expect(kinds(recapGate(recapSummary(9, 1), null))).toEqual(["evidence", "no_baseline"]);
+    expect(
+      shouldRerun({
+        failures: recapGate(recapSummary(9, 1)),
+        spentUsd: 0.01,
+        budgetUsd: 1,
+        estimateUsd: 0.04,
+      }),
+    ).toBe(false);
+    // A run that wrote no recap has nothing to gate.
+    expect(recapGate(null)).toEqual([]);
+  });
+
+  it("refuses a baseline without three runs' recaps", () => {
+    expect(() =>
+      SmokeBaseline.parse({ ...STEADY, recapRuns: STEADY.recapRuns.slice(0, 2) }),
+    ).toThrow();
   });
 });
 
