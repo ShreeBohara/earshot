@@ -61,8 +61,10 @@ describe("resume", () => {
     for (const message of utterances.slice(2)) await second.socket.request(message);
     const end = endMessage();
     await second.socket.request(end);
+    // The end's recap (Phase 5 WP10) is the log's last event.
+    await second.socket.waitFor((m) => m.t === "event" && m.event.type === "recap.created");
 
-    const lastSeq = Number((await meta(second.stub)).ended_seq);
+    const lastSeq = Number((await meta(second.stub)).recap_seq);
     expect(second.welcome.lastSeq).toBeGreaterThanOrEqual(lastSeen);
     expectCompleteLog(folded(first.socket, second.socket), lastSeq);
     // Every scripted utterance appears exactly once in the log.

@@ -314,8 +314,24 @@ export function metricMessage(turnId: string): ClientMessageOf<"metric"> {
   };
 }
 
-export function endMessage(): ClientMessageOf<"end"> {
-  return { t: "end", msgId: uuidv7(), endedAt: "2026-11-10T19:16:00.000Z" };
+export function endMessage(recap?: ClientMessageOf<"end">["recap"]): ClientMessageOf<"end"> {
+  return {
+    t: "end",
+    msgId: uuidv7(),
+    endedAt: "2026-11-10T19:16:00.000Z",
+    ...(recap ? { recap } : {}),
+  };
+}
+
+/** What `end` asks of the recap (Phase 5 WP10): the LLM, its key, and maybe a lens. */
+export function recapRequest(
+  key: string,
+  options: {
+    lens?: "meddic" | "spiced" | "bant";
+    llm?: { provider: "anthropic" | "groq"; model: string };
+  } = {},
+): NonNullable<ClientMessageOf<"end">["recap"]> {
+  return { llm: options.llm ?? ANTHROPIC, key, ...(options.lens ? { lens: options.lens } : {}) };
 }
 
 /** A review as the tray sends it: a single approval by keyboard, of an unmarked card. */
@@ -443,6 +459,29 @@ export function failSink(stub: Stub, failing: boolean): Promise<void> {
 /** Takes the audit signing key away from the session (or gives it back), as a deploy without it. */
 export function breakAuditKey(stub: Stub, broken: boolean): Promise<void> {
   return withSql(stub, (sql) => setTestSetting(sql, "audit", broken ? "missing" : null));
+}
+
+/**
+ * How the scripted recap model answers this session's recap (worker.ts): its mode, how long a
+ * slow one waits, and the recap's deadline, all in ms.
+ */
+export function scriptRecap(
+  stub: Stub,
+  options: { mode?: string; delayMs?: number; deadlineMs?: number },
+): Promise<void> {
+  return withSql(stub, (sql) => {
+    setTestSetting(sql, "recap_mode", options.mode ?? null);
+    setTestSetting(
+      sql,
+      "recap_delay",
+      options.delayMs === undefined ? null : String(options.delayMs),
+    );
+    setTestSetting(
+      sql,
+      "recap_deadline",
+      options.deadlineMs === undefined ? null : String(options.deadlineMs),
+    );
+  });
 }
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

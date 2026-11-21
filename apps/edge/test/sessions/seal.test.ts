@@ -71,9 +71,11 @@ describe("when SessionDO seals", () => {
 
     await alarmAt(stub, ended + 59_000 + SEAL_TIMING.graceMs);
     await socket.waitFor((m) => m.t === "event" && m.event.type === "session.sealed");
+    // Every end is followed by its recap (Phase 5 WP10): skipped here, with no key.
     expect(types(socket)).toEqual([
       "session.started",
       "session.ended",
+      "recap.created",
       "usage.recorded",
       "session.sealed",
     ]);
@@ -82,7 +84,7 @@ describe("when SessionDO seals", () => {
       sealedAt: new Date(ended + 59_000 + SEAL_TIMING.graceMs).toISOString(),
       by: "session",
     });
-    expect(await meta(stub)).toMatchObject({ sealed_seq: "3" });
+    expect(await meta(stub)).toMatchObject({ sealed_seq: "4" });
     expect((await meta(stub)).seal_due_ms).toBeUndefined();
     socket.close();
   });
@@ -94,7 +96,7 @@ describe("when SessionDO seals", () => {
     await socket.request(usage());
     expect(Number((await meta(stub)).seal_due_ms)).toBe(ended + SEAL_TIMING.maxAfterEndMs);
     await alarmAt(stub, ended + SEAL_TIMING.maxAfterEndMs);
-    expect((await meta(stub)).sealed_seq).toBe("3");
+    expect((await meta(stub)).sealed_seq).toBe("4");
     socket.close();
   });
 
@@ -109,8 +111,12 @@ describe("when SessionDO seals", () => {
     expect(await meta(stub)).toMatchObject({ ended_seq: "1" });
     expect(Number((await meta(stub)).seal_due_ms)).toBe(idleEnd + SEAL_TIMING.graceMs);
     await alarmAt(stub, idleEnd + SEAL_TIMING.graceMs);
-    expect((await meta(stub)).sealed_seq).toBe("2");
-    expect(parseRange(await stub.readRange(2, 2))[0]).toMatchObject({ type: "session.sealed" });
+    // The idle end's recap, skipped with no key, comes between the end and the seal.
+    expect((await meta(stub)).sealed_seq).toBe("3");
+    expect(parseRange(await stub.readRange(2, 3)).map((event) => event.type)).toEqual([
+      "recap.created",
+      "session.sealed",
+    ]);
   });
 
   it("seals an object that ended before the seal existed at its next alarm", async () => {
@@ -122,7 +128,7 @@ describe("when SessionDO seals", () => {
     await stub.confirmFlushed(1);
     await withSqlDelete(stub, "seal_due_ms");
     await alarmAt(stub, ended + SEAL_TIMING.graceMs);
-    expect(await meta(stub)).toMatchObject({ sealed_seq: "2" });
+    expect(await meta(stub)).toMatchObject({ sealed_seq: "3" });
     // The old cleanup time is dropped until Postgres confirms the seal.
     expect((await meta(stub)).cleanup_due_ms).toBeUndefined();
     expect(await tableNames(stub)).toContain("events");
@@ -140,10 +146,11 @@ describe("after the seal", () => {
   it("is the last event, flushed at once, and nothing follows it", async () => {
     const { socket, stub } = await open();
     const ended = await endedAt(socket, stub, Date.now());
-    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(1);
+    // The end and its recap are each flushed at once.
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
     await alarmAt(stub, ended + SEAL_TIMING.graceMs);
     // Flushed straight away, without waiting for the 30 s window.
-    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(3);
     const last = (await flushes(stub)).at(-1);
     expect(last?.events?.map((event) => event.type)).toEqual(["session.sealed"]);
 
@@ -155,6 +162,7 @@ describe("after the seal", () => {
     expect(parseRange(await stub.readRange(0, 99)).map((event) => event.type)).toEqual([
       "session.started",
       "session.ended",
+      "recap.created",
       "session.sealed",
     ]);
     socket.close();
@@ -210,10 +218,10 @@ describe("after the seal", () => {
     // hello and ack aren't writes: a new socket resumes, and acks, as ever.
     socket.close();
     const again = await open(ids, 0);
-    expect(again.welcome.lastSeq).toBe(2);
-    again.socket.send({ t: "ack", seq: 2 });
-    await again.socket.waitForCount((m) => m.t === "event", 2);
-    expect(parseRange(await stub.readRange(0, 99))).toHaveLength(3);
+    expect(again.welcome.lastSeq).toBe(3);
+    again.socket.send({ t: "ack", seq: 3 });
+    await again.socket.waitForCount((m) => m.t === "event", 3);
+    expect(parseRange(await stub.readRange(0, 99))).toHaveLength(4);
     again.socket.close();
   });
 });
@@ -229,9 +237,9 @@ describe("cleanup", () => {
     expect((await meta(stub)).cleanup_due_ms).toBeUndefined();
 
     await alarmAt(stub, ended + SEAL_TIMING.graceMs);
-    expect((await meta(stub)).sealed_seq).toBe("2");
+    expect((await meta(stub)).sealed_seq).toBe("3");
     expect((await meta(stub)).cleanup_due_ms).toBeUndefined();
-    await stub.confirmFlushed(2);
+    await stub.confirmFlushed(3);
     const due = Number((await meta(stub)).cleanup_due_ms);
     expect(due).toBe(ended + SEAL_TIMING.graceMs + FLUSH_TIMING.cleanupAfterConfirmMs);
 
@@ -258,8 +266,13 @@ describe("sealNow and sealSessions", () => {
     // Sealed now, without waiting for the grace.
     expect(await stub.sealNow()).toBe("sealing");
     await socket.waitFor((m) => m.t === "event" && m.event.type === "session.sealed");
-    expect(types(socket)).toEqual(["session.started", "session.ended", "session.sealed"]);
-    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
+    expect(types(socket)).toEqual([
+      "session.started",
+      "session.ended",
+      "recap.created",
+      "session.sealed",
+    ]);
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(3);
     expect(await stub.sealNow()).toBe("sealed");
     socket.close();
   });

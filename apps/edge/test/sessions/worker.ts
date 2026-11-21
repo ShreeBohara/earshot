@@ -6,7 +6,14 @@
 // - Flush messages go to a recorder instead of the Queue, since the test APIs can't observe a
 //   producer: each session's messages land in its own SQLite (`test_outbox`), where tests read
 //   them and scan them for leaks. `failSink` makes the recorder throw.
-import { type Cassette, cassette, createCassetteFetch } from "@earshot/agent/testing";
+import { RECAP_RETRY_POLICY } from "@earshot/agent";
+import {
+  type Cassette,
+  cassette,
+  createCassetteFetch,
+  type ScriptedRecapMode,
+  scriptedRecapFetch,
+} from "@earshot/agent/testing";
 import type { LlmProvider } from "@earshot/core";
 import { evalCassette } from "@earshot/evals/cassettes";
 import { PRICE_TABLE_DATE, priceStt } from "@earshot/voice/prices";
@@ -82,12 +89,36 @@ function recordingSink(sql: SqlStorage): FlushSink {
   };
 }
 
+/**
+ * How the scripted recap model answers this session's recap (`recap_mode`, `quotes` by default),
+ * and how long a `slow` one waits (`recap_delay`, ms).
+ */
+function recapFetch(sql: SqlStorage, provider: LlmProvider): typeof fetch {
+  const mode = (testSetting(sql, "recap_mode") ?? "quotes") as ScriptedRecapMode;
+  const delay = testSetting(sql, "recap_delay");
+  return scriptedRecapFetch({
+    provider,
+    mode,
+    ...(delay === undefined ? {} : { delayMs: Number(delay) }),
+  }) as typeof fetch;
+}
+
 export class SessionDO extends SessionRuntime {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env, {
-      agent: withFetch(productionAgent, (provider) =>
-        createCassetteFetch(sessionCassette(ctx.storage.sql, provider)),
+      agent: withFetch(
+        productionAgent,
+        (provider) => createCassetteFetch(sessionCassette(ctx.storage.sql, provider)),
+        // The recap's requests go to the scripted recap model, which answers any session's.
+        (provider) => recapFetch(ctx.storage.sql, provider),
       ),
+      // A test can shorten the recap's deadline (`recap_deadline`, ms), to see it pass quickly.
+      get recapPolicy() {
+        const deadline = testSetting(ctx.storage.sql, "recap_deadline");
+        return deadline === undefined
+          ? undefined
+          : { ...RECAP_RETRY_POLICY, deadlineMs: Number(deadline) };
+      },
       sink: recordingSink(ctx.storage.sql),
       priceStt,
       priceTableDate: PRICE_TABLE_DATE,

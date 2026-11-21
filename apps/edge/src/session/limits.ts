@@ -30,6 +30,15 @@ export const SEAL_TIMING = Object.freeze({
   maxAfterEndMs: 30 * 60_000,
 });
 
+/**
+ * The recap (Phase 5 spec §4.10, WP10; target): written after `end` within this deadline, one retry
+ * included, or recorded as failed with `timeout`. It runs in the session's serial queue, so the
+ * seal, whose grace is a minute, comes after it, and never waits longer than this.
+ */
+export const RECAP_TIMING = Object.freeze({
+  deadlineMs: 15_000,
+});
+
 export const FLUSH_TIMING = Object.freeze({
   /** Flush once this many events are waiting... */
   maxPendingEvents: 20,
