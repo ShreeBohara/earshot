@@ -371,6 +371,22 @@ describe("checkRecap", () => {
     ]);
   });
 
+  it("drops a sentence whose text is shaped like a key, which no utterance can hold", () => {
+    const keyed = {
+      kind: "next_step" as const,
+      text: "Use the key sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx for the quote.",
+      quotes: ["owe Dana Lee a revised quote"],
+    };
+    const checked = checkRecap(
+      { ...ANSWER, sentences: [...ANSWER.sentences, keyed] },
+      SESSION,
+      null,
+    );
+    expect(checked.sentences).toHaveLength(3);
+    expect(checked.dropped).toBe(1);
+    expect(checked.trace.at(-1)?.fate).toBe("key_shaped");
+  });
+
   it("finds quotes only in the biased stream's words", () => {
     const withWitness = [...SESSION, utterance(4, "The witness heard Akme Dynamics.", "unbiased")];
     const checked = checkRecap(

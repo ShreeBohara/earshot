@@ -11,10 +11,14 @@
 //    model's order.
 // 5. A lens field whose quote isn't found becomes "not mentioned" (quote and evidence null), as
 //    one the model left null does. Every field of the lens comes back, in the lens file's order.
+// 6. A sentence whose text is shaped like a provider key is dropped too: no utterance can hold
+//    one (the socket refuses them), so the model made it up, and the client refuses any server
+//    message that carries one.
 //
 // Pure: no I/O, no clock. The trace says what happened to each sentence the model wrote, by its
 // position, for the logs (counts only) and the eval (seeded bad sentences must be dropped).
 import {
+  containsKeyShape,
   type Evidence,
   MAX_RECAP_EVIDENCE,
   MAX_RECAP_QUOTE_CHARS,
@@ -35,7 +39,9 @@ export type SentenceFate =
   /** None of its quotes is in the transcript: dropped, and counted in `dropped`. */
   | "no_quote"
   /** A headline after the first kept one: left out (a recap has one headline). */
-  | "extra_headline";
+  | "extra_headline"
+  /** Its text is shaped like a provider key: dropped, and counted in `dropped`. */
+  | "key_shaped";
 
 export interface SentenceTrace {
   /** Its position in the model's list. */
@@ -51,7 +57,7 @@ export interface SentenceTrace {
 export interface CheckedRecap {
   /** The kept sentences: the headline first, then the rest in the model's order. */
   readonly sentences: readonly RecapSentence[];
-  /** Sentences with no located quote. */
+  /** Sentences with no located quote (or, never in practice, a key-shaped text). */
   readonly dropped: number;
   readonly lens: RecapLens | null;
   readonly trace: readonly SentenceTrace[];
@@ -98,6 +104,11 @@ export function checkRecap(
     const { evidence, words, located } = locateAll(sentence.quotes, biased);
     const text = sentence.text.trim();
     const base = { index, kind: sentence.kind, located, quotes: sentence.quotes.length };
+    if (containsKeyShape(text)) {
+      dropped += 1;
+      trace.push({ ...base, fate: "key_shaped", weakSupport: false });
+      return;
+    }
     if (evidence.length === 0) {
       dropped += 1;
       trace.push({ ...base, fate: "no_quote", weakSupport: false });

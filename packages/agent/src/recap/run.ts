@@ -348,7 +348,7 @@ export interface RecapResult {
 /** A recap that was never attempted: no key came with `end`, or there's nothing to recap. */
 export function skippedRecap(
   reason: Extract<RecapReason, "no_key" | "no_speech">,
-  options: { readonly llm?: { provider: LlmProvider; model: string } | null; newId?: () => string },
+  options: { readonly llm?: RecapCreatedV1["llm"]; readonly newId?: () => string },
 ): RecapCreatedV1 {
   return {
     recapId: (options.newId ?? uuidv7)(),
@@ -364,7 +364,7 @@ export function skippedRecap(
 /** A recap that was attempted and failed, for `reason`. */
 export function failedRecap(
   reason: Exclude<RecapReason, "no_key" | "no_speech">,
-  options: { readonly llm: { provider: LlmProvider; model: string } | null; newId?: () => string },
+  options: { readonly llm: RecapCreatedV1["llm"]; readonly newId?: () => string },
 ): RecapCreatedV1 {
   return {
     recapId: (options.newId ?? uuidv7)(),
