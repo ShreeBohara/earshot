@@ -8,6 +8,7 @@
 //
 // A sealed debrief's proposals are reviewable; an unsealed one's wait under "Finishing" until
 // `session.sealed` reaches Postgres. Superseded proposals appear nowhere: their correction does.
+import type { SessionRecap } from "@earshot/events";
 import type { InboxEntity, InboxProposal, InboxSession } from "./types";
 
 type Entities = Readonly<Record<string, InboxEntity>>;
@@ -105,6 +106,8 @@ export interface CardGroup {
   readonly byAccount: boolean;
   /** One entry when `byAccount` is false; otherwise one per account, the unnamed ones last. */
   readonly accounts: readonly AccountGroup[];
+  /** The debrief's recap, shown at the top of its group (Phase 5 WP10), or null. */
+  readonly recap: SessionRecap | null;
 }
 
 /** A debrief that isn't sealed yet: live, or ended and finishing. */
@@ -161,6 +164,7 @@ function cardGroup(
     accountId: sessionAccount(session, entities),
     byAccount: split,
     accounts,
+    recap: session.recap ?? null,
   };
 }
 

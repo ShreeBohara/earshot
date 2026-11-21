@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import { WitnessSettings } from "@/components/capture/witness-settings";
 import { ClipsSettings } from "@/components/evidence/clips-settings";
+import { RecapLensSettings } from "@/components/recap/recap-lens-settings";
 import { SettingsSection } from "@/components/settings-section";
 import { requireViewer } from "@/lib/auth/viewer";
 import { WITNESS_COPY } from "@/lib/capture/witness";
 import { CLIPS_COPY } from "@/lib/evidence/copy";
+import { LENS_COPY } from "@/lib/recap/copy";
 
 export const metadata: Metadata = { title: "Capture · Settings · Earshot" };
 
 /**
- * How this device captures debriefs: the second witness (Phase 4 WP9), and evidence clips (Phase 5
- * WP9), each turn's audio kept here for 24 hours to replay while reviewing.
+ * How this device captures debriefs: the second witness (Phase 4 WP9), evidence clips (Phase 5
+ * WP9), each turn's audio kept here for 24 hours to replay while reviewing, and the recap's lens
+ * (Phase 5 WP10).
  */
 export default async function CaptureSettingsPage() {
   await requireViewer("/settings/capture");
@@ -34,6 +37,10 @@ export default async function CaptureSettingsPage() {
 
       <SettingsSection id="evidence-clips" title={CLIPS_COPY.name}>
         <ClipsSettings labelledBy="evidence-clips" />
+      </SettingsSection>
+
+      <SettingsSection id="recap-lens" title={LENS_COPY.name}>
+        <RecapLensSettings />
       </SettingsSection>
     </div>
   );

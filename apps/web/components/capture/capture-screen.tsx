@@ -12,6 +12,7 @@ import type { FakeVoice, FakeVoiceSetup } from "@/lib/capture/fake";
 import { defaultSelection, type ProviderSelection, providerChoices } from "@/lib/capture/providers";
 import { WITNESS_COPY, witnessPromptDue } from "@/lib/capture/witness";
 import { ClipsNotice, useClipsNotice } from "../evidence/clips-notice";
+import { CaptureRecap } from "../recap/capture-recap";
 import {
   CaptureNotice,
   FakeEdgeNotice,
@@ -385,6 +386,7 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
                   ? "Earshot has saved this debrief, and the inbox has whatever you haven't reviewed. Nothing has been written to your CRM."
                   : "Review the proposals here while Earshot finishes saving the debrief; anything you leave waits in the inbox. Nothing has been written to your CRM."}
               </p>
+              {state ? <CaptureRecap state={state} sealed={ui.sealed} /> : null}
               <div className="flex flex-wrap gap-2">
                 <Button onClick={() => controller.reset()}>Start another debrief</Button>
                 <CaptureLink href="/inbox" className={linkButton({ variant: "outline" })}>

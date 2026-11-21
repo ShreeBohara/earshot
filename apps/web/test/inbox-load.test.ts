@@ -220,8 +220,20 @@ describe("the inbox's loader", () => {
       "The expansion is worth one hundred twelve thousand, and they're ready to sign.",
     );
 
+    // Each debrief's recap (Phase 5 WP10), with the words its sentences quote loaded.
+    expect(acme?.recap).toMatchObject({ outcome: "created", dropped: 1, lens: { id: "meddic" } });
+    expect(pier?.recap?.sentences.map((sentence) => sentence.kind)).toEqual([
+      "headline",
+      "next_step",
+    ]);
+    const headline = pier?.recap?.sentences[0]?.evidence[0];
+    expect(headline && data.quotes[headline.utteranceId]).toBe(
+      "The expansion is worth one hundred twelve thousand, and they're ready to sign.",
+    );
+
     // Grouped: each debrief headed by its account, the question among Pier's cards.
     const sections = inboxSections(data.sessions, data.entities, NOW.getTime());
+    expect(sections.review.map((group) => group.recap?.outcome)).toEqual(["created", "created"]);
     expect(sections.review.map((group) => group.accountId)).toEqual([pierCo?.id, acmeCo?.id]);
     expect(sections.review.every((group) => !group.byAccount)).toBe(true);
     expect(cardOrder(sections.review).map((group) => group.length)).toEqual([3, 4]);

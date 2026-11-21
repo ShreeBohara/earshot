@@ -11,6 +11,7 @@ import {
 } from "@earshot/voice";
 import { createSessionClient, isIosPlatform } from "@earshot/voice/session";
 import { browserClips } from "../evidence/browser";
+import { readRecapLens } from "../recap/setting";
 import { playChime, SpokenConfirmations } from "./audio-out";
 import { CaptureController } from "./controller";
 import { browserDeviceKeys } from "./keys";
@@ -57,6 +58,8 @@ export function createBrowserCaptureController(): CaptureController {
     createWitness: (key) => createGroqWitness({ key }),
     // Evidence clips (Phase 5 WP9): each turn's audio, encrypted on this device for 24 hours.
     clips: browserClips(),
+    // The recap's lens (Phase 5 WP10): the device's choice, read as each debrief ends.
+    recapLens: () => (browser ? readRecapLens(window.localStorage) : null),
   });
 }
 

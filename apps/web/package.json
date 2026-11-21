@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@better-auth/passkey": "catalog:",
+    "@earshot/agent": "workspace:*",
     "@earshot/core": "workspace:*",
     "@earshot/db": "workspace:*",
     "@earshot/demo-crm": "workspace:*",

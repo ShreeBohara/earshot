@@ -13,9 +13,10 @@ import type {
   WitnessConflict,
 } from "@earshot/core";
 import { DEMO_CRM_EXTERNAL_ID_PREFIX, schema } from "@earshot/db";
-import type { ProposalStatus, ReviewView } from "@earshot/events";
+import type { ProposalStatus, ReviewView, SessionRecap } from "@earshot/events";
 import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import type { TenantTx } from "../auth/viewer";
+import { recapUtteranceIds } from "../recap/view";
 import type { InboxData, InboxEntity, InboxProposal, InboxReview, InboxSession } from "./types";
 
 /** How many debriefs one load reads (target); "Load older" reads as many again. */
@@ -94,6 +95,20 @@ function reviewOf(row: ProposalRow): InboxReview | null {
   };
 }
 
+/**
+ * The `recap` column as the inbox holds it (migration 0015): `rebuildProjections` writes it from a
+ * validated `recap.created`, so only its shape is checked here; anything else is no recap.
+ */
+function recapOf(value: unknown): SessionRecap | null {
+  if (value === null || typeof value !== "object") return null;
+  const recap = value as Partial<SessionRecap>;
+  const shaped =
+    typeof recap.outcome === "string" &&
+    Array.isArray(recap.sentences) &&
+    typeof recap.dropped === "number";
+  return shaped ? (recap as SessionRecap) : null;
+}
+
 /** A `proposals` row as the inbox holds it: the `ProposalView` it was written from. */
 export function proposalFromRow(row: ProposalRow): InboxProposal {
   const target = (row.target as TargetV2 | null) ?? fallbackTarget(row.targetEntityId);
@@ -130,6 +145,8 @@ function referenced(sessions: readonly InboxSession[]): {
   };
   for (const session of sessions) {
     entity(session.focusEntityId);
+    // The words each recap sentence and lens field quotes (Phase 5 WP10).
+    if (session.recap) for (const id of recapUtteranceIds(session.recap)) utterance(id);
     for (const proposal of session.proposals) {
       const { target } = proposal;
       entity(target.entityId);
@@ -261,6 +278,7 @@ export async function loadInbox(
       endedAt: sessions.endedAt,
       sealedAt: sessions.sealedAt,
       focusEntityId: sessions.focusEntityId,
+      recap: sessions.recap,
     })
     .from(sessions)
     .where(
@@ -306,6 +324,7 @@ export async function loadInbox(
     sealedAt: row.sealedAt?.toISOString() ?? null,
     focusEntityId: row.focusEntityId,
     proposals: bySession.get(row.sessionId) ?? [],
+    recap: recapOf(row.recap),
   }));
 
   const wanted = referenced(loaded);
