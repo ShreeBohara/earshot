@@ -346,7 +346,7 @@ describe("the recap's key", () => {
       expect(findSecretFragment(lines.join("\n"), key)).toBeUndefined();
       expect(lines.join("\n")).toContain('recap recorded {"outcome":"created"');
       // The flush carries the recap to Postgres.
-      const flushed = (await flushes(stub)).flatMap((message) => message.events);
+      const flushed = (await flushes(stub)).flatMap((message) => message.events ?? []);
       expect(flushed.some((event) => event.type === "recap.created")).toBe(true);
       socket.close();
     });

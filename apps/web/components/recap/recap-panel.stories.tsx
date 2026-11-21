@@ -145,7 +145,6 @@ export const Skipped: Story = {
       ...CREATED,
       outcome: "skipped",
       reason: "no_key",
-      llm: null,
       sentences: [],
       dropped: 0,
       lens: null,
