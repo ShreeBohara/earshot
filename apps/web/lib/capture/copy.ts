@@ -76,6 +76,7 @@ export const SESSION_ISSUE_COPY: Readonly<Record<SessionErrorCode | ClientIssueC
   not_started: "The session wasn’t ready for that yet.",
   already_ended: "The session has ended, so it can’t take more.",
   sealed: "This session is closed to changes. Review the rest of its proposals in the inbox.",
+  unreadable: "Earshot couldn’t read that correction, so the card stays as it was.",
   rate_limited: "Too many messages at once: Earshot slowed down and kept your words.",
   turn_limit: "This session reached its limit on turns. End it and start another.",
   duration_limit: "This session reached its time limit. End it and start another.",

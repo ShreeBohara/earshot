@@ -12,7 +12,8 @@
 //                after the object hibernates), and the witness message that settled it
 //   writes       every review and snooze by its client-made id (`reviewId`, `snoozeId`), with its
 //                seq and proposal, so the same review sent again under a new msgId gets the first
-//                one's seq (Phase 5 WP3)
+//                one's seq (Phase 5 WP3); and every correction by its `correctionId`, with the seq
+//                and id of the proposal it made (Phase 5 WP13)
 //
 // All methods are synchronous: SQLite-backed Durable Object storage runs queries synchronously,
 // and `transactionSync` makes a message's writes atomic.
@@ -97,9 +98,12 @@ export interface CompletedTurn {
   readonly witnessMsg: string | null;
 }
 
-/** A review or a snooze already in the log, by its client-made id. */
+/**
+ * A review, a snooze, or a correction already in the log, by its client-made id: for a correction,
+ * the seq its message's ack carried (its last event's) and the id of the proposal it made.
+ */
 export interface RecordedWrite {
-  readonly kind: "review" | "snooze";
+  readonly kind: "review" | "snooze" | "correction";
   readonly seq: number;
   readonly proposalId: string;
 }
@@ -407,7 +411,7 @@ export class SessionStore {
     this.#sql.exec("UPDATE turns SET witness_msg = ? WHERE turn_id = ?", msgId, turnId);
   }
 
-  /** A review or snooze by its `reviewId` or `snoozeId`, if the log holds one. */
+  /** A review, snooze, or correction by its client-made id, if the log holds one. */
   recordedWrite(id: string): RecordedWrite | undefined {
     if (!this.#hasTables) return undefined;
     const row = this.#sql
@@ -418,13 +422,13 @@ export class SessionStore {
       .toArray()[0];
     if (!row) return undefined;
     return {
-      kind: row.kind === "snooze" ? "snooze" : "review",
+      kind: row.kind === "snooze" || row.kind === "correction" ? row.kind : "review",
       seq: row.seq,
       proposalId: row.proposal_id,
     };
   }
 
-  /** Records a review or snooze's id. Call in the transaction that appended its event. */
+  /** Records a review's, snooze's, or correction's id. Call in the transaction that appended it. */
   addWrite(id: string, write: RecordedWrite): void {
     this.#sql.exec(
       "INSERT INTO writes (id, kind, seq, proposal_id) VALUES (?, ?, ?, ?)",

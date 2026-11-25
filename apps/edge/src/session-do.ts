@@ -43,6 +43,14 @@
 //   then (lost to a restart mid-call) is recorded as failed, `timeout`, with the seal. After it
 //   every client message but `hello` and `ack` is refused with `sealed`, and the web Worker writes
 //   the session's reviews in Postgres instead.
+// - Corrections and follow-up questions (Phase 5 spec WP13; ADR-0038): after each turn's proposals,
+//   `followup.asked` for a value a proposal needs (at most two a turn, none on a loud card, none on
+//   one a policy approved); `correct`, sent instead of `turn_end` for a correction turn, reads that
+//   turn's utterances into a proposal that supersedes the one corrected (`correctProposal`: the
+//   linker, the normalizers, the words as said; no model call and no key), then `followup.closed`
+//   for each question it answers, or refuses words it can't read with `unreadable` and writes
+//   nothing; `followup` skips a question. Typed utterances (`input: "typed"`) are a correction's
+//   words: taken from `start` until the seal, and never ended by `turn_end`.
 // - The log flushes to Postgres through a Queue (WP7), and the object deletes itself a day after
 //   Postgres confirms the whole session, seal included; `purge()` deletes it at once, for account
 //   deletion. `sealNow()` seals an ended session at once, for the web Worker's repair path.
@@ -59,13 +67,17 @@ import {
   type RetryPolicy,
   recapProposals,
   skippedRecap,
+  TARGET_KINDS,
   type WitnessTurnResult,
+  withRecentLinks,
   witnessTurn,
 } from "@earshot/agent";
 import {
   type ClientMessage,
   type ClientMessageOf,
+  correctionProposalId,
   type EntityRef,
+  type FollowupAskedV1,
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
   MAX_TARGET_CANDIDATES,
@@ -90,14 +102,18 @@ import {
   UNDO_WINDOW_MS,
   type UsageRecordedV1,
   type UtteranceFinalV2,
+  type UtteranceFinalV3,
   uuidv7,
   verifyPolicySnapshot,
 } from "@earshot/core";
 import {
+  checkCorrection,
+  checkFollowupSkip,
   checkReview,
   checkReviews,
   checkSnooze,
   type EventEnvelope,
+  linkerOf,
   type PolicyExclusion,
   type ProposalView,
   policyRuleFor,
@@ -107,6 +123,8 @@ import {
   type TierOf,
 } from "@earshot/events";
 import type { AuditSigningState } from "@earshot/keys/server";
+import { correctProposal } from "@earshot/understanding/correct";
+import { followupsFor } from "@earshot/understanding/followups";
 import { buildLinkIndex, type LinkIndex } from "@earshot/understanding/link";
 import { tierOf } from "@earshot/understanding/tiers";
 import type { PriceResult, SttUsageInput } from "@earshot/voice/prices";
@@ -581,6 +599,10 @@ export class SessionRuntime extends DurableObject<Env> {
         return this.#review(attachment, message);
       case "snooze":
         return this.#snooze(attachment, message);
+      case "correct":
+        return this.#correct(message);
+      case "followup":
+        return this.#followup(message);
     }
   }
 
@@ -721,11 +743,23 @@ export class SessionRuntime extends DurableObject<Env> {
     return this.#linkIndex;
   }
 
-  /** `utterance.final` v2. The same utterance under a new msgId gets the first one's seq. */
+  /**
+   * `utterance.final` v3 (Phase 5 WP13): speech unless the client says the words were typed (an
+   * older client says nothing, and its words are speech). Speech is capture, taken while the
+   * session captures; typed words are a correction's, taken from `start` until the seal, so the
+   * tray can correct a card in the grace after `end`. The same utterance under a new msgId gets the
+   * first one's seq.
+   */
   #utterance(message: ClientMessageOf<"utterance">): void {
     const store = this.#store;
     if (this.#answered(message.msgId)) return;
-    const refusal = this.#speechRefusal();
+    const input = message.utterance.input ?? "speech";
+    const refusal =
+      input === "typed"
+        ? store.getNumber("started_seq") === undefined
+          ? ({ code: "not_started", retryable: true } as const)
+          : undefined
+        : this.#speechRefusal();
     if (refusal) {
       this.#refuse(message.msgId, refusal.code, refusal.retryable);
       return;
@@ -736,9 +770,10 @@ export class SessionRuntime extends DurableObject<Env> {
       this.#ackExisting(message.msgId, existing);
       return;
     }
+    const payload: UtteranceFinalV3 = { ...message.utterance, input };
     this.#commit(
       message.msgId,
-      [{ type: "utterance.final", schemaVersion: 2, payload: message.utterance }],
+      [{ type: "utterance.final", schemaVersion: 3, payload: { ...payload } }],
       {
         during: ([event]) => {
           if (event) store.addUtterance(utteranceId, message.turnId, event.seq);
@@ -757,6 +792,13 @@ export class SessionRuntime extends DurableObject<Env> {
     const refusal = this.#speechRefusal();
     if (refusal) {
       this.#refuse(message.msgId, refusal.code, refusal.retryable);
+      return;
+    }
+    // Typed words are a correction's (Phase 5 WP13): their turn ends with `correct`, never with an
+    // extraction call.
+    if (store.turnUtterances(message.turnId).some((utterance) => utterance.input === "typed")) {
+      this.#log.warn("turn refused", { reason: "typed_words" });
+      this.#refuse(message.msgId, "bad_message", false);
       return;
     }
     const now = this.#now();
@@ -896,6 +938,18 @@ export class SessionRuntime extends DurableObject<Env> {
         payload: review as unknown as Record<string, unknown>,
       });
     }
+    // Follow-up questions (Phase 5 WP13), right after the proposals they ask about, about the
+    // turn's proposals as they'll stand, its approvals included. A bug here asks nothing: the turn
+    // is still recorded.
+    let questions: FollowupAskedV1[] = [];
+    try {
+      questions = this.#followups(message.turnId, created, judged.approvals);
+    } catch (error) {
+      this.#log.error("follow-ups not asked", { cause: errorName(error) });
+    }
+    for (const question of questions) {
+      events.push({ type: "followup.asked", schemaVersion: 1, payload: { ...question } });
+    }
     if (usage) {
       events.push({
         type: "usage.recorded",
@@ -936,17 +990,23 @@ export class SessionRuntime extends DurableObject<Env> {
         error: result.error,
       });
     let autoApproved = approvals.length;
+    let asked = questions.length;
     try {
       try {
         commitTurn(events, approvals);
       } catch (error) {
-        if (approvals.length === 0) throw error;
-        // An approval the registry refused: a bug in the policy's review. Keep the turn's
-        // proposals, unapproved, for a person.
-        this.#log.error("policy approvals not recorded", { cause: errorName(error) });
+        if (approvals.length === 0 && questions.length === 0) throw error;
+        // An approval or a question the registry refused: a bug in the policy's review or the
+        // follow-up rules. Keep the turn's proposals, unapproved and unasked, for a person.
+        this.#log.error("policy approvals or follow-ups not recorded", {
+          cause: errorName(error),
+        });
         autoApproved = 0;
+        asked = 0;
         commitTurn(
-          events.filter((event) => event.type !== "proposal.reviewed"),
+          events.filter(
+            (event) => event.type !== "proposal.reviewed" && event.type !== "followup.asked",
+          ),
           [],
         );
       }
@@ -966,7 +1026,46 @@ export class SessionRuntime extends DurableObject<Env> {
       failure: result.failure,
       // The approval policy's part: counts and codes only.
       ...(applyPolicy ? { autoApproved, policyExcluded: judged.excluded } : {}),
+      followups: asked,
     });
+  }
+
+  /**
+   * The follow-up questions a turn's proposals raise (Phase 5 spec WP13 step 3): `followupsFor`
+   * over the turn's proposals folded into the session's as the turn will leave them, its policy
+   * approvals included, so a proposal already approved asks nothing. At most two, none on a loud
+   * card. Each gets a fresh id.
+   */
+  #followups(
+    turnId: string,
+    created: readonly ProposalCreatedV2[],
+    approvals: ReadonlyMap<string, ProposalReviewedV2>,
+  ): FollowupAskedV1[] {
+    if (created.length === 0) return [];
+    const sessionId = this.#store.get("sid") ?? "";
+    let folded = this.#proposals();
+    for (const payload of created) {
+      folded = foldInto(folded, sessionId, { type: "proposal.created", schemaVersion: 2, payload });
+      const review = approvals.get(payload.proposalId);
+      if (review) {
+        folded = foldInto(folded, sessionId, {
+          type: "proposal.reviewed",
+          schemaVersion: 2,
+          payload: review,
+        });
+      }
+    }
+    const ids = new Set(created.map((payload) => payload.proposalId));
+    return followupsFor(folded.filter((proposal) => ids.has(proposal.proposalId))).map(
+      (question) => ({
+        questionId: uuidv7(),
+        turnId,
+        proposalId: question.proposalId,
+        field: question.field,
+        rule: question.rule,
+        text: question.text,
+      }),
+    );
   }
 
   /**
@@ -1442,6 +1541,153 @@ export class SessionRuntime extends DurableObject<Env> {
         },
       },
     );
+  }
+
+  /**
+   * A correction (Phase 5 spec WP13 step 4), sent instead of `turn_end` for a correction turn, from
+   * `start` until the seal: the turn's utterances, said or typed, read into a proposal that
+   * supersedes the one corrected (`correctProposal`: the linker over `start`'s records with the
+   * open account and earlier links, the normalizers on the call's time and the rep's time zone, the
+   * words as said for the rest; no model call and no key), checked first with the writers' rules
+   * (`checkCorrection`). The new proposal's id derives from the correction's id, so a resend under
+   * a new msgId gets the first one's seq. Appended with a `followup.closed` for each open question
+   * it answers. Words with no value of the field's kind are refused with `unreadable`, recorded so
+   * a resend gets the same answer, and nothing is appended. It approves nothing, so it needs no
+   * audit key.
+   */
+  async #correct(message: ClientMessageOf<"correct">): Promise<void> {
+    if (this.#answered(message.msgId) || this.#inflight.has(message.msgId)) return;
+    const store = this.#store;
+    if (store.getNumber("started_seq") === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    const sessionId = store.get("sid") ?? "";
+    // Before the other checks: the digest yields, and everything after it runs in one go.
+    const proposalId = await correctionProposalId(sessionId, message.correctionId);
+    if (this.#answered(message.msgId)) return;
+    if (this.#isSealed()) {
+      this.#refuse(message.msgId, "sealed", false);
+      return;
+    }
+    const refuse = (reason: string) => {
+      // A fixed reason: never an id, a field's value, or the words.
+      this.#log.warn("correction refused", { reason });
+      this.#refuse(message.msgId, "bad_message", false);
+    };
+    const prior = store.recordedWrite(message.correctionId);
+    if (prior) {
+      if (prior.kind !== "correction") return refuse("id_reused");
+      this.#ackExisting(message.msgId, prior.seq);
+      return;
+    }
+    // A correction turn is its own: its words came first, and nothing else ended it.
+    if (store.turn(message.turnId) || this.#runningTurns.has(message.turnId)) {
+      return refuse("turn_taken");
+    }
+    // Validated as `utterance.final` when they arrived; v2 for an older object's, read as speech.
+    const utterances = (
+      store.turnUtterances(message.turnId) as unknown as UtteranceFinalV3[]
+    ).filter((utterance) => utterance.witness !== "unbiased");
+    if (utterances.length === 0) return refuse("no_words");
+    const log = [...store.events(sessionId, 0)];
+    const { proposals } = replay(log, { proposals: proposalsProjection });
+    const check = checkCorrection(proposals, {
+      proposalId: message.proposalId,
+      field: message.field,
+      questionId: message.questionId ?? null,
+    });
+    if (!check.ok) return refuse(check.reason);
+    const recent = readRecent(store.get("link_recent"));
+    const result = correctProposal(
+      { ...check.proposal, linker: linkerOf(log, check.proposal.proposalId) },
+      message.field,
+      utterances,
+      {
+        index: this.#index(),
+        focusEntityId: store.get("focus_entity_id") ?? null,
+        recent,
+        kinds: TARGET_KINDS[check.proposal.type],
+        callTime:
+          store.get("call_time") ??
+          new Date(store.getNumber("capture_started_ms", this.#now())).toISOString(),
+        timeZone: store.get("time_zone") ?? "UTC",
+      },
+    );
+    if (!result.ok) {
+      // Nothing appended, and the card stays as it was. Codes only, never the words.
+      this.#log.info("correction unreadable", { reason: result.reason, kind: result.kind });
+      this.#commit(message.msgId, [], { error: { code: "unreadable", retryable: false } });
+      return;
+    }
+    // The words: cleaned of anything Postgres's jsonb would refuse.
+    const created = toStorable({ proposalId, ...result.proposal }) as unknown as ProposalCreatedV2;
+    const events: NewEvent[] = [
+      {
+        type: "proposal.created",
+        schemaVersion: 2,
+        payload: created as unknown as Record<string, unknown>,
+      },
+      ...check.answers.map((question) => ({
+        type: "followup.closed",
+        schemaVersion: 1,
+        payload: { questionId: question.questionId, outcome: "answered", proposalId },
+      })),
+    ];
+    this.#commit(message.msgId, events, {
+      during: (appended) => {
+        const [first] = appended;
+        if (!first) return;
+        // The commit's last seq, which its ack carries: a resend gets the same answer.
+        const last = appended.at(-1)?.seq ?? first.seq;
+        store.addWrite(message.correctionId, { kind: "correction", seq: last, proposalId });
+        // The turn is used: a later `turn_end` or `correct` for it is refused.
+        store.addTurn(message.turnId, first.seq, "[]");
+        // A record the rep named is the session's latest link, as a turn's is.
+        store.set("link_recent", JSON.stringify(withRecentLinks(recent, [created])));
+      },
+    });
+    this.#log.info("correction recorded", {
+      field: message.field === "target" ? "target" : "field",
+      decision: created.target.decision,
+      flags: created.riskFlags.length,
+      answered: check.answers.length,
+    });
+  }
+
+  /**
+   * A follow-up question skipped (Phase 5 spec WP13 step 4), from `start` until the seal:
+   * `followup.closed` with `skipped`, once `checkFollowupSkip` passes. A question skipped before
+   * gets that skip's seq, whatever the msgId.
+   */
+  #followup(message: ClientMessageOf<"followup">): void {
+    if (this.#answered(message.msgId)) return;
+    const store = this.#store;
+    if (store.getNumber("started_seq") === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    const proposals = this.#proposals();
+    const skipped = proposals
+      .flatMap((proposal) => proposal.followups)
+      .find((followup) => followup.questionId === message.questionId);
+    if (skipped?.status === "skipped" && skipped.closedSeq !== null) {
+      this.#ackExisting(message.msgId, skipped.closedSeq);
+      return;
+    }
+    const check = checkFollowupSkip(proposals, message.questionId);
+    if (!check.ok) {
+      this.#log.warn("follow-up refused", { reason: check.reason });
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    this.#commit(message.msgId, [
+      {
+        type: "followup.closed",
+        schemaVersion: 1,
+        payload: { questionId: message.questionId, outcome: "skipped", proposalId: null },
+      },
+    ]);
   }
 
   /**
