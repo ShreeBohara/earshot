@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "v": {
+      "type": "number",
+      "const": 1
+    },
+    "autoApprove": {
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,40}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "note",
+              "task",
+              "contact",
+              "deal_update",
+              "commitment",
+              "meeting"
+            ]
+          },
+          "alwaysReview": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[a-z][A-Za-z0-9]*$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "alwaysReview"
+        ],
+        "additionalProperties": false,
+        "title": "ApprovalPolicyRule"
+      }
+    }
+  },
+  "required": [
+    "v",
+    "autoApprove"
+  ],
+  "additionalProperties": false,
+  "title": "ApprovalPolicyRules",
+  "description": "A version of a workspace's approval policy, version 1 of its form: the proposal types SessionDO approves on its own as they're created, each with the fields that always need review."
+}

@@ -1,8 +1,11 @@
 export {
+  ApprovalPolicyRule,
+  ApprovalPolicyRules,
   CaptureMode,
   ClientMessage,
   type ClientMessageOf,
   type ContractName,
+  checkPolicyRules,
   contracts,
   EntityKind,
   EntityRef,
@@ -22,10 +25,13 @@ export {
   isSessionCloseCode,
   LikelyEditTier,
   LlmProvider,
+  MAX_ALWAYS_REVIEW_FIELDS,
   MAX_ENTITY_ALIASES,
   MAX_ENTITY_ID_CHARS,
   MAX_ENTITY_NAME_CHARS,
   MAX_MESSAGE_BYTES,
+  MAX_POLICY_FIELD_CHARS,
+  MAX_POLICY_RULES,
   MAX_RECAP_EVIDENCE,
   MAX_RECAP_LENS_FIELDS,
   MAX_RECAP_QUOTE_CHARS,
@@ -40,6 +46,10 @@ export {
   MAX_UTTERANCE_TEXT_CHARS,
   type MessageParseFailure,
   type MessageParseResult,
+  POLICY_SIGNATURE_CHARS,
+  type PolicyRulesCheck,
+  PolicySnapshot,
+  PROPOSAL_TYPE_FIELDS,
   ProposalCreatedV1,
   ProposalCreatedV2,
   ProposalField,
@@ -132,6 +142,14 @@ export {
   Word,
 } from "./contracts";
 export { containsKeyShape, KEY_SHAPES } from "./key-shapes";
+export {
+  canonicalJson,
+  POLICY_SIGNATURE_PREFIX,
+  type PolicyVersion,
+  policySigningInput,
+  signPolicySnapshot,
+  verifyPolicySnapshot,
+} from "./policy-snapshot";
 export {
   DEV_SESSION_TICKET_SECRET,
   importTicketKey,

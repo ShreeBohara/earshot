@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "autoApprove": [
+    { "id": "notes", "type": "note", "alwaysReview": [] },
+    { "id": "tasks", "type": "task", "alwaysReview": ["dueDate"] },
+    { "id": "contacts", "type": "contact", "alwaysReview": ["email", "phone"] },
+    {
+      "id": "deal-updates",
+      "type": "deal_update",
+      "alwaysReview": ["stage", "amount", "closeDate"]
+    },
+    { "id": "commitments", "type": "commitment", "alwaysReview": ["dueDate"] },
+    { "id": "meetings", "type": "meeting", "alwaysReview": ["date", "time"] }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "v": 1,
+  "autoApprove": [
+    {
+      "id": "r0",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r1",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r2",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r3",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r4",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r5",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r6",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r7",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r8",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r9",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r10",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r11",
+      "type": "note",
+      "alwaysReview": []
+    },
+    {
+      "id": "r12",
+      "type": "note",
+      "alwaysReview": []
+    }
+  ]
+}

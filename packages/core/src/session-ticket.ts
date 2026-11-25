@@ -13,6 +13,7 @@
 // and workspace, and, from Phase 5, how and when the web session that asked for it signed in.
 // Single use is SessionDO's job: it refuses a `jti` it has already seen.
 import { z } from "zod";
+import { base64urlDecode, base64urlEncode } from "./base64url";
 import { SignInMethod } from "./contracts/events/proposal-reviewed";
 import { SESSION_SUBPROTOCOL } from "./contracts/session-protocol";
 import { uuidv7 } from "./uuidv7";
@@ -261,7 +262,11 @@ function epochMs(date: Date): number {
   return ms;
 }
 
-async function keyFor(secret: TicketSecret): Promise<CryptoKey> {
+/**
+ * The ticket secret as an HMAC key: imported from the string, or the key the caller imported. The
+ * policy snapshot (policy-snapshot.ts) is signed with the same secret.
+ */
+export async function keyFor(secret: TicketSecret): Promise<CryptoKey> {
   if (typeof secret === "string") return importTicketKey(secret);
   if (secret.algorithm.name !== "HMAC") throw new TypeError("the ticket key must be an HMAC key");
   return secret;
@@ -289,45 +294,4 @@ function decodePayload(payload: string): Record<string, unknown> | undefined {
   }
   if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
   return value as Record<string, unknown>;
-}
-
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-const ALPHABET_INDEX = new Map([...ALPHABET].map((char, index) => [char, index]));
-
-/** Base64url without padding (RFC 4648, section 5). */
-function base64urlEncode(bytes: Uint8Array): string {
-  let out = "";
-  for (let i = 0; i < bytes.length; i += 3) {
-    const n = ((bytes[i] ?? 0) << 16) | ((bytes[i + 1] ?? 0) << 8) | (bytes[i + 2] ?? 0);
-    const left = bytes.length - i;
-    out += ALPHABET.charAt((n >> 18) & 63) + ALPHABET.charAt((n >> 12) & 63);
-    if (left > 1) out += ALPHABET.charAt((n >> 6) & 63);
-    if (left > 2) out += ALPHABET.charAt(n & 63);
-  }
-  return out;
-}
-
-/**
- * Decodes unpadded base64url, or returns undefined. Only the canonical encoding is accepted (the
- * unused low bits of the last character must be zero), so no two strings decode to the same
- * bytes and a ticket has exactly one spelling.
- */
-function base64urlDecode(text: string): Uint8Array<ArrayBuffer> | undefined {
-  if (text.length % 4 === 1) return undefined;
-  const out = new Uint8Array(Math.floor((text.length * 3) / 4));
-  let buffer = 0;
-  let bits = 0;
-  let length = 0;
-  for (const char of text) {
-    const value = ALPHABET_INDEX.get(char);
-    if (value === undefined) return undefined;
-    buffer = (buffer << 6) | value;
-    bits += 6;
-    if (bits >= 8) {
-      bits -= 8;
-      out[length++] = buffer >> bits;
-      buffer &= (1 << bits) - 1;
-    }
-  }
-  return buffer === 0 ? out : undefined;
 }

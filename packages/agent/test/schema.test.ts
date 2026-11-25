@@ -1,3 +1,4 @@
+import { PROPOSAL_TYPE_FIELDS } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import {
   describeIssues,
@@ -39,6 +40,23 @@ describe("the submit_proposals JSON Schema", () => {
       const properties = Object.keys((node.properties ?? {}) as Node).sort();
       expect([...((node.required ?? []) as string[])].sort(), path).toEqual(properties);
     }
+  });
+
+  it("names each proposal type's fields as approval policies list them (@earshot/core)", () => {
+    // A rule's `alwaysReview` may list only its type's fields (`checkPolicyRules`), so a field the
+    // extractor adds or renames must reach PROPOSAL_TYPE_FIELDS too, or no policy could name it.
+    const fieldsByType: Record<string, string[]> = {};
+    for (const [, node] of nodes) {
+      const properties = node.properties as Node | undefined;
+      const type = (properties?.type as Node | undefined)?.const;
+      const fields = (properties?.fields as Node | undefined)?.properties as Node | undefined;
+      if (typeof type === "string" && fields) fieldsByType[type] = Object.keys(fields);
+    }
+    expect(fieldsByType).toEqual(
+      Object.fromEntries(
+        Object.entries(PROPOSAL_TYPE_FIELDS).map(([type, fields]) => [type, [...fields]]),
+      ),
+    );
   });
 
   it("makes optional fields a union with null", () => {
