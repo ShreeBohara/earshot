@@ -96,6 +96,19 @@ export async function openInboxWithSamples(
   await page.goto("/inbox");
   await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeVisible(cold);
   await expect(cards(page)).toHaveCount(7, cold);
+  await hydrated(page);
+}
+
+/**
+ * Waits until the inbox has hydrated. The server's HTML shows every card before then, but a click
+ * on it does nothing, which a slow runner under next dev can make last seconds. The debriefs' times
+ * are the signal: the server writes them in UTC and says so ("Nov 16, 3:00 pm UTC"), and the page
+ * swaps in the reviewer's own words as it hydrates (`When`). So call it once cards show.
+ */
+export async function hydrated(page: Page): Promise<void> {
+  await expect(page.locator("time").filter({ hasText: / UTC$/ })).toHaveCount(0, {
+    timeout: 60_000,
+  });
 }
 
 /** Puts focus on a card the way a keyboard user would land on it: clicking its heading's card. */

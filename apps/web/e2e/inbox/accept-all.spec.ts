@@ -6,6 +6,7 @@ import {
   cards,
   expectFocusOffBody,
   focused,
+  hydrated,
   openInboxWithSamples,
   reviewsSent,
   settled,
@@ -192,6 +193,7 @@ test("accept all: the checkpoint says what stays, the batch takes only unmarked 
   // After a reload, Reviewed's one row undoes the batch it read from the log.
   await page.goto("/inbox");
   await expect(cards(page)).toHaveCount(4, { timeout: 60_000 });
+  await hydrated(page);
   await page
     .getByRole("region", { name: "Reviewed" })
     .getByRole("button", { name: "Undo: accepted together, 3 proposals" })
