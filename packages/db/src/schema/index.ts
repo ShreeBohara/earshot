@@ -6,6 +6,7 @@ export * from "./credentials";
 export * from "./crm";
 export * from "./memory";
 export * from "./meta";
+export * from "./policies";
 export * from "./proposals";
 export * from "./sessions";
 export { workspaceMembers, workspaces } from "./workspaces";

@@ -5,8 +5,9 @@
 --   A's rows are a0000000-0000-4000-8000-0000000000NN and B's are b0000000-…NN, where NN is
 --   01 credentials, 02 crm_connections, 03 crm_entities, 04 sessions, 05 session_events,
 --   06 utterances, 07 proposals, 08 sync_jobs, 09 commitments, 10 facts, 11 audit_log,
---   12 audit_checkpoints. The audit log's trigger (migration 0013) gives each entry chain_seq 1;
---   each checkpoint names it, with a placeholder signature (nothing here verifies it).
+--   12 audit_checkpoints, 13 approval_policies (the policy's id, at version 1). The audit log's
+--   trigger (migration 0013) gives each entry chain_seq 1; each checkpoint names it, with a
+--   placeholder signature (nothing here verifies it).
 
 insert into "user" (id, name, email) values
   ('user-a', 'Ada Archer', 'ada@a.test'),
@@ -111,3 +112,12 @@ from (values
   ('b0000000-0000-4000-8000-000000000012'::uuid, 'b0000000-0000-4000-8000-000000000011'::uuid)
 ) as v(id, audit_id)
 join audit_log a on a.id = v.audit_id;
+
+-- Each rules_sha256 is SHA-256 of its rules' canonical JSON (canonicalJson in @earshot/core).
+insert into approval_policies (workspace_id, id, version, rules, rules_sha256, created_by) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a0000000-0000-4000-8000-000000000013', 1,
+   '{"v": 1, "autoApprove": [{"id": "notes", "type": "note", "alwaysReview": []}]}',
+   '688a0935cdea7ec5e2bbc65295a7978c045ac65d9d24988984bdf296c62a97d0', 'user-a'),
+  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b0000000-0000-4000-8000-000000000013', 1,
+   '{"v": 1, "autoApprove": [{"id": "deal-updates", "type": "deal_update", "alwaysReview": ["amount", "stage"]}]}',
+   '29691d66e9547d778f4961ea341e651ba49adf772c057ad20ee6b2942ee9f60e', 'user-b');

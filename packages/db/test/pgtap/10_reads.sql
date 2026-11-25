@@ -1,18 +1,18 @@
 -- Reads: as earshot_app, each workspace sees only its own rows, and the other workspace's ids
 -- return nothing. Ids come from test/fixtures/two-workspaces.sql.
 begin;
-select plan(56);
+select plan(60);
 
--- As the owner, which RLS doesn't apply to: both workspaces have a row everywhere (14)
+-- As the owner, which RLS doesn't apply to: both workspaces have a row everywhere (15)
 select results_eq(format('select count(*)::int from %I', t), array[2], format('%s: the owner sees both workspaces'' rows', t))
 from unnest(array[
   'workspaces', 'workspace_members', 'credentials', 'crm_connections', 'crm_entities', 'sessions',
   'session_events', 'utterances', 'proposals', 'sync_jobs', 'commitments', 'facts', 'audit_log',
-  'audit_checkpoints'
+  'audit_checkpoints', 'approval_policies'
 ]) with ordinality as u(t, ord)
 order by u.ord;
 
--- As workspace A (28)
+-- As workspace A (30)
 set local role earshot_app;
 select set_config('app.user_id', 'user-a', true),
        set_config('app.workspace_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', true);
@@ -88,7 +88,13 @@ select results_eq('select id from audit_checkpoints',
 select is_empty($$select from audit_checkpoints where id = 'b0000000-0000-4000-8000-000000000012'$$,
   'audit_checkpoints: B''s id returns nothing');
 
--- As workspace B, in the same transaction and role: the policy follows the setting (14)
+select results_eq('select id, version from approval_policies',
+  $$values ('a0000000-0000-4000-8000-000000000013'::uuid, 1)$$,
+  'approval_policies: A sees only its own policy');
+select is_empty($$select from approval_policies where id = 'b0000000-0000-4000-8000-000000000013'$$,
+  'approval_policies: B''s policy id returns nothing');
+
+-- As workspace B, in the same transaction and role: the policy follows the setting (15)
 select set_config('app.user_id', 'user-b', true),
        set_config('app.workspace_id', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', true);
 
@@ -99,7 +105,7 @@ select results_eq(format('select workspace_id from %I', t),
 from unnest(array[
   'workspace_members', 'credentials', 'crm_connections', 'crm_entities', 'sessions',
   'session_events', 'utterances', 'proposals', 'sync_jobs', 'commitments', 'facts', 'audit_log',
-  'audit_checkpoints'
+  'audit_checkpoints', 'approval_policies'
 ]) with ordinality as u(t, ord)
 order by u.ord;
 

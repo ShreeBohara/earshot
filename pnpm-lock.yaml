@@ -570,6 +570,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@earshot/core':
+        specifier: workspace:*
+        version: link:../core
       '@earshot/demo-crm':
         specifier: workspace:*
         version: link:../demo-crm

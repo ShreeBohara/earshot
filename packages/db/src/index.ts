@@ -51,6 +51,16 @@ export {
   type ImportSessionOptions,
   importSessionLog,
 } from "./import-session";
+export {
+  type ApprovalPolicyVersion,
+  POLICY_CHANGED_ACTION,
+  type PolicyChangeAuth,
+  type PolicyChangeInput,
+  type PolicyChangeOutcome,
+  readApprovalPolicy,
+  rulesSha256,
+  writeApprovalPolicy,
+} from "./policies";
 export { rebuildProjections, type SessionProjections } from "./projections";
 export {
   AuditUnavailableError,
