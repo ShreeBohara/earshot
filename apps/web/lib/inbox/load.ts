@@ -27,7 +27,7 @@ import {
   schema,
   valueFromHistory,
 } from "@earshot/db";
-import type { ProposalStatus, ReviewView, SessionRecap } from "@earshot/events";
+import type { FollowupView, ProposalStatus, ReviewView, SessionRecap } from "@earshot/events";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import type { TenantTx } from "../auth/viewer";
 import { recapUtteranceIds } from "../recap/view";
@@ -128,6 +128,8 @@ export function proposalFromRow(row: ProposalRow): InboxProposal {
     supersedes: row.supersedes,
     supersededBy: row.supersededBy,
     snoozedUntil: row.snoozedUntil?.toISOString() ?? null,
+    // Migration 0018 (Phase 5 WP13): written whole from the projection, `[]` before a rebuild.
+    followups: (row.followups as unknown as FollowupView[] | null) ?? [],
     seq: row.seq ?? 0,
     ts: row.createdAt.toISOString(),
     review: reviewOf(row),

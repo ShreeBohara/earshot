@@ -59,6 +59,7 @@ export type SessionProjections = ProjectionStates<typeof defaultProjections>;
  * The status is the latest decision, `proposed` after a reopen, and `superseded` once a
  * correction replaces the proposal. The session's row gets `sealed_at` from `session.sealed`,
  * and `recap` from `recap.created` (migration 0015, Phase 5 WP10).
+ * Phase 5 WP13 (migration 0018): each utterance's `input`, and each proposal's `followups`.
  * The rest of the session's row (its user, metrics, and focus account) isn't the log's to say.
  */
 export async function rebuildProjections<
@@ -99,6 +100,7 @@ async function writeUtterances(
       seq: view.seq,
       ts: timestamptz(view.ts),
       witness: view.witness,
+      input: view.input,
       text: view.text,
       words: view.words,
       confidence: view.confidence,
@@ -157,6 +159,7 @@ async function writeProposals(
         snoozedUntil: excluded(proposals.snoozedUntil),
         supersedes: excluded(proposals.supersedes),
         supersededBy: excluded(proposals.supersededBy),
+        followups: excluded(proposals.followups),
         createdAt: excluded(proposals.createdAt),
         updatedAt: excluded(proposals.updatedAt),
       },
@@ -207,6 +210,7 @@ function proposalRow(view: ProposalView, sessionId: string, mirrored: ReadonlySe
     snoozedUntil: view.snoozedUntil === null ? null : timestamptz(view.snoozedUntil),
     supersedes: view.supersedes,
     supersededBy: view.supersededBy,
+    followups: view.followups as unknown as Record<string, unknown>[],
     createdAt: timestamptz(view.ts),
     updatedAt: timestamptz(review?.ts ?? view.ts),
   };

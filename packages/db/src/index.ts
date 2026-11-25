@@ -30,6 +30,19 @@ export {
 } from "./audit-chain";
 export { createHttpDb, createPoolDb, type HttpDb, type PoolDb } from "./client";
 export {
+  type CorrectionReadInput,
+  type CorrectionUtteranceV3,
+  type CorrectionWords,
+  correctionUtterances,
+  type FollowupSkipOutcome,
+  lastAudioMs,
+  type SessionCorrectionOptions,
+  type SessionCorrectionOutcome,
+  type SessionCorrectionRequest,
+  writeFollowupSkip,
+  writeSessionCorrection,
+} from "./corrections";
+export {
   asFieldValue,
   type CrmChangeInput,
   type FieldChange,
