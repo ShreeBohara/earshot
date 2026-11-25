@@ -48,6 +48,9 @@ export type MetaKey =
   | "time_zone"
   | "entities"
   | "focus_entity_id"
+  // The approval policy `start` carried, once its signature verified (Phase 5 WP11): its id,
+  // version, and rules (JSON), never the signature. Absent: no policy, every proposal waits.
+  | "policy"
   // The records turns linked from words that were said, most recent first, at most 20 (JSON): the
   // linker's `recent` context (Phase 4 spec, WP8 step 4).
   | "link_recent"

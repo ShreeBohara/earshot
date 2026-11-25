@@ -559,6 +559,57 @@ describe("review events at flush: audit rows and a checkpoint", () => {
     expect(verified.ok).toBe(true);
   });
 
+  it("audits an approval policy's auto-approval as proposal.auto_approved, naming the policy's id, version, and rule (Phase 5 WP11)", async () => {
+    const tenant = await freshTenant();
+    const sid = await createSession(tenant);
+    const { events: raw, proposalId } = reviewedDebrief();
+    const policy = { id: "01a1c6f2-7d10-7a3b-9c4d-5e6f7a8b9c0d", version: 3, rule: "notes" };
+    // As SessionDO writes one: the session's user with no sign-in, no input, no time.
+    const events = forTenant(raw, tenant).map((event) =>
+      event.type === "proposal.reviewed"
+        ? {
+            ...event,
+            payload: {
+              ...event.payload,
+              mode: "policy",
+              policy,
+              by: { userId: tenant.userId, auth: null },
+              input: "none",
+              surface: "session",
+              timing: { decisionMs: 0, handlingMs: 0 },
+            },
+          }
+        : event,
+    );
+    const pending = delivery(message(sid, events, tenant));
+    await flushBatch({ messages: [pending] }, deps(fakeDo(events).rpc));
+    expect(pending.acked).toBe(true);
+
+    const review = events.find((event) => event.type === "proposal.reviewed");
+    const rows = (await auditRows()).filter((row) => row.workspaceId === tenant.workspaceId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      actorUserId: tenant.userId,
+      action: "proposal.auto_approved",
+      subjectType: "proposal",
+      subjectId: proposalId,
+      detail: {
+        sessionId: sid,
+        eventId: review?.id,
+        reviewId: review?.payload.reviewId,
+        mode: "policy",
+        batchId: null,
+        policy,
+        undoes: null,
+        auth: null,
+        surface: "session",
+        input: "none",
+      },
+    });
+    const ckpts = (await checkpoints()).filter((row) => row.workspaceId === tenant.workspaceId);
+    expect(ckpts.map((row) => row.request)).toEqual(["flush"]);
+  });
+
   it("adds no audit rows on a redelivery that finds its events stored", async () => {
     const tenant = await freshTenant();
     const sid = await createSession(tenant);
