@@ -286,6 +286,71 @@ export const Correcting: Story = {
   },
 };
 
+/** The correction panel's field picker and text box (WP13), where corrections can be written. */
+const correction = {
+  fields: [
+    { value: "target", label: "The record" },
+    { value: "stage", label: "Stage" },
+    { value: "amount", label: "Amount" },
+  ],
+  field: "target",
+  text: "",
+  busy: false,
+  error: null,
+  listening: false,
+  canSpeak: false,
+  onField: fn(),
+  onText: fn(),
+  onSubmit: fn(),
+  onSpeak: fn(),
+};
+
+/**
+ * Correcting where corrections can be written (WP13): "What's wrong" with the record picked, the
+ * candidates still on 1 to 3, and a text box for the record's name.
+ */
+export const CorrectingWithAField: Story = {
+  args: { proposal: UPDATE, correcting: true, correction },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    const group = panel.getByRole("group", { name: "Correct the record" });
+    await expect(within(group).getByLabelText("What's wrong")).toHaveValue("target");
+    await expect(within(group).getByRole("radiogroup", { name: "Which is it?" })).toBeVisible();
+    await expect(within(group).getByLabelText("Or type the record's name")).toBeVisible();
+    await expect(within(group).getByRole("button", { name: "Correct it" })).toBeDisabled();
+  },
+};
+
+/**
+ * A field picked, words it couldn't read, and the microphone on the capture screen: no candidates,
+ * the words kept, the line an alert.
+ */
+export const CorrectionUnreadable: Story = {
+  args: {
+    proposal: UPDATE,
+    correcting: true,
+    correction: {
+      ...correction,
+      field: "amount",
+      text: "a fair bit",
+      error: "I couldn't read an amount in “a fair bit”.",
+      canSpeak: true,
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    const group = panel.getByRole("group", { name: "Correct the record" });
+    await expect(within(group).queryByRole("radiogroup")).toBeNull();
+    const box = within(group).getByLabelText("The right amount");
+    await expect(box).toHaveValue("a fair bit");
+    await expect(box).toHaveAttribute("aria-invalid", "true");
+    await expect(box).toHaveAccessibleDescription("I couldn't read an amount in “a fair bit”.");
+    await expect(within(group).getByRole("alert")).toHaveTextContent(/a fair bit/);
+    await expect(within(group).getByRole("button", { name: "Say it" })).toBeVisible();
+    await expect(within(group).getByRole("button", { name: "Correct it" })).toBeEnabled();
+  },
+};
+
 /** With the shortcuts off: no keys on the buttons, and no aria-keyshortcuts. */
 export const ShortcutsOff: Story = {
   args: { proposal: QUESTION, shortcuts: false },
