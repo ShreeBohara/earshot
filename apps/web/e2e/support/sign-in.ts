@@ -46,9 +46,17 @@ export async function signInAsNewUser(page: Page): Promise<string> {
   const email = `${nonce}@earshot.example`;
   await page.goto(`/sign-in?next=${encodeURIComponent(`/home?from=${nonce}`)}`);
   const offset = await logSize();
-  await page.getByLabel("Email").fill(email);
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
-  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  // On a cold dev server the form can take its address and the click before it hydrates, and a
+  // controlled input then loses both: the page never says it sent a link. Try again until it does.
+  // A second link carries the same nonce, and the first one printed is taken.
+  const sent = page.getByRole("heading", { name: "Check your email" });
+  await expect(async () => {
+    if (!(await sent.isVisible())) {
+      await page.getByLabel("Email").fill(email, { timeout: 5_000 });
+      await page.getByRole("button", { name: "Email me a sign-in link" }).click({ timeout: 5_000 });
+    }
+    await expect(sent).toBeVisible({ timeout: 10_000 });
+  }).toPass({ timeout: 60_000 });
   await page.goto(await linkPrintedAfter(offset, nonce));
   await expect(page).toHaveURL(/\/onboarding$/);
   return email;
