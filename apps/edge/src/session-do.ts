@@ -196,6 +196,12 @@ const TIER_OF: TierOf = tierOf;
 /** The approval policy as `meta` keeps it: the verified snapshot, without its signature. */
 const StoredPolicy = PolicySnapshot.omit({ sig: true });
 
+/** A turn's proposals as the session's policy judged them: approvals by proposal, the rest by why. */
+interface PolicyJudgement {
+  readonly approvals: ReadonlyMap<string, ProposalReviewedV2>;
+  readonly excluded: Partial<Record<PolicyExclusion | "refused", number>>;
+}
+
 function readAttachment(ws: WebSocket): Attachment | undefined {
   const value = ws.deserializeAttachment() as Partial<Attachment> | null;
   return value && typeof value.connId === "string" ? (value as Attachment) : undefined;
@@ -854,49 +860,40 @@ export class SessionRuntime extends DurableObject<Env> {
     }
 
     const usage = result.usage;
+    // Model output: cleaned of anything Postgres's jsonb would refuse.
+    const created = result.proposals.map(
+      (proposal) => toStorable(proposal) as unknown as ProposalCreatedV2,
+    );
+    // The policy's approvals (spec §4.6), by proposal. Anything going wrong in the evaluation is a
+    // bug: the turn's proposals are still recorded, every one waiting for a person.
+    let judged: PolicyJudgement = { approvals: new Map(), excluded: {} };
+    if (applyPolicy && policy !== null) {
+      try {
+        judged = this.#judgeProposals(created, policy);
+      } catch (error) {
+        this.#log.error("policy not applied", {
+          reason: "evaluation_failed",
+          cause: errorName(error),
+        });
+      }
+    }
     const events: NewEvent[] = [];
     /** The policy's approvals among `events`, by position, for the `writes` table. */
     const approvals: { readonly index: number; readonly review: ProposalReviewedV2 }[] = [];
-    const excluded: Partial<Record<PolicyExclusion | "refused", number>> = {};
-    const sessionId = store.get("sid") ?? "";
-    const now = this.#now();
-    let folded: readonly ProposalView[] = applyPolicy ? this.#proposals() : [];
-    for (const proposal of result.proposals) {
-      // Model output: cleaned of anything Postgres's jsonb would refuse.
-      const payload = toStorable(proposal) as unknown as ProposalCreatedV2;
+    for (const payload of created) {
       events.push({
         type: "proposal.created",
         schemaVersion: 2,
         payload: payload as unknown as Record<string, unknown>,
       });
-      if (!applyPolicy || policy === null) continue;
-      // Spec §4.6: each new proposal, as the session's projection folds it, against the policy.
-      folded = foldInto(folded, sessionId, { type: "proposal.created", schemaVersion: 2, payload });
-      const view = folded.find((candidate) => candidate.proposalId === payload.proposalId);
-      if (!view) continue;
-      const match = policyRuleFor(view, policy.rules, { tierOf: TIER_OF });
-      if (!match.ok) {
-        excluded[match.reason] = (excluded[match.reason] ?? 0) + 1;
-        continue;
-      }
-      const review = this.#policyApproval(view, policy, match.rule.id, now);
-      const check = checkReview(folded, review, { tierOf: TIER_OF, from: "session" });
-      if (!check.ok) {
-        // A bug: the evaluation and the writers' rules disagree. The proposal waits for a person.
-        this.#log.error("policy approval not recorded", { reason: check.reason });
-        excluded.refused = (excluded.refused ?? 0) + 1;
-        continue;
-      }
+      // Each approval right after its proposal, in the turn's own commit.
+      const review = judged.approvals.get(payload.proposalId);
+      if (!review) continue;
       approvals.push({ index: events.length, review });
       events.push({
         type: "proposal.reviewed",
         schemaVersion: 2,
         payload: review as unknown as Record<string, unknown>,
-      });
-      folded = foldInto(folded, sessionId, {
-        type: "proposal.reviewed",
-        schemaVersion: 2,
-        payload: review,
       });
     }
     if (usage) {
@@ -968,8 +965,47 @@ export class SessionRuntime extends DurableObject<Env> {
       llmMs: result.completed.llmMs,
       failure: result.failure,
       // The approval policy's part: counts and codes only.
-      ...(applyPolicy ? { autoApproved, policyExcluded: excluded } : {}),
+      ...(applyPolicy ? { autoApproved, policyExcluded: judged.excluded } : {}),
     });
+  }
+
+  /**
+   * Which of a turn's new proposals the session's policy approves (spec §4.6), each with its
+   * approval: every proposal, folded in turn into the session's proposals as the log has them, run
+   * through `policyRuleFor`, and each approval checked with the writers' rules (`from: "session"`)
+   * before it's folded in too. The rest are counted by why, for the log.
+   */
+  #judgeProposals(created: readonly ProposalCreatedV2[], policy: PolicyVersion): PolicyJudgement {
+    const sessionId = this.#store.get("sid") ?? "";
+    const now = this.#now();
+    const approvals = new Map<string, ProposalReviewedV2>();
+    const excluded: PolicyJudgement["excluded"] = {};
+    let folded = this.#proposals();
+    for (const payload of created) {
+      folded = foldInto(folded, sessionId, { type: "proposal.created", schemaVersion: 2, payload });
+      const view = folded.find((candidate) => candidate.proposalId === payload.proposalId);
+      if (!view) continue;
+      const match = policyRuleFor(view, policy.rules, { tierOf: TIER_OF });
+      if (!match.ok) {
+        excluded[match.reason] = (excluded[match.reason] ?? 0) + 1;
+        continue;
+      }
+      const review = this.#policyApproval(view, policy, match.rule.id, now);
+      const check = checkReview(folded, review, { tierOf: TIER_OF, from: "session" });
+      if (!check.ok) {
+        // A bug: the evaluation and the writers' rules disagree. The proposal waits for a person.
+        this.#log.error("policy approval not recorded", { reason: check.reason });
+        excluded.refused = (excluded.refused ?? 0) + 1;
+        continue;
+      }
+      approvals.set(payload.proposalId, review);
+      folded = foldInto(folded, sessionId, {
+        type: "proposal.reviewed",
+        schemaVersion: 2,
+        payload: review,
+      });
+    }
+    return { approvals, excluded };
   }
 
   /**
