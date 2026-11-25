@@ -61,7 +61,7 @@ What a policy has to work within:
 ### The snapshot
 
 - **`POST /api/sessions`** reads the latest version in the session's own tenant transaction, before the entities, which it budgets around the snapshot so `start` still fits 64 KiB. No policy, a policy that approves nothing, or stored rules that don't parse (logged) give `policy: null`. Otherwise it answers `policy`, signed for the new session's id. A policy of one rule per type takes about 540 bytes of `start`.
-- **A signature shaped like a key.** A signature is random base64url, so about one in 100,000 could happen to contain a provider key's shape (`sk-` and 20 characters, say), and the socket would refuse the session's `start`. That session gets no policy instead, which is logged, and every proposal waits for the rep.
+- **A signature shaped like a key.** A signature is random base64url, so about one in 100,000 could happen to contain a provider key's shape (`sk-` and 20 characters, say), and the socket would refuse the session's `start`. That session gets no policy instead, which is logged, and every proposal waits for the rep. The route checks the snapshot's rule ids and fields the same way, though the writer already refuses a key-shaped id, so no stored policy can stop sessions from starting.
 - **The client:** the capture controller sends the snapshot in `start.policy`, fake mode included (the snapshot isn't part of any turn's request, so cassettes still answer); `SessionClient.sendStart` takes it.
 
 ### `SessionDO`

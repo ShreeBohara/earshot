@@ -468,6 +468,26 @@ describe("the snapshot POST /api/sessions signs", { timeout: 120_000 }, () => {
     expect(log.lines.join("\n")).not.toContain(TICKET_SECRET);
   });
 
+  it("leaves out a stored policy with anything shaped like a key, so it can't stop sessions starting", async () => {
+    const viewer = await signIn("ana@acme.example");
+    // Written as the owner, past the writer's checks, as a bug or a hand edit could.
+    await db.insert(approvalPolicies).values({
+      workspaceId: viewer.workspaceId,
+      id: "01a1c6f2-7d10-7a3b-9c4d-5e6f7a8b9c0d",
+      version: 1,
+      rules: {
+        v: 1,
+        autoApprove: [{ id: `sk-${"a".repeat(24)}`, type: "note", alwaysReview: [] }],
+      },
+      rulesSha256: "0".repeat(64),
+      createdBy: viewer.user.id,
+    });
+    const created = await createSession();
+    expect(created.status).toBe(201);
+    expect(created.body.policy).toBeNull();
+    expect(log.lines.join("\n")).toContain("approval policy left out of a session");
+  });
+
   it("fits, with the session's entities, in the 64 KiB start the client sends", async () => {
     const viewer = await signIn("ana@acme.example");
     await withTenant(db, tenantOf(viewer), (tx) => loadDemoCrm(tx));

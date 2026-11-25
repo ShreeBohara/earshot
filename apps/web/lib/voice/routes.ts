@@ -513,8 +513,10 @@ function sessionPolicy(
 /**
  * The policy signed for session `sessionId` with the ticket secret (`signPolicySnapshot`), for the
  * client to carry in `start`. The socket refuses a `start` holding anything shaped like a key, and
- * a signature is random base64url, so about one in 100,000 could happen to look like one: that
- * session gets no policy instead of failing to start, and every proposal waits for the rep.
+ * a signature is random base64url, so about one in 100,000 could happen to look like one; the
+ * writer refuses key-shaped rule ids, and they're checked here again, so a stored policy can never
+ * stop sessions from starting. Either way that session gets no policy instead of failing to start,
+ * and every proposal waits for the rep.
  */
 async function signedPolicy(
   ticketSecret: string,
@@ -523,8 +525,12 @@ async function signedPolicy(
   log: Logger,
 ): Promise<PolicySnapshot | null> {
   const snapshot = await signPolicySnapshot(ticketSecret, policy, sessionId);
-  if (containsKeyShape(snapshot.sig)) {
-    log.warn("approval policy left out of a session: its signature is shaped like a key");
+  const strings = [
+    snapshot.sig,
+    ...snapshot.rules.autoApprove.flatMap((rule) => [rule.id, ...rule.alwaysReview]),
+  ];
+  if (strings.some(containsKeyShape)) {
+    log.warn("approval policy left out of a session: something in it is shaped like a key");
     return null;
   }
   return snapshot;

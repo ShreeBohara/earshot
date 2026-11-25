@@ -43,6 +43,15 @@ test("a policy saved in Settings → Review approves the next debrief's note as 
   await expect(page.locator("[data-slot=policy-version]")).toContainText(
     "Version 1, changed by you",
   );
+  // Loaded afresh, the page shows the saved policy; axe runs on it there, not mid-refresh, when
+  // next dev can be between head elements.
+  await page.reload();
+  await expect(page).toHaveTitle("Review · Settings · Earshot");
+  await expect(page.locator("[data-slot=policy-version]")).toContainText(
+    "Version 1, changed by you",
+  );
+  await expect(notes).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /^Amount/ })).toBeChecked();
   expect(await seriousViolations(page)).toEqual([]);
 
   // The next debrief: d003's first line.
