@@ -233,6 +233,7 @@ export function smokeMarkdown(report: SmokeReport, baseline: SmokeBaseline | nul
   lines.push(
     `| Evidence coverage (G2c) | 100% required | | | ${pct(summary?.evidenceCoverage)} |`,
     `| End-to-end wrong-account rate | at most ${pct(SMOKE_GATE.maxWrongAccountRate)} | | | ${pct(summary?.wrongAccountRate)} (${summary?.decided ?? 0} decided) |`,
+    `| Recaps written | all required | | | ${recap ? `${recap.created} of ${recap.recaps}` : "n/a"} |`,
     `| Recap evidence (kept sentences) | 100% required | | | ${pct(recap?.evidenceCoverage)} |`,
     `| Recap drop rate (may rise by) | ${pct(baseline?.recapMedian.dropRate)} | ${pts(baseline?.recapSpread.dropRate)} | ${baseline ? pts(allowedRecapRise(baseline.recapSpread.dropRate)) : "n/a"} | ${pct(recap?.dropRate)} (${recap?.dropped ?? 0} of ${recap?.written ?? 0} sentences) |`,
     "",

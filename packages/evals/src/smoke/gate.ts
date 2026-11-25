@@ -13,14 +13,16 @@
 //   failure says to record one (`baseline:smoke`);
 // - the baseline doesn't fit the run: another provider or model, another linker, or other
 //   scripts. Its regression comparison is skipped, and the failure says to record it again;
-// - and, for each script's recap (Phase 5 WP10; ./recap.ts): a kept sentence without evidence, or
-//   a drop rate more than max(5 points, 2 × its spread) above the baseline's median (target).
+// - and, for each script's recap (Phase 5 WP10; ./recap.ts): a recap that wasn't written (the
+//   model's output failed validation on both attempts; a failed recap has no sentences, so the two
+//   rates below can't see it), a kept sentence without evidence, or a drop rate more than
+//   max(5 points, 2 × its spread) above the baseline's median (target).
 //
 // One automatic re-run within the budget (spec §8's answer to a flapping gate): when a complete
-// run fails only on the noisy checks (a regression, or the wrong-account rate), and what's left of
-// the budget covers another run's estimate, the run is repeated, and the job fails only if the
-// repeat fails too. Evidence coverage is the pipeline's honesty, not the model's luck, so it never
-// earns a re-run.
+// run fails only on the noisy checks (a regression, the wrong-account rate, or a recap that wasn't
+// written), and what's left of the budget covers another run's estimate, the run is repeated, and
+// the job fails only if the repeat fails too. Evidence coverage is the pipeline's honesty, not the
+// model's luck, so it never earns a re-run.
 import { LlmProvider } from "@earshot/core";
 import { z } from "zod";
 import { summarize, UnderstandingSummary } from "../understanding/gate";
@@ -163,6 +165,7 @@ export interface SmokeIdentity {
 export type SmokeFailureKind =
   | "incomplete"
   | "evidence"
+  | "recap_failed"
   | "wrong_account"
   | "regression"
   | "no_baseline"
@@ -246,6 +249,12 @@ export function smokeGateFailures(input: SmokeGateInput): SmokeFailure[] {
       message: `recap evidence ${pct(recap.evidenceCoverage)} is under 100% (${recap.kept - recap.withEvidence} of ${recap.kept} kept sentences without evidence)`,
     });
   }
+  if (recap !== null && recap.created < recap.recaps) {
+    failures.push({
+      kind: "recap_failed",
+      message: `${recap.recaps - recap.created} of ${recap.recaps} recaps weren't written: every script needs one, and a recap whose output fails validation twice has no sentences to score`,
+    });
+  }
   if (baseline === null) {
     failures.push({
       kind: "no_baseline",
@@ -289,7 +298,11 @@ export function smokeGateFailures(input: SmokeGateInput): SmokeFailure[] {
 }
 
 /** The failures a re-run can clear: the checks live sampling can trip by chance. */
-const NOISY: ReadonlySet<SmokeFailureKind> = new Set(["regression", "wrong_account"]);
+const NOISY: ReadonlySet<SmokeFailureKind> = new Set([
+  "regression",
+  "wrong_account",
+  "recap_failed",
+]);
 
 /**
  * Whether to run once more (see the top of the file): the run failed only on noisy checks, and

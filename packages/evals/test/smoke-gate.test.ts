@@ -259,6 +259,32 @@ describe("the gate on each script's recap (Phase 5 WP10)", () => {
     expect(recapGate(null)).toEqual([]);
   });
 
+  it("fails a recap that wasn't written, though it leaves no sentence to score, and allows a re-run", () => {
+    // Every script's output failed validation twice: no sentences, so neither rate can see it.
+    const unwritten: SmokeRecapSummary = {
+      ...recapSummary(0),
+      created: 0,
+      written: 0,
+      kept: 0,
+      withEvidence: 0,
+      dropped: 0,
+      headlines: 0,
+      weak: 0,
+      evidenceCoverage: null,
+      dropRate: null,
+      headlineRate: null,
+      weakSupportShare: null,
+    };
+    const failures = recapGate(unwritten);
+    expect(kinds(failures)).toEqual(["recap_failed"]);
+    expect(failures[0]?.message).toContain("30 of 30 recaps weren't written");
+    expect(kinds(recapGate(unwritten, null))).toEqual(["recap_failed", "no_baseline"]);
+    // One of 30 is enough.
+    expect(kinds(recapGate({ ...recapSummary(9), created: 29 }))).toEqual(["recap_failed"]);
+    // The model's luck, like a regression: a re-run within the budget may clear it.
+    expect(shouldRerun({ failures, spentUsd: 0.01, budgetUsd: 1, estimateUsd: 0.04 })).toBe(true);
+  });
+
   it("refuses a baseline without three runs' recaps", () => {
     expect(() =>
       SmokeBaseline.parse({ ...STEADY, recapRuns: STEADY.recapRuns.slice(0, 2) }),
