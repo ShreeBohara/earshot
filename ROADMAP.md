@@ -116,7 +116,8 @@ The core loop is **capture, understand, verify, sync, remember**. The design pri
   - the five-person pilot (gates G1b and G2b), once the pre-registration's three blanks are filled in: the commit, the set's SHA-256, and whether Phase 8's report uses the results, with its ethics question;
   - the screen-reader passes on a Mac, an iPhone, and a Windows machine with NVDA (G3b);
   - the recap's live check (under $0.01), and, optionally, the live smoke eval with recaps;
-  - an audit signing key on both Workers at the first deploy. Until then a deployment refuses reviews and applies no policy.
+  - an audit signing key on both Workers at the first deploy. Until then a deployment refuses reviews and applies no policy;
+  - still open from earlier phases: Phase 4's second-witness live check, smoke baseline, and confusion mining; Phase 3's provider spike and latency gate; and every deploy, which needs the Cloudflare, Neon, and Chromatic accounts and their secrets.
 - Checked only on the first deploy: the whole path from the tray through the flush to the inbox, the seal's timing on real networks, and the review route's latency.
 
 ## Phase 6: Real CRM sync (weeks 14-16)
