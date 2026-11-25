@@ -21,6 +21,9 @@
     "typecheck": {
       "dependsOn": ["^build", "cf-typegen"]
     },
+    "@earshot/web#typecheck": {
+      "dependsOn": ["^build", "cf-typegen", "build"]
+    },
     "lint": {},
     "test": {
       "dependsOn": ["^build"]
