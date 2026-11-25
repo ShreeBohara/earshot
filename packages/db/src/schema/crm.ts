@@ -77,3 +77,57 @@ export const crmEntities = pgTable(
     index("crm_entities_embedding_hnsw_idx").using("hnsw", t.embedding.op("halfvec_cosine_ops")),
   ],
 );
+
+/**
+ * Where a change in the mirror's history came from (Phase 5 WP12, docs/adr/0008): `demo` for the
+ * demo CRM's controls in the inbox, `sync` for Phase 6's sync with a real CRM. Nothing else.
+ */
+export const CRM_CHANGE_SOURCES = ["demo", "sync"] as const;
+export type CrmChangeSource = (typeof CRM_CHANGE_SOURCES)[number];
+
+/** A field's value as the history keeps it: a JSON scalar, or null for no value. */
+export type CrmFieldValue = string | number | boolean | null;
+
+/**
+ * The mirror's history (Phase 5 spec decision 10, WP12; docs/adr/0008): one row per change to one
+ * field of one `crm_entities` row, its value before (`old`) and after (`new`), when, and where the
+ * change came from. `valueAt` (../crm-history.ts) reads a field's value at any time from it, so a
+ * review card can tell the CRM's value when the rep spoke from its value now. A record's arrival is
+ * a change of its `name` from null.
+ *
+ * Append-only for the app, like `audit_log`: its role may only read and insert here, in its own
+ * workspace (migration 0017). Rows go with their record (`ON DELETE CASCADE` through the composite
+ * key), and with the workspace. `old` and `new` are SQL NULL for no value. Ids are random UUIDs,
+ * so they reveal nothing about other workspaces' activity.
+ */
+export const crmEntityChanges = pgTable(
+  "crm_entity_changes",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    workspaceId: workspaceId(),
+    entityId: uuid("entity_id").notNull(),
+    /** The field's name, as the record's properties spell it (`stage`, `closeDate`), or `name`. */
+    field: text().notNull(),
+    old: jsonb().$type<CrmFieldValue>(),
+    new: jsonb().$type<CrmFieldValue>(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+    /** `CRM_CHANGE_SOURCES`. */
+    source: text().notNull(),
+  },
+  (t) => [
+    // Composite, like every key between tenant tables, so no row can point into another workspace.
+    foreignKey({
+      name: "crm_entity_changes_entity_fk",
+      columns: [t.workspaceId, t.entityId],
+      foreignColumns: [crmEntities.workspaceId, crmEntities.id],
+    }).onDelete("cascade"),
+    index("crm_entity_changes_entity_field_idx").on(
+      t.workspaceId,
+      t.entityId,
+      t.field,
+      t.changedAt,
+    ),
+    check("crm_entity_changes_source_check", sql`${t.source} in ('demo', 'sync')`),
+    check("crm_entity_changes_field_check", sql`${t.field} ~ '^[a-z][A-Za-z0-9]{0,63}$'`),
+  ],
+);

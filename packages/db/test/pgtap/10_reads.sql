@@ -1,18 +1,18 @@
 -- Reads: as earshot_app, each workspace sees only its own rows, and the other workspace's ids
 -- return nothing. Ids come from test/fixtures/two-workspaces.sql.
 begin;
-select plan(60);
+select plan(64);
 
--- As the owner, which RLS doesn't apply to: both workspaces have a row everywhere (15)
+-- As the owner, which RLS doesn't apply to: both workspaces have a row everywhere (16)
 select results_eq(format('select count(*)::int from %I', t), array[2], format('%s: the owner sees both workspaces'' rows', t))
 from unnest(array[
   'workspaces', 'workspace_members', 'credentials', 'crm_connections', 'crm_entities', 'sessions',
   'session_events', 'utterances', 'proposals', 'sync_jobs', 'commitments', 'facts', 'audit_log',
-  'audit_checkpoints', 'approval_policies'
+  'audit_checkpoints', 'approval_policies', 'crm_entity_changes'
 ]) with ordinality as u(t, ord)
 order by u.ord;
 
--- As workspace A (30)
+-- As workspace A (32)
 set local role earshot_app;
 select set_config('app.user_id', 'user-a', true),
        set_config('app.workspace_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', true);
@@ -94,7 +94,13 @@ select results_eq('select id, version from approval_policies',
 select is_empty($$select from approval_policies where id = 'b0000000-0000-4000-8000-000000000013'$$,
   'approval_policies: B''s policy id returns nothing');
 
--- As workspace B, in the same transaction and role: the policy follows the setting (15)
+select results_eq('select id from crm_entity_changes',
+  $$values ('a0000000-0000-4000-8000-000000000014'::uuid)$$,
+  'crm_entity_changes: A sees only its own history');
+select is_empty($$select from crm_entity_changes where id = 'b0000000-0000-4000-8000-000000000014'$$,
+  'crm_entity_changes: B''s change id returns nothing');
+
+-- As workspace B, in the same transaction and role: the policy follows the setting (16)
 select set_config('app.user_id', 'user-b', true),
        set_config('app.workspace_id', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', true);
 
@@ -105,7 +111,7 @@ select results_eq(format('select workspace_id from %I', t),
 from unnest(array[
   'workspace_members', 'credentials', 'crm_connections', 'crm_entities', 'sessions',
   'session_events', 'utterances', 'proposals', 'sync_jobs', 'commitments', 'facts', 'audit_log',
-  'audit_checkpoints', 'approval_policies'
+  'audit_checkpoints', 'approval_policies', 'crm_entity_changes'
 ]) with ordinality as u(t, ord)
 order by u.ord;
 
