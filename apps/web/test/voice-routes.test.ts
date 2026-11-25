@@ -332,6 +332,7 @@ describe("POST /api/sessions", () => {
       "entities",
       "focusEntityId",
       "keyterms",
+      "policy",
       "sessionId",
       "ticket",
       "ticketExpiresAt",
@@ -340,9 +341,10 @@ describe("POST /api/sessions", () => {
     expect(result.body.edgeUrl).toBe(
       `wss://earshot-edge.example.workers.dev/v1/sessions/${sessionId}/ws`,
     );
-    // No CRM loaded yet, and no account open.
+    // No CRM loaded yet, no account open, and no approval policy (Phase 5 WP11).
     expect(result.body.entities).toEqual([]);
     expect(result.body.focusEntityId).toBeNull();
+    expect(result.body.policy).toBeNull();
     expect(result.body.keyterms).toEqual({ assemblyai: [], deepgram: [] });
 
     const [row] = await sessionRows();
@@ -386,7 +388,7 @@ describe("POST /api/sessions", () => {
       reason: "expired",
     });
     expect(log.lines.join("\n")).toContain(
-      'session created {"entities":0,"focus":false,"keyterms":{"assemblyai":0,"deepgram":0}}',
+      'session created {"entities":0,"focus":false,"keyterms":{"assemblyai":0,"deepgram":0},"policyVersion":null}',
     );
   });
 

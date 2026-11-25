@@ -788,6 +788,44 @@ describe("SessionClient: answers and errors", () => {
     );
   });
 
+  it("sends the session's signed approval policy in start, unchanged, and none when there's none (Phase 5 WP11)", async () => {
+    const policy = {
+      id: "01a1c6f2-7d10-7a3b-9c4d-5e6f7a8b9c0d",
+      version: 2,
+      rules: {
+        v: 1 as const,
+        autoApprove: [{ id: "notes", type: "note" as const, alwaysReview: [] }],
+      },
+      // Base64url of 32 bytes; the in-memory SessionDO doesn't check it, the real one does.
+      sig: "Zm9yLXRlc3RzLW9ubHktbm90LWEtcmVhbC1zaWduYXQ",
+    };
+    const signed = harness();
+    await open(signed);
+    signed.client.sendStart({
+      providers: PROVIDERS,
+      startedAt: "2026-11-19T12:00:00.000Z",
+      entities: [],
+      policy,
+    });
+    await signed.flush();
+    expect(signed.server.received.find((message) => message.t === "start")).toMatchObject({
+      policy,
+    });
+
+    const none = harness();
+    await open(none);
+    none.client.sendStart({
+      providers: PROVIDERS,
+      startedAt: "2026-11-19T12:00:00.000Z",
+      entities: [],
+      policy: null,
+    });
+    await none.flush();
+    expect(none.server.received.find((message) => message.t === "start")).not.toHaveProperty(
+      "policy",
+    );
+  });
+
   it("drops a message refused for good, and retries one refused for now", async () => {
     const h = harness();
     await open(h);

@@ -1,3 +1,4 @@
+import { ApprovalPolicyRules } from "./approval-policy";
 import { EntityRef } from "./entity-ref";
 import { EventEnvelope } from "./event-envelope";
 import {
@@ -48,9 +49,20 @@ export const contracts = {
   ProposalSnoozedV1,
   SessionSealedV1,
   RecapCreatedV1,
+  ApprovalPolicyRules,
 } as const;
 
 export type ContractName = keyof typeof contracts;
+
+export {
+  ApprovalPolicyRule,
+  checkPolicyRules,
+  MAX_ALWAYS_REVIEW_FIELDS,
+  MAX_POLICY_FIELD_CHARS,
+  MAX_POLICY_RULES,
+  type PolicyRulesCheck,
+  PROPOSAL_TYPE_FIELDS,
+} from "./approval-policy";
 
 export { EntityKind } from "./entity-ref";
 export {
@@ -137,6 +149,14 @@ export {
   Word,
 } from "./events";
 export {
+  MAX_POLICY_REQUEST_BYTES,
+  type PolicyRouteError,
+  type PolicyRouteErrorBody,
+  PolicyRouteRequest,
+  type PolicyRouteResponse,
+  type PolicyView,
+} from "./policy-route";
+export {
   MAX_REVIEW_REQUEST_BYTES,
   MAX_REVIEW_REQUEST_ITEMS,
   type ReviewRouteError,
@@ -163,6 +183,8 @@ export {
   MAX_UTTERANCE_TEXT_CHARS,
   type MessageParseFailure,
   type MessageParseResult,
+  POLICY_SIGNATURE_CHARS,
+  PolicySnapshot,
   parseClientMessage,
   parseServerMessage,
   RecapRequest,
@@ -184,4 +206,4 @@ export {
   TurnMarks,
   TurnTrigger,
 } from "./session-protocol";
-export { EntityRef, EventEnvelope, HealthResponse };
+export { ApprovalPolicyRules, EntityRef, EventEnvelope, HealthResponse };

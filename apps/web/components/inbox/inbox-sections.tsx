@@ -192,16 +192,22 @@ export function ReviewedSection({
           const decision = decisionWords(proposal);
           const canReopen = proposal.review !== null;
           const label = undoDeadline(item, undoWindowMs) > now ? "Undo" : "Reopen";
+          // "Approved by your policy: notes" holds its own colon, so the card follows a dot.
+          const byPolicy = proposal.review?.mode === "policy";
           return (
             <li
               key={proposal.proposalId}
               className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5"
               data-slot="reviewed"
               data-proposal-id={proposal.proposalId}
+              data-review-mode={proposal.review?.mode}
             >
               <p className="min-w-0 text-sm">
                 <span className="font-medium">{decision}</span>
-                <span className="text-muted-foreground">: {capitalize(what)}</span>
+                <span className="text-muted-foreground">
+                  {byPolicy ? " · " : ": "}
+                  {capitalize(what)}
+                </span>
               </p>
               {canReopen ? (
                 <Button

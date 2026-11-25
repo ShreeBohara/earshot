@@ -1,0 +1,7 @@
+{
+  "v": 1,
+  "autoApprove": [
+    { "id": "notes", "type": "note", "alwaysReview": [] },
+    { "id": "deal-updates", "type": "deal_update", "alwaysReview": ["amount", "stage"] }
+  ]
+}

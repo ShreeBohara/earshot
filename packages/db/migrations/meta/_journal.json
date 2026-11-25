@@ -113,6 +113,13 @@
       "when": 1795219252414,
       "tag": "0015_session_recap",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795594858361,
+      "tag": "0016_approval_policies",
+      "breakpoints": true
     }
   ]
 }

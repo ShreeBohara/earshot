@@ -89,6 +89,7 @@ function reviewOf(row: ProposalRow): InboxReview | null {
     target: stored.target ?? null,
     mode: stored.mode ?? "single",
     batchId: stored.batchId ?? null,
+    policy: stored.policy ?? null,
     undoes: stored.undoes ?? null,
     syncEligibleAt: stored.syncEligibleAt ?? null,
     ts: (row.reviewedAt ?? row.updatedAt).toISOString(),

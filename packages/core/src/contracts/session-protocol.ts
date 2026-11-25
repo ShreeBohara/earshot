@@ -5,6 +5,7 @@
 // and its key-shape check has no JSON Schema form, so an export would accept messages Zod refuses.
 import { z } from "zod";
 import { containsKeyShape } from "../key-shapes";
+import { ApprovalPolicyRules } from "./approval-policy";
 import { EntityRef } from "./entity-ref";
 import { EventEnvelope } from "./event-envelope";
 import { MAX_TARGET_CANDIDATES } from "./events/proposal-created";
@@ -183,6 +184,26 @@ export type ReviewInput = z.infer<typeof ReviewInput>;
 export const SnoozeInput = ProposalSnoozedV1.omit({ by: true });
 export type SnoozeInput = z.infer<typeof SnoozeInput>;
 
+/** The length of a policy snapshot's `sig`: an HMAC-SHA256's 32 bytes in unpadded base64url. */
+export const POLICY_SIGNATURE_CHARS = 43;
+
+/**
+ * The workspace's approval policy as `POST /api/sessions` signed it for this one session (Phase 5
+ * spec §4.6, WP11): its id, version, and rules, and `sig`, base64url HMAC-SHA256 with the ticket
+ * secret over `"earshot.policy.v1." + canonical({ id, version, rules, sid })`
+ * (`signPolicySnapshot`). SessionDO verifies it against its own session id before it keeps it, so
+ * a client can neither forge one nor bring one from another session; the policy it carries applies
+ * to this session only, and a later change applies from the next one.
+ */
+export const PolicySnapshot = z.strictObject({
+  id: z.uuid(),
+  version: z.int().positive(),
+  rules: ApprovalPolicyRules,
+  /** `POLICY_SIGNATURE_CHARS` base64url characters. */
+  sig: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+});
+export type PolicySnapshot = z.infer<typeof PolicySnapshot>;
+
 const Hello = z.strictObject({
   t: z.literal("hello"),
   protocol: z.literal(SESSION_PROTOCOL_VERSION),
@@ -212,6 +233,12 @@ const Start = z
      * proposal that names no record. It must be one of `entities`.
      */
     focusEntityId: EntityId.optional(),
+    /**
+     * The workspace's approval policy, signed for this session by `POST /api/sessions` (Phase 5
+     * WP11). SessionDO refuses a `start` whose signature doesn't verify (`bad_message`). Without
+     * it, every proposal waits for a person.
+     */
+    policy: PolicySnapshot.optional(),
   })
   .superRefine((start, ctx) => {
     const focus = start.focusEntityId;

@@ -1,6 +1,6 @@
 // The JSON the session and voice-token routes answer with (docs/adr/0023), for the routes and
 // for the browser code that calls them. Pure types: no server or browser imports.
-import type { EntityRef } from "@earshot/core";
+import type { EntityRef, PolicySnapshot } from "@earshot/core";
 
 /** Speech-to-text providers whose temporary credentials `POST /api/voice/token` mints. */
 export type MintProvider = "assemblyai" | "deepgram";
@@ -29,6 +29,13 @@ export type CreateSessionResponse = {
    */
   focusEntityId: string | null;
   keyterms: SessionKeyterms;
+  /**
+   * The workspace's approval policy, signed for this session (Phase 5 WP11): send it unchanged in
+   * `start` as `policy`. SessionDO checks the signature against the session and applies the
+   * policy to this session's proposals only. Null when the workspace has no policy, or one that
+   * approves nothing: every proposal waits for the rep.
+   */
+  policy: PolicySnapshot | null;
 };
 
 /** `POST /api/sessions/:id/ticket`: a fresh ticket for reconnecting to an open session. */

@@ -2,19 +2,19 @@
 -- nothing can be written. The harness runs each file in a fresh session, so app.workspace_id
 -- starts out never set.
 begin;
-select plan(20);
+select plan(21);
 
 set local role earshot_app;
 
 select is(current_setting('app.workspace_id', true), null,
   'app.workspace_id has never been set in this session');
 
--- Never set: no rows anywhere (14)
+-- Never set: no rows anywhere (15)
 select is_empty(format('select from %I', t), format('%s: no rows without a workspace', t))
 from unnest(array[
   'workspaces', 'workspace_members', 'credentials', 'crm_connections', 'crm_entities', 'sessions',
   'session_events', 'utterances', 'proposals', 'sync_jobs', 'commitments', 'facts', 'audit_log',
-  'audit_checkpoints'
+  'audit_checkpoints', 'approval_policies'
 ]) with ordinality as u(t, ord)
 order by u.ord;
 
@@ -42,7 +42,8 @@ select is_empty(
     union all select workspace_id from commitments
     union all select workspace_id from facts
     union all select workspace_id from audit_log
-    union all select workspace_id from audit_checkpoints$$,
+    union all select workspace_id from audit_checkpoints
+    union all select workspace_id from approval_policies$$,
   'an empty app.workspace_id shows no rows in any tenant table'
 );
 

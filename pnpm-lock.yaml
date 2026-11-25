@@ -570,6 +570,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@earshot/core':
+        specifier: workspace:*
+        version: link:../core
       '@earshot/demo-crm':
         specifier: workspace:*
         version: link:../demo-crm
@@ -694,6 +697,9 @@ importers:
       '@earshot/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../understanding
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6

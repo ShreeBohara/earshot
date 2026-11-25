@@ -1,0 +1,4 @@
+{
+  "v": 1,
+  "autoApprove": [{ "id": "deals", "type": "deal_update", "alwaysReview": ["close_date"] }]
+}

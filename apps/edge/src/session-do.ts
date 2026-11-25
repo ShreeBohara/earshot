@@ -24,6 +24,13 @@
 //   user, and how and when the ticket's web session signed in) and when an approval may sync, and
 //   appended as `proposal.reviewed` v2 and `proposal.snoozed`. A later witness flag on an approved
 //   or edited proposal reopens it (`mode: "system"`).
+// - Approval policies (Phase 5 spec §4.6, WP11): `start` may carry the workspace's policy, signed
+//   for this session by the web app with the ticket secret. A snapshot that doesn't verify against
+//   this session's id refuses the `start`; one that does is kept in `meta`. Right after each turn's
+//   understanding step, every new proposal a rule matches (unmarked, linked, superseding nothing,
+//   none of the rule's held-back fields) is approved in the turn's own transaction, as a
+//   `proposal.reviewed` v2 with `mode: "policy"`, by the session's user with no sign-in. Without a
+//   usable audit key no policy applies, and a later flag reopens an auto-approval as any other.
 // - The recap (Phase 5 spec §4.9, WP10): right after `session.ended`, in the serial queue, one
 //   forced tool call on the session's provider, on the key `end.recap` carried, within a 15 s
 //   deadline (target), appends `recap.created` and its `usage.recorded`. No key, no speech, a
@@ -63,6 +70,9 @@ import {
   HEARTBEAT_PONG,
   MAX_TARGET_CANDIDATES,
   type MessageParseFailure,
+  PolicySnapshot,
+  type PolicyVersion,
+  type ProposalCreatedV2,
   type ProposalFlaggedV1,
   type ProposalReviewedV2,
   type ProposalSnoozedV1,
@@ -81,13 +91,16 @@ import {
   type UsageRecordedV1,
   type UtteranceFinalV2,
   uuidv7,
+  verifyPolicySnapshot,
 } from "@earshot/core";
 import {
   checkReview,
   checkReviews,
   checkSnooze,
   type EventEnvelope,
+  type PolicyExclusion,
   type ProposalView,
+  policyRuleFor,
   proposalsProjection,
   replay,
   type SessionEvent,
@@ -98,7 +111,7 @@ import { buildLinkIndex, type LinkIndex } from "@earshot/understanding/link";
 import { tierOf } from "@earshot/understanding/tiers";
 import type { PriceResult, SttUsageInput } from "@earshot/voice/prices";
 import type { TurnAgent, TurnResult } from "./agent";
-import { readAuditSigning } from "./config";
+import { readAuditSigning, readTicketKey } from "./config";
 import { type FlushSink, packFlushMessages, type SessionIdentity } from "./flush-message";
 import { createLogger, type Logger } from "./log";
 import { hasUnstorableString, toStorable } from "./session/jsonb";
@@ -179,6 +192,15 @@ export type SealAnswer = "live" | "sealing" | "sealed" | "gone";
  * policies, and what SessionDO's own reviews record as seen. One function decides everywhere.
  */
 const TIER_OF: TierOf = tierOf;
+
+/** The approval policy as `meta` keeps it: the verified snapshot, without its signature. */
+const StoredPolicy = PolicySnapshot.omit({ sig: true });
+
+/** A turn's proposals as the session's policy judged them: approvals by proposal, the rest by why. */
+interface PolicyJudgement {
+  readonly approvals: ReadonlyMap<string, ProposalReviewedV2>;
+  readonly excluded: Partial<Record<PolicyExclusion | "refused", number>>;
+}
 
 function readAttachment(ws: WebSocket): Attachment | undefined {
   const value = ws.deserializeAttachment() as Partial<Attachment> | null;
@@ -590,10 +612,30 @@ export class SessionRuntime extends DurableObject<Env> {
     }
   }
 
-  /** `session.started`, once. A second `start` under a new msgId gets the first one's seq. */
-  #start(message: ClientMessageOf<"start">): void {
+  /**
+   * `session.started`, once. A second `start` under a new msgId gets the first one's seq. The
+   * approval policy it may carry (Phase 5 WP11) must verify against this session's id: a forged
+   * snapshot, or one signed for another session, refuses the `start` with `bad_message`, and one
+   * that verifies is kept in `meta` for the session's turns. The policy a session started with is
+   * the one it keeps: a later `start`'s snapshot changes nothing, and a change to the workspace's
+   * policy applies from the next session.
+   */
+  async #start(message: ClientMessageOf<"start">): Promise<void> {
+    // Before any check: verifying the snapshot yields, and everything after it runs in one go.
+    const policy =
+      message.policy === undefined ? undefined : await this.#verifyPolicy(message.policy);
     const store = this.#store;
     if (this.#answered(message.msgId)) return;
+    if (policy === "unavailable") {
+      this.#refuse(message.msgId, "internal", false);
+      return;
+    }
+    if (policy === null) {
+      // A fixed reason only: never the snapshot or its signature.
+      this.#log.warn("start refused", { reason: "policy_signature" });
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
     if (store.get("ended_seq") !== undefined) {
       this.#refuse(message.msgId, "already_ended", false);
       return;
@@ -627,6 +669,8 @@ export class SessionRuntime extends DurableObject<Env> {
           store.set("entities", JSON.stringify(message.entities));
           // The protocol has checked it's one of the entities.
           if (message.focusEntityId) store.set("focus_entity_id", message.focusEntityId);
+          // Verified above; kept without its signature, which nothing needs again.
+          if (policy) store.set("policy", JSON.stringify(policy));
         },
       },
     );
@@ -634,7 +678,41 @@ export class SessionRuntime extends DurableObject<Env> {
     this.#log.info("session started", {
       entities: message.entities.length,
       focus: message.focusEntityId !== undefined,
+      policyVersion: policy?.version ?? null,
+      policyRules: policy?.rules.autoApprove.length ?? 0,
     });
+  }
+
+  /**
+   * The approval policy `start` carried, once its signature verifies against this session's id
+   * with the ticket secret (`verifyPolicySnapshot`, compared in constant time): its id, version,
+   * and rules. Null for a snapshot that doesn't verify; `unavailable` when the secret can't be
+   * read here, which the socket route would have refused first.
+   */
+  async #verifyPolicy(snapshot: PolicySnapshot): Promise<PolicyVersion | null | "unavailable"> {
+    const sid = this.#store.get("sid");
+    if (sid === undefined) return null;
+    let key: CryptoKey;
+    try {
+      key = await readTicketKey(this.env);
+    } catch (error) {
+      this.#log.error("policy unverifiable", { cause: errorName(error) });
+      return "unavailable";
+    }
+    if (!(await verifyPolicySnapshot(key, snapshot, sid))) return null;
+    return { id: snapshot.id, version: snapshot.version, rules: snapshot.rules };
+  }
+
+  /** The approval policy this session started with, or null: none came, or it's unreadable. */
+  #policy(): PolicyVersion | null {
+    const stored = this.#store.get("policy");
+    if (stored === undefined) return null;
+    try {
+      const parsed = StoredPolicy.safeParse(JSON.parse(stored));
+      return parsed.success ? parsed.data : null;
+    } catch {
+      return null;
+    }
   }
 
   /** The linker's index of the session's records: built once per instance, on first use. */
@@ -731,6 +809,15 @@ export class SessionRuntime extends DurableObject<Env> {
       return;
     }
 
+    // The session's approval policy (Phase 5 WP11), and whether its approvals can be recorded:
+    // without a usable audit key the flush couldn't store them with their audit rows, so none is
+    // made (fail closed). Read before the call, so everything after it runs in one go.
+    const policy = this.#policy();
+    const applyPolicy = policy !== null && (await this.#auditReady());
+    if (policy !== null && !applyPolicy) {
+      this.#log.warn("policy not applied", { reason: "audit_unavailable" });
+    }
+
     const controller = new AbortController();
     this.#controllers.add(controller);
     let result: TurnResult;
@@ -773,30 +860,59 @@ export class SessionRuntime extends DurableObject<Env> {
     }
 
     const usage = result.usage;
-    const events: NewEvent[] = [
-      ...result.proposals.map((proposal) => ({
+    // Model output: cleaned of anything Postgres's jsonb would refuse.
+    const created = result.proposals.map(
+      (proposal) => toStorable(proposal) as unknown as ProposalCreatedV2,
+    );
+    // The policy's approvals (spec §4.6), by proposal. Anything going wrong in the evaluation is a
+    // bug: the turn's proposals are still recorded, every one waiting for a person.
+    let judged: PolicyJudgement = { approvals: new Map(), excluded: {} };
+    if (applyPolicy && policy !== null) {
+      try {
+        judged = this.#judgeProposals(created, policy);
+      } catch (error) {
+        this.#log.error("policy not applied", {
+          reason: "evaluation_failed",
+          cause: errorName(error),
+        });
+      }
+    }
+    const events: NewEvent[] = [];
+    /** The policy's approvals among `events`, by position, for the `writes` table. */
+    const approvals: { readonly index: number; readonly review: ProposalReviewedV2 }[] = [];
+    for (const payload of created) {
+      events.push({
         type: "proposal.created",
         schemaVersion: 2,
-        // Model output: cleaned of anything Postgres's jsonb would refuse.
-        payload: toStorable(proposal) as unknown as Record<string, unknown>,
-      })),
-      ...(usage
-        ? [
-            {
-              type: "usage.recorded",
-              schemaVersion: 1,
-              payload: { ...usage } as Record<string, unknown>,
-            },
-          ]
-        : []),
-      {
-        type: "turn.completed",
+        payload: payload as unknown as Record<string, unknown>,
+      });
+      // Each approval right after its proposal, in the turn's own commit.
+      const review = judged.approvals.get(payload.proposalId);
+      if (!review) continue;
+      approvals.push({ index: events.length, review });
+      events.push({
+        type: "proposal.reviewed",
+        schemaVersion: 2,
+        payload: review as unknown as Record<string, unknown>,
+      });
+    }
+    if (usage) {
+      events.push({
+        type: "usage.recorded",
         schemaVersion: 1,
-        payload: { ...result.completed } as Record<string, unknown>,
-      },
-    ];
-    try {
-      this.#commit(message.msgId, events, {
+        payload: { ...usage } as Record<string, unknown>,
+      });
+    }
+    events.push({
+      type: "turn.completed",
+      schemaVersion: 1,
+      payload: { ...result.completed } as Record<string, unknown>,
+    });
+    const commitTurn = (
+      list: readonly NewEvent[],
+      reviews: readonly { readonly index: number; readonly review: ProposalReviewedV2 }[],
+    ) =>
+      this.#commit(message.msgId, list, {
         during: (appended) => {
           if (usage) this.#addToMeter(usage);
           store.set("link_recent", JSON.stringify(result.recent));
@@ -806,9 +922,34 @@ export class SessionRuntime extends DurableObject<Env> {
             appended.at(-1)?.seq ?? store.lastSeq,
             JSON.stringify(result.links),
           );
+          // The policy's approvals, by review id, so no client can reuse one.
+          for (const { index, review } of reviews) {
+            const event = appended[index];
+            if (!event) continue;
+            store.addWrite(review.reviewId, {
+              kind: "review",
+              seq: event.seq,
+              proposalId: review.proposalId,
+            });
+          }
         },
         error: result.error,
       });
+    let autoApproved = approvals.length;
+    try {
+      try {
+        commitTurn(events, approvals);
+      } catch (error) {
+        if (approvals.length === 0) throw error;
+        // An approval the registry refused: a bug in the policy's review. Keep the turn's
+        // proposals, unapproved, for a person.
+        this.#log.error("policy approvals not recorded", { cause: errorName(error) });
+        autoApproved = 0;
+        commitTurn(
+          events.filter((event) => event.type !== "proposal.reviewed"),
+          [],
+        );
+      }
     } catch (error) {
       // An event the registry refused: a bug in the extractor's output. Don't run it again.
       this.#log.error("turn not recorded", { cause: errorName(error) });
@@ -823,7 +964,80 @@ export class SessionRuntime extends DurableObject<Env> {
       attempts: result.completed.attempts,
       llmMs: result.completed.llmMs,
       failure: result.failure,
+      // The approval policy's part: counts and codes only.
+      ...(applyPolicy ? { autoApproved, policyExcluded: judged.excluded } : {}),
     });
+  }
+
+  /**
+   * Which of a turn's new proposals the session's policy approves (spec §4.6), each with its
+   * approval: every proposal, folded in turn into the session's proposals as the log has them, run
+   * through `policyRuleFor`, and each approval checked with the writers' rules (`from: "session"`)
+   * before it's folded in too. The rest are counted by why, for the log.
+   */
+  #judgeProposals(created: readonly ProposalCreatedV2[], policy: PolicyVersion): PolicyJudgement {
+    const sessionId = this.#store.get("sid") ?? "";
+    const now = this.#now();
+    const approvals = new Map<string, ProposalReviewedV2>();
+    const excluded: PolicyJudgement["excluded"] = {};
+    let folded = this.#proposals();
+    for (const payload of created) {
+      folded = foldInto(folded, sessionId, { type: "proposal.created", schemaVersion: 2, payload });
+      const view = folded.find((candidate) => candidate.proposalId === payload.proposalId);
+      if (!view) continue;
+      const match = policyRuleFor(view, policy.rules, { tierOf: TIER_OF });
+      if (!match.ok) {
+        excluded[match.reason] = (excluded[match.reason] ?? 0) + 1;
+        continue;
+      }
+      const review = this.#policyApproval(view, policy, match.rule.id, now);
+      const check = checkReview(folded, review, { tierOf: TIER_OF, from: "session" });
+      if (!check.ok) {
+        // A bug: the evaluation and the writers' rules disagree. The proposal waits for a person.
+        this.#log.error("policy approval not recorded", { reason: check.reason });
+        excluded.refused = (excluded.refused ?? 0) + 1;
+        continue;
+      }
+      approvals.set(payload.proposalId, review);
+      folded = foldInto(folded, sessionId, {
+        type: "proposal.reviewed",
+        schemaVersion: 2,
+        payload: review,
+      });
+    }
+    return { approvals, excluded };
+  }
+
+  /**
+   * An approval policy's approval of a new proposal (spec §4.6): written by this object
+   * (`mode: "policy"`), naming the policy's id, version, and the rule that matched, by the
+   * session's user with no sign-in (`auth: null`), no input, the `session` surface, and zero
+   * timings, so it never counts as a person's review. Like any approval it may sync only after
+   * the undo window, and the rep can undo it as any other.
+   */
+  #policyApproval(
+    proposal: ProposalView,
+    policy: PolicyVersion,
+    rule: string,
+    now: number,
+  ): ProposalReviewedV2 {
+    return {
+      reviewId: uuidv7(),
+      proposalId: proposal.proposalId,
+      decision: "approved",
+      target: null,
+      mode: "policy",
+      batchId: null,
+      policy: { id: policy.id, version: policy.version, rule },
+      undoes: null,
+      reason: null,
+      seen: seenOf(proposal),
+      timing: { decisionMs: 0, handlingMs: 0 },
+      input: "none",
+      surface: "session",
+      syncEligibleAt: new Date(now + UNDO_WINDOW_MS).toISOString(),
+      by: { userId: this.#store.get("uid") ?? "", auth: null },
+    };
   }
 
   /** The client's speech-to-text usage, priced, as `usage.recorded`. */

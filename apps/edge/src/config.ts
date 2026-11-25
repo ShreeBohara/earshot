@@ -126,17 +126,31 @@ export function readWebOrigins(env: EdgeEnv): ReadonlySet<string> {
 // WebCrypto call each time.
 const keys = new Map<string, Promise<CryptoKey>>();
 
-/** Reads and checks everything the socket route needs. Throws `EdgeConfigError`. */
-export async function readEdgeConfig(env: EdgeEnv): Promise<EdgeConfig> {
-  const ticketSecret = readTicketSecret(env);
-  const webOrigins = readWebOrigins(env);
+function ticketKeyFor(ticketSecret: string): Promise<CryptoKey> {
   let key = keys.get(ticketSecret);
   if (!key) {
     key = importTicketKey(ticketSecret);
     keys.set(ticketSecret, key);
     key.catch(() => keys.delete(ticketSecret));
   }
-  return { development: isDevelopment(env), ticketKey: await key, ticketSecret, webOrigins };
+  return key;
+}
+
+/** Reads and checks everything the socket route needs. Throws `EdgeConfigError`. */
+export async function readEdgeConfig(env: EdgeEnv): Promise<EdgeConfig> {
+  const ticketSecret = readTicketSecret(env);
+  const webOrigins = readWebOrigins(env);
+  const ticketKey = await ticketKeyFor(ticketSecret);
+  return { development: isDevelopment(env), ticketKey, ticketSecret, webOrigins };
+}
+
+/**
+ * The ticket secret as an HMAC key, imported once per isolate: what SessionDO verifies a policy
+ * snapshot's signature with (Phase 5 WP11), since the web app signs snapshots with the ticket
+ * secret too. Throws `EdgeConfigError` as `readTicketSecret` does.
+ */
+export function readTicketKey(env: EdgeEnv): Promise<CryptoKey> {
+  return ticketKeyFor(readTicketSecret(env));
 }
 
 /** True if `origin` (the request's `Origin` header) is on the allow-list. Exact match only. */

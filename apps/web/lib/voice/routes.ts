@@ -16,10 +16,13 @@ import {
   containsKeyShape,
   type EntityKind,
   MAX_SESSION_ENTITIES,
+  type PolicySnapshot,
+  type PolicyVersion,
   type ProviderModel,
   type SessionProviders,
+  signPolicySnapshot,
 } from "@earshot/core";
-import { DEMO_CRM_EXTERNAL_ID_PREFIX, schema } from "@earshot/db";
+import { DEMO_CRM_EXTERNAL_ID_PREFIX, readApprovalPolicy, schema } from "@earshot/db";
 import {
   type FetchLike,
   PROVIDER_ID_HEADER,
@@ -123,7 +126,9 @@ const ENTITY_KINDS: readonly EntityKind[] = ["company", "contact", "deal"];
  * focus account (Phase 5 WP3), and signs the first ticket, which carries how and when the viewer
  * signed in. Answers 201 with `CreateSessionResponse`: the selected account, if it's a company
  * among the session's entities, is its `focusEntityId`, and each contact and deal carries its
- * company's id as `parentId` (Phase 4 WP8).
+ * company's id as `parentId` (Phase 4 WP8). From Phase 5 WP11 it also reads the workspace's
+ * approval policy in the same transaction and signs it for the new session (`policy`), which the
+ * client sends in `start`.
  */
 export async function createSessionRoute(
   viewer: Viewer,
@@ -149,9 +154,13 @@ export async function createSessionRoute(
 
     const created = await deps.withViewerTenant(async (tx) => {
       const { sessions } = schema;
+      // The workspace's approval policy as it stands now (Phase 5 WP11): this session keeps it,
+      // and a later change applies from the next session. It rides in `start`, so it counts
+      // against the message's bytes before the entities do.
+      const policy = sessionPolicy(await readApprovalPolicy(tx), log);
       const rows = await loadCrmEntities(tx, viewer.workspaceId, body.selectedAccountId);
       const ranked = rankEntities(rows, body.selectedAccountId);
-      const entities = sessionEntities(ranked.all, startEntityBudget(body.providers));
+      const entities = sessionEntities(ranked.all, startEntityBudget(body.providers, policy));
       const account = ranked.account;
       // `start` refuses a focus outside its entities, so the account counts only if it's there.
       const focusEntityId =
@@ -183,6 +192,7 @@ export async function createSessionRoute(
         entities,
         focusEntityId,
         keyterms: sessionKeyterms(ranked.keytermSources, accountFamilyCount(ranked)),
+        policy: policy ? await signedPolicy(config.ticketSecret, policy, row.id, log) : null,
       };
     }, viewer);
 
@@ -190,6 +200,7 @@ export async function createSessionRoute(
       entities: created.entities.length,
       focus: created.focusEntityId !== null,
       keyterms: counts(created.keyterms),
+      policyVersion: created.policy?.version ?? null,
     });
     const answer: CreateSessionResponse = {
       sessionId: created.sessionId,
@@ -199,6 +210,7 @@ export async function createSessionRoute(
       entities: created.entities,
       focusEntityId: created.focusEntityId,
       keyterms: created.keyterms,
+      policy: created.policy,
     };
     return noStoreJson(201, answer);
   } catch (error) {
@@ -478,6 +490,50 @@ async function sessionState(
 /** How and when the viewer's web session signed in, for the ticket's `am` and `sat` claims. */
 function signInOf(viewer: Viewer): { method: Viewer["session"]["signInMethod"]; at: Date } {
   return { method: viewer.session.signInMethod, at: viewer.session.createdAt };
+}
+
+/**
+ * The policy a new session takes (Phase 5 WP11): the workspace's latest version, or none when it
+ * has none, when that version approves nothing, or when its stored rules no longer parse, which
+ * is logged. No policy is the safe side: every proposal waits for the rep.
+ */
+function sessionPolicy(
+  stored: Awaited<ReturnType<typeof readApprovalPolicy>>,
+  log: Logger,
+): PolicyVersion | null {
+  if (stored === null) return null;
+  if (stored === "invalid") {
+    log.error("approval policy unreadable: its rules don't parse, so this session applies none");
+    return null;
+  }
+  if (stored.rules.autoApprove.length === 0) return null;
+  return { id: stored.id, version: stored.version, rules: stored.rules };
+}
+
+/**
+ * The policy signed for session `sessionId` with the ticket secret (`signPolicySnapshot`), for the
+ * client to carry in `start`. The socket refuses a `start` holding anything shaped like a key, and
+ * a signature is random base64url, so about one in 100,000 could happen to look like one; the
+ * writer refuses key-shaped rule ids, and they're checked here again, so a stored policy can never
+ * stop sessions from starting. Either way that session gets no policy instead of failing to start,
+ * and every proposal waits for the rep.
+ */
+async function signedPolicy(
+  ticketSecret: string,
+  policy: PolicyVersion,
+  sessionId: string,
+  log: Logger,
+): Promise<PolicySnapshot | null> {
+  const snapshot = await signPolicySnapshot(ticketSecret, policy, sessionId);
+  const strings = [
+    snapshot.sig,
+    ...snapshot.rules.autoApprove.flatMap((rule) => [rule.id, ...rule.alwaysReview]),
+  ];
+  if (strings.some(containsKeyShape)) {
+    log.warn("approval policy left out of a session: something in it is shaped like a key");
+    return null;
+  }
+  return snapshot;
 }
 
 /**

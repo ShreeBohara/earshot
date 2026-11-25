@@ -2,7 +2,15 @@ import { Toaster } from "@earshot/ui/components/toast";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, userEvent, waitFor, within } from "storybook/test";
 import type { ReviewSink } from "@/lib/inbox/sinks";
-import { EMPTY_INBOX, INBOX, PLAIN, QUESTION, UPDATE } from "./fixtures";
+import {
+  AUTO_APPROVED,
+  EMPTY_INBOX,
+  INBOX,
+  PLAIN,
+  POLICY_INBOX,
+  QUESTION,
+  UPDATE,
+} from "./fixtures";
 import { InboxView } from "./inbox-view";
 
 /** A sink that records what the inbox sends and answers yes. */
@@ -237,4 +245,40 @@ export const AcceptAllConfirmed: Story = {
       "reopened",
     ]);
   },
+};
+
+/**
+ * An approval policy's approval (Phase 5 WP11): in Reviewed as "Approved by your policy: notes",
+ * with Undo, which reopens it like any other review, and brings the card back for review.
+ */
+export const ApprovedByPolicy: Story = {
+  args: { initial: POLICY_INBOX },
+  play: async ({ canvas }) => {
+    sent.length = 0;
+    const reviewed = canvas.getByRole("region", { name: "Reviewed" });
+    await expect(reviewed).toHaveTextContent("Approved by your policy: notes · Note for Acme Corp");
+    await userEvent.click(
+      within(reviewed).getByRole("button", {
+        name: "Undo: approved by your policy: notes, note for Acme Corp",
+      }),
+    );
+    await waitFor(() =>
+      expect(canvas.getByRole("article", { name: /^Note · Acme Corp/ })).toBeVisible(),
+    );
+    await waitFor(() => expect(sent).toHaveLength(1));
+    await expect(sent[0]?.[1].reviews[0]).toMatchObject({
+      proposalId: AUTO_APPROVED.proposalId,
+      decision: "reopened",
+      undoes: AUTO_APPROVED.review?.reviewId,
+      reason: "undo",
+      mode: "single",
+      policy: null,
+    });
+  },
+};
+
+export const ApprovedByPolicyDark: Story = {
+  ...ApprovedByPolicy,
+  name: "Approved by policy (dark)",
+  globals: { theme: "dark" },
 };

@@ -4,6 +4,7 @@
 // the name note in lib/capture/copy.ts, beside the tray's labels.
 import type { FieldValue, ProposalTypeV2 } from "@earshot/core";
 import { spokenValue } from "@/lib/capture/copy";
+import { ruleWords } from "@/lib/policies/copy";
 import type { StayReason } from "./batch";
 import type { SinkRefusal } from "./sinks";
 import type { InboxEntity, InboxProposal } from "./types";
@@ -289,9 +290,15 @@ export function batchRowWords(cards: readonly string[]): string {
   return `${count} ${proposalsWord(count)}: ${cards.join(", ")}`;
 }
 
-/** What a decided proposal's row in "Reviewed" says it was. */
+/**
+ * What a decided proposal's row in "Reviewed" says it was. An approval policy's names its rule
+ * (Phase 5 WP11): "Approved by your policy: notes".
+ */
 export function decisionWords(proposal: InboxProposal): string {
-  if (proposal.review?.mode === "policy") return "Approved by your policy";
+  if (proposal.review?.mode === "policy") {
+    const rule = proposal.review.policy?.rule;
+    return rule ? `Approved by your policy: ${ruleWords(rule)}` : "Approved by your policy";
+  }
   switch (proposal.status) {
     case "approved":
       return "Accepted";

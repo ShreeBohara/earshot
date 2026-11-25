@@ -10,6 +10,7 @@ export {
   UpcastError,
 } from "./errors";
 export { type FromJsonlOptions, fromJsonl, toJsonl } from "./jsonl";
+export { type PolicyExclusion, type PolicyMatch, policyRuleFor } from "./policy";
 export {
   defaultProjections,
   type Projection,

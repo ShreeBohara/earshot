@@ -77,7 +77,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
         </h1>
         <p className="text-pretty text-muted-foreground">
           {reauth
-            ? "Deleting your account and adding a passkey need a recent sign-in. Sign in again to continue."
+            ? "Deleting your account, adding a passkey, and changing your approval policy need a recent sign-in. Sign in again to continue."
             : "No passwords. New here? The same sign-in link creates your account."}
         </p>
       </header>

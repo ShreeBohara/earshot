@@ -1,5 +1,6 @@
 """Generated from packages/core/schemas. Do not edit; run `pnpm contracts:gen`."""
 
+from .approval_policy_rules import ApprovalPolicyRules
 from .entity_ref import EntityRef
 from .event_envelope import EventEnvelope
 from .health_response import HealthResponse
@@ -20,4 +21,4 @@ from .usage_recorded_v1 import UsageRecordedV1
 from .utterance_final_v1 import UtteranceFinalV1
 from .utterance_final_v2 import UtteranceFinalV2
 
-__all__ = ["EntityRef", "EventEnvelope", "HealthResponse", "ProposalCreatedV1", "ProposalCreatedV2", "ProposalFlaggedV1", "ProposalReviewedV1", "ProposalReviewedV2", "ProposalSnoozedV1", "RecapCreatedV1", "SessionEndedV1", "SessionSealedV1", "SessionStartedV1", "TurnCompletedV1", "TurnMeasuredV1", "TurnWitnessedV1", "UsageRecordedV1", "UtteranceFinalV1", "UtteranceFinalV2"]
+__all__ = ["ApprovalPolicyRules", "EntityRef", "EventEnvelope", "HealthResponse", "ProposalCreatedV1", "ProposalCreatedV2", "ProposalFlaggedV1", "ProposalReviewedV1", "ProposalReviewedV2", "ProposalSnoozedV1", "RecapCreatedV1", "SessionEndedV1", "SessionSealedV1", "SessionStartedV1", "TurnCompletedV1", "TurnMeasuredV1", "TurnWitnessedV1", "UsageRecordedV1", "UtteranceFinalV1", "UtteranceFinalV2"]

@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@earshot/tsconfig": "workspace:*",
+    "@earshot/understanding": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
