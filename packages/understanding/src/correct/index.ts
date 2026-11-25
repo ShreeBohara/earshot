@@ -26,6 +26,7 @@ import {
   type TargetCandidate,
   type TargetDecision,
 } from "../link";
+import { normalizeName } from "../names";
 import {
   type CurrencyCode,
   findAmounts,
@@ -108,6 +109,8 @@ export interface CorrectableProposal {
 /** One utterance of the correction turn: `utterance.final` v3, said or typed. */
 export interface CorrectionUtterance {
   readonly utteranceId: string;
+  /** How the words arrived; speech when absent. Typed words are spelled as meant. */
+  readonly input?: "speech" | "typed" | undefined;
   readonly text: string;
   readonly confidence: number;
   readonly words?:
@@ -513,11 +516,14 @@ function unreadable(
 }
 
 /**
- * Links a corrected record's words, kind by kind: first the kind the original's record was said to
- * be, then each other kind the type allows, taking the first that links (a task first said to be
- * about a person can be corrected to a company). When none links, the first try's answer stands: a
- * question, a new company or contact, or nothing. The linker's model weighs the kind, so a name
- * read with the right kind links where one read with none would only ask.
+ * Links a corrected record's words. The kind the original's record was said to be comes first,
+ * and its answer stands when it links or asks: the rep most likely means a record of that kind,
+ * and a question between sound-alikes is the linker's honest answer. Only when nothing of that kind
+ * fits (a new record, or none) is each other kind the type allows tried, and the first that links
+ * wins (a task first said to be about a person, corrected to a company). With no kind said, every
+ * kind is tried in turn: the first link, else the first question, else the first answer. The
+ * linker's model weighs the kind, so a name read with the right kind links where one read with no
+ * kind would only ask.
  */
 function linkRecord(
   quote: string,
@@ -539,20 +545,53 @@ function linkRecord(
     kinds: ctx.kinds,
     params,
   };
+  const linkAs = (kind: EntityKind | null) => ({
+    result: link({ text: quote, kind, companyText }, context),
+    kind,
+  });
   const said = original.target.kind;
-  const kinds: (EntityKind | null)[] =
-    said !== null && ctx.kinds.includes(said)
-      ? [said, ...ctx.kinds.filter((kind) => kind !== said)]
-      : ctx.kinds.length > 0
-        ? [...ctx.kinds]
-        : [null];
-  let first: { result: ReturnType<typeof link>; kind: EntityKind | null } | null = null;
-  for (const kind of kinds) {
-    const result = link({ text: quote, kind, companyText }, context);
-    if (result.decision === "linked") return { result, kind };
-    first ??= { result, kind };
+  if (said !== null && ctx.kinds.includes(said)) {
+    const first = linkAs(said);
+    if (first.result.decision === "linked" || first.result.decision === "ask") return first;
+    for (const kind of ctx.kinds) {
+      if (kind === said) continue;
+      const other = linkAs(kind);
+      if (other.result.decision === "linked") return other;
+    }
+    return first;
   }
-  return first ?? { result: link({ text: quote, kind: null, companyText }, context), kind: null };
+  const tries = (ctx.kinds.length > 0 ? ctx.kinds : [null]).map(linkAs);
+  return (
+    tries.find((attempt) => attempt.result.decision === "linked") ??
+    tries.find((attempt) => attempt.result.decision === "ask") ??
+    tries[0] ??
+    linkAs(null)
+  );
+}
+
+/**
+ * The one candidate whose name or an alias is the typed words, once normalized (case, spacing,
+ * punctuation, a legal suffix), or null when none is, or more than one.
+ */
+function spelledCandidate(
+  quote: string,
+  candidates: readonly TargetCandidate[],
+  index: LinkIndex,
+): { readonly entityId: string; readonly p: number } | null {
+  const typed = normalizeName(quote);
+  if (typed === "") return null;
+  const spelled = candidates.filter((candidate) => {
+    const entity =
+      candidate.entityId === null ? undefined : index.byId.get(candidate.entityId)?.entity;
+    return (
+      entity !== undefined &&
+      [entity.name, ...entity.aliases].some((name) => normalizeName(name) === typed)
+    );
+  });
+  const [only, ...more] = spelled;
+  return only && only.entityId !== null && more.length === 0
+    ? { entityId: only.entityId, p: only.p }
+    : null;
 }
 
 /**
@@ -633,7 +672,24 @@ function correctRecord(
   if (words === null)
     return { ok: false, reason: "no_words", kind: null, words: allWords(utterances) };
   const quote = String(words.value);
-  const { result, kind } = linkRecord(quote, original, ctx, params);
+  const linked = linkRecord(quote, original, ctx, params);
+  let { result, kind } = linked;
+  // Typed words are spelled as meant: an exact name or alias of one of the records the linker asked
+  // between settles it ("Pier Logistics", not its homophone "Peer Logistics"). Said words aren't:
+  // the linker's question stands.
+  if (result.decision === "ask" && words.utterance.input === "typed") {
+    const spelled = spelledCandidate(quote, result.candidates, ctx.index);
+    if (spelled) {
+      result = {
+        ...result,
+        decision: "linked",
+        entityId: spelled.entityId,
+        p: spelled.p,
+        basis: "exact",
+      };
+      kind = ctx.index.byId.get(spelled.entityId)?.entity.kind ?? kind;
+    }
+  }
   if (result.decision === "none") return unreadable("record", utterances);
   const evidence = evidenceAt(words.utterance, words.span);
   const target: CorrectionTargetValue = {

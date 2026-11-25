@@ -18,10 +18,13 @@ const DANA_LI = "ct_dana_li";
 const KATHRYN = "ct_kathryn_moore";
 const PIER_DEAL = "dl_pier_expansion";
 
+const PEER = "co_peer";
+
 const ENTITIES: LinkEntity[] = [
   { id: ACME_DYNAMICS, kind: "company", name: "Acme Dynamics", aliases: [] },
   { id: ACME_ROBOTICS, kind: "company", name: "Acme Robotics", aliases: [] },
   { id: PIER, kind: "company", name: "Pier Logistics", aliases: [] },
+  { id: PEER, kind: "company", name: "Peer Logistics", aliases: [] },
   { id: DANA_LEE, kind: "contact", name: "Dana Lee", aliases: [], parentId: ACME_DYNAMICS },
   { id: DANA_LI, kind: "contact", name: "Dana Li", aliases: [], parentId: PIER },
   { id: KATHRYN, kind: "contact", name: "Kathryn Moore", aliases: [], parentId: PIER },
@@ -86,7 +89,14 @@ const TASK: CorrectableProposal = {
 /** A typed correction: confidence 1, no words, an empty window at 42.5 s. */
 function typed(text: string): CorrectionUtterance[] {
   return [
-    { utteranceId: CORRECTION_UTTERANCE, text, confidence: 1, startMs: 42_500, endMs: 42_500 },
+    {
+      utteranceId: CORRECTION_UTTERANCE,
+      input: "typed",
+      text,
+      confidence: 1,
+      startMs: 42_500,
+      endMs: 42_500,
+    },
   ];
 }
 
@@ -157,6 +167,25 @@ describe("correctProposal: the record", () => {
     expect(fresh.proposal.riskFlags).toContainEqual({ kind: "new_entity", field: "target" });
   });
 
+  it("lets typed words' spelling settle a question between homophones, and leaves said words asking", () => {
+    const typedResult = correctProposal(TASK, "target", typed("Pier Logistics"), CTX);
+    if (!typedResult.ok) throw new Error("refused");
+    expect(typedResult.proposal.target).toMatchObject({
+      decision: "linked",
+      entityId: PIER,
+      basis: "exact",
+    });
+    expect(typedResult.proposal.riskFlags.filter((flag) => flag.field === "target")).toEqual([]);
+    const said = correctProposal(
+      TASK,
+      "target",
+      spoken("Pier Logistics").map((utterance) => ({ ...utterance, input: "speech" as const })),
+      CTX,
+    );
+    if (!said.ok) throw new Error("refused");
+    expect(said.proposal.target.decision).toBe("ask");
+  });
+
   it("refuses words that can name no record of the kinds the type allows", () => {
     const update: CorrectableProposal = {
       ...TASK,
@@ -207,8 +236,9 @@ describe("correctProposal: the record", () => {
       expect(result.proposal.fields.title).toEqual(contact.fields.title);
       expect(result.proposal.riskFlags).toEqual([]);
     }
-    // A name that sounds like another record's is a question still, as it was when first said.
-    const alike = correctProposal(contact, "name", typed("Dana Lee"), {
+    // Said, a name that sounds like another record's is a question still, as it was first; typed,
+    // its spelling settles it.
+    const alike = correctProposal(contact, "name", spoken("Dana Lee"), {
       ...CTX,
       kinds: ["contact"],
     });
@@ -217,6 +247,12 @@ describe("correctProposal: the record", () => {
     expect(alike.proposal.target.candidates.map((candidate) => candidate.entityId)).toContain(
       DANA_LEE,
     );
+    const spelled = correctProposal(contact, "name", typed("Dana Lee"), {
+      ...CTX,
+      kinds: ["contact"],
+    });
+    if (!spelled.ok) throw new Error("refused");
+    expect(spelled.proposal.target).toMatchObject({ decision: "linked", entityId: DANA_LEE });
   });
 });
 
