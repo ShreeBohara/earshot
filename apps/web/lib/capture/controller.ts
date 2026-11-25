@@ -249,6 +249,8 @@ interface SessionPlan {
     readonly timeZone: string;
     /** The account open in Earshot, one of `entities`, or null. */
     readonly focusEntityId: string | null;
+    /** The workspace's approval policy, signed for this session (Phase 5 WP11), or null. */
+    readonly policy: CreateSessionResponse["policy"];
   };
   readonly fake: FakeVoice | null;
   /** The second witness this session runs, or why it runs none; null: no witness messages. */
@@ -471,11 +473,13 @@ export class CaptureController {
         getCredential: () => async () => fake.credential(),
         keyterms: () => scenario.entities.map((entity) => entity.name),
         // The cassettes were recorded with these, so each turn's request matches its recording.
-        start: () => ({
+        // The policy isn't part of a turn's request: it's the session's own, signed for it.
+        start: (created) => ({
           entities: scenario.entities,
           startedAt: scenario.startedAt,
           timeZone: scenario.timeZone,
           focusEntityId: scenario.focusEntityId ?? null,
+          policy: created.policy ?? null,
         }),
         fake,
         witness: this.#fakeWitness(fake),
@@ -529,6 +533,7 @@ export class CaptureController {
         startedAt,
         timeZone: this.#deps.timeZone(),
         focusEntityId: created.focusEntityId ?? null,
+        policy: created.policy ?? null,
       }),
       fake: null,
       witness: this.#groqWitness(keys),

@@ -9,6 +9,8 @@ import {
   MAX_ENTITY_NAME_CHARS,
   MAX_MESSAGE_BYTES,
   MAX_SESSION_ENTITIES,
+  POLICY_SIGNATURE_CHARS,
+  type PolicyVersion,
   type SessionProviders,
 } from "@earshot/core";
 import type { CrmEntity } from "./keyterms";
@@ -30,9 +32,14 @@ export function utf8Length(text: string): number {
 /**
  * How many bytes of `start` are left for the items of its `entities` array (with the commas
  * between them), once the rest of the message is written with `providers`, the providers the
- * client named when it created the session and will send again.
+ * client named when it created the session and will send again, and `policy`, the approval policy
+ * it will carry, signed (Phase 5 WP11): a signature is always 43 characters, so the session's id
+ * isn't needed to size it.
  */
-export function startEntityBudget(providers: SessionProviders): number {
+export function startEntityBudget(
+  providers: SessionProviders,
+  policy: PolicyVersion | null = null,
+): number {
   const envelope = {
     t: "start",
     msgId: "01a1c6e2-9320-7deb-a57a-ba62dc02df02",
@@ -43,6 +50,16 @@ export function startEntityBudget(providers: SessionProviders): number {
     entities: [],
     // A crm_entities id: the open account, when there is one.
     focusEntityId: "01a1c6e2-9320-7deb-a57a-ba62dc02df03",
+    ...(policy
+      ? {
+          policy: {
+            id: policy.id,
+            version: policy.version,
+            rules: policy.rules,
+            sig: "A".repeat(POLICY_SIGNATURE_CHARS),
+          },
+        }
+      : {}),
   };
   return MAX_MESSAGE_BYTES - utf8Length(JSON.stringify(envelope)) - START_SLACK_BYTES;
 }

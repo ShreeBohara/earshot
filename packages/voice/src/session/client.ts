@@ -23,6 +23,7 @@ import {
   HEARTBEAT_PONG,
   type LlmProvider,
   MAX_MESSAGE_BYTES,
+  type PolicySnapshot,
   parseServerMessage,
   type RecapRequest,
   type ReviewInput,
@@ -144,6 +145,11 @@ export interface SendStartInput {
    * it as context, and a proposal that names no record targets it. Null or absent for none.
    */
   readonly focusEntityId?: string | null;
+  /**
+   * The workspace's approval policy, signed for this session by `POST /api/sessions` (Phase 5
+   * WP11), unchanged. Null or absent for none: every proposal waits for the rep.
+   */
+  readonly policy?: PolicySnapshot | null;
 }
 
 export interface SendTurnEndInput {
@@ -370,6 +376,7 @@ export class SessionClient {
       entities: [...input.entities],
       ...(input.timeZone ? { timeZone: input.timeZone } : {}),
       ...(input.focusEntityId ? { focusEntityId: input.focusEntityId } : {}),
+      ...(input.policy ? { policy: input.policy } : {}),
     });
   }
 
