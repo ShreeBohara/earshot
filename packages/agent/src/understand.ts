@@ -49,9 +49,11 @@ import {
   link,
   type MentionInput,
 } from "@earshot/understanding/link";
-import { foldName } from "@earshot/understanding/names";
 import { evidenceFor, locateQuote, type QuoteLocation, spanText } from "./evidence";
-import { TARGET_KINDS, type ToolField, type ToolProposal, toolTarget } from "./schema";
+import { linkedMention, linkerMention, TARGET_KINDS, withRecentLinks } from "./link-context";
+import { type ToolField, type ToolProposal, toolTarget } from "./schema";
+
+export { linkerMention, MAX_RECENT_LINKS, withRecentLinks } from "./link-context";
 
 /** A `proposal.created` v2 payload without its `proposalId`, which `SessionDO` mints. */
 export type ProposalDraft = Omit<ProposalCreatedV2, "proposalId">;
@@ -61,9 +63,6 @@ export type ProposalDraft = Omit<ProposalCreatedV2, "proposalId">;
  * lowest word's confidence, so one shaky word in a quote is enough.
  */
 export const LOW_CONFIDENCE_THRESHOLD = 0.7;
-
-/** How many earlier links SessionDO keeps for the linker's `recent` feature (spec WP8 step 4). */
-export const MAX_RECENT_LINKS = 20;
 
 /** The session as the linker sees it: what `start` and earlier turns established. */
 export interface LinkSession {
@@ -253,28 +252,6 @@ function resolveTarget(
   return linkedTarget(draft.type, mention, drafted.kind, company, ctx);
 }
 
-/**
- * The mention as the linker reads it. A contact is read with the company said beside it, which
- * the linker's `parentCtx` weighs. A deal is indexed the way it's said, its company then the rest
- * of its name ("Atmos onboarding package", ADR-0028), and linker v1 was fit on deal mentions in
- * that form with no separate company. So a deal whose company the rep said apart from the rest
- * ("Pier Logistics … the expansion") is read as the two together, company first; one whose words
- * already hold its company is read as quoted; and neither carries the company on the side. The
- * target's `mention` and `company` keep the quotes either way.
- */
-export function linkerMention(
-  text: string,
-  kind: MentionInput["kind"],
-  companyText: string | null | undefined,
-): MentionInput {
-  if (kind !== "deal") return { text, kind, companyText: companyText ?? null };
-  const company = companyText ? foldName(companyText) : "";
-  if (company === "" || ` ${foldName(text)} `.includes(` ${company} `)) {
-    return { text, kind, companyText: null };
-  }
-  return { text: `${companyText} ${text}`, kind, companyText: null };
-}
-
 /** The linker's decision on a named record, as `TargetV2`, and the flags it raises. */
 function linkedTarget(
   type: ProposalTypeV2,
@@ -349,31 +326,6 @@ function impliedTarget(
 }
 
 /**
- * The session's earlier links after a turn: each record the turn's proposals linked from words
- * that were said, and each company linked beside them, most recent first, without repeats, at most
- * `MAX_RECENT_LINKS`. An implied target isn't one: nothing named it.
- */
-export function withRecentLinks(
-  recent: readonly string[],
-  proposals: readonly Pick<ProposalDraft, "target">[],
-): string[] {
-  const out = [...recent];
-  for (const { target } of proposals) {
-    const linked = [
-      target.company?.entityId ?? null,
-      target.decision === "linked" && target.basis !== "focus" ? target.entityId : null,
-    ];
-    for (const id of linked) {
-      if (id === null) continue;
-      const at = out.indexOf(id);
-      if (at >= 0) out.splice(at, 1);
-      out.unshift(id);
-    }
-  }
-  return out.slice(0, MAX_RECENT_LINKS);
-}
-
-/**
  * What a proposal's target linker read: the mention as it read it (null when nothing was named),
  * the kinds allowed, the earlier links the proposal saw, and the turn's other named records. The
  * second witness is compared with the same context (WP9, `witnessTurn`).
@@ -392,15 +344,6 @@ export interface TurnUnderstanding {
   readonly links: readonly LinkDraft[];
   /** The session's earlier links once this turn's are added (`withRecentLinks`). */
   readonly recent: readonly string[];
-}
-
-/**
- * The mention a proposal's target linker read: the target's quote (a contact's `name`), with the
- * company said beside it, read as `linkedTarget` reads them. Null for a target with no words.
- */
-function linkedMention(target: TargetV2): MentionInput | null {
-  if (target.mention === null) return null;
-  return linkerMention(target.mention.quote, target.kind, target.company?.quote ?? null);
 }
 
 /**

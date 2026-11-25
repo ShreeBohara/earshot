@@ -36,7 +36,7 @@ import {
   readUnbiased,
   type UnbiasedReading,
 } from "@earshot/understanding/witness";
-import { linkerMention } from "./understand";
+import { linkerMention } from "./link-context";
 
 /**
  * What one proposal's target linker read, so the witness can be compared with the same context

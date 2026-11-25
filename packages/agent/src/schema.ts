@@ -16,7 +16,6 @@
 // So the wire schema carries types, literals, enums, and nullability only. Everything else (date
 // and time formats, lengths, limits) is checked by `submitProposalsInput`'s refinement, which runs
 // on every attempt and drives the retry.
-import type { EntityKind, ProposalTypeV2 } from "@earshot/core";
 import { z } from "zod";
 
 /** The tool's name, as the prompt and the forced tool choice spell it. */
@@ -175,18 +174,8 @@ export const DATE_FIELDS: ReadonlySet<string> = new Set(["dueDate", "closeDate",
 /** Fields whose value is a time of day, `HH:MM` on a 24-hour clock. */
 export const TIME_FIELDS: ReadonlySet<string> = new Set(["time"]);
 
-/**
- * The record kinds each proposal type can target. A contact proposal updates a contact and a deal
- * update changes a deal; notes, tasks, commitments, and meetings can hang off any record.
- */
-export const TARGET_KINDS: Readonly<Record<ProposalTypeV2, readonly EntityKind[]>> = {
-  note: ["company", "contact", "deal"],
-  task: ["company", "contact", "deal"],
-  contact: ["contact"],
-  deal_update: ["deal"],
-  commitment: ["company", "contact", "deal"],
-  meeting: ["company", "contact", "deal"],
-};
+/** The record kinds each proposal type can target (./link-context.ts, which the web app imports). */
+export { TARGET_KINDS } from "./link-context";
 
 /** A proposal's target, or null: contact proposals have none (their record is the `name`). */
 export function toolTarget(proposal: ToolProposal): ToolTarget | null {
