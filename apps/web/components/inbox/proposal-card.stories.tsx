@@ -1,6 +1,6 @@
 import { bothThemes, bothThemesParameters, themePanel } from "@earshot/ui/lib/story-themes";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, screen, userEvent, within } from "storybook/test";
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 import type { NoAudioReason } from "@/lib/evidence/copy";
 import type { CardEvidence, PlayableSpan } from "@/lib/evidence/state";
 import { cardModel } from "@/lib/inbox/card";
@@ -254,6 +254,8 @@ export const DemoControls: Story = {
     await expect(screen.queryByRole("menuitem", { name: "Add a matching record" })).toBeNull();
     await userEvent.click(item);
     await expect(demo.simulate).toHaveBeenCalled();
+    // Closed and gone, focus guards and all, before axe reads the page.
+    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
   },
 };
 
