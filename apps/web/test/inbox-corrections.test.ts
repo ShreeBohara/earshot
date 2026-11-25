@@ -127,6 +127,7 @@ describe("what a failed correction says", () => {
     expect(correctionFailureLine("stale", context)).toMatch(/Reload it and try again\.$/);
     expect(correctionFailureLine("not_sealed", context)).toMatch(/still finishing/);
     expect(correctionFailureLine("unavailable", context)).toMatch(/Try again in a minute\.$/);
+    expect(correctionFailureLine("busy", context)).toMatch(/still reading what you just said/);
   });
 
   it("maps SessionDO's limits to “too many”, and transport failures to “unavailable”", () => {

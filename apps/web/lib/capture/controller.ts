@@ -959,6 +959,11 @@ export class CaptureController {
     if (this.#armed !== null || this.#state.pressed || !canSpeakCorrections(this.#state)) {
       return Promise.resolve({ ok: false, code: "unavailable" });
     }
+    // The bridge gives the armed correction to the next turn that ends. A turn released but still
+    // waiting on its finals ends first, so arming now would make it the correction, and send the
+    // correction's own words to be extracted. The engine reports armed, unpressed in push-to-talk,
+    // only when no turn waits: then the next turn to end is the one this press starts.
+    if (this.#engineState !== "armed") return Promise.resolve({ ok: false, code: "busy" });
     return new Promise((resolve) => {
       let done = false;
       const timer = this.#timers.setTimeout(() => {

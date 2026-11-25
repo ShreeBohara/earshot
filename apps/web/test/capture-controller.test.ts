@@ -995,6 +995,49 @@ describe("CaptureController's spoken corrections (Phase 5 WP13)", () => {
     t.controller.dispose();
   });
 
+  it("won't arm while the last turn is still being read: that turn would become the correction", async () => {
+    const t = setup();
+    const { fake, card } = await liveWithCard(t);
+
+    // An ordinary turn, released and waiting on its finals.
+    t.controller.press();
+    await speak(t, fake.holdMs);
+    t.controller.release();
+    expect(t.controller.getState().capture.state).toBe("finalizing");
+    expect(
+      await t.controller.spokenCorrections.start({
+        proposalId: card.proposalId,
+        field: "name",
+        questionId: null,
+      }),
+    ).toEqual({ ok: false, code: "busy" });
+    expect(t.controller.getState().pressed).toBe(false);
+
+    // That turn ends as an ordinary turn, and nothing went out as a correction.
+    await t.clock.advance(1_500);
+    await settle(100);
+    await t.clock.advance(300);
+    expect(t.server.received.filter((m) => m.t === "turn_end")).toHaveLength(2);
+    expect(t.server.received.filter((m) => m.t === "correct")).toEqual([]);
+
+    // Once it's read, the microphone arms the next turn as before.
+    const outcome = t.controller.spokenCorrections.start({
+      proposalId: card.proposalId,
+      field: "name",
+      questionId: null,
+    });
+    expect(t.controller.getState().pressed).toBe(true);
+    await speak(t, fake.holdMs);
+    t.controller.spokenCorrections.finish();
+    await t.clock.advance(1_500);
+    await settle(100);
+    await t.clock.advance(300);
+    expect(await outcome).toEqual({ ok: true });
+    expect(t.server.received.filter((m) => m.t === "correct")).toHaveLength(1);
+    expect(t.server.received.filter((m) => m.t === "turn_end")).toHaveLength(2);
+    t.controller.dispose();
+  });
+
   it("says what SessionDO couldn't read, and offers no microphone in hands-free", async () => {
     const t = setup({ correct: () => "unreadable" });
     const { fake, card } = await liveWithCard(t);

@@ -20,7 +20,9 @@ export type CorrectionFailure =
   | "too_many"
   | "not_sealed"
   | "unavailable"
-  | "refused";
+  | "refused"
+  /** A spoken correction asked for while the rep's last turn is still being read. */
+  | "busy";
 
 export type CorrectionOutcome =
   | { readonly ok: true }
@@ -289,5 +291,7 @@ export function correctionFailureLine(
       return "Earshot couldn't send that correction. Try again in a minute.";
     case "refused":
       return "That correction can't be made. Edit or reject the card instead.";
+    case "busy":
+      return "Earshot is still reading what you just said. Try the microphone again in a moment.";
   }
 }
