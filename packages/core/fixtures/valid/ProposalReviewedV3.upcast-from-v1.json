@@ -1,0 +1,26 @@
+{
+  "reviewId": "01a1c6e3-83c0-7b53-ade2-f20cbac162c5",
+  "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
+  "decision": "edited",
+  "target": null,
+  "editDiff": {
+    "title": {
+      "before": "Send Dana the pricing breakdown",
+      "after": "Send Dana the pricing breakdown for the security add-on"
+    }
+  },
+  "mode": "single",
+  "batchId": null,
+  "policy": null,
+  "undoes": null,
+  "reason": null,
+  "seen": null,
+  "timing": {
+    "decisionMs": 11200,
+    "handlingMs": 11200
+  },
+  "input": null,
+  "surface": null,
+  "syncEligibleAt": null,
+  "by": null
+}

@@ -22,14 +22,14 @@
 // - `review` and `snooze` (Phase 5 WP3) are the tray's reviews: checked with `@earshot/events`'
 //   writer rules against the session's folded proposals, filled in with who sent them (the pinned
 //   user, and how and when the ticket's web session signed in) and when an approval may sync, and
-//   appended as `proposal.reviewed` v2 and `proposal.snoozed`. A later witness flag on an approved
+//   appended as `proposal.reviewed` v3 and `proposal.snoozed`. A later witness flag on an approved
 //   or edited proposal reopens it (`mode: "system"`).
 // - Approval policies (Phase 5 spec §4.6, WP11): `start` may carry the workspace's policy, signed
 //   for this session by the web app with the ticket secret. A snapshot that doesn't verify against
 //   this session's id refuses the `start`; one that does is kept in `meta`. Right after each turn's
 //   understanding step, every new proposal a rule matches (unmarked, linked, superseding nothing,
 //   none of the rule's held-back fields) is approved in the turn's own transaction, as a
-//   `proposal.reviewed` v2 with `mode: "policy"`, by the session's user with no sign-in. Without a
+//   `proposal.reviewed` v3 with `mode: "policy"`, by the session's user with no sign-in. Without a
 //   usable audit key no policy applies, and a later flag reopens an auto-approval as any other.
 // - The recap (Phase 5 spec §4.9, WP10): right after `session.ended`, in the serial queue, one
 //   forced tool call on the session's provider, on the key `end.recap` carried, within a 15 s
@@ -86,7 +86,7 @@ import {
   type PolicyVersion,
   type ProposalCreatedV2,
   type ProposalFlaggedV1,
-  type ProposalReviewedV2,
+  type ProposalReviewedV3,
   type ProposalSnoozedV1,
   parseClientMessage,
   type RecapCreatedV1,
@@ -226,7 +226,7 @@ interface FoldedLog {
 
 /** A turn's proposals as the session's policy judged them: approvals by proposal, the rest by why. */
 interface PolicyJudgement {
-  readonly approvals: ReadonlyMap<string, ProposalReviewedV2>;
+  readonly approvals: ReadonlyMap<string, ProposalReviewedV3>;
   readonly excluded: Partial<Record<PolicyExclusion | "refused", number>>;
 }
 
@@ -651,12 +651,13 @@ export class SessionRuntime extends DurableObject<Env> {
   }
 
   /**
-   * `session.started`, once. A second `start` under a new msgId gets the first one's seq. The
-   * approval policy it may carry (Phase 5 WP11) must verify against this session's id: a forged
-   * snapshot, or one signed for another session, refuses the `start` with `bad_message`, and one
-   * that verifies is kept in `meta` for the session's turns. The policy a session started with is
-   * the one it keeps: a later `start`'s snapshot changes nothing, and a change to the workspace's
-   * policy applies from the next session.
+   * `session.started`, once, at v2 (Phase 6 WP1): with the rep's time zone as `start` sent it (the
+   * protocol has checked it against `Intl`), or null when it sent none. A second `start` under a
+   * new msgId gets the first one's seq. The approval policy it may carry (Phase 5 WP11) must
+   * verify against this session's id: a forged snapshot, or one signed for another session,
+   * refuses the `start` with `bad_message`, and one that verifies is kept in `meta` for the
+   * session's turns. The policy a session started with is the one it keeps: a later `start`'s
+   * snapshot changes nothing, and a change to the workspace's policy applies from the next session.
    */
   async #start(message: ClientMessageOf<"start">): Promise<void> {
     // Before any check: verifying the snapshot yields, and everything after it runs in one go.
@@ -689,12 +690,13 @@ export class SessionRuntime extends DurableObject<Env> {
       [
         {
           type: "session.started",
-          schemaVersion: 1,
+          schemaVersion: 2,
           payload: {
             mode: message.mode,
             engine: message.engine,
             providers: message.providers,
             startedAt: message.startedAt,
+            timeZone: message.timeZone ?? null,
           },
         },
       ],
@@ -929,7 +931,7 @@ export class SessionRuntime extends DurableObject<Env> {
     }
     const events: NewEvent[] = [];
     /** The policy's approvals among `events`, by position, for the `writes` table. */
-    const approvals: { readonly index: number; readonly review: ProposalReviewedV2 }[] = [];
+    const approvals: { readonly index: number; readonly review: ProposalReviewedV3 }[] = [];
     for (const payload of created) {
       events.push({
         type: "proposal.created",
@@ -942,7 +944,7 @@ export class SessionRuntime extends DurableObject<Env> {
       approvals.push({ index: events.length, review });
       events.push({
         type: "proposal.reviewed",
-        schemaVersion: 2,
+        schemaVersion: 3,
         payload: review as unknown as Record<string, unknown>,
       });
     }
@@ -972,7 +974,7 @@ export class SessionRuntime extends DurableObject<Env> {
     });
     const commitTurn = (
       list: readonly NewEvent[],
-      reviews: readonly { readonly index: number; readonly review: ProposalReviewedV2 }[],
+      reviews: readonly { readonly index: number; readonly review: ProposalReviewedV3 }[],
     ) =>
       this.#commit(message.msgId, list, {
         during: (appended) => {
@@ -1047,7 +1049,7 @@ export class SessionRuntime extends DurableObject<Env> {
   #followups(
     turnId: string,
     created: readonly ProposalCreatedV2[],
-    approvals: ReadonlyMap<string, ProposalReviewedV2>,
+    approvals: ReadonlyMap<string, ProposalReviewedV3>,
   ): FollowupAskedV1[] {
     if (created.length === 0) return [];
     const sessionId = this.#store.get("sid") ?? "";
@@ -1058,7 +1060,7 @@ export class SessionRuntime extends DurableObject<Env> {
       if (review) {
         folded = foldInto(folded, sessionId, {
           type: "proposal.reviewed",
-          schemaVersion: 2,
+          schemaVersion: 3,
           payload: review,
         });
       }
@@ -1085,7 +1087,7 @@ export class SessionRuntime extends DurableObject<Env> {
   #judgeProposals(created: readonly ProposalCreatedV2[], policy: PolicyVersion): PolicyJudgement {
     const sessionId = this.#store.get("sid") ?? "";
     const now = this.#now();
-    const approvals = new Map<string, ProposalReviewedV2>();
+    const approvals = new Map<string, ProposalReviewedV3>();
     const excluded: PolicyJudgement["excluded"] = {};
     let folded = this.#proposals();
     for (const payload of created) {
@@ -1108,7 +1110,7 @@ export class SessionRuntime extends DurableObject<Env> {
       approvals.set(payload.proposalId, review);
       folded = foldInto(folded, sessionId, {
         type: "proposal.reviewed",
-        schemaVersion: 2,
+        schemaVersion: 3,
         payload: review,
       });
     }
@@ -1127,7 +1129,7 @@ export class SessionRuntime extends DurableObject<Env> {
     policy: PolicyVersion,
     rule: string,
     now: number,
-  ): ProposalReviewedV2 {
+  ): ProposalReviewedV3 {
     return {
       reviewId: uuidv7(),
       proposalId: proposal.proposalId,
@@ -1282,7 +1284,7 @@ export class SessionRuntime extends DurableObject<Env> {
     const record = (flagged: WitnessTurnResult["flagged"]) => {
       const events: NewEvent[] = [];
       /** The reopens among `events`, by position, for the `writes` table. */
-      const reopens: { readonly index: number; readonly review: ProposalReviewedV2 }[] = [];
+      const reopens: { readonly index: number; readonly review: ProposalReviewedV3 }[] = [];
       if (message.outcome === "transcribed") {
         events.push({
           type: "utterance.final",
@@ -1325,12 +1327,12 @@ export class SessionRuntime extends DurableObject<Env> {
         reopens.push({ index: events.length, review: reopen });
         events.push({
           type: "proposal.reviewed",
-          schemaVersion: 2,
+          schemaVersion: 3,
           payload: reopen as unknown as Record<string, unknown>,
         });
         proposals = foldInto(proposals, sessionId, {
           type: "proposal.reviewed",
-          schemaVersion: 2,
+          schemaVersion: 3,
           payload: reopen,
         });
       }
@@ -1426,7 +1428,7 @@ export class SessionRuntime extends DurableObject<Env> {
    * edit, when it may sync (this object's clock plus the undo window). Reviews whose `reviewId` the
    * log holds are skipped, so a review sent again under a new msgId gets the first one's seq; the
    * rest are checked together with the writers' rules (`checkReviews`) against the session's
-   * proposals as the log folds them, and appended as `proposal.reviewed` v2 in one transaction, or
+   * proposals as the log folds them, and appended as `proposal.reviewed` v3 in one transaction, or
    * refused together with `bad_message`. Without a usable audit signing key, refused with
    * `internal`: the flush couldn't store them with their audit rows (fail closed).
    */
@@ -1450,7 +1452,7 @@ export class SessionRuntime extends DurableObject<Env> {
     }
     const now = this.#now();
     const by = this.#reviewer(attachment);
-    const fresh: ProposalReviewedV2[] = [];
+    const fresh: ProposalReviewedV3[] = [];
     let resentSeq = -1;
     for (const input of message.reviews) {
       const prior = store.recordedWrite(input.reviewId);
@@ -1485,7 +1487,7 @@ export class SessionRuntime extends DurableObject<Env> {
       message.msgId,
       fresh.map((review) => ({
         type: "proposal.reviewed",
-        schemaVersion: 2,
+        schemaVersion: 3,
         payload: review as unknown as Record<string, unknown>,
       })),
       {
@@ -1825,7 +1827,7 @@ export class SessionRuntime extends DurableObject<Env> {
    * by this object (`mode: "system"`), with no sign-in, input, or time, naming the review it
    * reverses, and what the proposal looks like after the flag as `seen`.
    */
-  #systemReopen(proposal: ProposalView): ProposalReviewedV2 {
+  #systemReopen(proposal: ProposalView): ProposalReviewedV3 {
     return {
       reviewId: uuidv7(),
       proposalId: proposal.proposalId,

@@ -1,0 +1,36 @@
+{
+  "v": 1,
+  "stages": [
+    {
+      "stageId": "contractsent",
+      "pipelineId": "default",
+      "label": "Contract sent",
+      "words": [
+        "word 0",
+        "word 1",
+        "word 2",
+        "word 3",
+        "word 4",
+        "word 5",
+        "word 6",
+        "word 7",
+        "word 8",
+        "word 9",
+        "word 10"
+      ]
+    }
+  ],
+  "newDeals": {
+    "pipelineId": "default"
+  },
+  "owners": [
+    {
+      "userId": "u_9fK2mQx7Lr",
+      "ownerId": "83729104"
+    }
+  ],
+  "destinations": {
+    "commitment": "task",
+    "meeting": "meeting"
+  }
+}

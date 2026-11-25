@@ -26,6 +26,12 @@ import {
   sessionLog,
   snoozed,
   started,
+  startedV2,
+  syncConflicted,
+  synced,
+  syncFailed,
+  syncReopen,
+  syncStarted,
   tsFor,
   turnCompleted,
   turnMeasured,
@@ -50,6 +56,8 @@ describe("sessionProjection", () => {
       engine: "cascaded",
       providers: { speechToText: { provider: "deepgram", model: "nova-3" } },
       startedAt: "2026-11-10T19:15:00.000Z",
+      // A v1 start upcasts with no time zone.
+      timeZone: null,
       endedAt: null,
       sealedAt: null,
       durationMs: null,
@@ -125,6 +133,20 @@ describe("sessionProjection", () => {
         session: sessionProjection,
       }),
     ).toThrow(/already been sealed/);
+  });
+});
+
+describe("sessionProjection: the rep's time zone (Phase 6 WP1)", () => {
+  const session = (body: ReturnType<typeof started>) =>
+    replay(sessionLog([body, utterance(1)]), { session: sessionProjection }).session;
+
+  it("keeps the zone a v2 start recorded, and null when it recorded none", () => {
+    expect(session(startedV2("America/Chicago"))?.timeZone).toBe("America/Chicago");
+    expect(session(startedV2(null))?.timeZone).toBeNull();
+  });
+
+  it("reads a v1 start, from before the zone was recorded, as no zone", () => {
+    expect(session(started())?.timeZone).toBeNull();
   });
 });
 
@@ -333,6 +355,8 @@ describe("proposalsProjection", () => {
         seq: 5,
         ts: tsFor(5),
       },
+      // Phase 6 WP1: nothing has synced it.
+      sync: null,
     });
     expect(proposals[1]?.review).toBeNull();
     expect(proposals[2]?.review).toMatchObject({ decision: "rejected", editDiff: null });
@@ -727,6 +751,202 @@ describe("proposalsProjection: Phase 5 reviews, undo, snoozes, and supersedes", 
       proposalFlagged(1),
     ]);
     expect(old).toMatchObject({ status: "superseded", conflicts: [expect.anything()] });
+  });
+});
+
+describe("proposalsProjection: Phase 6 sync attempts", () => {
+  /** A sealed session with one approved task: proposal uuid(3001), approved by review uuid(7001). */
+  const approved = [started(), utterance(1), proposalV2(1), reviewV2(1), ended(), sealed()];
+  const fold = (bodies: Parameters<typeof sessionLog>[0]) =>
+    replay(sessionLog(bodies), { proposals: proposalsProjection }).proposals;
+  const only = (bodies: Parameters<typeof sessionLog>[0]) => {
+    const [first] = fold(bodies);
+    if (!first) throw new Error("no proposal");
+    return first;
+  };
+  const attempt = { jobId: uuid(0xa001), reviewId: uuid(7001), attempt: 1, provider: "demo" };
+
+  it("has no sync until the outbox claims a job", () => {
+    expect(only(approved)).toMatchObject({ status: "approved", sync: null });
+  });
+
+  it("folds a start, then synced: the records, and the status synced", () => {
+    const starting = only([...approved, syncStarted(1)]);
+    expect(starting.status).toBe("approved");
+    expect(starting.sync).toEqual({
+      ...attempt,
+      at: tsFor(6),
+      state: "syncing",
+      records: [],
+      error: null,
+    });
+    const done = only([...approved, syncStarted(1), synced(1)]);
+    expect(done.status).toBe("synced");
+    expect(done.sync).toEqual({
+      ...attempt,
+      at: tsFor(7),
+      state: "synced",
+      records: [{ write: 0, op: "created", ref: { object: "task", id: "task-1", url: null } }],
+      error: null,
+    });
+  });
+
+  it("folds a failure, then a Retry's start, which returns the status to the decision", () => {
+    const failed = only([...approved, syncStarted(1), syncFailed(1)]);
+    expect(failed).toMatchObject({
+      status: "failed",
+      sync: {
+        ...attempt,
+        state: "failed",
+        records: [],
+        error: {
+          kind: "rate_limited",
+          code: "RATE_LIMIT",
+          field: null,
+          landed: [],
+          retryable: true,
+        },
+      },
+    });
+    const retrying = only([
+      ...approved,
+      syncStarted(1),
+      syncFailed(1),
+      syncStarted(1, { attempt: 2 }),
+    ]);
+    expect(retrying).toMatchObject({
+      status: "approved",
+      sync: { ...attempt, attempt: 2, state: "syncing", error: null, at: tsFor(8) },
+    });
+    // An edit goes back to edited.
+    const edited = [started(), utterance(1), proposalV2(1), reviewV2(1, "edited"), sealed()];
+    const retried = only([
+      ...edited,
+      syncStarted(1),
+      syncFailed(1),
+      syncStarted(1, { attempt: 2 }),
+    ]);
+    expect(retried.status).toBe("edited");
+  });
+
+  it("folds a conflict, which changes no status, and the sync's reopen after it", () => {
+    const conflicted = only([...approved, syncStarted(1), syncConflicted(1)]);
+    expect(conflicted).toMatchObject({
+      status: "approved",
+      sync: {
+        ...attempt,
+        state: "conflicted",
+        records: [],
+        error: {
+          cause: "moved",
+          fields: { title: { seen: "Send the deck", live: "Send the deck by Friday" } },
+          existing: null,
+        },
+      },
+    });
+    const reopened = only([
+      ...approved,
+      syncStarted(1),
+      syncConflicted(1),
+      syncReopen(1, uuid(7001)),
+    ]);
+    expect(reopened).toMatchObject({
+      status: "proposed",
+      review: { reviewId: uuid(7301), decision: "reopened", mode: "system", reason: "conflict" },
+      sync: { state: "conflicted", reviewId: uuid(7001) },
+    });
+    // Approved again, a new job syncs the new review, and its attempt takes the place of the last.
+    const again = only([
+      ...approved,
+      syncStarted(1),
+      syncConflicted(1),
+      syncReopen(1, uuid(7001)),
+      reviewV2(1, "approved", { reviewId: uuid(7401) }),
+      syncStarted(1, { jobId: uuid(0xa101), reviewId: uuid(7401) }),
+      synced(1, { jobId: uuid(0xa101), reviewId: uuid(7401) }),
+    ]);
+    expect(again).toMatchObject({
+      status: "synced",
+      sync: { jobId: uuid(0xa101), reviewId: uuid(7401), state: "synced" },
+    });
+  });
+
+  it("fails on a result without a start", () => {
+    expect(() => fold([...approved, synced(1)])).toThrow(ProjectionError);
+    expect(() => fold([...approved, syncFailed(1)])).toThrow(/has no start/);
+    // A result for another attempt of the job than the one that started.
+    expect(() => fold([...approved, syncStarted(1), synced(1, { attempt: 2 })])).toThrow(
+      /has no start/,
+    );
+  });
+
+  it("fails on two results for one attempt", () => {
+    expect(() => fold([...approved, syncStarted(1), synced(1), synced(1)])).toThrow(
+      /ended already: synced/,
+    );
+    expect(() => fold([...approved, syncStarted(1), syncFailed(1), syncConflicted(1)])).toThrow(
+      /ended already: failed/,
+    );
+  });
+
+  it("fails on a result that names another review or CRM than its start", () => {
+    expect(() => fold([...approved, syncStarted(1), synced(1, { reviewId: uuid(7999) })])).toThrow(
+      /started for review/,
+    );
+    expect(() => fold([...approved, syncStarted(1), synced(1, { provider: "hubspot" })])).toThrow(
+      /started for review/,
+    );
+  });
+
+  it("fails on a start for a review that isn't the latest, or doesn't approve", () => {
+    const undone = [...approved, reopen(1, uuid(7001))];
+    expect(() => fold([...undone, syncStarted(1)])).toThrow(
+      /names review 00000000-0000-7000-8000-000000001b59, but its latest is 00000000-0000-7000-8000-000000001bbd/,
+    );
+    expect(() => fold([...approved, syncStarted(1, { reviewId: uuid(7999) })])).toThrow(
+      ProjectionError,
+    );
+    const rejected = [started(), proposalV2(1), reviewV2(1, "rejected"), sealed()];
+    expect(() => fold([...rejected, syncStarted(1)])).toThrow(/only an approval or an edit/);
+  });
+
+  it("finds each sync event's proposal by its id, and fails on one the log doesn't have", () => {
+    expect(() => fold([...approved, syncStarted(1, { proposalId: uuid(3999) })])).toThrow(
+      /no proposal 00000000-0000-7000-8000-000000000f9f to sync/,
+    );
+    // A start naming one proposal with another's approval is a start for a review that isn't its.
+    const two = [started(), proposalV2(1), proposalV2(2), reviewV2(1), reviewV2(2), sealed()];
+    expect(() => fold([...two, syncStarted(1, { reviewId: uuid(7002) })])).toThrow(
+      /but its latest is/,
+    );
+    // A result naming another proposal than the one its attempt started on has no start there.
+    expect(() => fold([...two, syncStarted(1), synced(1, { proposalId: uuid(3002) })])).toThrow(
+      /has no start/,
+    );
+    expect(() => fold([...approved, synced(1, { proposalId: uuid(3999) })])).toThrow(
+      /no proposal .* to sync/,
+    );
+  });
+
+  it("fails on a start for a proposal a correction replaced", () => {
+    // Writers never supersede a decided proposal; the fold refuses the sync that would follow.
+    const replaced = [...approved, proposalV2(2, {}, { supersedes: uuid(3001) })];
+    expect(() => fold([...replaced, syncStarted(1)])).toThrow(/superseded/);
+  });
+
+  it("leaves other proposals as they were", () => {
+    const [first, second] = fold([
+      started(),
+      proposalV2(1),
+      proposalV2(2),
+      reviewV2(1),
+      reviewV2(2),
+      sealed(),
+      syncStarted(1),
+      synced(1),
+    ]);
+    expect(first?.status).toBe("synced");
+    expect(second).toMatchObject({ status: "approved", sync: null });
   });
 });
 

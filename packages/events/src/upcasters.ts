@@ -8,6 +8,20 @@ import type {
 import type { Upcaster } from "./types";
 
 /**
+ * `session.started` v1 → v2 (Phase 6 spec §4.1). Before WP1 the log didn't record the rep's time
+ * zone, though `start` carried it, so v1 upcasts with `timeZone: null`, which readers take as UTC.
+ */
+export const sessionStartedV1ToV2: Upcaster = {
+  type: "session.started",
+  fromVersion: 1,
+  up: (event) => ({
+    ...event,
+    schemaVersion: 2,
+    payload: { ...event.payload, timeZone: null },
+  }),
+};
+
+/**
  * `utterance.final` v1 → v2. Version 1 predates the second witness: every v1 utterance came from
  * the keyterm-biased speech-to-text stream, so it upcasts with `witness: "biased"`.
  */
@@ -117,10 +131,22 @@ export const proposalReviewedV1ToV2: Upcaster = {
   },
 };
 
+/**
+ * `proposal.reviewed` v2 → v3 (Phase 6 spec §4.1). Version 3 only adds a reopen reason, `conflict`,
+ * which no v2 review carries, so a v2 review moves to v3 with nothing else changed.
+ */
+export const proposalReviewedV2ToV3: Upcaster = {
+  type: "proposal.reviewed",
+  fromVersion: 2,
+  up: (event) => ({ ...event, schemaVersion: 3, payload: { ...event.payload } }),
+};
+
 /** Every upcaster Earshot ships, in no particular order: the registry chains them by version. */
 export const upcasters: readonly Upcaster[] = [
+  sessionStartedV1ToV2,
   utteranceFinalV1ToV2,
   utteranceFinalV2ToV3,
   proposalCreatedV1ToV2,
   proposalReviewedV1ToV2,
+  proposalReviewedV2ToV3,
 ];

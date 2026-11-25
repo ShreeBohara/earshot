@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "debrief",
+        "conversation",
+        "local"
+      ]
+    },
+    "engine": {
+      "type": "string",
+      "enum": [
+        "cascaded",
+        "speech_to_speech",
+        "on_device"
+      ]
+    },
+    "providers": {
+      "type": "object",
+      "properties": {
+        "speechToText": {
+          "$ref": "#/$defs/ProviderModel"
+        },
+        "llm": {
+          "$ref": "#/$defs/ProviderModel"
+        },
+        "speechToSpeech": {
+          "$ref": "#/$defs/ProviderModel"
+        },
+        "textToSpeech": {
+          "$ref": "#/$defs/ProviderModel"
+        }
+      },
+      "additionalProperties": false,
+      "title": "SessionProviders"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "timeZone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z][A-Za-z0-9_+-]*(\\/[A-Za-z0-9_+-]+)*$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "mode",
+    "engine",
+    "providers",
+    "startedAt",
+    "timeZone"
+  ],
+  "additionalProperties": false,
+  "title": "SessionStartedV2",
+  "description": "Payload of `session.started`, schema version 2: how a session was set up, and the rep's time zone.",
+  "x-event-type": "session.started",
+  "x-schema-version": 2,
+  "$defs": {
+    "ProviderModel": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "provider",
+        "model"
+      ],
+      "additionalProperties": false,
+      "title": "ProviderModel"
+    }
+  }
+}

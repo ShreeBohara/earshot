@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "proposalId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "jobId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "reviewId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "hubspot",
+        "twenty",
+        "attio",
+        "demo"
+      ]
+    },
+    "cause": {
+      "type": "string",
+      "enum": [
+        "moved",
+        "gone",
+        "duplicate"
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][A-Za-z0-9]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "seen": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "live": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "seen",
+          "live"
+        ],
+        "additionalProperties": false,
+        "title": "SyncConflictField"
+      }
+    },
+    "existing": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "object": {
+              "type": "string",
+              "enum": [
+                "company",
+                "contact",
+                "deal",
+                "note",
+                "task",
+                "meeting"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2048,
+                  "pattern": "^https?:\\/\\/[^\\s/?#@]+(?:[/?#]\\S*)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "object",
+            "id",
+            "url"
+          ],
+          "additionalProperties": false,
+          "title": "ExternalRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "proposalId",
+    "jobId",
+    "reviewId",
+    "attempt",
+    "provider",
+    "cause",
+    "fields",
+    "existing"
+  ],
+  "additionalProperties": false,
+  "title": "ProposalSyncConflictedV1",
+  "description": "Payload of `proposal.sync_conflicted`, schema version 1: a sync attempt found the CRM had changed under the approval, and stopped to ask again.",
+  "x-event-type": "proposal.sync_conflicted",
+  "x-schema-version": 1
+}

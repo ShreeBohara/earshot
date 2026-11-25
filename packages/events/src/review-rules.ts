@@ -1,9 +1,10 @@
 // The rules every writer of reviews and snoozes keeps (Phase 5 spec §4.1, ADR-0032): SessionDO,
-// for the socket's reviews and its own, and the web Worker, after the seal. JSON Schema can't
-// express them, so they live here, pure, and each writer checks against the session's folded
-// proposals before it appends. `proposalsProjection` refuses the worst of them again, so a writer
-// that skipped this check still can't commit a log that won't replay.
-import type { LikelyEditTier, ProposalReviewedV2, ProposalSnoozedV1 } from "@earshot/core";
+// for the socket's reviews and its own, the web Worker, after the seal, and the sync outbox, for
+// its reopen after a conflict (Phase 6 spec §4.1; ADR-0040). JSON Schema can't express them, so
+// they live here, pure, and each writer checks against the session's folded proposals before it
+// appends. `proposalsProjection` refuses the worst of them again, so a writer that skipped this
+// check still can't commit a log that won't replay.
+import type { LikelyEditTier, ProposalReviewedV3, ProposalSnoozedV1 } from "@earshot/core";
 import type { ProposalView } from "./projections";
 
 /** Why a review or a snooze was refused. */
@@ -28,10 +29,16 @@ export type ReviewRefusal =
   | "no_target"
   /** "Accept all" takes only unmarked proposals. */
   | "marked"
-  /** Policy and system reviews come only from SessionDO, never from a client. */
+  /** Policy and system reviews come only from SessionDO or the sync, never from a client. */
   | "machine_only"
   /** A policy approves only an unmarked, linked proposal that doesn't replace another. */
-  | "policy_excluded";
+  | "policy_excluded"
+  /** The proposal is syncing to the CRM: from `proposal.sync_started` on, nothing reopens it. */
+  | "syncing"
+  /** The proposal synced: the CRM holds the change, which nothing in Earshot takes back. */
+  | "synced"
+  /** The sync reopens only after `proposal.sync_conflicted` for the proposal's latest review. */
+  | "no_conflict";
 
 export type ReviewCheck =
   | { readonly ok: true }
@@ -59,9 +66,11 @@ export interface ReviewRuleContext {
   readonly tierOf: TierOf;
   /**
    * Who made the review: `client` for a person's, sent over the socket or to the web route;
-   * `session` for SessionDO's own policy and system reviews.
+   * `session` for SessionDO's own policy and system reviews; `sync` for the outbox's system reopen
+   * after a conflict (Phase 6 spec decision 6), which it checks against the proposals as they stand
+   * once its `proposal.sync_conflicted` is folded in, since it appends both in one transaction.
    */
-  readonly from: "client" | "session";
+  readonly from: "client" | "session" | "sync";
 }
 
 const ok = { ok: true } as const;
@@ -75,19 +84,25 @@ function refuse(reason: ReviewRefusal, detail: string): ReviewCheck {
  * `review` is the payload the writer is about to append, with `by` and `syncEligibleAt` filled.
  * The rules, in the order they're checked:
  *
- * 1. Its shape: the cross-field rules `ProposalReviewedV2` documents, and that a Phase 5 writer
- *    sets `seen`, `input`, `surface`, and `by`. A person reviews in `single` or `batch` mode, on a
- *    surface of their own, with an input; SessionDO's `policy` approvals and `system` reopens (for
- *    a later flag) have no sign-in, no input, the `session` surface, and zero timings. A batch
- *    approves or undoes, and only approvals and edits choose a record.
- * 2. Who made it: `policy` and `system` only from SessionDO, and SessionDO makes nothing else.
+ * 1. Its shape: the cross-field rules `ProposalReviewedV2` documents (v3 keeps them), and that a
+ *    Phase 5 writer sets `seen`, `input`, `surface`, and `by`. A person reviews in `single` or
+ *    `batch` mode, on a surface of their own, with an input; SessionDO's `policy` approvals and
+ *    `system` reopens (for a later flag), and the sync's `system` reopens (for a conflict), have
+ *    no sign-in, no input, the `session` surface, and zero timings. A batch approves or undoes,
+ *    and only approvals and edits choose a record.
+ * 2. Who made it: `policy` and `system` reviews never from a client. SessionDO makes policy
+ *    approvals and reopens for a flag, and nothing else; the sync makes reopens for a conflict,
+ *    and nothing else (Phase 6).
  * 3. The proposal: it exists and nothing has superseded it.
  * 4. The decision: approving, editing, and rejecting need `proposed`. Approving and editing need
  *    a record unless the target is `none`: for an ask, one of the candidates; otherwise the
  *    proposal's own record or a candidate, if the review names one; for a new record, the record
  *    offered at review time (`seen.relinked`, Phase 5 WP12) counts as offered too, and only for a
- *    new record, the only kind a re-link offer is made on. A reopen names the latest review, a
- *    decision, and a system reopen (decision 15) only an approval or an edit.
+ *    new record, the only kind a re-link offer is made on. Nothing reopens a proposal while it's
+ *    syncing (`syncing`) or once it synced (`synced`; Phase 6 decision 5). Otherwise a reopen
+ *    names the latest review, a decision, and a system reopen (decision 15) only an approval or an
+ *    edit; the sync's reopen for a conflict needs the proposal's latest attempt to have conflicted
+ *    for that review (`no_conflict`).
  * 5. The mode: a batch approves only unmarked proposals (`tierOf` is `none`), and a policy only an
  *    unmarked, linked proposal that doesn't supersede another. Neither approves what the reviewer
  *    saw loud at review time though no flag says so (WP12): a field whose value in the CRM moved
@@ -96,22 +111,14 @@ function refuse(reason: ReviewRefusal, detail: string): ReviewCheck {
  */
 export function checkReview(
   proposals: readonly ProposalView[],
-  review: ProposalReviewedV2,
+  review: ProposalReviewedV3,
   ctx: ReviewRuleContext,
 ): ReviewCheck {
   const shape = checkShape(review);
   if (!shape.ok) return shape;
 
-  const machine = review.mode === "policy" || review.mode === "system";
-  if (machine && ctx.from !== "session") {
-    return refuse("machine_only", `a ${review.mode} review comes only from SessionDO`);
-  }
-  if (!machine && ctx.from === "session") {
-    return refuse(
-      "malformed",
-      `SessionDO writes only policy and system reviews, not ${review.mode}`,
-    );
-  }
+  const origin = checkOrigin(review, ctx.from);
+  if (!origin.ok) return origin;
 
   const proposal = proposals.find((candidate) => candidate.proposalId === review.proposalId);
   if (!proposal) return refuse("unknown_proposal", `no proposal ${review.proposalId}`);
@@ -123,6 +130,16 @@ export function checkReview(
   }
 
   if (review.decision === "reopened") {
+    const sync = proposal.sync ?? null;
+    if (sync?.state === "syncing") {
+      return refuse(
+        "syncing",
+        `proposal ${proposal.proposalId} is syncing to the CRM, so nothing reopens it`,
+      );
+    }
+    if (sync?.state === "synced") {
+      return refuse("synced", `proposal ${proposal.proposalId} synced to the CRM already`);
+    }
     const latest = proposal.review;
     if (latest === null || latest.reviewId !== review.undoes) {
       return refuse(
@@ -134,7 +151,16 @@ export function checkReview(
       return refuse("nothing_to_reopen", `review ${latest.reviewId} is a reopen itself`);
     }
     if (review.mode === "system" && latest.decision === "rejected") {
-      return refuse("nothing_to_reopen", "a later flag reopens only an approval or an edit");
+      return refuse("nothing_to_reopen", "a system reopen reverses only an approval or an edit");
+    }
+    if (
+      review.reason === "conflict" &&
+      (sync?.state !== "conflicted" || sync.reviewId !== latest.reviewId)
+    ) {
+      return refuse(
+        "no_conflict",
+        `no sync of review ${latest.reviewId} conflicted, so the sync can't reopen it`,
+      );
     }
     return ok;
   }
@@ -192,7 +218,7 @@ export function checkReview(
  */
 export function checkReviews(
   proposals: readonly ProposalView[],
-  reviews: readonly ProposalReviewedV2[],
+  reviews: readonly ProposalReviewedV3[],
   ctx: ReviewRuleContext,
 ): ReviewsCheck {
   const reviewIds = new Set<string>();
@@ -246,8 +272,39 @@ export function checkSnooze(
   return ok;
 }
 
+/**
+ * Who may make a review (step 2 of `checkReview`): a person (`client`) never a policy's or a system
+ * review; SessionDO (`session`) only policy approvals and reopens for a flag; the sync (`sync`) only
+ * a system reopen for a conflict.
+ */
+function checkOrigin(review: ProposalReviewedV3, from: ReviewRuleContext["from"]): ReviewCheck {
+  const machine = review.mode === "policy" || review.mode === "system";
+  switch (from) {
+    case "client":
+      return machine
+        ? refuse("machine_only", `a ${review.mode} review comes only from SessionDO or the sync`)
+        : ok;
+    case "session":
+      if (!machine) {
+        return refuse(
+          "malformed",
+          `SessionDO writes only policy and system reviews, not ${review.mode}`,
+        );
+      }
+      if (review.reason === "conflict") {
+        return refuse("malformed", "a reopen for a conflict is the sync's");
+      }
+      return ok;
+    case "sync":
+      if (review.mode !== "system" || review.reason !== "conflict") {
+        return refuse("malformed", "the sync writes only a system reopen for a conflict");
+      }
+      return ok;
+  }
+}
+
 /** The rules a review's own fields must keep (step 1 of `checkReview`). */
-function checkShape(review: ProposalReviewedV2): ReviewCheck {
+function checkShape(review: ProposalReviewedV3): ReviewCheck {
   const { decision, mode } = review;
   const decides = decision === "approved" || decision === "edited";
   const reopens = decision === "reopened";
@@ -276,8 +333,8 @@ function checkShape(review: ProposalReviewedV2): ReviewCheck {
   if (mode === "policy" || mode === "system") {
     const expected = mode === "policy" ? decision === "approved" : reopens;
     if (!expected) return refuse("malformed", `a ${mode} review can't be ${decision}`);
-    if (mode === "system" && review.reason !== "flagged") {
-      return refuse("malformed", "a system reopen is for a later flag");
+    if (mode === "system" && review.reason !== "flagged" && review.reason !== "conflict") {
+      return refuse("malformed", "a system reopen is for a later flag or a sync's conflict");
     }
     const { timing } = review;
     const unattended =
@@ -295,6 +352,8 @@ function checkShape(review: ProposalReviewedV2): ReviewCheck {
     return ok;
   }
   if (review.reason === "flagged") return refuse("malformed", "a reopen for a flag is SessionDO's");
+  if (review.reason === "conflict")
+    return refuse("malformed", "a reopen for a conflict is the sync's");
   if (mode === "batch" && !(decision === "approved" || reopens)) {
     return refuse("malformed", `a batch approves or undoes, so it can't be ${decision}`);
   }
@@ -305,7 +364,7 @@ function checkShape(review: ProposalReviewedV2): ReviewCheck {
 }
 
 /** The record an approval or an edit takes (step 4 of `checkReview`). */
-function checkTarget(proposal: ProposalView, review: ProposalReviewedV2): ReviewCheck {
+function checkTarget(proposal: ProposalView, review: ProposalReviewedV3): ReviewCheck {
   const { target } = proposal;
   if (target.decision === "none") {
     return refuse(
@@ -335,7 +394,7 @@ function checkTarget(proposal: ProposalView, review: ProposalReviewedV2): Review
  * differed from `base`, so the card showed three values), or a record offered at review time.
  * Neither a batch nor a policy approves such a card; a person decides it on its own.
  */
-export function seenLoudAtReview(review: Pick<ProposalReviewedV2, "seen">): boolean {
+export function seenLoudAtReview(review: Pick<ProposalReviewedV3, "seen">): boolean {
   const { seen } = review;
   if (seen === null) return false;
   if (seen.relinked !== null) return true;

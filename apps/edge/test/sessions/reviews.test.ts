@@ -8,7 +8,7 @@ import { scenario } from "@earshot/agent/testing";
 import {
   type ClientMessageOf,
   type ProposalCreatedV2,
-  ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
   UNDO_WINDOW_MS,
   type UtteranceFinalV2,
@@ -70,10 +70,10 @@ async function withProposals(options: { signIn?: typeof SIGN_IN } = {}) {
 }
 
 const reviewsIn = (socket: TestSocket) =>
-  socket.eventsOf("proposal.reviewed").map((event) => ProposalReviewedV2.parse(event.payload));
+  socket.eventsOf("proposal.reviewed").map((event) => ProposalReviewedV3.parse(event.payload));
 
 describe("review", () => {
-  it("appends proposal.reviewed v2 with the user, the ticket's sign-in, and the sync time", async () => {
+  it("appends proposal.reviewed v3 with the user, the ticket's sign-in, and the sync time", async () => {
     const { socket, stub, ids, linked } = await withProposals({ signIn: SIGN_IN });
     const now = Date.now();
     await freezeClock(stub, now);
@@ -81,9 +81,10 @@ describe("review", () => {
     const ack = await socket.request(reviewMessage(input));
 
     const [event] = socket.eventsOf("proposal.reviewed");
-    expect(event?.schemaVersion).toBe(2);
+    // v3 since Phase 6 WP1: every writer writes the latest version.
+    expect(event?.schemaVersion).toBe(3);
     expect(ack.seq).toBe(event?.seq);
-    expect(ProposalReviewedV2.parse(event?.payload)).toEqual({
+    expect(ProposalReviewedV3.parse(event?.payload)).toEqual({
       ...input,
       syncEligibleAt: new Date(now + UNDO_WINDOW_MS).toISOString(),
       by: {
@@ -363,7 +364,7 @@ describe("a flag after an approval", () => {
       "proposal.reviewed",
       "turn.witnessed",
     ]);
-    const reopen = ProposalReviewedV2.parse(events[witnessed + 2]?.payload);
+    const reopen = ProposalReviewedV3.parse(events[witnessed + 2]?.payload);
     expect(reopen).toMatchObject({
       proposalId: created.proposalId,
       decision: "reopened",

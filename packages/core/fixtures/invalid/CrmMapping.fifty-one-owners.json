@@ -1,0 +1,242 @@
+{
+  "v": 1,
+  "stages": [
+    {
+      "stageId": "appointmentscheduled",
+      "pipelineId": "default",
+      "label": "Appointment scheduled",
+      "words": ["appointment scheduled", "first meeting booked"]
+    },
+    {
+      "stageId": "presentationscheduled",
+      "pipelineId": "default",
+      "label": "Presentation scheduled",
+      "words": ["demo scheduled"]
+    },
+    {
+      "stageId": "contractsent",
+      "pipelineId": "default",
+      "label": "Contract sent",
+      "words": ["proposal", "sent the proposal", "contract out"]
+    },
+    {
+      "stageId": "closedwon",
+      "pipelineId": "default",
+      "label": "Closed won",
+      "words": ["won", "signed"]
+    }
+  ],
+  "newDeals": {
+    "pipelineId": "default"
+  },
+  "owners": [
+    {
+      "userId": "u_000",
+      "ownerId": "1000"
+    },
+    {
+      "userId": "u_001",
+      "ownerId": "1001"
+    },
+    {
+      "userId": "u_002",
+      "ownerId": "1002"
+    },
+    {
+      "userId": "u_003",
+      "ownerId": "1003"
+    },
+    {
+      "userId": "u_004",
+      "ownerId": "1004"
+    },
+    {
+      "userId": "u_005",
+      "ownerId": "1005"
+    },
+    {
+      "userId": "u_006",
+      "ownerId": "1006"
+    },
+    {
+      "userId": "u_007",
+      "ownerId": "1007"
+    },
+    {
+      "userId": "u_008",
+      "ownerId": "1008"
+    },
+    {
+      "userId": "u_009",
+      "ownerId": "1009"
+    },
+    {
+      "userId": "u_010",
+      "ownerId": "1010"
+    },
+    {
+      "userId": "u_011",
+      "ownerId": "1011"
+    },
+    {
+      "userId": "u_012",
+      "ownerId": "1012"
+    },
+    {
+      "userId": "u_013",
+      "ownerId": "1013"
+    },
+    {
+      "userId": "u_014",
+      "ownerId": "1014"
+    },
+    {
+      "userId": "u_015",
+      "ownerId": "1015"
+    },
+    {
+      "userId": "u_016",
+      "ownerId": "1016"
+    },
+    {
+      "userId": "u_017",
+      "ownerId": "1017"
+    },
+    {
+      "userId": "u_018",
+      "ownerId": "1018"
+    },
+    {
+      "userId": "u_019",
+      "ownerId": "1019"
+    },
+    {
+      "userId": "u_020",
+      "ownerId": "1020"
+    },
+    {
+      "userId": "u_021",
+      "ownerId": "1021"
+    },
+    {
+      "userId": "u_022",
+      "ownerId": "1022"
+    },
+    {
+      "userId": "u_023",
+      "ownerId": "1023"
+    },
+    {
+      "userId": "u_024",
+      "ownerId": "1024"
+    },
+    {
+      "userId": "u_025",
+      "ownerId": "1025"
+    },
+    {
+      "userId": "u_026",
+      "ownerId": "1026"
+    },
+    {
+      "userId": "u_027",
+      "ownerId": "1027"
+    },
+    {
+      "userId": "u_028",
+      "ownerId": "1028"
+    },
+    {
+      "userId": "u_029",
+      "ownerId": "1029"
+    },
+    {
+      "userId": "u_030",
+      "ownerId": "1030"
+    },
+    {
+      "userId": "u_031",
+      "ownerId": "1031"
+    },
+    {
+      "userId": "u_032",
+      "ownerId": "1032"
+    },
+    {
+      "userId": "u_033",
+      "ownerId": "1033"
+    },
+    {
+      "userId": "u_034",
+      "ownerId": "1034"
+    },
+    {
+      "userId": "u_035",
+      "ownerId": "1035"
+    },
+    {
+      "userId": "u_036",
+      "ownerId": "1036"
+    },
+    {
+      "userId": "u_037",
+      "ownerId": "1037"
+    },
+    {
+      "userId": "u_038",
+      "ownerId": "1038"
+    },
+    {
+      "userId": "u_039",
+      "ownerId": "1039"
+    },
+    {
+      "userId": "u_040",
+      "ownerId": "1040"
+    },
+    {
+      "userId": "u_041",
+      "ownerId": "1041"
+    },
+    {
+      "userId": "u_042",
+      "ownerId": "1042"
+    },
+    {
+      "userId": "u_043",
+      "ownerId": "1043"
+    },
+    {
+      "userId": "u_044",
+      "ownerId": "1044"
+    },
+    {
+      "userId": "u_045",
+      "ownerId": "1045"
+    },
+    {
+      "userId": "u_046",
+      "ownerId": "1046"
+    },
+    {
+      "userId": "u_047",
+      "ownerId": "1047"
+    },
+    {
+      "userId": "u_048",
+      "ownerId": "1048"
+    },
+    {
+      "userId": "u_049",
+      "ownerId": "1049"
+    },
+    {
+      "userId": "u_050",
+      "ownerId": "1050"
+    }
+  ],
+  "destinations": {
+    "commitment": "task",
+    "meeting": "meeting"
+  }
+}

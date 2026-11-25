@@ -60,6 +60,9 @@ export type SessionProjections = ProjectionStates<typeof defaultProjections>;
  * correction replaces the proposal. The session's row gets `sealed_at` from `session.sealed`,
  * and `recap` from `recap.created` (migration 0015, Phase 5 WP10).
  * Phase 5 WP13 (migration 0018): each utterance's `input`, and each proposal's `followups`.
+ * Phase 6 WP1 (migration 0019): the session's `time_zone`, from `session.started` v2, and each
+ * proposal's latest sync attempt (`sync`, the `SyncView`) with its state in `sync_state`; a
+ * proposal's `updated_at` is then its latest review's or sync event's time, whichever is later.
  * The rest of the session's row (its user, metrics, and focus account) isn't the log's to say.
  */
 export async function rebuildProjections<
@@ -160,6 +163,8 @@ async function writeProposals(
         supersedes: excluded(proposals.supersedes),
         supersededBy: excluded(proposals.supersededBy),
         followups: excluded(proposals.followups),
+        sync: excluded(proposals.sync),
+        syncState: excluded(proposals.syncState),
         createdAt: excluded(proposals.createdAt),
         updatedAt: excluded(proposals.updatedAt),
       },
@@ -211,9 +216,20 @@ function proposalRow(view: ProposalView, sessionId: string, mirrored: ReadonlySe
     supersedes: view.supersedes,
     supersededBy: view.supersededBy,
     followups: view.followups as unknown as Record<string, unknown>[],
+    sync: view.sync as Record<string, unknown> | null,
+    syncState: view.sync?.state ?? null,
     createdAt: timestamptz(view.ts),
-    updatedAt: timestamptz(review?.ts ?? view.ts),
+    updatedAt: timestamptz(latestOf(view.ts, review?.ts, view.sync?.at)),
   };
+}
+
+/** The latest of some ISO 8601 times, by the instant each names. */
+function latestOf(first: string, ...rest: (string | undefined)[]): string {
+  let latest = first;
+  for (const time of rest) {
+    if (time !== undefined && Date.parse(time) > Date.parse(latest)) latest = time;
+  }
+  return latest;
 }
 
 /** A review as the `review` column keeps it: every field but its seq and time. */
@@ -251,6 +267,7 @@ async function writeSessionSummary(
       engine: view.engine,
       providers: view.providers,
       startedAt: timestamptz(view.startedAt),
+      timeZone: view.timeZone,
       endedAt: view.endedAt === null ? null : timestamptz(view.endedAt),
       sealedAt: view.sealedAt === null ? null : timestamptz(view.sealedAt),
       recap: view.recap as Record<string, unknown> | null,

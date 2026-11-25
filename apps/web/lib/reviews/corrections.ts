@@ -80,11 +80,16 @@ export const CORRECTION_REQUEST_LIMIT = {
   windowMs: CORRECTION_LIMITS.windowMs,
 } as const;
 
-/** Refusals that mean the card is out of date, not that the request is wrong. */
+/**
+ * Refusals that mean the card is out of date, not that the request is wrong (syncing and synced:
+ * the sync claimed it, or finished, since it loaded; Phase 6).
+ */
 const STALE: ReadonlySet<CorrectionRefusal> = new Set([
   "superseded",
   "not_proposed",
   "question_closed",
+  "syncing",
+  "synced",
 ]);
 
 /** Refusals that are a limit: the session took what it may. */

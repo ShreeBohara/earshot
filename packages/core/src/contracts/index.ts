@@ -1,4 +1,5 @@
 import { ApprovalPolicyRules } from "./approval-policy";
+import { CrmMapping } from "./crm-mapping";
 import { EntityRef } from "./entity-ref";
 import { EventEnvelope } from "./event-envelope";
 import {
@@ -9,11 +10,17 @@ import {
   ProposalFlaggedV1,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
+  ProposalSyncConflictedV1,
+  ProposalSyncedV1,
+  ProposalSyncFailedV1,
+  ProposalSyncStartedV1,
   RecapCreatedV1,
   SessionEndedV1,
   SessionSealedV1,
   SessionStartedV1,
+  SessionStartedV2,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnWitnessedV1,
@@ -23,6 +30,7 @@ import {
   UtteranceFinalV3,
 } from "./events";
 import { HealthResponse } from "./health";
+import { SyncRouteRequest } from "./sync-route";
 
 /**
  * Every contract that crosses a process or language boundary. Each one is exported
@@ -30,7 +38,8 @@ import { HealthResponse } from "./health";
  *
  * The session socket protocol (`session-protocol.ts`) and session tickets are the exceptions:
  * only TypeScript speaks them, and their key-shape and signature checks have no JSON Schema form,
- * so an export would accept data that Zod refuses.
+ * so an export would accept data that Zod refuses. So are the review, correction, and policy
+ * routes' requests. The sync retry route's (Phase 6) is exported: it holds no string to check.
  */
 export const contracts = {
   EventEnvelope,
@@ -56,6 +65,17 @@ export const contracts = {
   UtteranceFinalV3,
   FollowupAskedV1,
   FollowupClosedV1,
+  // Phase 6 WP1: a CRM connection's mapping, the sync retry route's request, the rep's time zone
+  // in `session.started`, and a review's reopen for a sync's conflict.
+  CrmMapping,
+  SyncRouteRequest,
+  SessionStartedV2,
+  ProposalReviewedV3,
+  // Phase 6 WP1: the sync's own events.
+  ProposalSyncStartedV1,
+  ProposalSyncedV1,
+  ProposalSyncFailedV1,
+  ProposalSyncConflictedV1,
 } as const;
 
 export type ContractName = keyof typeof contracts;
@@ -79,11 +99,22 @@ export {
   MAX_DICTATED_UTTERANCES,
   MAX_DICTATED_WORDS,
 } from "./correction-route";
+export {
+  CrmMappedOwner,
+  CrmMappedStage,
+  MAX_MAPPED_OWNERS,
+  MAX_MAPPED_STAGES,
+  MAX_STAGE_WORDS,
+} from "./crm-mapping";
 export { EntityKind } from "./entity-ref";
 export {
   CaptureMode,
+  CrmObject,
+  CrmProvider,
+  CrmRecordUrl,
   type EventPayloadContract,
   Evidence,
+  ExternalRef,
   eventPayloadContracts,
   FieldEdit,
   FieldName,
@@ -95,12 +126,15 @@ export {
   FollowupOutcome,
   FollowupRule,
   LikelyEditTier,
+  MAX_CRM_URL_CHARS,
   MAX_FOLLOWUP_TEXT_CHARS,
   MAX_RECAP_EVIDENCE,
   MAX_RECAP_LENS_FIELDS,
   MAX_RECAP_QUOTE_CHARS,
   MAX_RECAP_SENTENCE_CHARS,
   MAX_RECAP_SENTENCES,
+  MAX_SYNC_ATTEMPTS,
+  MAX_SYNC_WRITES,
   MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
   ProposalCreatedV2,
@@ -109,7 +143,12 @@ export {
   ProposalFlaggedV1,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
+  ProposalSyncConflictedV1,
+  ProposalSyncedV1,
+  ProposalSyncFailedV1,
+  ProposalSyncStartedV1,
   ProposalType,
   ProposalTypeV2,
   ProviderModel,
@@ -123,6 +162,7 @@ export {
   RecapSentence,
   RecapSentenceKind,
   ReopenReason,
+  ReopenReasonV3,
   ReviewDecision,
   ReviewDecisionV2,
   Reviewer,
@@ -145,13 +185,23 @@ export {
   SessionProviders,
   SessionSealedV1,
   SessionStartedV1,
+  SessionStartedV2,
+  Sha256Hex,
   SignInMethod,
+  SyncConflictCause,
+  SyncConflictField,
+  SyncErrorKind,
+  SyncedRecord,
+  SyncMappingRef,
+  SyncRecordOp,
   TARGET_FIELD,
   TargetBasis,
   TargetCandidate,
   TargetDecision,
   TargetDowngrade,
   TargetV2,
+  TIME_ZONE_SHAPE,
+  TimeZoneName,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnOutcome,
@@ -231,4 +281,11 @@ export {
   TurnMarks,
   TurnTrigger,
 } from "./session-protocol";
-export { ApprovalPolicyRules, EntityRef, EventEnvelope, HealthResponse };
+export {
+  ApprovalPolicyRules,
+  CrmMapping,
+  EntityRef,
+  EventEnvelope,
+  HealthResponse,
+  SyncRouteRequest,
+};

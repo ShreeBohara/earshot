@@ -31,7 +31,9 @@ import {
   LikelyEditTier,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ReopenReason,
+  ReopenReasonV3,
   ReviewDecision,
   ReviewDecisionV2,
   Reviewer,
@@ -48,6 +50,24 @@ import {
   UNDO_WINDOW_MS,
 } from "./proposal-reviewed";
 import { ProposalSnoozedV1 } from "./proposal-snoozed";
+import {
+  CrmObject,
+  CrmProvider,
+  CrmRecordUrl,
+  ExternalRef,
+  MAX_CRM_URL_CHARS,
+  MAX_SYNC_WRITES,
+  ProposalSyncConflictedV1,
+  ProposalSyncedV1,
+  ProposalSyncFailedV1,
+  ProposalSyncStartedV1,
+  SyncConflictCause,
+  SyncConflictField,
+  SyncErrorKind,
+  SyncedRecord,
+  SyncMappingRef,
+  SyncRecordOp,
+} from "./proposal-sync";
 import {
   MAX_RECAP_EVIDENCE,
   MAX_RECAP_LENS_FIELDS,
@@ -71,9 +91,17 @@ import {
   SessionMode,
   SessionProviders,
   SessionStartedV1,
+  SessionStartedV2,
   VoiceEngine,
 } from "./session-started";
-import { FieldName, FieldValue } from "./shared";
+import {
+  FieldName,
+  FieldValue,
+  MAX_SYNC_ATTEMPTS,
+  Sha256Hex,
+  TIME_ZONE_SHAPE,
+  TimeZoneName,
+} from "./shared";
 import { TurnCompletedV1, TurnOutcome } from "./turn-completed";
 import { CaptureMode, TurnMeasuredV1 } from "./turn-measured";
 import { TurnWitnessedV1, WitnessOutcome, WitnessReason } from "./turn-witnessed";
@@ -125,13 +153,28 @@ export const eventPayloadContracts = [
   { type: "utterance.final", schemaVersion: 3, schema: UtteranceFinalV3 },
   { type: "followup.asked", schemaVersion: 1, schema: FollowupAskedV1 },
   { type: "followup.closed", schemaVersion: 1, schema: FollowupClosedV1 },
+  // Phase 6 WP1: the rep's time zone, which `start` carried and the log didn't keep (v1 upcasts
+  // with null). `sessionProjection` keeps it as the session's `timeZone`.
+  { type: "session.started", schemaVersion: 2, schema: SessionStartedV2 },
+  // Phase 6 WP1: a reopen for a sync's conflict (v2 upcasts unchanged).
+  { type: "proposal.reviewed", schemaVersion: 3, schema: ProposalReviewedV3 },
+  // Phase 6 WP1: the sync's own events, which the outbox appends after the seal (WP3): a claimed
+  // job's start, then its result. `proposalsProjection` folds them into each proposal's `sync`.
+  { type: "proposal.sync_started", schemaVersion: 1, schema: ProposalSyncStartedV1 },
+  { type: "proposal.synced", schemaVersion: 1, schema: ProposalSyncedV1 },
+  { type: "proposal.sync_failed", schemaVersion: 1, schema: ProposalSyncFailedV1 },
+  { type: "proposal.sync_conflicted", schemaVersion: 1, schema: ProposalSyncConflictedV1 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
 
 export {
   CaptureMode,
+  CrmObject,
+  CrmProvider,
+  CrmRecordUrl,
   Evidence,
+  ExternalRef,
   FieldEdit,
   FieldName,
   FieldNorm,
@@ -142,12 +185,15 @@ export {
   FollowupOutcome,
   FollowupRule,
   LikelyEditTier,
+  MAX_CRM_URL_CHARS,
   MAX_FOLLOWUP_TEXT_CHARS,
   MAX_RECAP_EVIDENCE,
   MAX_RECAP_LENS_FIELDS,
   MAX_RECAP_QUOTE_CHARS,
   MAX_RECAP_SENTENCE_CHARS,
   MAX_RECAP_SENTENCES,
+  MAX_SYNC_ATTEMPTS,
+  MAX_SYNC_WRITES,
   MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
   ProposalCreatedV2,
@@ -156,7 +202,12 @@ export {
   ProposalFlaggedV1,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
+  ProposalSyncConflictedV1,
+  ProposalSyncedV1,
+  ProposalSyncFailedV1,
+  ProposalSyncStartedV1,
   ProposalType,
   ProposalTypeV2,
   ProviderModel,
@@ -170,6 +221,7 @@ export {
   RecapSentence,
   RecapSentenceKind,
   ReopenReason,
+  ReopenReasonV3,
   ReviewDecision,
   ReviewDecisionV2,
   Reviewer,
@@ -192,13 +244,23 @@ export {
   SessionProviders,
   SessionSealedV1,
   SessionStartedV1,
+  SessionStartedV2,
+  Sha256Hex,
   SignInMethod,
+  SyncConflictCause,
+  SyncConflictField,
+  SyncErrorKind,
+  SyncedRecord,
+  SyncMappingRef,
+  SyncRecordOp,
   TARGET_FIELD,
   TargetBasis,
   TargetCandidate,
   TargetDecision,
   TargetDowngrade,
   TargetV2,
+  TIME_ZONE_SHAPE,
+  TimeZoneName,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnOutcome,

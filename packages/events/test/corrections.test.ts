@@ -27,8 +27,14 @@ import {
   proposalV2,
   REVIEWER,
   reviewV2,
+  sealed,
   sessionLog,
   started,
+  syncConflicted,
+  synced,
+  syncFailed,
+  syncReopen,
+  syncStarted,
   utterance,
   utteranceV3,
   uuid,
@@ -94,6 +100,25 @@ describe("checkCorrection", () => {
         reason: "not_proposed",
       });
     }
+  });
+
+  it("refuses a proposal syncing to the CRM, or synced there (Phase 6 WP1)", () => {
+    const approved = [...base, reviewV2(1), sealed()];
+    const correct = (bodies: Parameters<typeof proposalsOf>[0]) =>
+      checkCorrection(proposalsOf(bodies), { proposalId: uuid(3001), field: "title" });
+    expect(correct([...approved, syncStarted(1)])).toMatchObject({ ok: false, reason: "syncing" });
+    expect(correct([...approved, syncStarted(1), synced(1)])).toMatchObject({
+      ok: false,
+      reason: "synced",
+    });
+    // A failed sync leaves an approval, which a correction doesn't take until it's undone.
+    expect(correct([...approved, syncStarted(1), syncFailed(1)])).toMatchObject({
+      ok: false,
+      reason: "not_proposed",
+    });
+    // A conflict's reopen returns it to review, where a correction may replace it.
+    const reopened = [...approved, syncStarted(1), syncConflicted(1), syncReopen(1, uuid(7001))];
+    expect(correct(reopened).ok).toBe(true);
   });
 
   it("answers the question it names, and any other open one asking for the same field", () => {

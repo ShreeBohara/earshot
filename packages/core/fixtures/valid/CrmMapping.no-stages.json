@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "stages": [],
+  "newDeals": {
+    "pipelineId": null
+  },
+  "owners": [],
+  "destinations": {
+    "commitment": "task",
+    "meeting": "note"
+  }
+}

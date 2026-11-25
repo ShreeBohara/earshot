@@ -37,6 +37,10 @@ export {
   recapProblem,
   type SessionRecap,
   type SessionView,
+  type SyncConflict,
+  type SyncFailure,
+  type SyncState,
+  type SyncView,
   sessionProjection,
   type UtteranceView,
   utterancesProjection,
@@ -70,6 +74,12 @@ export {
   prepareAppend,
 } from "./store";
 export {
+  checkSyncEvent,
+  type SyncCheck,
+  type SyncEventInput,
+  type SyncRefusal,
+} from "./sync-rules";
+export {
   type FollowupAskedEvent,
   type FollowupClosedEvent,
   latestVersions,
@@ -78,6 +88,10 @@ export {
   type ProposalFlaggedEvent,
   type ProposalReviewedEvent,
   type ProposalSnoozedEvent,
+  type ProposalSyncConflictedEvent,
+  type ProposalSyncedEvent,
+  type ProposalSyncFailedEvent,
+  type ProposalSyncStartedEvent,
   type RecapCreatedEvent,
   type SessionEndedEvent,
   type SessionEvent,
@@ -94,6 +108,8 @@ export {
 export {
   proposalCreatedV1ToV2,
   proposalReviewedV1ToV2,
+  proposalReviewedV2ToV3,
+  sessionStartedV1ToV2,
   upcasters,
   utteranceFinalV1ToV2,
   utteranceFinalV2ToV3,

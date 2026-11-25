@@ -168,7 +168,7 @@ describe("SessionClient.sendReview", () => {
     const [delivery] = await pending;
     expect(delivery).toMatchObject({ ok: true, via: "socket", ids: [review.reviewId] });
     const event = h.server.log.at(-1);
-    expect(event).toMatchObject({ type: "proposal.reviewed", schemaVersion: 2 });
+    expect(event).toMatchObject({ type: "proposal.reviewed", schemaVersion: 3 });
     expect(event?.payload).toMatchObject({
       reviewId: review.reviewId,
       by: { userId: "user-1", auth: { method: "passkey" } },

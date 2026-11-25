@@ -1,0 +1,38 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d0a",
+  "proposalId": "01a1c6e2-e5dc-79b1-a045-4bf227d9db20",
+  "decision": "reopened",
+  "target": null,
+  "mode": "system",
+  "batchId": null,
+  "policy": null,
+  "undoes": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d01",
+  "reason": "sync_failed",
+  "seen": {
+    "tier": "loud",
+    "fields": {
+      "stage": {
+        "proposed": "proposal",
+        "base": "discovery",
+        "current": "negotiation"
+      }
+    },
+    "target": {
+      "entityId": "01a0f831-afe8-7fff-84cf-71639949085b",
+      "offered": []
+    },
+    "relinked": null,
+    "clip": "none"
+  },
+  "timing": {
+    "decisionMs": 0,
+    "handlingMs": 0
+  },
+  "input": "none",
+  "surface": "session",
+  "syncEligibleAt": null,
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": null
+  }
+}

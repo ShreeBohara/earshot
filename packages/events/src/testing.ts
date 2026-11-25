@@ -48,6 +48,21 @@ export function started(payload: Record<string, unknown> = {}): EventBody {
   };
 }
 
+/**
+ * A `session.started` v2 (Phase 6 WP1): `started()`'s session, with the rep's time zone (null when
+ * `start` carried none).
+ */
+export function startedV2(
+  timeZone: string | null = "America/Chicago",
+  payload: Record<string, unknown> = {},
+): EventBody {
+  return {
+    ...started(),
+    schemaVersion: 2,
+    payload: { ...started().payload, timeZone, ...payload },
+  };
+}
+
 export function utterance(n: number, text = `Utterance ${n}.`, witness = "biased"): EventBody {
   return {
     type: "utterance.final",
@@ -349,6 +364,105 @@ export function followupClosed(n: number, answeredBy: number | null = null): Eve
       proposalId: answeredBy === null ? null : uuid(3000 + answeredBy),
     },
   };
+}
+
+/**
+ * The fields every sync event of job `uuid(0xa000 + n)` names (Phase 6 WP1): proposal
+ * `uuid(3000 + n)`, and attempt 1 of the sync of review `uuid(7000 + n)`, which `reviewV2(n)`
+ * approves, to the demo CRM.
+ */
+function syncAttempt(n: number) {
+  return {
+    proposalId: uuid(3000 + n),
+    jobId: uuid(0xa000 + n),
+    reviewId: uuid(7000 + n),
+    attempt: 1,
+    provider: "demo",
+  };
+}
+
+/** The outbox's claim of job `uuid(0xa000 + n)`: its start, with no connection or mapping. */
+export function syncStarted(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "proposal.sync_started",
+    schemaVersion: 1,
+    payload: {
+      ...syncAttempt(n),
+      connectionId: null,
+      mapping: null,
+      waivedWindow: false,
+      ...payload,
+    },
+  };
+}
+
+/** Job `uuid(0xa000 + n)`'s attempt synced: one task made in the demo CRM. */
+export function synced(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "proposal.synced",
+    schemaVersion: 1,
+    payload: {
+      ...syncAttempt(n),
+      records: [{ write: 0, op: "created", ref: { object: "task", id: `task-${n}`, url: null } }],
+      associations: 1,
+      ...payload,
+    },
+  };
+}
+
+/** Job `uuid(0xa000 + n)`'s attempt failed: rate limited until its retries ran out, retryable. */
+export function syncFailed(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "proposal.sync_failed",
+    schemaVersion: 1,
+    payload: {
+      ...syncAttempt(n),
+      kind: "rate_limited",
+      code: "RATE_LIMIT",
+      field: null,
+      landed: [],
+      retryable: true,
+      ...payload,
+    },
+  };
+}
+
+/** Job `uuid(0xa000 + n)`'s attempt conflicted: the task's title moved in the CRM. */
+export function syncConflicted(n: number, payload: Record<string, unknown> = {}): EventBody {
+  return {
+    type: "proposal.sync_conflicted",
+    schemaVersion: 1,
+    payload: {
+      ...syncAttempt(n),
+      cause: "moved",
+      fields: { title: { seen: "Send the deck", live: "Send the deck by Friday" } },
+      existing: null,
+      ...payload,
+    },
+  };
+}
+
+/**
+ * The sync's system reopen of proposal `uuid(3000 + n)` after a conflict (Phase 6 spec decision
+ * 6): `proposal.reviewed` v3 with `reason: "conflict"`, undoing review `undoes`, with no sign-in,
+ * input, or time, on the session surface. Review id `uuid(7300 + n)` unless `payload` sets another.
+ */
+export function syncReopen(
+  n: number,
+  undoes: string,
+  payload: Record<string, unknown> = {},
+): EventBody {
+  const body = reopen(n, undoes, {
+    reviewId: uuid(7300 + n),
+    mode: "system",
+    reason: "conflict",
+    input: "none",
+    surface: "session",
+    timing: { decisionMs: 0, handlingMs: 0 },
+    by: { userId: REVIEWER.userId, auth: null },
+    ...payload,
+  });
+  return { ...body, schemaVersion: 3 };
 }
 
 /** The seal, written by `SessionDO` a minute after the builders' `ended()`. */

@@ -1,6 +1,7 @@
 """Generated from packages/core/schemas. Do not edit; run `pnpm contracts:gen`."""
 
 from .approval_policy_rules import ApprovalPolicyRules
+from .crm_mapping import CrmMapping
 from .entity_ref import EntityRef
 from .event_envelope import EventEnvelope
 from .followup_asked_v1 import FollowupAskedV1
@@ -11,11 +12,18 @@ from .proposal_created_v2 import ProposalCreatedV2
 from .proposal_flagged_v1 import ProposalFlaggedV1
 from .proposal_reviewed_v1 import ProposalReviewedV1
 from .proposal_reviewed_v2 import ProposalReviewedV2
+from .proposal_reviewed_v3 import ProposalReviewedV3
 from .proposal_snoozed_v1 import ProposalSnoozedV1
+from .proposal_sync_conflicted_v1 import ProposalSyncConflictedV1
+from .proposal_sync_failed_v1 import ProposalSyncFailedV1
+from .proposal_sync_started_v1 import ProposalSyncStartedV1
+from .proposal_synced_v1 import ProposalSyncedV1
 from .recap_created_v1 import RecapCreatedV1
 from .session_ended_v1 import SessionEndedV1
 from .session_sealed_v1 import SessionSealedV1
 from .session_started_v1 import SessionStartedV1
+from .session_started_v2 import SessionStartedV2
+from .sync_route_request import SyncRouteRequest
 from .turn_completed_v1 import TurnCompletedV1
 from .turn_measured_v1 import TurnMeasuredV1
 from .turn_witnessed_v1 import TurnWitnessedV1
@@ -24,4 +32,4 @@ from .utterance_final_v1 import UtteranceFinalV1
 from .utterance_final_v2 import UtteranceFinalV2
 from .utterance_final_v3 import UtteranceFinalV3
 
-__all__ = ["ApprovalPolicyRules", "EntityRef", "EventEnvelope", "FollowupAskedV1", "FollowupClosedV1", "HealthResponse", "ProposalCreatedV1", "ProposalCreatedV2", "ProposalFlaggedV1", "ProposalReviewedV1", "ProposalReviewedV2", "ProposalSnoozedV1", "RecapCreatedV1", "SessionEndedV1", "SessionSealedV1", "SessionStartedV1", "TurnCompletedV1", "TurnMeasuredV1", "TurnWitnessedV1", "UsageRecordedV1", "UtteranceFinalV1", "UtteranceFinalV2", "UtteranceFinalV3"]
+__all__ = ["ApprovalPolicyRules", "CrmMapping", "EntityRef", "EventEnvelope", "FollowupAskedV1", "FollowupClosedV1", "HealthResponse", "ProposalCreatedV1", "ProposalCreatedV2", "ProposalFlaggedV1", "ProposalReviewedV1", "ProposalReviewedV2", "ProposalReviewedV3", "ProposalSnoozedV1", "ProposalSyncConflictedV1", "ProposalSyncFailedV1", "ProposalSyncStartedV1", "ProposalSyncedV1", "RecapCreatedV1", "SessionEndedV1", "SessionSealedV1", "SessionStartedV1", "SessionStartedV2", "SyncRouteRequest", "TurnCompletedV1", "TurnMeasuredV1", "TurnWitnessedV1", "UsageRecordedV1", "UtteranceFinalV1", "UtteranceFinalV2", "UtteranceFinalV3"]

@@ -10,7 +10,7 @@ import { EntityRef } from "./entity-ref";
 import { EventEnvelope } from "./event-envelope";
 import { MAX_TARGET_CANDIDATES } from "./events/proposal-created";
 import {
-  ProposalReviewedV2,
+  ProposalReviewedV3,
   ReviewSeen,
   ReviewTarget,
   SeenTarget,
@@ -18,7 +18,7 @@ import {
 import { ProposalSnoozedV1 } from "./events/proposal-snoozed";
 import { RecapLensId } from "./events/recap-created";
 import { SessionProviders } from "./events/session-started";
-import { Timestamp } from "./events/shared";
+import { isIanaTimeZone, MAX_TIME_ZONE_CHARS, Timestamp } from "./events/shared";
 import { CaptureMode } from "./events/turn-measured";
 import { WitnessReason } from "./events/turn-witnessed";
 import { UtteranceFinalV2 } from "./events/utterance-final";
@@ -35,22 +35,10 @@ export const MAX_MESSAGE_BYTES = 65_536;
 /** The longest utterance text a client may send, in UTF-16 code units (target). */
 export const MAX_UTTERANCE_TEXT_CHARS = 4_000;
 
-/** The longest IANA time zone name `start` accepts; real names are under 40 characters. */
-export const MAX_TIME_ZONE_CHARS = 64;
+// The longest time zone name `start` accepts, and the check it runs, live with the event contracts
+// (`session.started` v2 stores the zone); exported from here too, where they began.
+export { isIanaTimeZone, MAX_TIME_ZONE_CHARS };
 
-/**
- * Whether `value` names a time zone this runtime knows. Uses `Intl`, which Workers, browsers, and
- * Node all ship with full time zone data.
- */
-export function isIanaTimeZone(value: string): boolean {
-  if (!/^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/.test(value)) return false;
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: value });
-    return true;
-  } catch {
-    return false;
-  }
-}
 /** The most CRM entities a `start` message may carry (target). */
 export const MAX_SESSION_ENTITIES = 250;
 /** The longest entity name or alias a `start` message may carry, in UTF-16 code units. */
@@ -177,14 +165,15 @@ const SocketEntityRef = EntityRef.extend({
 const ReviewEntityId = EntityId.nullable();
 
 /**
- * `proposal.reviewed` v2 as a person sends it: over the socket in a `review` message, and to the
- * web route after the seal (Phase 5 spec §4.2). It leaves out `by` and `syncEligibleAt`, which
- * the writer fills from the sender's sign-in and its own clock, and takes only the modes a person
- * reviews in, so it carries no policy and reopens only to undo. Record ids are capped like
+ * `proposal.reviewed` as a person sends it (v3 since Phase 6 WP1; v2's shape, since a person
+ * reopens only to undo): over the socket in a `review` message, and to the web route after the
+ * seal (Phase 5 spec §4.2). It leaves out `by` and `syncEligibleAt`, which the writer fills from
+ * the sender's sign-in and its own clock, and takes only the modes a person reviews in, so it
+ * carries no policy and reopens only to undo. Record ids are capped like
  * `start`'s, and, like every client message, it's refused if anything in it is shaped like a key.
  * `checkReview` in `@earshot/events` holds the rules a schema can't.
  */
-export const ReviewInput = ProposalReviewedV2.omit({ by: true, syncEligibleAt: true })
+export const ReviewInput = ProposalReviewedV3.omit({ by: true, syncEligibleAt: true })
   .extend({
     target: ReviewTarget.extend({ entityId: ReviewEntityId }).nullable(),
     mode: z.enum(["single", "batch"]),
@@ -372,7 +361,7 @@ const End = z.strictObject({
 /**
  * Reviews from the tray (Phase 5 spec §4.2), taken from `start` until the seal: one decision, or
  * one slice of an "accept all", which `SessionDO` checks as one request and appends as
- * `proposal.reviewed` v2. A resend is idempotent by `msgId`, and a repeated `reviewId` gets the
+ * `proposal.reviewed` v3. A resend is idempotent by `msgId`, and a repeated `reviewId` gets the
  * first one's seq. Refused with `sealed` once the session is sealed: send them to the web route
  * instead, with the same review ids.
  */

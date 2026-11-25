@@ -123,6 +123,8 @@ function refusal(reason: ReviewRefusal): SinkRefusal {
     case "not_latest":
     case "nothing_to_reopen":
     case "superseded":
+    case "syncing":
+    case "synced":
       return "stale";
     case "unknown_proposal":
       return "gone";
@@ -138,7 +140,9 @@ function viewsOf(session: InboxSession): ProposalView[] {
 
 /**
  * Folds one write into a session's proposals with `proposalsProjection`, as a replay would: the
- * envelope's seq follows the session's own events.
+ * envelope's seq follows the session's own events. A review folds as `proposal.reviewed` v3, the
+ * version every writer writes (Phase 6 WP1); its payload is v2's shape, which every v3 review a
+ * person makes has, and the results file keeps it as pre-registered (ADR-0039).
  */
 function fold(views: ProposalView[], event: PilotEvent, seq: number): ProposalView[] {
   const common = { id: `00000000-0000-7000-8000-${seq.toString(16).padStart(12, "0")}`, seq };
@@ -148,7 +152,7 @@ function fold(views: ProposalView[], event: PilotEvent, seq: number): ProposalVi
           ...common,
           sessionId: event.sessionId,
           type: "proposal.reviewed",
-          schemaVersion: 2,
+          schemaVersion: 3,
           ts: event.ts,
           payload: event.payload,
         })

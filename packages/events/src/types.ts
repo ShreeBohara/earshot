@@ -4,12 +4,16 @@ import type {
   FollowupClosedV1,
   ProposalCreatedV2,
   ProposalFlaggedV1,
-  ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
+  ProposalSyncConflictedV1,
+  ProposalSyncedV1,
+  ProposalSyncFailedV1,
+  ProposalSyncStartedV1,
   RecapCreatedV1,
   SessionEndedV1,
   SessionSealedV1,
-  SessionStartedV1,
+  SessionStartedV2,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnWitnessedV1,
@@ -28,10 +32,10 @@ export type TypedEvent<T extends string, V extends number, P> = Omit<
   payload: P;
 };
 
-export type SessionStartedEvent = TypedEvent<"session.started", 1, SessionStartedV1>;
+export type SessionStartedEvent = TypedEvent<"session.started", 2, SessionStartedV2>;
 export type UtteranceFinalEvent = TypedEvent<"utterance.final", 3, UtteranceFinalV3>;
 export type ProposalCreatedEvent = TypedEvent<"proposal.created", 2, ProposalCreatedV2>;
-export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 2, ProposalReviewedV2>;
+export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 3, ProposalReviewedV3>;
 export type SessionEndedEvent = TypedEvent<"session.ended", 1, SessionEndedV1>;
 export type UsageRecordedEvent = TypedEvent<"usage.recorded", 1, UsageRecordedV1>;
 export type TurnCompletedEvent = TypedEvent<"turn.completed", 1, TurnCompletedV1>;
@@ -43,6 +47,18 @@ export type SessionSealedEvent = TypedEvent<"session.sealed", 1, SessionSealedV1
 export type RecapCreatedEvent = TypedEvent<"recap.created", 1, RecapCreatedV1>;
 export type FollowupAskedEvent = TypedEvent<"followup.asked", 1, FollowupAskedV1>;
 export type FollowupClosedEvent = TypedEvent<"followup.closed", 1, FollowupClosedV1>;
+export type ProposalSyncStartedEvent = TypedEvent<
+  "proposal.sync_started",
+  1,
+  ProposalSyncStartedV1
+>;
+export type ProposalSyncedEvent = TypedEvent<"proposal.synced", 1, ProposalSyncedV1>;
+export type ProposalSyncFailedEvent = TypedEvent<"proposal.sync_failed", 1, ProposalSyncFailedV1>;
+export type ProposalSyncConflictedEvent = TypedEvent<
+  "proposal.sync_conflicted",
+  1,
+  ProposalSyncConflictedV1
+>;
 
 /**
  * A validated event at the latest schema version of its type. Replay upcasts every stored event
@@ -63,14 +79,18 @@ export type SessionEvent =
   | SessionSealedEvent
   | RecapCreatedEvent
   | FollowupAskedEvent
-  | FollowupClosedEvent;
+  | FollowupClosedEvent
+  | ProposalSyncStartedEvent
+  | ProposalSyncedEvent
+  | ProposalSyncFailedEvent
+  | ProposalSyncConflictedEvent;
 
 /** The latest schema version of each event type. A test checks it against the default registry. */
 export const latestVersions = {
-  "session.started": 1,
+  "session.started": 2,
   "utterance.final": 3,
   "proposal.created": 2,
-  "proposal.reviewed": 2,
+  "proposal.reviewed": 3,
   "session.ended": 1,
   "usage.recorded": 1,
   "turn.completed": 1,
@@ -82,6 +102,10 @@ export const latestVersions = {
   "recap.created": 1,
   "followup.asked": 1,
   "followup.closed": 1,
+  "proposal.sync_started": 1,
+  "proposal.synced": 1,
+  "proposal.sync_failed": 1,
+  "proposal.sync_conflicted": 1,
 } as const satisfies { [E in SessionEvent as E["type"]]: E["schemaVersion"] };
 
 /** A payload schema and the event type and schema version it belongs to. */

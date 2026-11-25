@@ -1,7 +1,7 @@
 // Approval policies at a proposal's creation (Phase 5 spec §4.6, WP11; ADR-0034): which rule, if
 // any, approves a proposal on its own. SessionDO runs it right after `understand()`, on each new
 // proposal as the session's projection folds it, against the snapshot its `start` carried, and
-// appends the approval in the turn's own transaction as a `proposal.reviewed` v2 with
+// appends the approval in the turn's own transaction as a `proposal.reviewed` v3 with
 // `mode: "policy"`, which `checkReview` checks again. Pure, and as narrow as the spec: a rule
 // can only add a proposal type and hold fields back, never loosen what follows.
 import type { ApprovalPolicyRule, ApprovalPolicyRules } from "@earshot/core";

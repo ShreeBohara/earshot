@@ -1,9 +1,12 @@
 import type {
+  CrmProvider,
   FieldEdit,
   FollowupRule,
   ProposalFieldV2,
+  ProposalSyncConflictedV1,
+  ProposalSyncFailedV1,
   ProposalTypeV2,
-  ReopenReason,
+  ReopenReasonV3,
   ReviewDecisionV2,
   Reviewer,
   ReviewInputKind,
@@ -14,6 +17,7 @@ import type {
   ReviewTarget,
   ReviewTiming,
   RiskFlagV2,
+  SyncedRecord,
   TargetCandidate,
   TargetV2,
   WitnessConflict,
@@ -24,18 +28,32 @@ import type {
   FollowupClosedEvent,
   ProposalFlaggedEvent,
   ProposalReviewedEvent,
+  ProposalSyncConflictedEvent,
+  ProposalSyncedEvent,
+  ProposalSyncFailedEvent,
+  ProposalSyncStartedEvent,
   SessionEvent,
 } from "../types";
 import type { Projection } from "./projection";
 
 /**
- * `proposed` until a reviewer decides; then the decision. A reopen (an undo, or a later flag on
- * an approval) returns it to `proposed`, and a correction that replaces it makes it `superseded`.
+ * `proposed` until a reviewer decides; then the decision. A reopen (an undo, a later flag on an
+ * approval, or a sync's conflict) returns it to `proposed`, and a correction that replaces it makes
+ * it `superseded`. Once its approval syncs to the CRM it's `synced`, and while its latest attempt
+ * failed for good it's `failed`, until a Retry's attempt starts and it's the decision again
+ * (Phase 6 WP1).
  */
-export type ProposalStatus = "proposed" | "approved" | "edited" | "rejected" | "superseded";
+export type ProposalStatus =
+  | "proposed"
+  | "approved"
+  | "edited"
+  | "rejected"
+  | "superseded"
+  | "synced"
+  | "failed";
 
 /**
- * The latest review of a proposal, a reopen included: every field of `proposal.reviewed` v2, and
+ * The latest review of a proposal, a reopen included: every field of `proposal.reviewed` v3, and
  * where the event is in the log. A review upcast from v1 has null wherever v1 recorded nothing.
  */
 export interface ReviewView {
@@ -49,7 +67,7 @@ export interface ReviewView {
   policy: ReviewPolicy | null;
   /** The review a reopen reversed. */
   undoes: string | null;
-  reason: ReopenReason | null;
+  reason: ReopenReasonV3 | null;
   seen: ReviewSeen | null;
   timing: ReviewTiming;
   input: ReviewInputKind | null;
@@ -91,6 +109,45 @@ export interface FollowupView {
   closedAt: string | null;
 }
 
+/** Where a proposal's latest sync attempt stands (Phase 6 spec §4.1). */
+export type SyncState = "syncing" | "synced" | "failed" | "conflicted";
+
+/** Why an attempt failed: `proposal.sync_failed` without the fields every sync event names. */
+export type SyncFailure = Pick<
+  ProposalSyncFailedV1,
+  "kind" | "code" | "field" | "landed" | "retryable"
+>;
+
+/** Why an attempt stopped to ask: `proposal.sync_conflicted`, the same way. */
+export type SyncConflict = Pick<ProposalSyncConflictedV1, "cause" | "fields" | "existing">;
+
+/** What every sync attempt names: its job, the approval it syncs, its number, and the CRM. */
+interface SyncAttemptView {
+  jobId: string;
+  reviewId: string;
+  /** From 1; a Retry starts the next under the same idempotency key. */
+  attempt: number;
+  provider: CrmProvider;
+  /** When the attempt's latest event happened: its start, then its result. */
+  at: string;
+}
+
+/**
+ * A proposal's latest sync attempt (Phase 6 spec §4.1, WP1; docs/adr/0040), the `proposals.sync`
+ * column: `syncing` from `proposal.sync_started`; then `synced`, with what each write made, changed,
+ * or found; `failed`, with why and what landed first; or `conflicted`, with what the CRM holds now.
+ * `records` is filled only once it synced, and `error` exactly when it failed or conflicted. A job
+ * still waiting for its window, or one canceled at its claim, isn't in the log: it's a `sync_jobs`
+ * row.
+ */
+export type SyncView = SyncAttemptView &
+  (
+    | { state: "syncing"; records: []; error: null }
+    | { state: "synced"; records: SyncedRecord[]; error: null }
+    | { state: "failed"; records: []; error: SyncFailure }
+    | { state: "conflicted"; records: []; error: SyncConflict }
+  );
+
 /** One proposal with its evidence and review status: the `proposals` row. */
 export interface ProposalView {
   proposalId: string;
@@ -128,12 +185,17 @@ export interface ProposalView {
   seq: number;
   ts: string;
   review: ReviewView | null;
+  /**
+   * Its latest sync attempt (Phase 6 WP1), or null until the outbox claims a job for it. The next
+   * attempt, a Retry's or a later approval's, takes its place.
+   */
+  sync: SyncView | null;
 }
 
 /**
  * Folds `proposal.created`, `proposal.flagged`, `proposal.reviewed`, `proposal.snoozed`,
- * `followup.asked`, and `followup.closed` into the session's proposals, in the order they were
- * created.
+ * `followup.asked`, `followup.closed`, and the sync's events into the session's proposals, in the
+ * order they were created.
  *
  * - A review sets the status to its decision, and a reopen returns it to `proposed`. The latest
  *   review, a reopen included, is the proposal's `review`. A reopen must name that review, which
@@ -149,6 +211,14 @@ export interface ProposalView {
  * - A follow-up question (Phase 5 WP13) is asked about a proposal nothing has replaced, under an id
  *   no other question has, and closes once: answered by the correction that replaced its proposal,
  *   or skipped. When a correction replaces a proposal, its open questions move to the replacement.
+ * - A sync attempt (Phase 6 WP1) starts on the proposal it names, whose latest review is the job's,
+ *   and is its `sync`; its one result ends it. `proposal.synced` sets the status to `synced` and
+ *   `proposal.sync_failed` to `failed`; a later start (a Retry) sets it back to the review's
+ *   decision; a conflict changes no status by itself, since the system reopen after it does. A
+ *   sync event for a proposal the log doesn't have, a start for a superseded proposal or for a
+ *   review that isn't its proposal's latest, approving or editing, a result without a start on its
+ *   proposal, two results for one attempt, and a result that names another review or CRM than its
+ *   start are writer bugs (`checkSyncEvent` refuses them first), and fail the fold.
  */
 export const proposalsProjection: Projection<readonly ProposalView[]> = {
   initial: [],
@@ -192,6 +262,7 @@ export const proposalsProjection: Projection<readonly ProposalView[]> = {
             seq: event.seq,
             ts: event.ts,
             review: null,
+            sync: null,
           },
         ];
       }
@@ -232,6 +303,12 @@ export const proposalsProjection: Projection<readonly ProposalView[]> = {
         return asked(state, event);
       case "followup.closed":
         return closed(state, event);
+      case "proposal.sync_started":
+        return syncStarted(state, event);
+      case "proposal.synced":
+      case "proposal.sync_failed":
+      case "proposal.sync_conflicted":
+        return syncEnded(state, event);
       default:
         return state;
     }
@@ -243,7 +320,7 @@ function find(
   state: readonly ProposalView[],
   proposalId: string,
   event: SessionEvent,
-  verb: "flag" | "review" | "snooze" | "supersede" | "ask about",
+  verb: "flag" | "review" | "snooze" | "supersede" | "ask about" | "sync",
 ): [number, ProposalView] {
   const index = state.findIndex((proposal) => proposal.proposalId === proposalId);
   const proposal = state[index];
@@ -379,7 +456,7 @@ function holderOf(
 function refuseIfSuperseded(
   proposal: ProposalView,
   event: SessionEvent,
-  verb: "review" | "snooze",
+  verb: "review" | "snooze" | "sync",
 ): void {
   if (proposal.supersededBy === null) return;
   throw new ProjectionError(
@@ -406,6 +483,120 @@ function checkReopen(proposal: ProposalView, undoes: string | null, event: Sessi
       event,
       `the reopen of proposal ${proposal.proposalId} names review ${undoes}, which is a reopen itself`,
     );
+  }
+}
+
+/**
+ * A sync attempt starts (Phase 6 WP1), on the proposal it names, nothing having replaced it, whose
+ * latest review is the job's: an approval or an edit. The status goes back to that decision, which
+ * is what a Retry after a failure needs, and the attempt becomes the proposal's `sync`.
+ */
+function syncStarted(
+  state: readonly ProposalView[],
+  event: ProposalSyncStartedEvent,
+): readonly ProposalView[] {
+  const { payload } = event;
+  const [index, proposal] = find(state, payload.proposalId, event, "sync");
+  refuseIfSuperseded(proposal, event, "sync");
+  const review = proposal.review;
+  if (review?.reviewId !== payload.reviewId) {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `the sync of proposal ${proposal.proposalId} names review ${payload.reviewId}, but its latest is ${review?.reviewId ?? "none"}`,
+    );
+  }
+  const { decision } = review;
+  if (decision !== "approved" && decision !== "edited") {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `review ${payload.reviewId} of proposal ${proposal.proposalId} is ${decision}: only an approval or an edit syncs`,
+    );
+  }
+  return state.with(index, {
+    ...proposal,
+    status: decision,
+    sync: {
+      jobId: payload.jobId,
+      reviewId: payload.reviewId,
+      attempt: payload.attempt,
+      provider: payload.provider,
+      at: event.ts,
+      state: "syncing",
+      records: [],
+      error: null,
+    },
+  });
+}
+
+/**
+ * A sync attempt's result (Phase 6 WP1), once, on the proposal it names, for the attempt syncing
+ * there, naming the review and CRM its start named. `proposal.synced` makes the proposal `synced`,
+ * and `proposal.sync_failed` makes it `failed`; a conflict leaves the status to the reopen after it.
+ */
+function syncEnded(
+  state: readonly ProposalView[],
+  event: ProposalSyncedEvent | ProposalSyncFailedEvent | ProposalSyncConflictedEvent,
+): readonly ProposalView[] {
+  const { payload } = event;
+  const [index, proposal] = find(state, payload.proposalId, event, "sync");
+  const sync = proposal.sync ?? null;
+  if (sync === null || sync.jobId !== payload.jobId || sync.attempt !== payload.attempt) {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `proposal ${proposal.proposalId}'s latest sync isn't attempt ${payload.attempt} of job ${payload.jobId}, so it has no start`,
+    );
+  }
+  if (sync.state !== "syncing") {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `attempt ${payload.attempt} of job ${payload.jobId} ended already: ${sync.state}`,
+    );
+  }
+  if (sync.reviewId !== payload.reviewId || sync.provider !== payload.provider) {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `attempt ${payload.attempt} of job ${payload.jobId} started for review ${sync.reviewId} on ${sync.provider}`,
+    );
+  }
+  const attempt = {
+    jobId: sync.jobId,
+    reviewId: sync.reviewId,
+    attempt: sync.attempt,
+    provider: sync.provider,
+    at: event.ts,
+  };
+  switch (event.type) {
+    case "proposal.synced":
+      return state.with(index, {
+        ...proposal,
+        status: "synced",
+        sync: { ...attempt, state: "synced", records: event.payload.records, error: null },
+      });
+    case "proposal.sync_failed": {
+      const { kind, code, field, landed, retryable } = event.payload;
+      return state.with(index, {
+        ...proposal,
+        status: "failed",
+        sync: {
+          ...attempt,
+          state: "failed",
+          records: [],
+          error: { kind, code, field, landed, retryable },
+        },
+      });
+    }
+    case "proposal.sync_conflicted": {
+      const { cause, fields, existing } = event.payload;
+      return state.with(index, {
+        ...proposal,
+        sync: { ...attempt, state: "conflicted", records: [], error: { cause, fields, existing } },
+      });
+    }
   }
 }
 

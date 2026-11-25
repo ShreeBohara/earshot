@@ -27,7 +27,13 @@ import {
   schema,
   valueFromHistory,
 } from "@earshot/db";
-import type { FollowupView, ProposalStatus, ReviewView, SessionRecap } from "@earshot/events";
+import type {
+  FollowupView,
+  ProposalStatus,
+  ReviewView,
+  SessionRecap,
+  SyncView,
+} from "@earshot/events";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import type { TenantTx } from "../auth/viewer";
 import { recapUtteranceIds } from "../recap/view";
@@ -133,6 +139,8 @@ export function proposalFromRow(row: ProposalRow): InboxProposal {
     seq: row.seq ?? 0,
     ts: row.createdAt.toISOString(),
     review: reviewOf(row),
+    // Migration 0019 (Phase 6 WP1): written whole from the projection, null before any sync.
+    sync: (row.sync as unknown as SyncView | null) ?? null,
   };
 }
 

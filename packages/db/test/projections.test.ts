@@ -16,6 +16,10 @@ import {
   sealed,
   snoozed,
   started,
+  startedV2,
+  synced,
+  syncFailed,
+  syncStarted,
   tsFor,
   turnWitnessed,
   utterance,
@@ -140,6 +144,8 @@ function readProjections(db: Db, sessionId: string) {
               engine: session.engine,
               providers: session.providers,
               startedAt: session.startedAt.toISOString(),
+              // Migration 0019 (Phase 6 WP1): the rep's time zone, from session.started v2.
+              timeZone: session.timeZone,
               endedAt: session.endedAt?.toISOString() ?? null,
               sealedAt: session.sealedAt?.toISOString() ?? null,
               durationMs: session.endedAt
@@ -188,6 +194,8 @@ function readProjections(db: Db, sessionId: string) {
           row.reviewedSeq === null
             ? null
             : { ...row.review, seq: row.reviewedSeq, ts: row.reviewedAt?.toISOString() },
+        // Migration 0019 (Phase 6 WP1): the latest sync attempt, whole.
+        sync: row.sync,
       })),
     };
   });
@@ -248,8 +256,10 @@ describe("rebuildProjections", () => {
     await db.insert(syncJobs).values({
       workspaceId: A.workspaceId,
       proposalId: approved,
-      adapter: "hubspot",
-      idempotencyKey: `${approved}:hubspot`,
+      reviewId: uuid(0x7e1),
+      provider: "demo",
+      idempotencyKey: "e".repeat(64),
+      notBefore: new Date("2026-11-10T19:16:30Z"),
     });
     await rebuild(db, demoSessionId);
     expect(await db.select({ id: syncJobs.proposalId }).from(syncJobs)).toEqual([{ id: approved }]);
@@ -285,6 +295,55 @@ describe("rebuildProjections", () => {
     expect(session).toMatchObject([
       { endedAt: new Date("2026-11-10T19:15:40.000Z"), costUsd: "0.0040" },
     ]);
+  });
+
+  it("writes each proposal's sync view, its state, and the status a sync leaves (Phase 6 WP1)", async () => {
+    const db = await fresh();
+    const store = new PgEventStore(db, A);
+    await store.append(SESSION_ID, NO_EVENTS, [
+      draft(1, started()),
+      draft(2, utterance(1)),
+      draft(3, proposalV2(1)),
+      draft(4, proposalV2(2)),
+      draft(5, reviewV2(1)),
+      draft(6, reviewV2(2)),
+      draft(7, ended()),
+      draft(8, sealed()),
+      draft(9, syncStarted(1)),
+      draft(10, synced(1)),
+      draft(11, syncStarted(2)),
+      draft(12, syncFailed(2)),
+    ]);
+    const { proposals: views } = await rebuild(db, SESSION_ID);
+    const rows = (await rowsOf(db, SESSION_ID)).proposals;
+    expect(rows.map((row) => [row.status, row.syncState])).toEqual([
+      ["synced", "synced"],
+      ["failed", "failed"],
+    ]);
+    expect(rows.map((row) => row.sync)).toEqual(views.map((view) => view.sync));
+    // updated_at follows the latest of the review and the sync: here, each result.
+    expect(rows.map((row) => row.updatedAt.toISOString())).toEqual([tsFor(10), tsFor(12)]);
+
+    // A Retry's start returns the status to the decision, and the state to syncing.
+    await store.append(SESSION_ID, 11, [draft(13, syncStarted(2, { attempt: 2 }))]);
+    await rebuild(db, SESSION_ID);
+    const [, retried] = (await rowsOf(db, SESSION_ID)).proposals;
+    expect(retried).toMatchObject({
+      status: "approved",
+      syncState: "syncing",
+      sync: { attempt: 2, state: "syncing" },
+    });
+  });
+
+  it("writes the rep's time zone from session.started v2, and none from v1 (Phase 6 WP1)", async () => {
+    const db = await fresh();
+    const store = new PgEventStore(db, A);
+    await store.append(SESSION_ID, NO_EVENTS, [draft(1, startedV2("America/Chicago"))]);
+    await rebuild(db, SESSION_ID);
+    expect((await rowsOf(db, SESSION_ID)).session).toMatchObject([{ timeZone: "America/Chicago" }]);
+    // The demo session's start is v1: no zone.
+    await rebuild(db, demoSessionId);
+    expect((await rowsOf(db, demoSessionId)).session).toMatchObject([{ timeZone: null }]);
   });
 
   it("holds every offset and reviewer time the contracts accept, up to the largest safe integer", async () => {

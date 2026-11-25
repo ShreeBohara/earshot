@@ -1,0 +1,13 @@
+{
+  "proposalId": "01a1c6e2-e5dc-79b1-a045-4bf227d9db20",
+  "jobId": "01a1c6f0-1a2b-7c3d-8e4f-5a6b7c8d9e01",
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d01",
+  "attempt": 1,
+  "provider": "hubspot",
+  "connectionId": "01a1b2c3-d4e5-7f60-8a1b-2c3d4e5f6a70",
+  "mapping": {
+    "version": 3,
+    "sha256": "688A0935CDEA7EC5E2BBC65295A7978C045AC65D9D24988984BDF296C62A97D0"
+  },
+  "waivedWindow": false
+}

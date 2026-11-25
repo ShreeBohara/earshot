@@ -242,6 +242,12 @@ describe("writeSessionReviews", () => {
     expect(audit.map((row) => [row.action, row.subjectId])).toEqual([
       ["proposal.approved", uuid(3001)],
     ]);
+    // Reviews are written at v3, the latest (Phase 6 WP1); snoozes at v1.
+    const log = await withTenant(db, A, (tx) => readEvents(tx, S1));
+    expect(log.slice(7).map((event) => [event.type, event.schemaVersion])).toEqual([
+      ["proposal.reviewed", 3],
+      ["proposal.snoozed", 1],
+    ]);
   });
 
   it("is idempotent by review id and snooze id: a resend writes nothing more", async () => {

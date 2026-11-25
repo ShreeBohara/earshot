@@ -15,6 +15,7 @@
       }
     },
     "startedAt": "2026-11-10T19:15:00.000Z",
+    "timeZone": null,
     "endedAt": "2026-11-10T19:15:40.200Z",
     "sealedAt": null,
     "durationMs": 40200,
@@ -369,7 +370,8 @@
         "by": null,
         "seq": 14,
         "ts": "2026-11-10T19:15:46.900Z"
-      }
+      },
+      "sync": null
     },
     {
       "proposalId": "01a1c6e2-e5dc-79b1-a045-4bf227d9db20",
@@ -432,7 +434,8 @@
         "by": null,
         "seq": 15,
         "ts": "2026-11-10T19:15:49.800Z"
-      }
+      },
+      "sync": null
     },
     {
       "proposalId": "01a1c6e2-faae-76a7-a0e7-b5065113ca1f",
@@ -520,7 +523,8 @@
         "by": null,
         "seq": 16,
         "ts": "2026-11-10T19:16:01.600Z"
-      }
+      },
+      "sync": null
     },
     {
       "proposalId": "01a1c6e3-1674-7aa3-b29d-03636b6dc056",
@@ -583,7 +587,8 @@
         "by": null,
         "seq": 17,
         "ts": "2026-11-10T19:16:04.900Z"
-      }
+      },
+      "sync": null
     },
     {
       "proposalId": "01a1c6e3-2e48-7c08-ad2d-2483bd55a1a3",
@@ -665,7 +670,8 @@
         "by": null,
         "seq": 18,
         "ts": "2026-11-10T19:16:09.700Z"
-      }
+      },
+      "sync": null
     }
   ]
 }
