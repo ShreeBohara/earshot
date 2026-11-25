@@ -3,6 +3,7 @@
 // fields and its re-link offers, the 3-way card and the re-link card they make, "accept all" and the
 // writers' rule leaving both out, the demo controls' server actions, and the review route's check
 // of a record offered at review time.
+import { readFileSync } from "node:fs";
 import { uuidv7 } from "@earshot/core";
 import {
   addDemoRecord,
@@ -290,6 +291,43 @@ describe("base and current: the 3-way card", () => {
     const data = await load(viewer);
     expect(allProposals(data).every(({ proposal }) => proposal.crm === undefined)).toBe(true);
     for (const { proposal } of allProposals(data)) {
+      expect(cardModel(proposal, data.entities, data.quotes, NOW.getTime()).review).toBeNull();
+    }
+  });
+
+  it("shows no 3-way card and no re-link offer on pilot.v1's sessions or the test debriefs, as loaded", async () => {
+    const viewer = await signIn("dana@earshot.example");
+    const pilot = Array.from(
+      { length: 10 },
+      (_, i) => `../../../packages/evals/pilot/pilot.v1/s${String(i + 1).padStart(2, "0")}.jsonl`,
+    );
+    await withTenant(db, tenantOf(viewer), async (tx) => {
+      await loadDemoCrm(tx);
+      for (const path of pilot) {
+        const jsonl = readFileSync(new URL(path, import.meta.url), "utf8");
+        await importSessionLog(tx, jsonl, { mapDemoIds: true, now: NOW });
+      }
+      for (const name of ["acme-dynamics", "pier-logistics"]) {
+        await importSessionLog(tx, readFixture(`samples/${name}.jsonl`), {
+          mapDemoIds: true,
+          now: NOW,
+        });
+      }
+    });
+    const data = await withTenant(db, tenantOf(viewer), (tx) =>
+      loadInbox(
+        tx,
+        { userId: viewer.user.id, workspaceId: viewer.workspaceId },
+        { now: NOW, limit: 20 },
+      ),
+    );
+    expect(data.sessions).toHaveLength(12);
+    const all = allProposals(data);
+    // pilot.v1's 40 cards (one a new record) and the test debriefs' 7.
+    expect(all).toHaveLength(47);
+    expect(all.some(({ proposal }) => proposal.target.decision === "new")).toBe(true);
+    expect(all.filter(({ proposal }) => proposal.crm !== undefined)).toEqual([]);
+    for (const { proposal } of all) {
       expect(cardModel(proposal, data.entities, data.quotes, NOW.getTime()).review).toBeNull();
     }
   });
