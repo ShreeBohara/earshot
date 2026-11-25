@@ -112,7 +112,7 @@ describe("fromJsonl", () => {
   });
 
   describe("unknown event types", () => {
-    const future = { ...log[2], type: "followup.asked", payload: { question: "Which plan?" } };
+    const future = { ...log[2], type: "brief.drafted", payload: { question: "Which plan?" } };
     const text = withLine(3, JSON.stringify(future));
 
     it("are rejected by default, citing the line", () => {
@@ -130,9 +130,9 @@ describe("fromJsonl", () => {
     });
 
     it("don't cover newer versions of known types", () => {
-      const v3 = withLine(2, JSON.stringify({ ...log[1], schemaVersion: 3 }));
-      expect(() => fromJsonl(v3, { allowUnknownTypes: true })).toThrow(
-        /^line 2: utterance.final v3 at seq 1: newer than this reader knows/,
+      const v4 = withLine(2, JSON.stringify({ ...log[1], schemaVersion: 4 }));
+      expect(() => fromJsonl(v4, { allowUnknownTypes: true })).toThrow(
+        /^line 2: utterance.final v4 at seq 1: newer than this reader knows/,
       );
     });
   });

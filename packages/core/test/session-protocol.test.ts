@@ -48,6 +48,8 @@ const UNBIASED_UTTERANCE_ID = "01a1c6f0-2b10-7c4e-9a3d-5e6f7a8b9c0d";
 const PROPOSAL_ID = "01a1c6e2-b422-7d40-b863-98e9e102c114";
 const REVIEW_ID = "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d01";
 const SNOOZE_ID = "01a1c6e4-2c30-7d4e-8f5a-6b7c8d9e0f01";
+const CORRECTION_ID = "01a1c6e9-5c40-7e5f-8a6b-7c8d9e0f1a01";
+const QUESTION_ID = "01a1c6e9-6d50-7f6a-9b7c-8d9e0f1a2b01";
 
 const entity = (n: number) => ({
   id: `6f1d2c3b-4a5e-4f60-8a7b-${n.toString(16).padStart(12, "0")}`,
@@ -183,6 +185,16 @@ function clientMessages() {
       proposalId: PROPOSAL_ID,
       until: "2026-11-16T14:00:00.000Z",
     },
+    correct: {
+      t: "correct",
+      msgId: uuidv7(),
+      turnId: TURN_ID,
+      correctionId: CORRECTION_ID,
+      proposalId: PROPOSAL_ID,
+      field: "dueDate",
+      questionId: QUESTION_ID,
+    },
+    followup: { t: "followup", msgId: uuidv7(), questionId: QUESTION_ID, outcome: "skipped" },
   };
 }
 
@@ -911,6 +923,69 @@ describe("Phase 5: reviews, snoozes, and the seal", () => {
     expect(SessionErrorCode.options).toContain("sealed");
     const sealed = { t: "error", code: "sealed", retryable: false, msgId: uuidv7() };
     expect(parseServerMessage(frame(sealed))).toEqual({ ok: true, message: sealed });
+  });
+});
+
+describe("Phase 5 WP13: corrections, follow-up questions, and typed words", () => {
+  const accepts = (message: unknown) => parseClientMessage(frame(message)).ok;
+
+  it("takes a correction of the record or a field, with or without a question", () => {
+    const { correct } = clientMessages();
+    expect(accepts({ ...correct, field: "target" })).toBe(true);
+    const { questionId: _, ...noQuestion } = correct;
+    expect(accepts(noQuestion)).toBe(true);
+    expect(accepts({ ...correct, field: "Due date" })).toBe(false);
+    expect(accepts({ ...correct, field: "" })).toBe(false);
+    expect(accepts({ ...correct, field: `f${"x".repeat(64)}` })).toBe(false);
+    expect(accepts({ ...correct, correctionId: "fix-1" })).toBe(false);
+    expect(accepts({ ...correct, proposalId: null })).toBe(false);
+    // The words come in the turn's utterances, never in the correction itself.
+    expect(accepts({ ...correct, text: "the 14th" })).toBe(false);
+    const { turnId: __, ...noTurn } = correct;
+    expect(accepts(noTurn)).toBe(false);
+  });
+
+  it("takes only a skip in a followup message", () => {
+    const { followup } = clientMessages();
+    expect(accepts({ ...followup, outcome: "answered" })).toBe(false);
+    expect(accepts({ ...followup, questionId: "q1" })).toBe(false);
+    expect(accepts({ ...followup, proposalId: PROPOSAL_ID })).toBe(false);
+  });
+
+  it("lets an utterance say it was typed, and an older client leave that out", () => {
+    const { utterance } = clientMessages();
+    const typed = {
+      ...utterance,
+      utterance: { ...utterance.utterance, input: "typed", confidence: 1, words: undefined },
+    };
+    expect(accepts(typed)).toBe(true);
+    expect(accepts({ ...utterance, utterance: { ...utterance.utterance, input: "speech" } })).toBe(
+      true,
+    );
+    expect(accepts(utterance)).toBe(true);
+    expect(accepts({ ...utterance, utterance: { ...utterance.utterance, input: "pasted" } })).toBe(
+      false,
+    );
+  });
+
+  it("keeps the second witness's utterance speech: it can't say it was typed", () => {
+    const { witness } = clientMessages();
+    if (witness.outcome !== "transcribed") throw new Error("the example witness transcribed");
+    const typed = { ...witness, utterance: { ...witness.utterance, input: "typed" } };
+    expect(accepts(typed)).toBe(false);
+  });
+
+  it("has no free text where a key could hide: every field of a correction or a skip is shaped", () => {
+    const { correct, followup } = clientMessages();
+    expect(accepts({ ...correct, field: FAKE_KEYS.groq })).toBe(false);
+    expect(accepts({ ...correct, questionId: FAKE_KEYS.jwt })).toBe(false);
+    expect(accepts({ ...followup, [FAKE_KEYS.anthropic]: 1 })).toBe(false);
+  });
+
+  it("adds unreadable to the error codes, which the server may send", () => {
+    expect(SessionErrorCode.options).toContain("unreadable");
+    const unreadable = { t: "error", code: "unreadable", retryable: false, msgId: uuidv7() };
+    expect(parseServerMessage(frame(unreadable))).toEqual({ ok: true, message: unreadable });
   });
 });
 

@@ -54,6 +54,8 @@ export {
   prepareAppend,
 } from "./store";
 export {
+  type FollowupAskedEvent,
+  type FollowupClosedEvent,
   latestVersions,
   type PayloadDefinition,
   type ProposalCreatedEvent,
@@ -78,4 +80,5 @@ export {
   proposalReviewedV1ToV2,
   upcasters,
   utteranceFinalV1ToV2,
+  utteranceFinalV2ToV3,
 } from "./upcasters";

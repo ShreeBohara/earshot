@@ -22,6 +22,20 @@ export const utteranceFinalV1ToV2: Upcaster = {
 };
 
 /**
+ * `utterance.final` v2 → v3 (Phase 5 spec §4.1, WP13). Before WP13 every utterance was said into
+ * the microphone: typed words came with corrections, so v2 upcasts with `input: "speech"`.
+ */
+export const utteranceFinalV2ToV3: Upcaster = {
+  type: "utterance.final",
+  fromVersion: 2,
+  up: (event) => ({
+    ...event,
+    schemaVersion: 3,
+    payload: { ...event.payload, input: "speech" },
+  }),
+};
+
+/**
  * `proposal.created` v1 → v2 (Phase 4 spec §4.1). v1 named its target by id alone, and matched
  * only exact names and aliases, so:
  * - a `targetEntityId` becomes a target `linked` on an `exact` basis, with no probability, mention,
@@ -106,6 +120,7 @@ export const proposalReviewedV1ToV2: Upcaster = {
 /** Every upcaster Earshot ships, in no particular order: the registry chains them by version. */
 export const upcasters: readonly Upcaster[] = [
   utteranceFinalV1ToV2,
+  utteranceFinalV2ToV3,
   proposalCreatedV1ToV2,
   proposalReviewedV1ToV2,
 ];

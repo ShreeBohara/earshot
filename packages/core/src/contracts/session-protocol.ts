@@ -21,7 +21,7 @@ import { SessionProviders } from "./events/session-started";
 import { Timestamp } from "./events/shared";
 import { CaptureMode } from "./events/turn-measured";
 import { WitnessReason } from "./events/turn-witnessed";
-import { UtteranceFinalV2 } from "./events/utterance-final";
+import { UtteranceFinalV2, UtteranceInput } from "./events/utterance-final";
 
 /** The protocol version that `hello` and `welcome` carry. */
 export const SESSION_PROTOCOL_VERSION = 1;
@@ -131,15 +131,34 @@ export const TurnMarks = z.strictObject({
 export type TurnMarks = z.infer<typeof TurnMarks>;
 
 /** `utterance.final` v2, with the text capped for the socket. */
-const SocketUtterance = UtteranceFinalV2.extend({
+const CappedUtterance = UtteranceFinalV2.extend({
   text: UtteranceFinalV2.shape.text.max(MAX_UTTERANCE_TEXT_CHARS),
 });
 
 /**
- * `utterance.final` v2 from the unbiased witness, capped like the biased stream's. Only the
- * `witness` message carries one.
+ * An utterance as the `utterance` message carries it: `utterance.final` v2 capped for the socket,
+ * plus how its words arrived (Phase 5 WP13), which `SessionDO` writes as v3. A client from before
+ * WP13 leaves `input` out, and its utterances are `speech`. A `typed` one is a correction's words,
+ * and its turn must end with `correct`, never `turn_end`.
  */
-const UnbiasedSocketUtterance = SocketUtterance.extend({ witness: z.literal("unbiased") });
+const SocketUtterance = CappedUtterance.extend({ input: UtteranceInput.optional() });
+
+/**
+ * `utterance.final` v2 from the unbiased witness, capped like the biased stream's. Only the
+ * `witness` message carries one, and it's always speech.
+ */
+const UnbiasedSocketUtterance = CappedUtterance.extend({ witness: z.literal("unbiased") });
+
+/**
+ * What a correction corrects (Phase 5 spec §4.2, WP13): `target`, the proposal's record, or one of
+ * its fields by name, such as `dueDate`. No proposal type has a field called `target`.
+ */
+export const MAX_CORRECTION_FIELD_CHARS = 64;
+export const CorrectionField = z
+  .string()
+  .max(MAX_CORRECTION_FIELD_CHARS)
+  .regex(/^[a-z][A-Za-z0-9]*$/);
+export type CorrectionField = z.infer<typeof CorrectionField>;
 
 const EntityName = z.string().min(1).max(MAX_ENTITY_NAME_CHARS);
 const EntityId = z.string().min(1).max(MAX_ENTITY_ID_CHARS);
@@ -369,6 +388,34 @@ const Snooze = z.strictObject({
 });
 
 /**
+ * A correction (Phase 5 spec §4.2, WP13), sent instead of `turn_end` for a correction turn: the
+ * turn's `utterance` messages carry what the rep said or typed, and `SessionDO` reads them into a
+ * proposal that supersedes `proposalId` (`correctProposal`, no model call and no key). With
+ * `questionId` it answers that follow-up question. Taken from `start` until the seal, like
+ * `review`; idempotent by `msgId`, and a repeated `correctionId` gets the first one's seq. Words
+ * with no value of the field's kind are refused with `unreadable`, and nothing is written.
+ */
+const Correct = z.strictObject({
+  t: z.literal("correct"),
+  msgId: MsgId,
+  /** The correction turn: its utterances, sent before this message, are the words to read. */
+  turnId: TurnId,
+  /** UUIDv7 from the client. The superseding proposal's id derives from it. */
+  correctionId: z.uuid(),
+  proposalId: z.uuid(),
+  field: CorrectionField,
+  questionId: z.uuid().optional(),
+});
+
+/** A follow-up question skipped (Phase 5 spec §4.2, WP13): `SessionDO` closes it. */
+const Followup = z.strictObject({
+  t: z.literal("followup"),
+  msgId: MsgId,
+  questionId: z.uuid(),
+  outcome: z.literal("skipped"),
+});
+
+/**
  * Why `SessionDO` refused or failed a message. `retryable` on the `error` message says whether
  * resending can help.
  */
@@ -389,6 +436,11 @@ export const SessionErrorCode = z.enum([
    * reviews and snoozes to the web route instead. `hello` and `ack` still work.
    */
   "sealed",
+  /**
+   * A correction's words hold no value of the field's kind ("I couldn't read a date in …"), so
+   * nothing was written and the card stays as it was. Not retryable: say or type it again.
+   */
+  "unreadable",
   /** Too many messages a second on this socket. */
   "rate_limited",
   /** Too many turns in the session's window. */
@@ -550,6 +602,8 @@ export const ClientMessage = z
     End,
     Review,
     Snooze,
+    Correct,
+    Followup,
   ])
   .superRefine((message, ctx) => {
     const path = findStrayKey(message, keySlotOf(message));

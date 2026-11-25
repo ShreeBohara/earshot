@@ -1,3 +1,5 @@
+import { FollowupAskedV1, FollowupRule, MAX_FOLLOWUP_TEXT_CHARS } from "./followup-asked";
+import { FollowupClosedV1, FollowupOutcome } from "./followup-closed";
 import {
   Evidence,
   FieldNorm,
@@ -76,7 +78,14 @@ import { TurnCompletedV1, TurnOutcome } from "./turn-completed";
 import { CaptureMode, TurnMeasuredV1 } from "./turn-measured";
 import { TurnWitnessedV1, WitnessOutcome, WitnessReason } from "./turn-witnessed";
 import { UsageKind, UsageRecordedV1 } from "./usage-recorded";
-import { UtteranceFinalV1, UtteranceFinalV2, Witness, Word } from "./utterance-final";
+import {
+  UtteranceFinalV1,
+  UtteranceFinalV2,
+  UtteranceFinalV3,
+  UtteranceInput,
+  Witness,
+  Word,
+} from "./utterance-final";
 
 /**
  * Every event payload schema, keyed by the event `type` and `schemaVersion` it belongs to. The
@@ -109,6 +118,13 @@ export const eventPayloadContracts = [
   // Phase 5 WP10: the debrief's recap, written by SessionDO after `session.ended` and before the
   // seal. `sessionProjection` keeps it as the session's `recap`.
   { type: "recap.created", schemaVersion: 1, schema: RecapCreatedV1 },
+  // Phase 5 WP13: corrections and follow-up questions. A typed correction is an utterance too, so
+  // utterances say how their words arrived (v2 upcasts with `speech`); SessionDO asks follow-up
+  // questions after a turn's proposals, and a correction or a skip closes them.
+  // `utterancesProjection` folds v3; `proposalsProjection` folds the questions onto their proposals.
+  { type: "utterance.final", schemaVersion: 3, schema: UtteranceFinalV3 },
+  { type: "followup.asked", schemaVersion: 1, schema: FollowupAskedV1 },
+  { type: "followup.closed", schemaVersion: 1, schema: FollowupClosedV1 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
@@ -121,7 +137,12 @@ export {
   FieldNorm,
   FieldValue,
   FlagSource,
+  FollowupAskedV1,
+  FollowupClosedV1,
+  FollowupOutcome,
+  FollowupRule,
   LikelyEditTier,
+  MAX_FOLLOWUP_TEXT_CHARS,
   MAX_RECAP_EVIDENCE,
   MAX_RECAP_LENS_FIELDS,
   MAX_RECAP_QUOTE_CHARS,
@@ -187,6 +208,8 @@ export {
   UsageRecordedV1,
   UtteranceFinalV1,
   UtteranceFinalV2,
+  UtteranceFinalV3,
+  UtteranceInput,
   VoiceEngine,
   Witness,
   WitnessConflict,

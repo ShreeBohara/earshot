@@ -63,6 +63,26 @@ export function utterance(n: number, text = `Utterance ${n}.`, witness = "biased
   };
 }
 
+/**
+ * A `utterance.final` v3 (Phase 5 WP13): utterance `uuid(2000 + n)`, said or typed. A typed one has
+ * confidence 1, no words, and an empty audio window at the end of the one before it.
+ */
+export function utteranceV3(
+  n: number,
+  text = `Utterance ${n}.`,
+  input: "speech" | "typed" = "speech",
+): EventBody {
+  const { payload } = utterance(n, text);
+  return {
+    type: "utterance.final",
+    schemaVersion: 3,
+    payload:
+      input === "typed"
+        ? { ...payload, confidence: 1, startMs: n * 1000, endMs: n * 1000, input }
+        : { ...payload, input },
+  };
+}
+
 export function utteranceV1(n: number, text = `Utterance ${n}.`): EventBody {
   const { witness: _, ...payload } = utterance(n, text).payload;
   return { type: "utterance.final", schemaVersion: 1, payload };
@@ -287,6 +307,46 @@ export function snoozed(
       until,
       by: REVIEWER,
       ...payload,
+    },
+  };
+}
+
+/**
+ * A follow-up question (Phase 5 WP13), `uuid(9000 + n)`, about proposal `uuid(3000 + proposal)`:
+ * "When is it due?", from turn `uuid(5000 + n)`. `payload` overrides any field.
+ */
+export function followupAsked(
+  n: number,
+  proposal: number,
+  payload: Record<string, unknown> = {},
+): EventBody {
+  return {
+    type: "followup.asked",
+    schemaVersion: 1,
+    payload: {
+      questionId: uuid(9000 + n),
+      turnId: uuid(5000 + n),
+      proposalId: uuid(3000 + proposal),
+      field: "dueDate",
+      rule: "due_date",
+      text: "When is it due?",
+      ...payload,
+    },
+  };
+}
+
+/**
+ * Question `uuid(9000 + n)` closed: skipped, or answered by proposal `uuid(3000 + answeredBy)`,
+ * the correction that replaced the one asked about.
+ */
+export function followupClosed(n: number, answeredBy: number | null = null): EventBody {
+  return {
+    type: "followup.closed",
+    schemaVersion: 1,
+    payload: {
+      questionId: uuid(9000 + n),
+      outcome: answeredBy === null ? "skipped" : "answered",
+      proposalId: answeredBy === null ? null : uuid(3000 + answeredBy),
     },
   };
 }
@@ -655,7 +715,7 @@ export function describeEventStoreContract(name: string, factory: EventStoreFact
 
       it("rejects event types the registry doesn't know", async () => {
         const unknown = {
-          type: "followup.asked",
+          type: "brief.drafted",
           schemaVersion: 1,
           payload: { question: "When?" },
         };

@@ -54,3 +54,27 @@ export const UtteranceFinalV2 = z
     ),
   );
 export type UtteranceFinalV2 = z.infer<typeof UtteranceFinalV2>;
+
+// ─── Version 3 (Phase 5 spec §4.1, WP13) ────────────────────────────────────────────────────────
+// Corrections can be typed (spec decision 11), so an utterance says how its words arrived. v2's
+// export above stays frozen: stored v2 events upcast to v3 with `input: "speech"` on read.
+
+/**
+ * How an utterance's words arrived: said into the microphone (`speech`, every utterance before
+ * Phase 5 WP13), or typed into a correction (`typed`: confidence 1, no word timings, at the
+ * session's last audio time, so its audio window is empty).
+ */
+export const UtteranceInput = z.enum(["speech", "typed"]);
+export type UtteranceInput = z.infer<typeof UtteranceInput>;
+
+export const UtteranceFinalV3 = z
+  .strictObject({ ...utteranceFinalV1Shape, witness: Witness, input: UtteranceInput })
+  .meta(
+    payloadMeta(
+      "utterance.final",
+      3,
+      "UtteranceFinalV3",
+      "Payload of `utterance.final`, schema version 3: adds how the words arrived, said or typed.",
+    ),
+  );
+export type UtteranceFinalV3 = z.infer<typeof UtteranceFinalV3>;

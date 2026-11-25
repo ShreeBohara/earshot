@@ -2,6 +2,8 @@ import { ApprovalPolicyRules } from "./approval-policy";
 import { EntityRef } from "./entity-ref";
 import { EventEnvelope } from "./event-envelope";
 import {
+  FollowupAskedV1,
+  FollowupClosedV1,
   ProposalCreatedV1,
   ProposalCreatedV2,
   ProposalFlaggedV1,
@@ -18,6 +20,7 @@ import {
   UsageRecordedV1,
   UtteranceFinalV1,
   UtteranceFinalV2,
+  UtteranceFinalV3,
 } from "./events";
 import { HealthResponse } from "./health";
 
@@ -50,6 +53,9 @@ export const contracts = {
   SessionSealedV1,
   RecapCreatedV1,
   ApprovalPolicyRules,
+  UtteranceFinalV3,
+  FollowupAskedV1,
+  FollowupClosedV1,
 } as const;
 
 export type ContractName = keyof typeof contracts;
@@ -63,7 +69,17 @@ export {
   type PolicyRulesCheck,
   PROPOSAL_TYPE_FIELDS,
 } from "./approval-policy";
-
+export {
+  type CorrectionRouteError,
+  type CorrectionRouteErrorBody,
+  CorrectionRouteRequest,
+  type CorrectionRouteResponse,
+  DictatedUtterance,
+  MAX_CORRECTION_REQUEST_BYTES,
+  MAX_CORRECTION_TEXT_CHARS,
+  MAX_DICTATED_UTTERANCES,
+  MAX_DICTATED_WORDS,
+} from "./correction-route";
 export { EntityKind } from "./entity-ref";
 export {
   CaptureMode,
@@ -75,7 +91,12 @@ export {
   FieldNorm,
   FieldValue,
   FlagSource,
+  FollowupAskedV1,
+  FollowupClosedV1,
+  FollowupOutcome,
+  FollowupRule,
   LikelyEditTier,
+  MAX_FOLLOWUP_TEXT_CHARS,
   MAX_RECAP_EVIDENCE,
   MAX_RECAP_LENS_FIELDS,
   MAX_RECAP_QUOTE_CHARS,
@@ -141,6 +162,8 @@ export {
   UsageRecordedV1,
   UtteranceFinalV1,
   UtteranceFinalV2,
+  UtteranceFinalV3,
+  UtteranceInput,
   VoiceEngine,
   Witness,
   WitnessConflict,
@@ -168,11 +191,13 @@ export {
 export {
   ClientMessage,
   type ClientMessageOf,
+  CorrectionField,
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
   isIanaTimeZone,
   isSessionCloseCode,
   LlmProvider,
+  MAX_CORRECTION_FIELD_CHARS,
   MAX_ENTITY_ALIASES,
   MAX_ENTITY_ID_CHARS,
   MAX_ENTITY_NAME_CHARS,
