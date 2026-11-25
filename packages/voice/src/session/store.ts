@@ -6,7 +6,7 @@
 // Pure folds feed a small subscribable store: `subscribe` and `getState` fit React's
 // `useSyncExternalStore`, and the state only ever changes identity when something changed. The
 // store never holds a key: nothing that reaches it carries one (core's protocol refuses a
-// key-shaped string in any server message), and the outbox keeps turn keys to itself.
+// key-shaped string in any server message), and the outbox keeps turn and recap keys to itself.
 import type {
   ServerMessageOf,
   SessionErrorCode,

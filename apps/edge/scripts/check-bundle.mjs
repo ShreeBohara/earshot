@@ -9,6 +9,8 @@ const forbidden = [
   "createCassetteFetch",
   "CassetteMissError",
   "demo-turn-1",
+  // @earshot/agent/testing's scripted recap model (Phase 5 WP10): its unbacked sentence.
+  "they'll sign the contract by Monday",
   "PGlite",
   // @earshot/evals: a script's title, and the e2e scenario route's path.
   "Acme Dynamics wants two more plants",

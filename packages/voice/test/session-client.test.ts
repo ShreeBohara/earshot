@@ -562,6 +562,51 @@ describe("SessionClient: the turn key", () => {
     for (const line of h.logs) expect(line).not.toContain(KEY);
   });
 
+  it("sends the recap's key only on end.recap.key, resends it until the ack, then drops it (Phase 5 WP10)", async () => {
+    const h = harness();
+    await started(h);
+    h.client.sendUtterance(newTurnId(), utterance("Just met Dana. She wants a quote."));
+    await h.flush();
+    const ended = h.client.end("2026-11-19T12:05:00.000Z", {
+      llm: { provider: "groq", model: "openai/gpt-oss-20b" },
+      key: KEY,
+      lens: "meddic",
+    });
+    expect(JSON.stringify(h.client.pendingMessages())).not.toContain(KEY);
+    await h.flush();
+    await ended;
+    expect(h.server.recapKeys).toEqual([KEY]);
+    expect(h.client.pendingMessages()).toEqual([]);
+    // The recap the server wrote after the end reaches the store, without the key.
+    await h.flush();
+    const recap = h.client.store.getState().projections.session?.recap;
+    expect(recap).toMatchObject({ outcome: "created", llm: { provider: "groq" } });
+    // After the ack nothing holds it: a reconnect resends nothing with it.
+    h.server.dropAll(1006);
+    await h.flush();
+    await h.clock.advance(250);
+    await h.flush();
+    expect(h.server.recapKeys).toEqual([KEY]);
+    const frames = h.server.sockets.flatMap((socket) => socket.received).map(String);
+    const carrying = frames.filter((frame) => frame.includes(KEY));
+    expect(carrying).toHaveLength(1);
+    expect(JSON.parse(carrying[0] as string)).toMatchObject({ t: "end", recap: { key: KEY } });
+    for (const snapshot of h.snapshots) expect(snapshot).not.toContain(KEY);
+    for (const line of h.logs) expect(line).not.toContain(KEY);
+  });
+
+  it("refuses here an end whose recap carries its key anywhere else", async () => {
+    const h = harness();
+    await started(h);
+    const ended = h.client.end("2026-11-19T12:05:00.000Z", {
+      llm: { provider: "anthropic", model: KEY },
+      key: "0123456789abcdef0123456789abcdef",
+    });
+    await expect(ended).rejects.toMatchObject({ code: "bad_message" });
+    expect(h.server.recapKeys).toEqual([]);
+    for (const snapshot of h.snapshots) expect(snapshot).not.toContain(KEY);
+  });
+
   it("drops held keys when the client stops before the ack", async () => {
     const h = harness();
     await started(h);
@@ -595,6 +640,35 @@ describe("SessionClient: the turn key", () => {
     expect(JSON.parse(outbox.frame("00000000-0000-7000-8000-000000000001")).key).toBe(KEY);
     expect(outbox.heldKeys).toBe(1);
     outbox.remove("00000000-0000-7000-8000-000000000001");
+    expect(outbox.heldKeys).toBe(0);
+  });
+
+  it("keeps the recap's key apart inside the outbox too, and splices it back only into its frame (Phase 5 WP10)", () => {
+    const outbox = new Outbox();
+    const msgId = "00000000-0000-7000-8000-000000000003";
+    outbox.add({
+      t: "end",
+      msgId,
+      endedAt: "2026-11-19T12:05:00.000Z",
+      recap: { llm: { provider: "anthropic", model: "claude-haiku-5-5" }, key: KEY, lens: "bant" },
+    });
+    expect(JSON.stringify(outbox.items())).not.toContain(KEY);
+    expect(outbox.items()).toEqual([
+      {
+        t: "end",
+        msgId,
+        endedAt: "2026-11-19T12:05:00.000Z",
+        recap: { llm: { provider: "anthropic", model: "claude-haiku-5-5" }, lens: "bant" },
+      },
+    ]);
+    const frame = JSON.parse(outbox.frame(msgId));
+    expect(frame.recap.key).toBe(KEY);
+    expect(frame.key).toBeUndefined();
+    expect(outbox.heldKeys).toBe(1);
+    outbox.remove(msgId);
+    expect(outbox.heldKeys).toBe(0);
+    // An end with no recap holds no key.
+    outbox.add({ t: "end", msgId, endedAt: "2026-11-19T12:05:00.000Z" });
     expect(outbox.heldKeys).toBe(0);
   });
 

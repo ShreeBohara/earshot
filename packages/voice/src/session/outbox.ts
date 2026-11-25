@@ -2,20 +2,28 @@
 // carries a UUIDv7 msgId, so resending one is harmless; SessionClient resends everything still
 // unacknowledged after every reconnect.
 //
-// In memory only, by design. A `turn_end` key must never be written anywhere, IndexedDB
-// included, so the outbox keeps keys apart from the messages it shows (`items()`), splices a key
-// back in only while serializing a frame for the socket, and forgets it the moment the message is
-// acknowledged, refused, or the outbox is cleared.
-import type { ClientMessage } from "@earshot/core";
+// In memory only, by design. A `turn_end` key, and from Phase 5 the recap's key on `end`
+// (`end.recap.key`, WP10), must never be written anywhere, IndexedDB included, so the outbox keeps
+// keys apart from the messages it shows (`items()`), splices a key back in only while serializing
+// a frame for the socket, and forgets it the moment the message is acknowledged, refused, or the
+// outbox is cleared.
+import type { ClientMessage, ClientMessageOf, RecapRequest } from "@earshot/core";
 
 /** Client messages that change the session, each with a msgId. `hello` and `ack` aren't kept. */
 export type OutboxMessage = Exclude<ClientMessage, { t: "hello" } | { t: "ack" }>;
 
-/** A message as the outbox shows it: a `turn_end` without its key. */
+/** `end` as the outbox shows it: its recap, if any, without the key. */
+export type OutboxEnd = Omit<ClientMessageOf<"end">, "recap"> & {
+  readonly recap?: Omit<RecapRequest, "key">;
+};
+
+/** A message as the outbox shows it: a `turn_end` without its key, an `end` without its recap's. */
 export type OutboxItem = OutboxMessage extends infer M
   ? M extends { t: "turn_end" }
     ? Omit<M, "key">
-    : M
+    : M extends { t: "end" }
+      ? OutboxEnd
+      : M
   : never;
 
 interface Entry {
@@ -43,8 +51,12 @@ export class Outbox {
       const { key, ...item } = message;
       this.#keys.set(message.msgId, key);
       this.#entries.set(message.msgId, { item, sent: false });
+    } else if (message.t === "end" && message.recap) {
+      const { key, ...recap } = message.recap;
+      this.#keys.set(message.msgId, key);
+      this.#entries.set(message.msgId, { item: { ...message, recap }, sent: false });
     } else {
-      this.#entries.set(message.msgId, { item: message, sent: false });
+      this.#entries.set(message.msgId, { item: message as OutboxItem, sent: false });
     }
   }
 
@@ -84,7 +96,13 @@ export class Outbox {
     const entry = this.#entries.get(msgId);
     if (!entry) throw new Error("no such message in the outbox");
     const key = this.#keys.get(msgId);
-    return JSON.stringify(key === undefined ? entry.item : { ...entry.item, key });
+    if (key === undefined) return JSON.stringify(entry.item);
+    const { item } = entry;
+    // The recap's key goes back inside its recap; a turn's, at the top of `turn_end`.
+    if (item.t === "end" && item.recap) {
+      return JSON.stringify({ ...item, recap: { ...item.recap, key } });
+    }
+    return JSON.stringify({ ...item, key });
   }
 
   /** The messages waiting, in order, never with a key. */
@@ -98,7 +116,7 @@ export class Outbox {
     this.#keys.clear();
   }
 
-  /** Keys still held, for tests: zero once every turn is acknowledged. */
+  /** Keys still held, for tests: zero once every turn and `end` is acknowledged. */
   get heldKeys(): number {
     return this.#keys.size;
   }

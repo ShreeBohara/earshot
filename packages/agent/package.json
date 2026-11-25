@@ -2,10 +2,12 @@
   "name": "@earshot/agent",
   "version": "0.0.0",
   "private": true,
-  "description": "Earshot's turn pipeline: the ProposalExtractor, its Anthropic and Groq adapters on AI SDK 7, evidence by quotation, the understanding step (the entity linker, the normalizers, and the faithfulness check), turn outcomes, usage pricing, and fetch-level cassettes.",
+  "description": "Earshot's turn pipeline: the ProposalExtractor, its Anthropic and Groq adapters on AI SDK 7, evidence by quotation, the understanding step (the entity linker, the normalizers, and the faithfulness check), turn outcomes, usage pricing, the debrief's recap (one forced submit_recap call, checked in code; methodology lenses as configuration), and fetch-level cassettes.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./recap": "./src/recap/index.ts",
+    "./recap/lenses": "./src/recap/lenses.ts",
     "./testing": "./src/testing/index.ts",
     "./cassettes/*": "./cassettes/*"
   },

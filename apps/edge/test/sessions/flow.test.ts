@@ -163,9 +163,10 @@ describe("refusals", () => {
         retryable: false,
       });
     }
-    // A late usage record is still taken: it's what the session cost.
+    // A late usage record is still taken: it's what the session cost. It follows the end's
+    // recap (Phase 5 WP10), skipped here, with no key.
     const usage = usageMessage("assemblyai", "universal-streaming-english", 500, 900);
-    expect((await socket.request(usage)).seq).toBe(2);
+    expect((await socket.request(usage)).seq).toBe(3);
     socket.close();
   });
 

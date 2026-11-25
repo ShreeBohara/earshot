@@ -46,6 +46,22 @@ import {
   UNDO_WINDOW_MS,
 } from "./proposal-reviewed";
 import { ProposalSnoozedV1 } from "./proposal-snoozed";
+import {
+  MAX_RECAP_EVIDENCE,
+  MAX_RECAP_LENS_FIELDS,
+  MAX_RECAP_QUOTE_CHARS,
+  MAX_RECAP_SENTENCE_CHARS,
+  MAX_RECAP_SENTENCES,
+  RecapCreatedV1,
+  RecapLens,
+  RecapLensField,
+  RecapLensFieldId,
+  RecapLensId,
+  RecapOutcome,
+  RecapReason,
+  RecapSentence,
+  RecapSentenceKind,
+} from "./recap-created";
 import { SessionEndedV1 } from "./session-ended";
 import { SealedBy, SessionSealedV1 } from "./session-sealed";
 import {
@@ -90,6 +106,9 @@ export const eventPayloadContracts = [
   { type: "proposal.reviewed", schemaVersion: 2, schema: ProposalReviewedV2 },
   { type: "proposal.snoozed", schemaVersion: 1, schema: ProposalSnoozedV1 },
   { type: "session.sealed", schemaVersion: 1, schema: SessionSealedV1 },
+  // Phase 5 WP10: the debrief's recap, written by SessionDO after `session.ended` and before the
+  // seal. `sessionProjection` keeps it as the session's `recap`.
+  { type: "recap.created", schemaVersion: 1, schema: RecapCreatedV1 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
@@ -103,6 +122,11 @@ export {
   FieldValue,
   FlagSource,
   LikelyEditTier,
+  MAX_RECAP_EVIDENCE,
+  MAX_RECAP_LENS_FIELDS,
+  MAX_RECAP_QUOTE_CHARS,
+  MAX_RECAP_SENTENCE_CHARS,
+  MAX_RECAP_SENTENCES,
   MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
   ProposalCreatedV2,
@@ -115,6 +139,15 @@ export {
   ProposalType,
   ProposalTypeV2,
   ProviderModel,
+  RecapCreatedV1,
+  RecapLens,
+  RecapLensField,
+  RecapLensFieldId,
+  RecapLensId,
+  RecapOutcome,
+  RecapReason,
+  RecapSentence,
+  RecapSentenceKind,
   ReopenReason,
   ReviewDecision,
   ReviewDecisionV2,

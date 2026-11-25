@@ -4,6 +4,7 @@ import type {
   ProposalFlaggedV1,
   ProposalReviewedV2,
   ProposalSnoozedV1,
+  RecapCreatedV1,
   SessionEndedV1,
   SessionSealedV1,
   SessionStartedV1,
@@ -37,6 +38,7 @@ export type ProposalFlaggedEvent = TypedEvent<"proposal.flagged", 1, ProposalFla
 export type TurnWitnessedEvent = TypedEvent<"turn.witnessed", 1, TurnWitnessedV1>;
 export type ProposalSnoozedEvent = TypedEvent<"proposal.snoozed", 1, ProposalSnoozedV1>;
 export type SessionSealedEvent = TypedEvent<"session.sealed", 1, SessionSealedV1>;
+export type RecapCreatedEvent = TypedEvent<"recap.created", 1, RecapCreatedV1>;
 
 /**
  * A validated event at the latest schema version of its type. Replay upcasts every stored event
@@ -54,7 +56,8 @@ export type SessionEvent =
   | ProposalFlaggedEvent
   | TurnWitnessedEvent
   | ProposalSnoozedEvent
-  | SessionSealedEvent;
+  | SessionSealedEvent
+  | RecapCreatedEvent;
 
 /** The latest schema version of each event type. A test checks it against the default registry. */
 export const latestVersions = {
@@ -70,6 +73,7 @@ export const latestVersions = {
   "turn.witnessed": 1,
   "proposal.snoozed": 1,
   "session.sealed": 1,
+  "recap.created": 1,
 } as const satisfies { [E in SessionEvent as E["type"]]: E["schemaVersion"] };
 
 /** A payload schema and the event type and schema version it belongs to. */

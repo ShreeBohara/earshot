@@ -57,7 +57,8 @@ export type SessionProjections = ProjectionStates<typeof defaultProjections>;
  * hold), with the fields the inbox and Phase 6 query by in columns of their own (`review_id`,
  * `review_mode`, `batch_id`, `policy_id`, `sync_eligible_at`), and its snooze and supersedes.
  * The status is the latest decision, `proposed` after a reopen, and `superseded` once a
- * correction replaces the proposal. The session's row gets `sealed_at` from `session.sealed`.
+ * correction replaces the proposal. The session's row gets `sealed_at` from `session.sealed`,
+ * and `recap` from `recap.created` (migration 0015, Phase 5 WP10).
  * The rest of the session's row (its user, metrics, and focus account) isn't the log's to say.
  */
 export async function rebuildProjections<
@@ -248,6 +249,7 @@ async function writeSessionSummary(
       startedAt: timestamptz(view.startedAt),
       endedAt: view.endedAt === null ? null : timestamptz(view.endedAt),
       sealedAt: view.sealedAt === null ? null : timestamptz(view.sealedAt),
+      recap: view.recap as Record<string, unknown> | null,
       costUsd: String(view.costUsd ?? 0),
     })
     .where(eq(sessions.id, sessionId))

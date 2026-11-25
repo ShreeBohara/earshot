@@ -58,6 +58,10 @@ export type MetaKey =
   // follows, capped), and the seq of `session.sealed` once written, after which nothing is.
   | "seal_due_ms"
   | "sealed_seq"
+  // The recap (Phase 5 WP10): set with `session.ended`, since every ended session owes one
+  // `recap.created`; cleared when it's written, with its seq. Never the key: that stays in memory.
+  | "recap_due"
+  | "recap_seq"
   // The flush: the last seq handed to the Queue, the last seq Postgres confirmed, and when the
   // oldest event not yet handed over was written.
   | "enqueued_seq"

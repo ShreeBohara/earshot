@@ -15,6 +15,10 @@
 //   key: those turns can't be scored, and scoring them as misses would read an outage as a
 //   regression. A turn the model answered with invalid output twice is the model's, and is scored.
 //
+// - after each script's turns, its recap (Phase 5 WP10; `./recap.ts`) on the same model, pacer, and
+//   meter. A recap the provider fails ends the run as incomplete, as a turn's failure does; one the
+//   model answered with invalid output twice is the model's, and is scored.
+//
 // Nothing here logs: progress goes to `onScript` as numbers, and the report carries no prompt,
 // transcript, or model output.
 import {
@@ -36,6 +40,7 @@ import {
 import { runScriptWith, type ScriptRun, type TurnUtterances } from "../understanding/run";
 import { createBudgetMeter } from "./budget";
 import { type Pacer, pacedFetch } from "./pace";
+import { type SmokeRecap, smokeRecap } from "./recap";
 
 /**
  * The smoke run's retries: three attempts, as in production, but within 90 s rather than the
@@ -131,6 +136,11 @@ export interface SmokeRunOptions {
   readonly apiKey: string;
   /** The network for one script's requests: the global `fetch` live, a cassette or stub at $0. */
   readonly fetchFor: (script: DebriefScript) => typeof globalThis.fetch;
+  /**
+   * The network for one script's recap (Phase 5 WP10): `fetchFor`'s when absent, as a live run
+   * wants; the recap cassettes for an offline run.
+   */
+  readonly recapFetchFor?: (script: DebriefScript) => typeof globalThis.fetch;
   readonly budgetUsd: number;
   /** What a call that reports no usage, such as one that timed out, is charged (the estimate's). */
   readonly perCallUsd: number;
@@ -152,6 +162,8 @@ export interface SmokeRun {
   readonly model: string;
   /** Every script the run started, the one it stopped in included, in order. */
   readonly runs: readonly ScriptRun[];
+  /** Each finished script's recap, in order (Phase 5 WP10). */
+  readonly recaps: readonly SmokeRecap[];
   /** Every script ran, and every turn was answered. */
   readonly complete: boolean;
   readonly stop: SmokeStop | null;
@@ -226,6 +238,7 @@ export async function runSmoke(options: SmokeRunOptions): Promise<SmokeRun> {
   const outcomes: Partial<Record<TurnOutcome, number>> = {};
   const failures: Partial<Record<ExtractionFailure, number>> = {};
   const runs: ScriptRun[] = [];
+  const recaps: SmokeRecap[] = [];
   const model = LLM_MODELS[options.provider];
   const requestsBefore = options.pacer.started;
   try {
@@ -262,6 +275,28 @@ export async function runSmoke(options: SmokeRunOptions): Promise<SmokeRun> {
         },
       });
       runs.push(run);
+      if (stop === null) {
+        const recap = await smokeRecap({
+          provider: options.provider,
+          script,
+          // The biased transcript the turns heard, every turn's, in order.
+          utterances: script.turns.map((_, index) => smokeUtterances(script, index).biased),
+          apiKey: options.apiKey,
+          fetch: (options.recapFetchFor ?? options.fetchFor)(script),
+          pacer: options.pacer,
+          meter,
+          perCallUsd: options.perCallUsd,
+          signal: controller.signal,
+          ...(options.sleep ? { sleep: options.sleep } : {}),
+          ...(options.random ? { random: options.random } : {}),
+        });
+        recaps.push(recap);
+        const failure = recap.result.failure;
+        if (failure && failure.code !== "invalid_output" && failure.code !== "cancelled") {
+          failures[failure.code] = (failures[failure.code] ?? 0) + 1;
+          halt({ reason: "provider", detail: `recap:${failure.code}:${failure.detail}` });
+        }
+      }
       options.onScript?.({
         script: script.id,
         done: runs.length,
@@ -282,7 +317,12 @@ export async function runSmoke(options: SmokeRunOptions): Promise<SmokeRun> {
     provider: options.provider,
     model,
     runs,
-    complete: finished === null && runs.length === options.scripts.length && answered,
+    recaps,
+    complete:
+      finished === null &&
+      runs.length === options.scripts.length &&
+      recaps.length === options.scripts.length &&
+      answered,
     stop: finished,
     budgetUsd: options.budgetUsd,
     spentUsd: meter.spentUsd,

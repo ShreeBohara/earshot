@@ -29,12 +29,22 @@
 // the grace before the seal. A review the socket refuses with `sealed`, and every review once the
 // client has closed, goes to the web route (`createReviewRoute`) with the same review id.
 //
+// The recap (Phase 5 WP10; ADR-0037): `end` carries the session's LLM and its key, so SessionDO
+// writes the debrief's recap right after the end, and the device's lens. The key rides in the
+// outbox until the end's ack, as each turn's does, and the controller drops it then.
+//
 // Evidence clips (Phase 5 WP9; ADR-0036): with clips on for this device, the engine records each
 // turn's audio even without a witness, and each turn's `turn_audio` goes to `clips.keep`, which
 // encrypts it into this browser's clip store for 24 hours. It never goes anywhere else. While a
 // clip plays on this page, a hands-free engine takes no microphone audio, so the clip's sound
 // can't come back as a turn; pressing push-to-talk stops the clip instead.
-import type { EntityRef, LlmProvider, SessionProviders } from "@earshot/core";
+import type {
+  EntityRef,
+  LlmProvider,
+  RecapLensId,
+  RecapRequest,
+  SessionProviders,
+} from "@earshot/core";
 import type { ProviderId, StoredKeyMeta } from "@earshot/keys";
 import {
   type CaptureMode,
@@ -207,6 +217,11 @@ export interface CaptureDeps {
   readonly witnessEndWaitMs?: number;
   /** Evidence clips (Phase 5 WP9). Without it, no turn's audio is kept past its witness. */
   readonly clips?: CaptureClips;
+  /**
+   * The device's recap lens (Settings → Capture; Phase 5 WP10), read as each debrief ends and sent
+   * with `end`. Without it, the recap has no lens.
+   */
+  readonly recapLens?: () => RecapLensId | null;
   /** Extra SessionClient options; tests pass WP8's fake socket and clock. */
   readonly clientOptions?: Partial<SessionClientOptions>;
   /** Extra engine options; tests pass a scripted capture source and clock. */
@@ -996,7 +1011,7 @@ export class CaptureController {
           () => reject(new Error("timeout")),
           END_ACK_TIMEOUT_MS,
         );
-        live.client.end(this.#deps.now().toISOString()).then(
+        live.client.end(this.#deps.now().toISOString(), this.#recapRequest(live)).then(
           () => {
             this.#timers.clearTimeout(timer);
             resolve();
@@ -1014,6 +1029,20 @@ export class CaptureController {
     live.turnKey = undefined;
     this.#update({ phase: "ended" });
     this.#awaitSeal(live);
+  }
+
+  /**
+   * What `end` asks of the recap (Phase 5 WP10): the session's LLM and its key, and the device's
+   * lens. None without a key: SessionDO then records the recap as skipped, `no_key`.
+   */
+  #recapRequest(live: LiveSession): RecapRequest | undefined {
+    if (!live.turnKey) return undefined;
+    const lens = this.#deps.recapLens?.() ?? null;
+    return {
+      llm: { provider: live.plan.llm.provider, model: live.plan.llm.model },
+      key: live.turnKey,
+      ...(lens ? { lens } : {}),
+    };
   }
 
   /**

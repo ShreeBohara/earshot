@@ -11,14 +11,20 @@
 import {
   aiGatewayFromEnv,
   createProposalExtractor,
+  createRecapper,
   type ExtractorOptions,
   type ProposalExtractor,
+  type Recapper,
+  type RecapperOptions,
+  type RecapResult,
+  type RunRecapInput,
   type RunTurnInput,
+  runRecap,
   runTurn,
   type TurnResult,
 } from "@earshot/agent";
 
-export type { TurnResult, WorkingState } from "@earshot/agent";
+export type { RecapResult, TurnResult, WorkingState } from "@earshot/agent";
 
 /** The parts of `@earshot/agent` SessionDO uses. */
 export interface TurnAgent {
@@ -26,11 +32,21 @@ export interface TurnAgent {
   createProposalExtractor(options: ExtractorOptions): ProposalExtractor;
   /** Never throws for a provider or validation failure: those become outcomes. */
   runTurn(input: RunTurnInput): Promise<TurnResult>;
+  /** The recap's (Phase 5 WP10): throws a RangeError for a model with no adapter or price. */
+  createRecapper(options: RecapperOptions): Recapper;
+  /** Never throws for a provider or validation failure: each is a failed `recap.created`. */
+  runRecap(input: RunRecapInput): Promise<RecapResult>;
   aiGatewayFromEnv: typeof aiGatewayFromEnv;
 }
 
 /** `@earshot/agent` as it ships: straight to the provider, or through AI Gateway when set. */
-export const productionAgent: TurnAgent = { createProposalExtractor, runTurn, aiGatewayFromEnv };
+export const productionAgent: TurnAgent = {
+  createProposalExtractor,
+  runTurn,
+  createRecapper,
+  runRecap,
+  aiGatewayFromEnv,
+};
 
 /** What a per-turn `fetch` may be chosen by: the turn's own session context. */
 export interface TurnContext {
@@ -39,17 +55,33 @@ export interface TurnContext {
 }
 
 /**
- * The same agent with every provider request going to `fetchFor(provider)` instead of the
- * network: a cassette in tests and e2e runs.
+ * The same agent with every turn's provider request going to `fetchFor(provider)` instead of the
+ * network: a cassette in tests and e2e runs. The recap's go to `recapFetchFor` (the scripted
+ * recap model there, since every test's session says something else), or to `fetchFor`.
  */
 export function withFetch(
   agent: TurnAgent,
   fetchFor: (provider: ExtractorOptions["provider"]) => typeof fetch,
+  recapFetchFor: (provider: RecapperOptions["provider"]) => typeof fetch = fetchFor,
 ): TurnAgent {
   return {
     ...agent,
     createProposalExtractor: (options) =>
       agent.createProposalExtractor({ ...options, fetch: fetchFor(options.provider) }),
+    createRecapper: (options) =>
+      agent.createRecapper({ ...options, fetch: recapFetchFor(options.provider) }),
+  };
+}
+
+/** The same agent with the recap's provider requests going to `fetchFor(provider)`. */
+export function withRecapFetch(
+  agent: TurnAgent,
+  fetchFor: (provider: RecapperOptions["provider"]) => typeof fetch,
+): TurnAgent {
+  return {
+    ...agent,
+    createRecapper: (options) =>
+      agent.createRecapper({ ...options, fetch: fetchFor(options.provider) }),
   };
 }
 

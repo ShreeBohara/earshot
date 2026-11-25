@@ -8,8 +8,10 @@ import { CAUGHT_UP_COPY, SECTION_TITLES } from "@/lib/inbox/copy";
 import { publishInboxCount } from "@/lib/inbox/count-store";
 import { type ReviewSink, routeSink } from "@/lib/inbox/sinks";
 import type { InboxData } from "@/lib/inbox/types";
+import { wordsFrom } from "@/lib/recap/view";
 import { CaptureLink } from "../capture/link";
 import { EvidenceCard } from "../evidence/evidence-card";
+import { RecapPanel } from "../recap/recap-panel";
 import { AcceptAllButton, BatchCheckpoint } from "./accept-all";
 import {
   accountName,
@@ -140,6 +142,9 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
     ]),
   );
 
+  // The words each recap sentence quotes, from the same texts the cards quote.
+  const wordsOf = wordsFrom(data.quotes);
+
   const empty = data.sessions.length === 0;
   const caughtUp = sections.review.length === 0;
   return (
@@ -203,6 +208,16 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
                     buttonId={acceptAllId}
                     onCancel={batch.cancel}
                     onConfirm={batch.confirm}
+                  />
+                ) : null}
+                {group.recap ? (
+                  <RecapPanel
+                    recap={group.recap}
+                    wordsOf={wordsOf}
+                    headingLevel={4}
+                    {...(clipSessions.get(group.sessionId)
+                      ? { session: clipSessions.get(group.sessionId) }
+                      : {})}
                   />
                 ) : null}
                 {group.accounts.map((account) => {

@@ -1,0 +1,12 @@
+{
+  "recapId": "01a1c6e9-2a10-7b3c-8d4e-5f6a7b8c9d05",
+  "outcome": "partial",
+  "reason": "timeout",
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-5-5"
+  },
+  "sentences": [],
+  "dropped": 0,
+  "lens": null
+}

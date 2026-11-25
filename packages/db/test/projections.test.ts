@@ -1,4 +1,4 @@
-import { fromJsonl, NO_EVENTS, ProjectionError } from "@earshot/events";
+import { fromJsonl, NO_EVENTS, ProjectionError, type SessionView } from "@earshot/events";
 import {
   demoSessionId,
   demoSessionJsonl,
@@ -8,6 +8,7 @@ import {
   proposalFlagged,
   proposalV2,
   readFixture,
+  recapCreated,
   reopen,
   review,
   reviewV2,
@@ -144,6 +145,8 @@ function readProjections(db: Db, sessionId: string) {
               durationMs: session.endedAt
                 ? session.endedAt.getTime() - session.startedAt.getTime()
                 : null,
+              // Migration 0015 (Phase 5 WP10): the recap, whole, as the projection keeps it.
+              recap: (session.recap as SessionView["recap"]) ?? null,
               costUsd: Number(session.costUsd),
               lastSeq: last.seq,
               lastEventAt: last.ts.toISOString(),
@@ -486,6 +489,48 @@ describe("flushing Phase 4 events: v2 proposals, witness flags, and downgrades",
     expect((await rowsOf(db, SESSION_ID)).proposals.map((row) => row.targetEntityId)).toEqual([
       LINKED,
     ]);
+  });
+});
+
+describe("flushing the recap (Phase 5 WP10)", () => {
+  it("stores the session's recap in sessions.recap, null until it comes, whole once it does", async () => {
+    const db = await fresh();
+    const flush = (expectedLastSeq: number, batch: Parameters<typeof appendEvents>[3]) =>
+      withTenant(db, A, async (tx) => {
+        await appendEvents(tx, SESSION_ID, expectedLastSeq, batch);
+        return rebuildProjections(tx, SESSION_ID);
+      });
+    await flush(NO_EVENTS, [draft(1, started()), draft(2, utterance(1)), draft(3, ended())]);
+    expect((await rowsOf(db, SESSION_ID)).session[0]?.recap).toBeNull();
+
+    const projections = await flush(2, [draft(4, recapCreated()), draft(5, sealed())]);
+    const [row] = (await rowsOf(db, SESSION_ID)).session;
+    expect(row?.recap).toMatchObject({
+      outcome: "created",
+      reason: null,
+      dropped: 1,
+      // draft(4) is seq 3, with draft 4's time.
+      seq: 3,
+      ts: tsFor(4),
+      sentences: [{ kind: "headline" }, { kind: "next_step", weakSupport: true }],
+    });
+    expect((await readProjections(db, SESSION_ID)).session).toEqual(projections.session);
+  });
+
+  it("refuses a log with a second recap, writing nothing", async () => {
+    const db = await fresh();
+    await expect(
+      withTenant(db, A, async (tx) => {
+        await appendEvents(tx, SESSION_ID, NO_EVENTS, [
+          draft(1, started()),
+          draft(2, ended()),
+          draft(3, recapCreated()),
+          draft(4, recapCreated()),
+        ]);
+        return rebuildProjections(tx, SESSION_ID);
+      }),
+    ).rejects.toThrow(/already has its recap/);
+    expect((await rowsOf(db, SESSION_ID)).session[0]?.recap ?? null).toBeNull();
   });
 });
 

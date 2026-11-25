@@ -1,7 +1,7 @@
 // @earshot/agent: turn extraction for SessionDO (Phase 3 spec, WP5), and from Phase 4 the turn
 // pipeline (spec §4.3): extractor v2, then `understand` with the linker, the normalizers, and the
-// faithfulness check, and from WP9 the second witness's comparison (`witnessTurn`). Runs in
-// workerd and Node. Cassettes and test scenarios live in `@earshot/agent/testing`, which
+// faithfulness check, and from WP9 the second witness's comparison (`witnessTurn`); from Phase 5
+// (WP10) the debrief's recap at the end (`runRecap`). Runs in workerd and Node. Cassettes and test scenarios live in `@earshot/agent/testing`, which
 // production code doesn't import.
 export { matchEntity } from "./entities";
 export {
@@ -39,6 +39,34 @@ export {
   roundUsd,
 } from "./prices";
 export { buildPrompt, describeCallTime, type Prompt, type PromptInput } from "./prompt";
+// The debrief's recap (Phase 5 WP10): also its own entry, `@earshot/agent/recap`.
+export {
+  checkRecap,
+  createRecapper,
+  failedRecap,
+  lensMentioned,
+  RECAP_DEADLINE_MS,
+  RECAP_LENS_LIST,
+  RECAP_LENSES,
+  RECAP_RETRY_POLICY,
+  type RecapCall,
+  type RecapCallInput,
+  type RecapLensDefinition,
+  type RecapProposal,
+  type RecapProposalSource,
+  type Recapper,
+  type RecapperOptions,
+  type RecapResult,
+  type RunRecapInput,
+  recapLens,
+  recapProposals,
+  recapReason,
+  recapUtterances,
+  runRecap,
+  type SentenceTrace,
+  SUBMIT_RECAP,
+  skippedRecap,
+} from "./recap";
 export { DEFAULT_RETRY_POLICY, nextRetryDelay, type RetryInput, type RetryPolicy } from "./retry";
 export {
   DATE_FIELDS,

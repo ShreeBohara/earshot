@@ -1,5 +1,6 @@
 // The capture controller end to end on WP8's fakes: an in-memory SessionDO, the fake adapter, a
 // scripted capture source, and a manual clock. No browser, no network, no provider.
+import type { RecapLensId } from "@earshot/core";
 import type { StoredKeyMeta } from "@earshot/keys";
 import {
   createDebriefEngine,
@@ -61,6 +62,8 @@ function setup(
     createWitness?: (key: () => Promise<string | undefined>) => WitnessRunner;
     /** Evidence clips (Phase 5 WP9); absent, the app wires none. */
     clips?: CaptureClips;
+    /** The device's recap lens (Phase 5 WP10); absent, the app wires none. */
+    recapLens?: RecapLensId | null;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -179,6 +182,7 @@ function setup(
       : {}),
     ...(options.createWitness ? { createWitness: options.createWitness } : {}),
     ...(options.clips ? { clips: options.clips } : {}),
+    ...(options.recapLens !== undefined ? { recapLens: () => options.recapLens ?? null } : {}),
     clock: () => clock.now(),
     now: () => new Date("2026-11-19T12:00:00.000Z"),
     timeZone: () => "Europe/Lisbon",
@@ -322,11 +326,43 @@ describe("CaptureController in fake mode", () => {
     expect(t.controller.getState().phase).toBe("ended");
     expect(t.micOpen()).toBe(false);
     expect(t.server.received.some((m) => m.t === "end")).toBe(true);
-    // The placeholder key went out only inside turn_end.
+    // The placeholder key went out only inside turn_end, and inside end.recap for the recap
+    // (Phase 5 WP10): nowhere else in any message, and never into the store.
     for (const message of t.server.received) {
-      if (message.t !== "turn_end") expect(JSON.stringify(message)).not.toContain(fake.turnKey);
+      if (message.t === "turn_end") continue;
+      if (message.t === "end") {
+        expect(message.recap?.key).toBe(fake.turnKey);
+        const { recap, ...rest } = message;
+        const { key: _key, ...request } = recap ?? { key: "" };
+        expect(JSON.stringify({ ...rest, recap: request })).not.toContain(fake.turnKey);
+        continue;
+      }
+      expect(JSON.stringify(message)).not.toContain(fake.turnKey);
     }
+    expect(t.server.recapKeys).toEqual([fake.turnKey]);
     expect(JSON.stringify(t.controller.getState().store?.getState())).not.toContain(fake.turnKey);
+    t.controller.dispose();
+  });
+
+  it("asks for the recap with the session's LLM, its key, and the device's lens, and folds it in (Phase 5 WP10)", async () => {
+    const t = setup({ recapLens: "spiced" });
+    const fake = createFakeVoice(SCENARIO);
+    t.controller.start({ selection: null, fake });
+    await settle(100);
+    await t.clock.advance(200);
+    await talk(t, fake.holdMs);
+    const ending = t.controller.end();
+    await settle(100);
+    await t.clock.advance(1_000);
+    await ending;
+    const end = t.server.received.find((m) => m.t === "end");
+    expect(end).toMatchObject({
+      t: "end",
+      recap: { llm: SCENARIO.llm, key: fake.turnKey, lens: "spiced" },
+    });
+    await settle(50);
+    const recap = t.controller.getState().store?.getState().projections.session?.recap;
+    expect(recap).toMatchObject({ outcome: "created", llm: SCENARIO.llm });
     t.controller.dispose();
   });
 

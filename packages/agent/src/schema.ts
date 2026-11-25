@@ -291,8 +291,11 @@ export const STRICT_UNSUPPORTED_KEYWORDS: readonly string[] = [
 
 type JsonSchemaNode = { [key: string]: unknown };
 
-/** Renames `oneOf` to `anyOf` everywhere and drops `$schema`: the shape both providers accept. */
-function toToolSchema(node: unknown): unknown {
+/**
+ * Renames `oneOf` to `anyOf` everywhere and drops `$schema`: the shape both providers accept. The
+ * recap's tool (`./recap/schema.ts`) goes through it too.
+ */
+export function toToolSchema(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(toToolSchema);
   if (typeof node !== "object" || node === null) return node;
   const out: JsonSchemaNode = {};

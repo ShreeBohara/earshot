@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15). Amended (2026-11-20) by Phase 4 WP8: the prompt sends no CRM list, the tool schema is v2, and the understanding step (ADR-0027) replaces the exact matcher and the risk patterns. See "Amendment: Phase 4" below.
+Accepted (2026-11-15). Amended (2026-11-20) by Phase 4 WP8: the prompt sends no CRM list, the tool schema is v2, and the understanding step (ADR-0027) replaces the exact matcher and the risk patterns. See "Amendment: Phase 4" below. Amended (2026-11-20) by Phase 5 WP10: a second call on the same adapters, the session's recap (ADR-0037), on a key that rides on `end`. See "Amendment: Phase 5" below.
 
 ## Context and problem
 
@@ -62,6 +62,18 @@ Spec decision 1 moves the choice of record from the model to a deterministic lin
 - **Risk flags.** `risk.ts`'s patterns are gone. `negation` comes from the NegEx-style check, `low_confidence` stays as it was, and `date` and `number`, which Phase 3 raised on every date and number, gave way to the normalizers' checks of the value against its words (ADR-0030).
 - **Unchanged:** providers built per call from the turn's key, validation with one retry, the retry policy, pricing, AI Gateway, and fetch-level cassettes. The cassettes' keys changed with the prompt and the schema, so `@earshot/agent`'s and `@earshot/evals`' were regenerated offline (`cassettes:gen`); no request reached a provider.
 - **Bundle:** the understanding step adds about 222 KiB (48 KiB gzipped) to the edge Worker (ADR-0027, Measurements).
+
+## Amendment: Phase 5 (WP10, 2026-11-20)
+
+The session's recap (ADR-0037) is a second kind of call on these adapters. What it shares, and what's its own:
+
+- **The same adapters.** `@earshot/agent/recap`'s `createRecapper` uses the extractor's (now exported as `ADAPTERS`): the provider built per call from the key it's given, with an explicit `baseURL`, and dropped when the call returns; Anthropic strict with one tool call; Groq at low reasoning; no temperature, and no thinking set on Haiku 5.5's forced call. The same price table, error classes (`ExtractionError`, fixed codes only), Groq `tool_use_failed` and `ToolChoiceViolationError` handling, AI Gateway option, and fetch-level cassettes.
+- **Its own tool.** One forced call of `submit_recap`, input `{ sentences: [{ kind, text, quotes }], lens }`, within the same strict rules. Validation and one retry with the problems listed, as for `submit_proposals`; a recap must have a headline. Output caps: 2,048 tokens on Anthropic, 4,096 on Groq.
+- **Evidence by quotation, for sentences.** The quotes are located with the same `locateQuote` and `evidenceFor`, and a sentence with none located is dropped, as a field is. A lens field whose quote isn't found is "not mentioned".
+- **Its own key slot.** The recap's key rides on `end`, at `end.recap.key`, the only place besides `turn_end.key` where the socket accepts a key-shaped string. It's used for the recap's call, held in that call's closure, and never stored or logged.
+- **Its own policy.** A 15 s deadline after the end (target), two attempts at most, and no failure ever thrown: every outcome is a `recap.created`, `created`, `failed`, or `skipped`, with its reason. No prompt cache: one recap per session can't reuse a 5-minute cache.
+- **Cassettes.** `scenarios.ts`'s provider-response builders take a tool name (default `submit_proposals`, so the committed cassettes are unchanged). The recap's own, for all 200 debriefs, are `@earshot/evals`' (`recap:gen`). The live check (`recap:live`, one recap per provider under $0.01) answers Appendix B's question 7: whether Haiku 5.5 makes a forced tool call for the recap at its default effort.
+- **Bundle:** the recap adds about 37 KiB (10 KiB gzipped) to the edge Worker (ADR-0037).
 
 ## More information
 

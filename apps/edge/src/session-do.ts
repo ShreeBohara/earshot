@@ -24,10 +24,18 @@
 //   user, and how and when the ticket's web session signed in) and when an approval may sync, and
 //   appended as `proposal.reviewed` v2 and `proposal.snoozed`. A later witness flag on an approved
 //   or edited proposal reopens it (`mode: "system"`).
+// - The recap (Phase 5 spec §4.9, WP10): right after `session.ended`, in the serial queue, one
+//   forced tool call on the session's provider, on the key `end.recap` carried, within a 15 s
+//   deadline (target), appends `recap.created` and its `usage.recorded`. No key, no speech, a
+//   failure, or the deadline gives a `recap.created` that says so, so every ended session gets
+//   exactly one. The key lives in the call's closure only, never in storage or a log. The tray
+//   keeps working meanwhile: reviews don't wait in the serial queue.
 // - The seal (Phase 5 spec §4.3): a minute after `end`, or after the last write that followed it,
 //   capped at 30 minutes, the alarm appends `session.sealed`, the last event this object ever
-//   writes, and flushes it. After it every client message but `hello` and `ack` is refused with
-//   `sealed`, and the web Worker writes the session's reviews in Postgres instead.
+//   writes, and flushes it. It runs in the serial queue, so after the recap; a recap still owed
+//   then (lost to a restart mid-call) is recorded as failed, `timeout`, with the seal. After it
+//   every client message but `hello` and `ack` is refused with `sealed`, and the web Worker writes
+//   the session's reviews in Postgres instead.
 // - The log flushes to Postgres through a Queue (WP7), and the object deletes itself a day after
 //   Postgres confirms the whole session, seal included; `purge()` deletes it at once, for account
 //   deletion. `sealNow()` seals an ended session at once, for the web Worker's repair path.
@@ -36,7 +44,17 @@
 // subclass that picks its dependencies: the agent, the flush sink, and the price table.
 
 import { DurableObject } from "cloudflare:workers";
-import { type ProposalLink, type WitnessTurnResult, witnessTurn } from "@earshot/agent";
+import {
+  failedRecap,
+  type ProposalLink,
+  RECAP_RETRY_POLICY,
+  type RecapResult,
+  type RetryPolicy,
+  recapProposals,
+  skippedRecap,
+  type WitnessTurnResult,
+  witnessTurn,
+} from "@earshot/agent";
 import {
   type ClientMessage,
   type ClientMessageOf,
@@ -49,6 +67,8 @@ import {
   type ProposalReviewedV2,
   type ProposalSnoozedV1,
   parseClientMessage,
+  type RecapCreatedV1,
+  type RecapRequest,
   type Reviewer,
   type ReviewSeen,
   SESSION_PROTOCOL_VERSION,
@@ -86,6 +106,7 @@ import {
   FLUSH_TIMING,
   newBucket,
   type RateBucket,
+  RECAP_TIMING,
   recentTurnStarts,
   resendDueMs,
   SEAL_TIMING,
@@ -120,6 +141,11 @@ export interface SessionDeps {
    * a usable key). Defaults to `readAuditSigning` on the Worker's environment; tests stub it.
    */
   readonly auditSigning?: (env: Env) => Promise<AuditSigningState>;
+  /**
+   * The recap's retries and deadline (Phase 5 WP10): `@earshot/agent`'s, two attempts within
+   * 15 s, unless a test passes a shorter deadline.
+   */
+  readonly recapPolicy?: RetryPolicy;
 }
 
 /** The tag on every client socket, for `getWebSockets`. */
@@ -1257,7 +1283,12 @@ export class SessionRuntime extends DurableObject<Env> {
     };
   }
 
-  /** `session.ended`, after any turn still running, then an immediate flush. */
+  /**
+   * `session.ended`, after any turn still running, then an immediate flush; then, in the same turn
+   * of the serial queue, the recap (Phase 5 WP10), so the seal comes after it. The ack comes with
+   * `session.ended`: the client drops the recap's key then, and this object holds it only in the
+   * closure below until the recap's call returns.
+   */
   async #end(message: ClientMessageOf<"end">): Promise<void> {
     if (this.#answered(message.msgId) || this.#inflight.has(message.msgId)) return;
     if (this.#store.getNumber("started_seq") === undefined) {
@@ -1265,22 +1296,28 @@ export class SessionRuntime extends DurableObject<Env> {
       return;
     }
     this.#inflight.add(message.msgId);
+    const recap = message.recap ?? null;
     try {
-      await this.#serially(async () => this.#finish(message.msgId, message.endedAt));
+      await this.#serially(async () => {
+        if (this.#finish(message.msgId, message.endedAt)) await this.#recap(recap);
+      });
     } finally {
       this.#inflight.delete(message.msgId);
     }
   }
 
-  /** Ends the session: for the client's `end` (msgId), or for an abandoned session (null). */
-  #finish(msgId: string | null, endedAt: string): void {
-    if (this.#isPurged()) return;
+  /**
+   * Ends the session: for the client's `end` (msgId), or for an abandoned session (null). True
+   * when this call ended it, and so owes the session its recap.
+   */
+  #finish(msgId: string | null, endedAt: string): boolean {
+    if (this.#isPurged()) return false;
     const store = this.#store;
-    if (msgId !== null && store.done(msgId)) return;
+    if (msgId !== null && store.done(msgId)) return false;
     const endedSeq = store.getNumber("ended_seq");
     if (endedSeq !== undefined) {
       if (msgId !== null) this.#ackExisting(msgId, endedSeq);
-      return;
+      return false;
     }
     const meter = readMeter(store.get("meter"));
     this.#commit(
@@ -1294,11 +1331,169 @@ export class SessionRuntime extends DurableObject<Env> {
           store.set("resend_due_ms", resendDueMs(now, 0));
           // The seal's grace starts now, whoever ended the session, the idle alarm included.
           store.set("seal_due_ms", now + SEAL_TIMING.graceMs);
+          // Every ended session owes one `recap.created`, written next (WP10).
+          store.set("recap_due", 1);
         },
       },
     );
     this.#log.info("session ended", { events: store.lastSeq + 1, by: msgId ? "client" : "idle" });
     this.ctx.waitUntil(this.#flushNow());
+    return true;
+  }
+
+  // ─── The recap ───────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * The session's recap (Phase 5 spec §4.9, WP10), right after `session.ended`: `recap.created`,
+   * and `usage.recorded` for its calls, in one transaction, then a flush. Without a request (no
+   * key came with `end`, or the session ended itself after idling) it's skipped, `no_key`; with
+   * no speech, skipped, `no_speech`, with no call; a provider or validation failure, or the 15 s
+   * deadline, is failed with its reason. Runs in the serial queue, which the seal waits on.
+   */
+  async #recap(request: RecapRequest | null): Promise<void> {
+    if (this.#isPurged() || this.#store.get("recap_due") === undefined) return;
+    const result: RecapResult =
+      request === null
+        ? {
+            recap: skippedRecap("no_key", {}),
+            usage: null,
+            failure: null,
+            trace: [],
+            attempts: 0,
+            latencyMs: 0,
+          }
+        : await this.#writeRecap(request);
+    if (this.#isPurged()) {
+      this.#log.info("recap discarded", { reason: "purged" });
+      return;
+    }
+    this.#recordRecap(result);
+  }
+
+  /** The recap's call, on the request's provider and key. Never throws: failures are outcomes. */
+  async #writeRecap(request: RecapRequest): Promise<RecapResult> {
+    const { agent } = this.#deps;
+    const failed = (llm: RecapCreatedV1["llm"]): RecapResult => ({
+      recap: failedRecap("provider_error", { llm }),
+      usage: null,
+      failure: null,
+      trace: [],
+      attempts: 0,
+      latencyMs: 0,
+    });
+    let recapper: ReturnType<TurnAgent["createRecapper"]>;
+    try {
+      recapper = agent.createRecapper({
+        provider: request.llm.provider,
+        model: request.llm.model,
+        gateway: agent.aiGatewayFromEnv(this.env),
+      });
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      // A model with no adapter or price, or an AI Gateway id that can't be part of a URL: fail
+      // closed, never direct, and never refuse the end itself.
+      this.#log.warn("recap refused", { reason: "unsupported_model_or_gateway" });
+      return failed(null);
+    }
+    const controller = new AbortController();
+    this.#controllers.add(controller);
+    try {
+      return await agent.runRecap({
+        recapper,
+        utterances: this.#sessionUtterances(),
+        proposals: recapProposals(this.#proposals(), this.#entityNames()),
+        lens: request.lens ?? null,
+        // The recap's key: used for this call and referenced nowhere else.
+        apiKey: request.key,
+        signal: controller.signal,
+        policy: this.#deps.recapPolicy ?? {
+          ...RECAP_RETRY_POLICY,
+          deadlineMs: RECAP_TIMING.deadlineMs,
+        },
+      });
+    } catch (error) {
+      // runRecap turns every provider and validation failure into an outcome, so this is a bug.
+      this.#log.error("recap failed", { cause: errorName(error) });
+      return failed({ provider: recapper.provider, model: recapper.model });
+    } finally {
+      this.#controllers.delete(controller);
+    }
+  }
+
+  /** Appends the recap and its usage, and flushes them at once. */
+  #recordRecap(result: RecapResult): void {
+    const store = this.#store;
+    const write = (recap: RecapCreatedV1, usage: RecapResult["usage"]) =>
+      this.#commit(
+        null,
+        [
+          {
+            type: "recap.created",
+            schemaVersion: 1,
+            // Model output: cleaned of anything Postgres's jsonb would refuse.
+            payload: toStorable(recap) as unknown as Record<string, unknown>,
+          },
+          ...(usage
+            ? [
+                {
+                  type: "usage.recorded",
+                  schemaVersion: 1,
+                  payload: { ...usage } as Record<string, unknown>,
+                },
+              ]
+            : []),
+        ],
+        {
+          during: (appended) => {
+            store.set("recap_seq", appended[0]?.seq ?? store.lastSeq);
+            store.delete("recap_due");
+            if (usage) this.#addToMeter(usage);
+          },
+        },
+      );
+    try {
+      write(result.recap, result.usage);
+    } catch (error) {
+      // A recap the registry refused: a bug in the checks. The session still gets its one recap.
+      this.#log.error("recap not recorded", { cause: errorName(error) });
+      write(failedRecap("invalid_output", { llm: result.recap.llm }), result.usage);
+    }
+    const { recap } = result;
+    // Counts and codes only: never a sentence, a quote, or a name.
+    this.#log.info("recap recorded", {
+      outcome: recap.outcome,
+      reason: recap.reason,
+      sentences: recap.sentences.length,
+      dropped: recap.dropped,
+      weak: recap.sentences.filter((sentence) => sentence.weakSupport).length,
+      lens: recap.lens?.id ?? null,
+      mentioned: recap.lens?.fields.filter((field) => field.evidence !== null).length ?? null,
+      attempts: result.attempts,
+      latencyMs: result.latencyMs,
+      failure: result.failure ? `${result.failure.code}:${result.failure.detail}` : null,
+    });
+    this.ctx.waitUntil(this.#flushNow());
+  }
+
+  /** The session's utterances, in order: the recap reads the biased stream's (runRecap filters). */
+  #sessionUtterances(): UtteranceFinalV2[] {
+    const sessionId = this.#store.get("sid") ?? "";
+    const utterances: UtteranceFinalV2[] = [];
+    for (const event of this.#store.events(sessionId, 0)) {
+      // Validated as `utterance.final` v2 when they arrived.
+      if (event.type === "utterance.final") {
+        utterances.push(event.payload as unknown as UtteranceFinalV2);
+      }
+    }
+    return utterances;
+  }
+
+  /** The CRM's name for each of the session's records, from `start`. */
+  #entityNames(): (entityId: string) => string | undefined {
+    const names = new Map(
+      readEntities(this.#store.get("entities")).map((entity) => [entity.id, entity.name]),
+    );
+    return (entityId) => names.get(entityId);
   }
 
   // ─── Answers ─────────────────────────────────────────────────────────────────────────────────
@@ -1556,9 +1751,22 @@ export class SessionRuntime extends DurableObject<Env> {
   #writeSeal(): void {
     const store = this.#store;
     const now = this.#now();
+    // The serial queue ran any recap this object started before getting here, so a recap still
+    // owed was lost with the memory that held its key (a restart mid-call): say so, then seal.
+    const owed = store.get("recap_due") !== undefined;
+    const lost: NewEvent[] = owed
+      ? [
+          {
+            type: "recap.created",
+            schemaVersion: 1,
+            payload: failedRecap("timeout", { llm: null }) as unknown as Record<string, unknown>,
+          },
+        ]
+      : [];
     this.#commit(
       null,
       [
+        ...lost,
         {
           type: "session.sealed",
           schemaVersion: 1,
@@ -1566,12 +1774,17 @@ export class SessionRuntime extends DurableObject<Env> {
         },
       ],
       {
-        during: ([sealed]) => {
-          store.set("sealed_seq", sealed?.seq ?? store.lastSeq);
+        during: (appended) => {
+          if (owed) {
+            store.set("recap_seq", appended[0]?.seq ?? store.lastSeq);
+            store.delete("recap_due");
+          }
+          store.set("sealed_seq", appended.at(-1)?.seq ?? store.lastSeq);
           store.delete("seal_due_ms");
         },
       },
     );
+    if (owed) this.#log.warn("recap lost", { reason: "restarted" });
     this.#log.info("session sealed", { events: store.lastSeq + 1 });
     this.ctx.waitUntil(this.#flushNow());
   }
@@ -1661,7 +1874,10 @@ export class SessionRuntime extends DurableObject<Env> {
         }
       }
     } else if (store.get("started_seq") !== undefined && now >= this.#idleEndDue()) {
-      await this.#serially(async () => this.#finish(null, new Date(now).toISOString()));
+      // No client, so no key: the recap is skipped, `no_key`.
+      await this.#serially(async () => {
+        if (this.#finish(null, new Date(now).toISOString())) await this.#recap(null);
+      });
     }
     await this.#schedule();
   }

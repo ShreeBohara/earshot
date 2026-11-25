@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   // Cache Components stays off until OpenNext marks it stable (docs/adr/0010).
   transpilePackages: [
     "@earshot/ui",
+    // Only its lens files (`@earshot/agent/recap/lenses`): the recap's labels. Never the AI SDK.
+    "@earshot/agent",
     "@earshot/core",
     "@earshot/db",
     "@earshot/demo-crm",

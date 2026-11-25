@@ -86,7 +86,8 @@ describe("sending", () => {
       await socket.requestPaced(utteranceMessage(turnId, utteranceOf(`${n} ${long}`, n * 1_000)));
     }
     await socket.request(endMessage());
-    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(41);
+    // The end's recap (Phase 5 WP10) is the last event: 40 utterances, the end, then the recap.
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(42);
     const messages = await flushes(stub);
     expect(messages.length).toBeGreaterThan(2);
     let next = 0;
@@ -98,12 +99,15 @@ describe("sending", () => {
     socket.close();
   });
 
-  it("sends at once on end", async () => {
+  it("sends at once on end, and the recap right after it", async () => {
     const { socket, stub } = await open();
     await socket.request(startMessage());
     await socket.request(endMessage());
-    await expect.poll(async () => (await flushes(stub)).length).toBe(1);
-    expect((await flushes(stub))[0]).toMatchObject({ fromSeq: 0, toSeq: 1 });
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
+    expect(await flushes(stub)).toMatchObject([
+      { fromSeq: 0, toSeq: 1 },
+      { fromSeq: 2, toSeq: 2 },
+    ]);
     socket.close();
   });
 
@@ -116,8 +120,9 @@ describe("sending", () => {
     expect((await meta(stub)).enqueued_seq).toBeUndefined();
     await failSink(stub, false);
     await runDurableObjectAlarm(stub);
-    expect(await flushes(stub)).toMatchObject([{ fromSeq: 0, toSeq: 1 }]);
-    expect((await meta(stub)).enqueued_seq).toBe("1");
+    // The end and its recap (Phase 5 WP10), both kept and sent together.
+    expect(await flushes(stub)).toMatchObject([{ fromSeq: 0, toSeq: 2 }]);
+    expect((await meta(stub)).enqueued_seq).toBe("2");
     socket.close();
   });
 });
@@ -144,11 +149,12 @@ describe("cleanup", () => {
     const { socket, stub } = await open();
     await socket.request(startMessage());
     await socket.request(endMessage());
-    await expect.poll(async () => (await flushes(stub)).length).toBe(1);
+    // The end, then its recap (Phase 5 WP10).
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
     // The whole session ends in its seal (Phase 5): seal it now rather than wait out the grace.
     expect(await stub.sealNow()).toBe("sealing");
-    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
-    await stub.confirmFlushed(2);
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(3);
+    await stub.confirmFlushed(3);
     const due = Number((await meta(stub)).cleanup_due_ms);
     expect(due - Date.now()).toBeGreaterThan(FLUSH_TIMING.cleanupAfterConfirmMs - 60_000);
 
@@ -167,7 +173,8 @@ describe("cleanup", () => {
     await socket.request(startMessage());
     await socket.request(usage());
     await socket.request(endMessage());
-    await expect.poll(async () => (await flushes(stub)).length).toBe(1);
+    // The end's flush, then its recap's (Phase 5 WP10).
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(3);
     await stub.confirmFlushed(0);
     const ended = Number((await meta(stub)).ended_ms);
     expect(Number((await meta(stub)).resend_due_ms)).toBe(ended + 3_600_000);
@@ -176,8 +183,8 @@ describe("cleanup", () => {
     await armAlarm(stub);
     await runDurableObjectAlarm(stub);
     const messages = await flushes(stub);
-    expect(messages).toHaveLength(2);
-    expect(messages[1]).toMatchObject({ fromSeq: 1, toSeq: 2 });
+    expect(messages).toHaveLength(3);
+    expect(messages[2]).toMatchObject({ fromSeq: 1, toSeq: 3 });
     expect(await meta(stub)).toMatchObject({
       resend_count: "1",
       resend_due_ms: String(ended + 6 * 3_600_000),
@@ -201,7 +208,12 @@ describe("cleanup", () => {
     expect(state.ended_seq).toBe("1");
     const range = parseRange(await stub.readRange(1, 1));
     expect(range[0]).toMatchObject({ type: "session.ended", payload: { costUsd: 0 } });
-    // The window's flush of session.started, then the end's own.
-    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(1);
+    // The window's flush of session.started, then the end's own, then its recap's (Phase 5
+    // WP10): skipped, since nobody sent a key.
+    await expect.poll(async () => (await flushes(stub)).at(-1)?.toSeq).toBe(2);
+    expect(parseRange(await stub.readRange(2, 2))[0]).toMatchObject({
+      type: "recap.created",
+      payload: { outcome: "skipped", reason: "no_key" },
+    });
   });
 });

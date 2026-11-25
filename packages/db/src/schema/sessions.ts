@@ -49,6 +49,12 @@ export const sessions = pgTable(
      * `start` names as `focusEntityId`. Null for none, or once that record is deleted.
      */
     focusEntityId: uuid("focus_entity_id"),
+    /**
+     * The debrief's recap, or why there's none (migration 0015, docs/adr/0037): `recap.created` as
+     * `sessionProjection` keeps it, with its event's seq and time. Null until `SessionDO` writes it
+     * after the end, and for sessions from before Phase 5's recap.
+     */
+    recap: jsonb().$type<Record<string, unknown>>(),
     costUsd: numeric("cost_usd", { precision: 10, scale: 4 }).notNull().default("0"),
     /** Latency and usage measurements. */
     metrics: jsonb().$type<Record<string, unknown>>().notNull().default({}),

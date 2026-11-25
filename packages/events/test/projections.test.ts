@@ -15,6 +15,7 @@ import {
   proposalFlagged,
   proposalV2,
   REVIEWER,
+  recapCreated,
   reopen,
   review,
   reviewV2,
@@ -49,6 +50,7 @@ describe("sessionProjection", () => {
       endedAt: null,
       sealedAt: null,
       durationMs: null,
+      recap: null,
       costUsd: null,
       lastSeq: 1,
       lastEventAt: tsFor(1),
@@ -120,6 +122,104 @@ describe("sessionProjection", () => {
         session: sessionProjection,
       }),
     ).toThrow(/already been sealed/);
+  });
+});
+
+describe("sessionProjection: the recap (Phase 5 WP10)", () => {
+  const fold = (bodies: Parameters<typeof sessionLog>[0]) =>
+    replay(sessionLog(bodies), { session: sessionProjection }).session;
+
+  it("keeps the recap written between the end and the seal, with its seq and time", () => {
+    const session = fold([started(), utterance(1), ended(), recapCreated(), sealed()]);
+    expect(session?.recap).toMatchObject({
+      outcome: "created",
+      reason: null,
+      dropped: 1,
+      seq: 3,
+      ts: tsFor(3),
+    });
+    expect(session?.recap?.sentences.map((sentence) => sentence.kind)).toEqual([
+      "headline",
+      "next_step",
+    ]);
+    expect(session?.sealedAt).not.toBeNull();
+  });
+
+  it("keeps a skipped or failed recap too: why there's none", () => {
+    const skipped = recapCreated({
+      outcome: "skipped",
+      reason: "no_key",
+      llm: null,
+      sentences: [],
+      dropped: 0,
+    });
+    expect(fold([started(), ended(), skipped])?.recap).toMatchObject({
+      outcome: "skipped",
+      reason: "no_key",
+    });
+    const failed = recapCreated({
+      outcome: "failed",
+      reason: "timeout",
+      sentences: [],
+      dropped: 0,
+    });
+    expect(fold([started(), ended(), failed])?.recap?.reason).toBe("timeout");
+  });
+
+  it("refuses a recap before the end, after the seal, or a second one", () => {
+    expect(() => fold([started(), recapCreated()])).toThrow(/after the session ends/);
+    expect(() => fold([started(), ended(), sealed(), recapCreated()])).toThrow(/before the seal/);
+    expect(() => fold([started(), ended(), recapCreated(), recapCreated()])).toThrow(
+      /already has its recap/,
+    );
+  });
+
+  it("refuses a recap that breaks its writer's rules", () => {
+    const broken: [Record<string, unknown>, RegExp][] = [
+      [{ reason: "timeout" }, /created recap has no reason/],
+      [{ outcome: "failed", reason: null, sentences: [], dropped: 0 }, /says why/],
+      [{ outcome: "failed", reason: "timeout" }, /no sentences, drops, or lens/],
+      [
+        { outcome: "skipped", reason: "timeout", sentences: [], dropped: 0, llm: null },
+        /had no key or speech/,
+      ],
+      [{ outcome: "failed", reason: "no_key", sentences: [], dropped: 0 }, /is skipped/],
+    ];
+    for (const [payload, message] of broken) {
+      expect(() => fold([started(), ended(), recapCreated(payload)])).toThrow(message);
+    }
+    const [headline, step] = (recapCreated().payload as { sentences: unknown[] }).sentences;
+    expect(() =>
+      fold([started(), ended(), recapCreated({ sentences: [headline, step, headline] })]),
+    ).toThrow(/one headline/);
+    expect(() => fold([started(), ended(), recapCreated({ sentences: [step, headline] })])).toThrow(
+      /headline comes first/,
+    );
+    const evidence = { utteranceId: uuid(2001), span: [0, 4], audioMs: [0, 400], confidence: 0.9 };
+    const half = { id: "bant", fields: [{ field: "budget", quote: "the budget", evidence: null }] };
+    expect(() => fold([started(), ended(), recapCreated({ lens: half })])).toThrow(
+      /quote and its evidence, or neither/,
+    );
+    const twice = {
+      id: "bant",
+      fields: [
+        { field: "need", quote: "Acme", evidence },
+        { field: "need", quote: null, evidence: null },
+      ],
+    };
+    expect(() => fold([started(), ended(), recapCreated({ lens: twice })])).toThrow(
+      /each field once/,
+    );
+  });
+
+  it("adds the recap's usage after the end to the session's cost, as any late usage", () => {
+    const session = fold([
+      started(),
+      ended({ costUsd: 0.004 }),
+      recapCreated(),
+      usageRecorded(9, { kind: "llm", costUsd: 0.0004 }),
+    ]);
+    expect(session?.costUsd).toBe(0.0044);
   });
 });
 

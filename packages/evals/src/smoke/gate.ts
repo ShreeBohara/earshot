@@ -12,17 +12,22 @@
 //   would look like a pass by default. The absolute gates still run and are reported, and the
 //   failure says to record one (`baseline:smoke`);
 // - the baseline doesn't fit the run: another provider or model, another linker, or other
-//   scripts. Its regression comparison is skipped, and the failure says to record it again.
+//   scripts. Its regression comparison is skipped, and the failure says to record it again;
+// - and, for each script's recap (Phase 5 WP10; ./recap.ts): a recap that wasn't written (the
+//   model's output failed validation on both attempts; a failed recap has no sentences, so the two
+//   rates below can't see it), a kept sentence without evidence, or a drop rate more than
+//   max(5 points, 2 × its spread) above the baseline's median (target).
 //
 // One automatic re-run within the budget (spec §8's answer to a flapping gate): when a complete
-// run fails only on the noisy checks (a regression, or the wrong-account rate), and what's left of
-// the budget covers another run's estimate, the run is repeated, and the job fails only if the
-// repeat fails too. Evidence coverage is the pipeline's honesty, not the model's luck, so it never
-// earns a re-run.
+// run fails only on the noisy checks (a regression, the wrong-account rate, or a recap that wasn't
+// written), and what's left of the budget covers another run's estimate, the run is repeated, and
+// the job fails only if the repeat fails too. Evidence coverage is the pipeline's honesty, not the
+// model's luck, so it never earns a re-run.
 import { LlmProvider } from "@earshot/core";
 import { z } from "zod";
 import { summarize, UnderstandingSummary } from "../understanding/gate";
 import type { UnderstandingMetrics } from "../understanding/metrics";
+import { allowedRecapRise, SMOKE_RECAP_GATE, SmokeRecapSummary } from "./recap";
 
 export const SMOKE_GATE = {
   /** The least a gated metric may fall below the baseline's median before it fails. */
@@ -62,7 +67,15 @@ const Rates = z.strictObject(
 );
 export type SmokeRates = z.infer<typeof Rates>;
 
-export const SMOKE_BASELINE_FORMAT = 1;
+/**
+ * 2 from Phase 5 WP10: the runs' recap numbers, and the recap drop rate's median and spread. No
+ * format 1 baseline was ever recorded.
+ */
+export const SMOKE_BASELINE_FORMAT = 2;
+
+/** The recap's gated rate across the baseline runs. */
+const RecapRates = z.strictObject({ dropRate: z.number().min(0).max(1).nullable() });
+export type SmokeRecapRates = z.infer<typeof RecapRates>;
 export const SMOKE_BASELINE_RUNS = 3;
 
 export const SmokeBaseline = z.strictObject({
@@ -83,8 +96,28 @@ export const SmokeBaseline = z.strictObject({
   /** Each gated metric's median across the runs, and its spread (the largest minus the smallest). */
   median: Rates,
   spread: Rates,
+  /** Each run's recap numbers (Phase 5 WP10), and the drop rate's median and spread. */
+  recapRuns: z.array(SmokeRecapSummary).length(SMOKE_BASELINE_RUNS),
+  recapMedian: RecapRates,
+  recapSpread: RecapRates,
 });
 export type SmokeBaseline = z.infer<typeof SmokeBaseline>;
+
+/** The recap drop rate's median and spread across runs; null when a run wrote no sentence. */
+export function baselineRecapRates(runs: readonly SmokeRecapSummary[]): {
+  median: SmokeRecapRates;
+  spread: SmokeRecapRates;
+} {
+  const values = runs.map((run) => run.dropRate);
+  if (values.length === 0 || values.some((value) => value === null)) {
+    return { median: { dropRate: null }, spread: { dropRate: null } };
+  }
+  const numbers = values as number[];
+  return {
+    median: { dropRate: round(median(numbers)) },
+    spread: { dropRate: round(Math.max(...numbers) - Math.min(...numbers)) },
+  };
+}
 
 function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
@@ -132,6 +165,7 @@ export interface SmokeIdentity {
 export type SmokeFailureKind =
   | "incomplete"
   | "evidence"
+  | "recap_failed"
   | "wrong_account"
   | "regression"
   | "no_baseline"
@@ -146,6 +180,8 @@ export interface SmokeFailure {
 export interface SmokeGateInput {
   /** The scored scripts' metrics; null when nothing could be scored. */
   readonly metrics: UnderstandingMetrics | null;
+  /** The run's recap numbers (Phase 5 WP10); null when it wrote none. */
+  readonly recap?: SmokeRecapSummary | null;
   readonly complete: boolean;
   /** Why an incomplete run stopped, as a fixed code. */
   readonly stopDetail?: string | null;
@@ -202,6 +238,23 @@ export function smokeGateFailures(input: SmokeGateInput): SmokeFailure[] {
       });
     }
   }
+  const recap = input.recap ?? null;
+  if (
+    recap !== null &&
+    recap.evidenceCoverage !== null &&
+    recap.evidenceCoverage < SMOKE_RECAP_GATE.minEvidenceCoverage
+  ) {
+    failures.push({
+      kind: "evidence",
+      message: `recap evidence ${pct(recap.evidenceCoverage)} is under 100% (${recap.kept - recap.withEvidence} of ${recap.kept} kept sentences without evidence)`,
+    });
+  }
+  if (recap !== null && recap.created < recap.recaps) {
+    failures.push({
+      kind: "recap_failed",
+      message: `${recap.recaps - recap.created} of ${recap.recaps} recaps weren't written: every script needs one, and a recap whose output fails validation twice has no sentences to score`,
+    });
+  }
   if (baseline === null) {
     failures.push({
       kind: "no_baseline",
@@ -216,6 +269,17 @@ export function smokeGateFailures(input: SmokeGateInput): SmokeFailure[] {
       message: `${input.baselineFile} doesn't fit this run: ${mismatch}. Record it again with \`${record}\``,
     });
     return failures;
+  }
+  const dropThen = baseline.recapMedian.dropRate;
+  if (recap !== null && dropThen !== null) {
+    const allowed = allowedRecapRise(baseline.recapSpread.dropRate);
+    const dropNow = recap.dropRate;
+    if (dropNow !== null && dropNow > dropThen + allowed + 1e-9) {
+      failures.push({
+        kind: "regression",
+        message: `regression: the recap drop rate ${pct(dropNow)} is more than ${points(allowed)} above the baseline's median ${pct(dropThen)} (the allowance is max(5 points, 2 × the spread of ${points(baseline.recapSpread.dropRate ?? 0)}))`,
+      });
+    }
   }
   if (metrics === null) return failures;
   for (const name of SMOKE_GATED_METRICS) {
@@ -234,7 +298,11 @@ export function smokeGateFailures(input: SmokeGateInput): SmokeFailure[] {
 }
 
 /** The failures a re-run can clear: the checks live sampling can trip by chance. */
-const NOISY: ReadonlySet<SmokeFailureKind> = new Set(["regression", "wrong_account"]);
+const NOISY: ReadonlySet<SmokeFailureKind> = new Set([
+  "regression",
+  "wrong_account",
+  "recap_failed",
+]);
 
 /**
  * Whether to run once more (see the top of the file): the run failed only on noisy checks, and

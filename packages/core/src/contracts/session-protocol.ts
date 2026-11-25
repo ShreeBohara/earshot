@@ -15,6 +15,7 @@ import {
   SeenTarget,
 } from "./events/proposal-reviewed";
 import { ProposalSnoozedV1 } from "./events/proposal-snoozed";
+import { RecapLensId } from "./events/recap-created";
 import { SessionProviders } from "./events/session-started";
 import { Timestamp } from "./events/shared";
 import { CaptureMode } from "./events/turn-measured";
@@ -294,11 +295,30 @@ const ClientAck = z.strictObject({
   seq: Seq,
 });
 
+/**
+ * What `end` asks of the recap (Phase 5 spec §4.2, WP10): the session's LLM, its key, and the
+ * device's methodology lens, if it chose one. The key is used for the recap's call, after
+ * `session.ended`, and referenced nowhere else: like `turn_end.key`, it's the one other place a
+ * key may appear, held apart in the client's outbox and dropped on the ack.
+ */
+export const RecapRequest = z.strictObject({
+  llm: z.strictObject({ provider: LlmProvider, model: Name }),
+  /** Used for the recap's call, then dropped: never stored, logged, or sent on. */
+  key: TurnKey,
+  lens: RecapLensId.optional(),
+});
+export type RecapRequest = z.infer<typeof RecapRequest>;
+
 const End = z.strictObject({
   t: z.literal("end"),
   msgId: MsgId,
   /** When capture stopped, by the client's clock; `session.ended` keeps it. */
   endedAt: Timestamp,
+  /**
+   * The recap, written after `session.ended` and before the seal (Phase 5 WP10). Without it,
+   * `SessionDO` records the recap as skipped, `no_key`.
+   */
+  recap: RecapRequest.optional(),
 });
 
 /**
@@ -326,7 +346,10 @@ const Snooze = z.strictObject({
  * resending can help.
  */
 export const SessionErrorCode = z.enum([
-  /** Not a JSON text frame, an unknown `t`, a schema failure, or a key outside `turn_end.key`. */
+  /**
+   * Not a JSON text frame, an unknown `t`, a schema failure, or a key outside `turn_end.key` and
+   * `end.recap.key`.
+   */
   "bad_message",
   /** Over `MAX_MESSAGE_BYTES`. */
   "too_large",
@@ -484,8 +507,8 @@ export function refuseStrayKeys(value: object, ctx: z.RefinementCtx): void {
 
 /**
  * A message from the browser to `SessionDO`. Anything shaped like a provider key is refused
- * everywhere except `turn_end.key`, and so is that turn's key itself, so a client bug can't put
- * a key into a stored event.
+ * everywhere except `turn_end.key` and `end.recap.key` (Phase 5 WP10), and so is the message's
+ * own key anywhere else in it, so a client bug can't put a key into a stored event.
  */
 export const ClientMessage = z
   .discriminatedUnion("t", [
@@ -502,13 +525,12 @@ export const ClientMessage = z
     Snooze,
   ])
   .superRefine((message, ctx) => {
-    const turnKey = message.t === "turn_end" ? message.key : undefined;
-    const path = findStrayKey(message, turnKey);
+    const path = findStrayKey(message, keySlotOf(message));
     if (path) {
       ctx.addIssue({
         code: "custom",
         path,
-        message: "a key-shaped string is allowed only in turn_end.key",
+        message: "a key-shaped string is allowed only in turn_end.key and end.recap.key",
         params: { reason: STRAY_KEY },
       });
     }
@@ -587,20 +609,57 @@ interface Visit {
 }
 
 /**
- * The path to the first string that looks like a provider key, or that contains `turnKey`,
- * anywhere in `message` except `turn_end.key` itself. A key-shaped property name reports the
- * object holding it, so the path never quotes the key. Iterative, so depth can't overflow.
+ * Where a message may carry a key, and the key itself: `turn_end.key`, or `end.recap.key`
+ * (Phase 5 WP10). Nowhere else, ever.
  */
-function findStrayKey(message: object, turnKey: string | undefined): PropertyKey[] | undefined {
+interface KeySlot {
+  /** The property path from the message to the key: `["key"]` or `["recap", "key"]`. */
+  readonly path: readonly string[];
+  readonly key: string;
+}
+
+/** The message's own key slot, if it has one and the key is there. */
+function keySlotOf(message: {
+  readonly t: string;
+  readonly key?: unknown;
+  readonly recap?: { readonly key?: unknown } | undefined;
+}): KeySlot | undefined {
+  if (message.t === "turn_end" && typeof message.key === "string") {
+    return { path: ["key"], key: message.key };
+  }
+  if (message.t === "end" && typeof message.recap?.key === "string") {
+    return { path: ["recap", "key"], key: message.recap.key };
+  }
+  return undefined;
+}
+
+/** Whether `visit` sits exactly at `path` from the root: the key slot itself, nothing deeper. */
+function isAt(visit: Visit, path: readonly string[]): boolean {
+  let at: Visit | undefined = visit;
+  for (let index = path.length - 1; index >= 0; index--) {
+    if (at === undefined || at.key !== path[index]) return false;
+    at = at.parent;
+  }
+  return at !== undefined && at.parent === undefined;
+}
+
+/**
+ * The path to the first string that looks like a provider key, or that contains the message's own
+ * key, anywhere in `message` except that key's slot itself (`turn_end.key` or `end.recap.key`). A
+ * key-shaped property name reports the object holding it, so the path never quotes the key.
+ * Iterative, so depth can't overflow.
+ */
+function findStrayKey(message: object, slot: KeySlot | undefined): PropertyKey[] | undefined {
+  const own = slot?.key;
   const looksLikeKey = (text: string) =>
-    containsKeyShape(text) || (turnKey !== undefined && text.includes(turnKey));
+    containsKeyShape(text) || (own !== undefined && text.includes(own));
   const root: Visit = { value: message };
   const stack: Visit[] = [root];
   for (let visit = stack.pop(); visit; visit = stack.pop()) {
     const { value } = visit;
     if (typeof value === "string") {
-      const isTurnKey = turnKey !== undefined && visit.parent === root && visit.key === "key";
-      if (!isTurnKey && looksLikeKey(value)) return pathTo(visit);
+      const isOwnKey = slot !== undefined && isAt(visit, slot.path);
+      if (!isOwnKey && looksLikeKey(value)) return pathTo(visit);
     } else if (Array.isArray(value)) {
       for (let index = 0; index < value.length; index++) {
         stack.push({ value: value[index], parent: visit, key: index });

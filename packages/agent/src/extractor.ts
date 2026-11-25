@@ -116,7 +116,7 @@ export interface ExtractorOptions {
 /** Anthropic's 5-minute cache breakpoint, as AI SDK provider options. */
 const EPHEMERAL_CACHE = { anthropic: { cacheControl: { type: "ephemeral" } } } as const;
 
-interface ProviderCall {
+export interface ProviderCall {
   readonly apiKey: string;
   readonly baseURL: string;
   readonly headers: Readonly<Record<string, string>>;
@@ -124,7 +124,7 @@ interface ProviderCall {
 }
 
 /** What differs between the two providers. */
-interface Adapter {
+export interface Adapter {
   createModel(call: ProviderCall, model: string): LanguageModel;
   /** Anthropic's strict tool use; Groq has none for tools. */
   readonly strict: boolean;
@@ -133,7 +133,8 @@ interface Adapter {
   readonly maxOutputTokens: number;
 }
 
-const ADAPTERS: Readonly<Record<LlmProvider, Adapter>> = {
+/** Each provider's adapter: the extractor's, and the recap's (`./recap/run.ts`) too. */
+export const ADAPTERS: Readonly<Record<LlmProvider, Adapter>> = {
   anthropic: {
     createModel: ({ apiKey, baseURL, headers, fetch }, model) =>
       createAnthropic({ apiKey, baseURL, headers: { ...headers }, fetch })(model),

@@ -134,6 +134,17 @@ function clientMessages() {
     },
     ack: { t: "ack", seq: 4 },
     end: { t: "end", msgId: uuidv7(), endedAt: "2026-11-15T19:15:40.000Z" },
+    // Phase 5 WP10: the recap, on the session's LLM and key, with the device's lens.
+    end_recap: {
+      t: "end",
+      msgId: uuidv7(),
+      endedAt: "2026-11-15T19:15:40.000Z",
+      recap: {
+        llm: { provider: "anthropic", model: "claude-haiku-5-5" },
+        key: FAKE_KEYS.anthropic,
+        lens: "meddic",
+      },
+    },
     review: {
       t: "review",
       msgId: uuidv7(),
@@ -476,6 +487,25 @@ describe("keys", () => {
       (key) => reviewWith({ seen: seenWith({ target: { entityId: null, offered: [null, key] } }) }),
     ],
     ["review.reviews[0].seen.relinked", (key) => reviewWith({ seen: seenWith({ relinked: key }) })],
+    // Phase 5 WP10: `end.recap.key` is the one new place a key may be; nowhere else in `end`.
+    [
+      "end.recap.llm.model",
+      (key, { end_recap }) => ({
+        ...end_recap,
+        recap: { ...end_recap.recap, llm: { provider: "anthropic", model: key } },
+      }),
+    ],
+    [
+      "end.recap.llm.model, beside a recap key of its own",
+      (key, { end_recap }) => ({
+        ...end_recap,
+        recap: {
+          ...end_recap.recap,
+          key: "0123456789abcdef0123456789abcdef",
+          llm: { provider: "groq", model: key },
+        },
+      }),
+    ],
   ];
   const cases = placements.flatMap(([where, place]) =>
     Object.entries(FAKE_KEYS).map(([shape, key]) => ({ where, shape, key, place })),
@@ -491,6 +521,74 @@ describe("keys", () => {
     for (const key of Object.values(FAKE_KEYS)) {
       expect(parseClientMessage(frame({ ...turn_end, key })).ok).toBe(true);
     }
+  });
+
+  it("accepts a key in end.recap.key, the one other place it belongs (Phase 5 WP10)", () => {
+    const { end_recap } = clientMessages();
+    for (const key of Object.values(FAKE_KEYS)) {
+      const message = { ...end_recap, recap: { ...end_recap.recap, key } };
+      expect(parseClientMessage(frame(message)).ok).toBe(true);
+    }
+    const { lens: _, ...noLens } = end_recap.recap;
+    expect(parseClientMessage(frame({ ...end_recap, recap: noLens })).ok).toBe(true);
+  });
+
+  it("refuses the recap's own key anywhere else in end, whatever its shape", () => {
+    const { end_recap } = clientMessages();
+    const unshaped = "0123456789abcdef0123456789abcdef";
+    const recap = { ...end_recap.recap, key: unshaped };
+    expect(parseClientMessage(frame({ ...end_recap, recap })).ok).toBe(true);
+    const inModel = { ...recap, llm: { provider: "groq", model: unshaped } };
+    expect(parseClientMessage(frame({ ...end_recap, recap: inModel }))).toEqual({
+      ok: false,
+      reason: "stray_key",
+    });
+  });
+
+  it("allows a key only at end.recap.key itself: not beside the recap, nor deeper in it", () => {
+    const { end_recap, end, turn_end } = clientMessages();
+    // `key` beside `recap` on end, or `recap` on turn_end, are unknown fields: invalid.
+    expect(parseClientMessage(frame({ ...end, key: FAKE_KEYS.anthropic }))).toMatchObject({
+      ok: false,
+    });
+    expect(parseClientMessage(frame({ ...turn_end, recap: end_recap.recap }))).toMatchObject({
+      ok: false,
+    });
+    // A key-shaped property inside the recap is refused too (an unknown field, before the guard).
+    const nested = { ...end_recap, recap: { ...end_recap.recap, [FAKE_KEYS.groq]: "x" } };
+    expect(parseClientMessage(frame(nested))).toMatchObject({ ok: false });
+  });
+
+  it("checks end.recap.key's length and characters, as turn_end.key's, and the lens and provider", () => {
+    const { end_recap } = clientMessages();
+    const withKey = (key: string) =>
+      parseClientMessage(frame({ ...end_recap, recap: { ...end_recap.recap, key } })).ok;
+    expect(withKey("k".repeat(TURN_KEY_MIN_LENGTH))).toBe(true);
+    expect(withKey("k".repeat(TURN_KEY_MAX_LENGTH))).toBe(true);
+    expect(withKey("k".repeat(TURN_KEY_MIN_LENGTH - 1))).toBe(false);
+    expect(withKey("k".repeat(TURN_KEY_MAX_LENGTH + 1))).toBe(false);
+    expect(withKey(`${FAKE_KEYS.groq} `)).toBe(false);
+    expect(withKey(`Bearer ${FAKE_KEYS.anthropic}`)).toBe(false);
+    const lens = (value: string) =>
+      parseClientMessage(frame({ ...end_recap, recap: { ...end_recap.recap, lens: value } })).ok;
+    expect(lens("spiced")).toBe(true);
+    expect(lens("bant")).toBe(true);
+    expect(lens("challenger")).toBe(false);
+    const openai = { ...end_recap.recap, llm: { provider: "openai", model: "gpt-6-luna" } };
+    expect(parseClientMessage(frame({ ...end_recap, recap: openai })).ok).toBe(false);
+  });
+
+  it("never quotes the recap's key in an issue", () => {
+    const { end_recap } = clientMessages();
+    const key = FAKE_KEYS.anthropic;
+    const message = {
+      ...end_recap,
+      recap: { ...end_recap.recap, llm: { provider: "anthropic", model: key } },
+    };
+    const result = ClientMessage.safeParse(message);
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).not.toContain(key);
+    expect(result.error?.issues[0]?.path).toEqual(["recap", "llm", "model"]);
   });
 
   it("refuses the turn's own key anywhere else in turn_end, whatever its shape", () => {

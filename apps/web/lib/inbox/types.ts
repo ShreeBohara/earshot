@@ -2,7 +2,7 @@
 // client view renders. Plain JSON, since it crosses from the server component to the page, and
 // from `GET /api/inbox` when the page polls a finishing debrief or loads older ones.
 import type { EntityKind, FieldValue } from "@earshot/core";
-import type { ProposalView, ReviewView } from "@earshot/events";
+import type { ProposalView, ReviewView, SessionRecap } from "@earshot/events";
 
 /**
  * The parts of a proposal's latest review the inbox reads: which review an undo names, what it
@@ -51,6 +51,11 @@ export interface InboxSession {
   /** The account open when the debrief started, if any. */
   readonly focusEntityId: string | null;
   readonly proposals: readonly InboxProposal[];
+  /**
+   * The debrief's recap, or why there's none (Phase 5 WP10), shown at the top of its group: absent
+   * where nothing loads one (the tray, the pilot), null until it reaches Postgres.
+   */
+  readonly recap?: SessionRecap | null;
 }
 
 export interface InboxData {

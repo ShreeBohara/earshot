@@ -1,0 +1,28 @@
+{
+  "format": 1,
+  "scriptsSha256": "3d2888f6147e715293ed7bef772027fbe007bd89278f550b866105e57d1fa020",
+  "labelsSha256": "2fd4148836e1817d3b58828253681f4a17679264869ba671fc17933012c3896b",
+  "recordedAt": "2026-11-20",
+  "providers": {
+    "anthropic": {
+      "recaps": 200,
+      "written": 499,
+      "kept": 454,
+      "dropped": 45,
+      "dropRate": 0.09018,
+      "weakSupportShare": 0.103524,
+      "lensMentionedShare": 0.3,
+      "costPerRecapUsd": 0.000201539
+    },
+    "groq": {
+      "recaps": 200,
+      "written": 499,
+      "kept": 454,
+      "dropped": 45,
+      "dropRate": 0.09018,
+      "weakSupportShare": 0.103524,
+      "lensMentionedShare": 0.3,
+      "costPerRecapUsd": 0.000189239
+    }
+  }
+}

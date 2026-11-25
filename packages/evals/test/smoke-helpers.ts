@@ -1,9 +1,11 @@
 // A scripted model for the smoke eval's tests: a `fetch` that answers a script's turns in the
 // provider's wire format, with the drafts and the usage a test chooses, and records what was
 // asked. It finds each request's turn by the transcript the request carries, so the extractor's
-// retries get the same turn. Nothing reaches a network.
+// retries get the same turn. A recap request (Phase 5 WP10) gets the ground truth's recap, with
+// the same usage. Nothing reaches a network.
 import type { ToolProposal } from "@earshot/agent";
 import { anthropicError } from "@earshot/agent/testing";
+import { recapCassetteInput } from "../src/recap";
 import type { DebriefScript } from "../src/schema";
 import { LIVE_LABELS } from "../src/smoke";
 import { understandingDrafts, understandingUtterances } from "../src/understanding";
@@ -61,6 +63,36 @@ function anthropicAnswer(proposals: readonly unknown[], usage: ScriptedUsage, id
   };
 }
 
+/** The ground truth's recap for a script, with nothing seeded: a careful model's answer. */
+const NO_SEEDED = {
+  version: 1 as const,
+  seed: 0,
+  rates: { bad_sentence: 0, bad_lens_quote: 0 },
+  eligible: { bad_sentence: 0, bad_lens_quote: 0 },
+  sentences: [],
+  lens: [],
+};
+
+/** An Anthropic Messages response with one `submit_recap` call. */
+function anthropicRecap(script: DebriefScript, usage: ScriptedUsage, id: string) {
+  return {
+    ...anthropicAnswer([], usage, id),
+    content: [
+      {
+        type: "tool_use",
+        id: `toolu_smoke_${id}`,
+        name: "submit_recap",
+        input: recapCassetteInput(script, NO_SEEDED),
+      },
+    ],
+  };
+}
+
+/** Whether a request body forces `submit_recap`: the recap's request, not a turn's. */
+export function isRecapRequest(body: Record<string, unknown>): boolean {
+  return (body.tool_choice as { name?: unknown } | undefined)?.name === "submit_recap";
+}
+
 /** The user message's text in an Anthropic request body. */
 function userText(body: Record<string, unknown>): string {
   const messages = body.messages as { content: unknown }[] | undefined;
@@ -90,6 +122,12 @@ export function scriptedAnthropic(options: ScriptedModelOptions = {}): ScriptedM
           return new Response(JSON.stringify(error.body), {
             status: error.status,
             headers: error.headers,
+          });
+        }
+        if (isRecapRequest(body)) {
+          return new Response(JSON.stringify(anthropicRecap(script, usage, `${script.id}_recap`)), {
+            status: 200,
+            headers: { "content-type": "application/json" },
           });
         }
         const said = userText(body);

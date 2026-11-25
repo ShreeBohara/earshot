@@ -5,8 +5,8 @@
 // - On open it says `hello` with the last seq it folded; SessionDO answers `welcome` and replays
 //   everything after, in order. A gap in seqs asks again (`hello` on the same socket).
 // - Messages that change the session go through an in-memory outbox with UUIDv7 msgIds and are
-//   resent, in order, until acknowledged. A `turn_end` key lives only there, and only until its
-//   ack: never in the store, a log, or any storage.
+//   resent, in order, until acknowledged. A `turn_end` key, and the recap's on `end` (Phase 5
+//   WP10), live only there, and only until their ack: never in the store, a log, or any storage.
 // - Events are upcast, validated, and folded by `SessionStore` with the server's projections.
 // - A `ping` heartbeat finds dead sockets. Drops reconnect with backoff and jitter, as each close
 //   code's `reconnect` flag says. `online`, `offline`, and `visibilitychange` steer it, and on
@@ -24,6 +24,7 @@ import {
   type LlmProvider,
   MAX_MESSAGE_BYTES,
   parseServerMessage,
+  type RecapRequest,
   type ReviewInput,
   SESSION_PROTOCOL_VERSION,
   SESSION_SUBPROTOCOL,
@@ -511,9 +512,18 @@ export class SessionClient {
     );
   }
 
-  /** Ends the session. Resolves once SessionDO has acknowledged it. */
-  end(endedAt: string = new Date().toISOString()): Promise<MessageAck> {
-    const msgId = this.#enqueue({ t: "end", msgId: this.#createId(), endedAt });
+  /**
+   * Ends the session. Resolves once SessionDO has acknowledged it. With `recap` (Phase 5 WP10),
+   * SessionDO writes the debrief's recap right after, on that LLM and key: the key is held apart in
+   * the outbox, as a turn's is, and dropped on the ack.
+   */
+  end(endedAt: string = new Date().toISOString(), recap?: RecapRequest): Promise<MessageAck> {
+    const msgId = this.#enqueue({
+      t: "end",
+      msgId: this.#createId(),
+      endedAt,
+      ...(recap ? { recap } : {}),
+    });
     return msgId ? this.acked(msgId) : Promise.reject(new MessageRefusedError("bad_message"));
   }
 

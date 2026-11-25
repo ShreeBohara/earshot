@@ -11,6 +11,7 @@ export {
   createBudgetMeter,
   estimateSmokeSpend,
   parseSmokeBudget,
+  recapTokens,
   SMOKE_ESTIMATE,
   SMOKE_MAX_BUDGET_USD,
   type SmokeEstimate,
@@ -28,6 +29,7 @@ export {
   allowedDrop,
   baselineMismatch,
   baselineRates,
+  baselineRecapRates,
   SMOKE_BASELINE_FORMAT,
   SMOKE_BASELINE_RUNS,
   SMOKE_GATE,
@@ -40,6 +42,7 @@ export {
   type SmokeGateInput,
   type SmokeIdentity,
   type SmokeRates,
+  type SmokeRecapRates,
   SmokeSummary,
   shouldRerun,
   smokeGateFailures,
@@ -53,6 +56,16 @@ export {
   paceGapMs,
   SMOKE_PACE,
 } from "./pace";
+export {
+  allowedRecapRise,
+  SMOKE_RECAP_GATE,
+  SMOKE_RECAP_POLICY,
+  type SmokeRecap,
+  type SmokeRecapOptions,
+  SmokeRecapSummary,
+  smokeRecap,
+  smokeRecapSummary,
+} from "./recap";
 export {
   SMOKE_REPORT_VERSION,
   type SmokeAttempt,

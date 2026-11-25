@@ -14,6 +14,11 @@
 // count needs Anthropic's count_tokens endpoint, which is a live call. Each run's report shows the
 // measured usage beside the estimate.
 //
+// Each script's recap (Phase 5 WP10) is one more request, priced the same way: the recap's tool
+// definition, its instructions (with the script's lens), the transcript and the ground truth's
+// proposals, and an answer the size of the ground truth's recap, a quarter more, plus reasoning on
+// Groq. Recaps never use the prompt cache: one per script can't reuse a 5-minute cache (P5 §5).
+//
 // With the prompt cache on (Anthropic), the estimate follows the cache plan: the run's first call
 // writes the tool definition (1.25x) and every later call reads it (0.1x); each script's first
 // call writes its system prompt and its later calls read it. The tool definition alone is about
@@ -23,6 +28,7 @@ import {
   buildPrompt,
   type LlmPriceRow,
   llmCostUsd,
+  recapLens,
   roundUsd,
   SUBMIT_PROPOSALS,
   SUBMIT_PROPOSALS_DESCRIPTION,
@@ -30,7 +36,20 @@ import {
   type TokenUsage,
   ZERO_USAGE,
 } from "@earshot/agent";
+import {
+  buildRecapPrompt,
+  SUBMIT_RECAP,
+  SUBMIT_RECAP_DESCRIPTION,
+  SUBMIT_RECAP_JSON_SCHEMA,
+} from "@earshot/agent/recap";
 import { toolProposal } from "../generate";
+import {
+  groundTruthLens,
+  groundTruthSentences,
+  recapLensOf,
+  recapScriptProposals,
+  recapScriptUtterances,
+} from "../recap/cassettes";
 import type { DebriefScript } from "../schema";
 import { demoEntity } from "../session";
 import { understandingUtterances } from "../understanding/cassettes";
@@ -75,6 +94,35 @@ const TOOL_CHARS =
   SUBMIT_PROPOSALS_DESCRIPTION.length +
   JSON.stringify(SUBMIT_PROPOSALS_JSON_SCHEMA).length;
 
+const RECAP_TOOL_CHARS =
+  SUBMIT_RECAP.length +
+  SUBMIT_RECAP_DESCRIPTION.length +
+  JSON.stringify(SUBMIT_RECAP_JSON_SCHEMA).length;
+
+/** A script's recap request and expected answer in estimated tokens (Phase 5 WP10). */
+export function recapTokens(script: DebriefScript): { input: number; output: number } {
+  const prompt = buildRecapPrompt({
+    utterances: recapScriptUtterances(script),
+    proposals: recapScriptProposals(script),
+    lens: recapLens(recapLensOf(script)),
+  });
+  const lens = groundTruthLens(script);
+  const answer = JSON.stringify({
+    sentences: groundTruthSentences(script),
+    lens: lens ? { fields: lens } : null,
+  });
+  return {
+    input:
+      tokens(RECAP_TOOL_CHARS) +
+      SMOKE_ESTIMATE.toolOverheadTokens +
+      tokens(prompt.instructions.length) +
+      tokens(prompt.transcript.length),
+    output:
+      Math.ceil(tokens(answer.length) * SMOKE_ESTIMATE.outputFactor) +
+      SMOKE_ESTIMATE.outputOverheadTokens,
+  };
+}
+
 /** A turn's request and expected answer in estimated tokens, from what the run will send. */
 export function turnTokens(script: DebriefScript, turnIndex: number): TurnTokens {
   const turn = script.turns[turnIndex];
@@ -100,6 +148,10 @@ export interface SmokeEstimate {
   readonly scripts: number;
   /** One request each. */
   readonly turns: number;
+  /** One recap request per script (Phase 5 WP10). */
+  readonly recaps: number;
+  /** The recaps' share of `usd`, before the margin. */
+  readonly recapUsd: number;
   readonly promptCache: boolean;
   /** Every input token, cache reads and writes included. */
   readonly inputTokens: number;
@@ -112,7 +164,10 @@ export interface SmokeEstimate {
   readonly totalUsd: number;
   /** The same run with no cache hit at all, with the margin. */
   readonly uncachedTotalUsd: number;
-  /** One request's average uncached cost, with the margin: what a call that reports no usage is charged. */
+  /**
+   * One request's average uncached cost, turns and recaps alike, with the margin: what a call that
+   * reports no usage is charged.
+   */
   readonly perCallUsd: number;
 }
 
@@ -147,8 +202,23 @@ export function estimateSmokeSpend(
   let cachedInputTokens = 0;
   let cacheWriteTokens = 0;
   let outputTokens = 0;
+  let recapUsd = 0;
   let toolCached = false;
   for (const script of scripts) {
+    // The script's recap: never cached, so the same either way.
+    const recap = recapTokens(script);
+    const recapCall = usage({
+      uncached: recap.input,
+      read: 0,
+      write: 0,
+      output: recap.output + SMOKE_ESTIMATE.reasoningTokens[price.provider],
+    });
+    const recapCost = llmCostUsd(recapCall, price);
+    recapUsd += recapCost;
+    usd += recapCost;
+    uncachedUsd += recapCost;
+    inputTokens += recapCall.inputTokens;
+    outputTokens += recapCall.outputTokens;
     for (let index = 0; index < script.turns.length; index++) {
       const t = turnTokens(script, index);
       turns++;
@@ -170,9 +240,12 @@ export function estimateSmokeSpend(
     }
   }
   const margin = SMOKE_ESTIMATE.safetyFactor;
+  const calls = turns + scripts.length;
   return {
     scripts: scripts.length,
     turns,
+    recaps: scripts.length,
+    recapUsd: micro(recapUsd),
     promptCache: cache,
     inputTokens,
     cachedInputTokens,
@@ -181,7 +254,7 @@ export function estimateSmokeSpend(
     usd: micro(usd),
     totalUsd: micro(usd * margin),
     uncachedTotalUsd: micro(uncachedUsd * margin),
-    perCallUsd: turns === 0 ? 0 : micro((uncachedUsd * margin) / turns),
+    perCallUsd: calls === 0 ? 0 : micro((uncachedUsd * margin) / calls),
   };
 }
 

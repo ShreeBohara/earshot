@@ -1,0 +1,58 @@
+{
+  "recapId": "01a1c6e9-2a10-7b3c-8d4e-5f6a7b8c9d01",
+  "outcome": "created",
+  "reason": null,
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-5-5"
+  },
+  "sentences": [
+    {
+      "kind": "headline",
+      "text": "Acme Corp's new VP of Operations, Dana Lee, wants the rollout expanded.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-af90-75b5-a79c-eb5ca2f0a104",
+          "span": [48, 84],
+          "audioMs": [4150, 6900],
+          "confidence": 0.91
+        },
+        {
+          "utteranceId": "01a1c6e2-b3c0-7d11-8a2e-5f6a7b8c9d01",
+          "span": [0, 38],
+          "audioMs": [9200, 11400],
+          "confidence": 0.88
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "next_step",
+      "text": "Send Dana Lee a revised quote by Friday.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b7d0-7e22-9b3f-6a7b8c9d0e12",
+          "span": [2, 40],
+          "audioMs": [15300, 17800],
+          "confidence": 0.93
+        }
+      ],
+      "weakSupport": false
+    },
+    {
+      "kind": "commitment",
+      "text": "Dana will bring the CFO to the next call.",
+      "evidence": [
+        {
+          "utteranceId": "01a1c6e2-b3c0-7d11-8a2e-5f6a7b8c9d01",
+          "span": [40, 71],
+          "audioMs": [11500, 13100],
+          "confidence": 0.86
+        }
+      ],
+      "weakSupport": true
+    }
+  ],
+  "dropped": 1.5,
+  "lens": null
+}
