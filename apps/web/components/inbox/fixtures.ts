@@ -186,6 +186,48 @@ export const UPDATE = proposal(3, {
   },
 });
 
+/**
+ * Loud at review time (Phase 5 WP12): the same deal update after the CRM moved the deal's stage
+ * from "Qualified to buy", where it was when the rep spoke, to "Presentation scheduled".
+ */
+export const CRM_CHANGED = proposal(13, {
+  type: UPDATE.type,
+  targetEntityId: UPDATE.targetEntityId,
+  target: UPDATE.target,
+  fields: UPDATE.fields,
+  crm: {
+    moved: { stage: { base: "qualifiedtobuy", changedAt: "2026-11-20T13:00:00.000Z" } },
+    relink: null,
+  },
+});
+
+/**
+ * Loud at review time (Phase 5 WP12): a new record, "Pier Logistics", which reached the CRM after
+ * the rep spoke, so the card offers it.
+ */
+export const RELINK = proposal(14, {
+  type: "note",
+  target: target({
+    decision: "new",
+    kind: "company",
+    basis: null,
+    p: 0.9,
+    mention: {
+      quote: "Pier Logistics",
+      evidence: evidence(UTTERANCES.three, "Pier Logistics"),
+    },
+    candidates: [{ entityId: null, p: 0.9 }],
+  }),
+  fields: {
+    body: {
+      value: "Asked for a security review before they sign",
+      evidence: evidence(UTTERANCES.three, "asked for a security review before they sign"),
+    },
+  },
+  riskFlags: [{ kind: "new_entity", field: "target" }],
+  crm: { moved: {}, relink: ENTITY_IDS.pier },
+});
+
 /** Loud: "next Friday" has two readings. */
 export const AMBIGUOUS = proposal(4, {
   type: "task",

@@ -1,6 +1,6 @@
 import { bothThemes, bothThemesParameters, themePanel } from "@earshot/ui/lib/story-themes";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, screen, userEvent, within } from "storybook/test";
 import type { NoAudioReason } from "@/lib/evidence/copy";
 import type { CardEvidence, PlayableSpan } from "@/lib/evidence/state";
 import { cardModel } from "@/lib/inbox/card";
@@ -8,6 +8,7 @@ import type { InboxProposal } from "@/lib/inbox/types";
 import {
   AMBIGUOUS,
   CONFLICT,
+  CRM_CHANGED,
   ENTITIES,
   NAME_NOTE,
   NO_RECORD,
@@ -15,12 +16,14 @@ import {
   QUESTION,
   QUIET,
   QUOTES,
+  RELINK,
   UPDATE,
 } from "./fixtures";
 import { type CardActions, ProposalCard, type ProposalCardProps } from "./proposal-card";
 
 const actions: CardActions = {
   accept: fn(),
+  keepCrm: fn(),
   reject: fn(),
   edit: fn(),
   snooze: fn(),
@@ -33,6 +36,11 @@ const actions: CardActions = {
   focused: fn(),
 };
 
+/** The page's clock in every story: two hours after the CRM moved in `CRM_CHANGED`. */
+const STORY_NOW = Date.parse("2026-11-20T15:00:00.000Z");
+
+const demo = { simulate: fn(), addMatching: fn() };
+
 /** A card as the inbox lays it out: alone in its group's list. */
 function Card(
   props: Omit<ProposalCardProps, "model" | "quotes" | "actions" | "cardRef" | "menuFinalFocus"> & {
@@ -44,7 +52,7 @@ function Card(
       <li>
         <ProposalCard
           {...props}
-          model={cardModel(props.proposal, ENTITIES, QUOTES)}
+          model={cardModel(props.proposal, ENTITIES, QUOTES, STORY_NOW)}
           quotes={QUOTES}
           actions={actions}
           cardRef={() => {}}
@@ -184,6 +192,68 @@ export const Update: Story = {
     await expect(panel.getByText("Presentation scheduled")).toBeVisible();
     await expect(panel.getByText("$32,000")).toBeVisible();
     await expect(panel.getByText("$40,000")).toBeVisible();
+  },
+};
+
+/**
+ * The CRM moved after the rep spoke (Phase 5 WP12): loud, the field's three values, and Keep mine
+ * (A or 1), Keep the CRM's (2), and Edit.
+ */
+export const CrmChanged: Story = {
+  args: { proposal: CRM_CHANGED },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    const card = panel.getByRole("article", { name: "Deal update · Acme Corp - Platform" });
+    await expect(card).toHaveAccessibleDescription(
+      "Deal update, Acme Corp - Platform, needs a check: The stage changed in your CRM after you spoke.",
+    );
+    await expect(panel.getByText("Needs a check")).toBeVisible();
+    const row = canvasElement.querySelector("[data-slot=three-way]");
+    await expect(row).toHaveTextContent(
+      "Qualified to buy when you spoke·, Presentation scheduled in the CRM now (changed 2 h ago)·, you said proposal",
+    );
+    const toolbar = panel.getByRole("toolbar", { name: "Actions: deal update" });
+    await expect(within(toolbar).getByRole("button", { name: "Keep mine" })).toHaveAttribute(
+      "aria-keyshortcuts",
+      "A 1",
+    );
+    const keepCrm = within(toolbar).getByRole("button", { name: "Keep the CRM's" });
+    await expect(keepCrm).toHaveAttribute("aria-keyshortcuts", "2");
+    await userEvent.click(keepCrm);
+    await expect(actions.keepCrm).toHaveBeenCalledWith(CRM_CHANGED.proposalId, expect.anything());
+  },
+};
+
+/**
+ * A record reached the CRM after the rep spoke (Phase 5 WP12): loud, "Is it this one?", and the
+ * record numbered before "A new record".
+ */
+export const RelinkOffer: Story = {
+  args: { proposal: RELINK },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    await expect(
+      panel.getByText("Pier Logistics was added to your CRM after you spoke. Is it this one?"),
+    ).toBeVisible();
+    const choices = panel.getByRole("radiogroup", { name: "Which record?" });
+    const radios = within(choices).getAllByRole("radio");
+    await expect(radios).toHaveLength(2);
+    await expect(
+      within(choices).getByRole("radio", { name: /Pier Logistics added after you spoke/ }),
+    ).toBeVisible();
+  },
+};
+
+/** On a demo record, More offers the demo CRM's controls (Phase 5 WP12). */
+export const DemoControls: Story = {
+  args: { proposal: UPDATE, demo: { simulate: demo.simulate } },
+  play: async ({ canvasElement }) => {
+    const panel = within(themePanel(canvasElement));
+    await userEvent.click(panel.getByRole("button", { name: "More" }));
+    const item = await screen.findByRole("menuitem", { name: "Simulate a CRM change" });
+    await expect(screen.queryByRole("menuitem", { name: "Add a matching record" })).toBeNull();
+    await userEvent.click(item);
+    await expect(demo.simulate).toHaveBeenCalled();
   },
 };
 

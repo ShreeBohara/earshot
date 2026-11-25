@@ -3,7 +3,6 @@
 // input that made it, and the surface. The route fills `by` and `syncEligibleAt`.
 import {
   type FieldEdit,
-  type FieldValue,
   type ReviewInput,
   type ReviewInputKind,
   type ReviewSeen,
@@ -15,47 +14,34 @@ import {
 } from "@earshot/core";
 import { tierOf } from "@earshot/understanding/tiers";
 import { askCandidates } from "@/lib/capture/copy";
+import { baseValue, relinkOffer, reviewTimeMark, threeWayFields } from "./crm";
 import type { InboxEntity, InboxProposal } from "./types";
 
 type Entities = Readonly<Record<string, InboxEntity>>;
 
-/** The fields an update reads against the CRM's current value, by proposal type. */
-const UPDATE_FIELDS: Readonly<Partial<Record<InboxProposal["type"], readonly string[]>>> = {
-  deal_update: ["stage", "amount", "closeDate"],
-  contact: ["title", "email", "phone"],
-};
-
 /**
- * The CRM's value a field updates, as the card shows it "before": only for an update (a deal's
- * stage, amount, or close date; a linked contact's title, email, or phone) whose record the
- * mirror holds. Undefined otherwise: notes, tasks, commitments, and meetings create records.
- */
-export function beforeValue(
-  proposal: InboxProposal,
-  field: string,
-  entities: Entities,
-): FieldValue | undefined {
-  const { target } = proposal;
-  if (target.decision !== "linked" || target.entityId === null) return undefined;
-  if (!UPDATE_FIELDS[proposal.type]?.includes(field)) return undefined;
-  const values = entities[target.entityId]?.values;
-  return values && field in values ? values[field] : undefined;
-}
-
-/**
- * What the reviewer saw (`seen`): the card's tier, each field's proposed value (with the CRM's
- * value as "before" for an update: `base`, since there's no history yet to tell it from `current`;
- * WP12 adds that), the record shown and the records offered, and no clip (WP9 adds clips).
+ * What the reviewer saw (`seen`): the card's tier as shown (loud at review time for a 3-way card
+ * or a re-link offer, WP12), each field's proposed value, with, for an update, the CRM's value when
+ * the proposal was made (`base`) and, where it has moved since, its value now (`current`, set only
+ * when it differs from `base`), the record shown and the records offered, any record offered at
+ * review time (`relinked`), and no clip (WP9 adds clips).
  */
 export function seenOf(
   proposal: InboxProposal,
   entities: Entities,
   offered?: readonly (string | null)[],
 ): ReviewSeen {
+  const moved = new Map(threeWayFields(proposal, entities).map((field) => [field.field, field]));
   const fields: Record<string, SeenField> = {};
   for (const [name, field] of Object.entries(proposal.fields)) {
-    const base = beforeValue(proposal, name, entities);
-    fields[name] = base === undefined ? { proposed: field.value } : { proposed: field.value, base };
+    const base = baseValue(proposal, name, entities);
+    const shown = moved.get(name);
+    fields[name] =
+      base === undefined
+        ? { proposed: field.value }
+        : shown
+          ? { proposed: field.value, base, current: shown.current }
+          : { proposed: field.value, base };
   }
   const { target } = proposal;
   const shown =
@@ -69,10 +55,10 @@ export function seenOf(
         ? null
         : { entityId: null, offered: [...shown] };
   return {
-    tier: tierOf(proposal).tier,
+    tier: reviewTimeMark(proposal, entities) ? "loud" : tierOf(proposal).tier,
     fields,
     target: seenTarget,
-    relinked: null,
+    relinked: relinkOffer(proposal),
     clip: "none",
   };
 }

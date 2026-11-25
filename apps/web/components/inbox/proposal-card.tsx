@@ -18,6 +18,7 @@ import { cn } from "@earshot/ui/lib/utils";
 import {
   ArrowRightIcon,
   CheckIcon,
+  DatabaseIcon,
   EllipsisIcon,
   PencilIcon,
   TriangleAlertIcon,
@@ -26,7 +27,7 @@ import {
 import { type MouseEvent, type Ref, useId, useLayoutEffect, useRef, useState } from "react";
 import { NO_AUDIO_COPY, type NoAudioReason } from "@/lib/evidence/copy";
 import { type CardEvidence, type PlayableSpan, targetWords } from "@/lib/evidence/state";
-import type { CardModel } from "@/lib/inbox/card";
+import type { CardModel, ThreeWayRow } from "@/lib/inbox/card";
 import type { InputEventLike } from "@/lib/inbox/input";
 import { type SnoozeOption, snoozeUntil, whenWords } from "@/lib/inbox/time";
 import type { InboxProposal } from "@/lib/inbox/types";
@@ -37,7 +38,10 @@ import { EditForm } from "./edit-form";
 
 /** What a card asks of the page. The page decides, sends, and moves focus. */
 export interface CardActions {
+  /** Accept; on a 3-way card, "Keep mine". */
   accept(proposalId: string, event: InputEventLike): void;
+  /** "Keep the CRM's" on a 3-way card (WP12): an edit to the CRM's values now. */
+  keepCrm(proposalId: string, event: InputEventLike): void;
   reject(proposalId: string, event: InputEventLike): void;
   /** Opens the editor. */
   edit(proposalId: string, event: InputEventLike): void;
@@ -57,6 +61,15 @@ export interface CardActions {
   closeCorrection(proposalId: string): void;
   /** Focus arrived in the card (Tab, a click): it holds the roving focus now. */
   focused(proposalId: string): void;
+}
+
+/**
+ * A card's demo controls in More (Phase 5 WP12), only where its record is a demo record:
+ * "Simulate a CRM change" and "Add a matching record".
+ */
+export interface CardDemo {
+  readonly simulate?: () => void;
+  readonly addMatching?: () => void;
 }
 
 export interface ProposalCardProps {
@@ -94,6 +107,40 @@ export interface ProposalCardProps {
    * was before clips.
    */
   evidence?: CardEvidence;
+  /** The demo controls in More (WP12): the inbox passes them on demo records only. */
+  demo?: CardDemo;
+}
+
+/**
+ * A field whose CRM value moved since the proposal (WP12), its three values in one line: "Discovery
+ * when you spoke · Proposal in the CRM now (changed 2 h ago) · you said Negotiation". The dots are
+ * hidden from screen readers, which hear commas instead.
+ */
+function ThreeWayValue({ row }: { row: ThreeWayRow }) {
+  const dot = (
+    <>
+      <span aria-hidden="true" className="text-muted-foreground">
+        ·
+      </span>
+      <span className="sr-only">, </span>
+    </>
+  );
+  return (
+    <span className="flex flex-wrap items-baseline gap-x-1.5" data-slot="three-way">
+      <span>
+        <span className="text-muted-foreground">{row.base}</span> when you spoke
+      </span>
+      {dot}
+      <span>
+        <span className="font-medium text-state-conflict-text">{row.current}</span> in the CRM now
+        {row.ago ? <span className="text-muted-foreground"> (changed {row.ago})</span> : null}
+      </span>
+      {dot}
+      <span>
+        you said <span className="font-medium">{row.proposed}</span>
+      </span>
+    </span>
+  );
 }
 
 /** The words a field was heard as, with a button that plays them where this device can. */
@@ -171,6 +218,7 @@ export function ProposalCard({
   menuFinalFocus,
   audioNote,
   evidence: clips,
+  demo,
 }: ProposalCardProps) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -267,7 +315,9 @@ export function ProposalCard({
             <div key={field.name} className="grid gap-0.5">
               <dt className="text-muted-foreground text-xs">{field.label}</dt>
               <dd className="text-pretty">
-                {field.before !== null && field.changes ? (
+                {field.threeWay ? (
+                  <ThreeWayValue row={field.threeWay} />
+                ) : field.before !== null && field.changes ? (
                   <span className="flex flex-wrap items-center gap-x-1.5">
                     <span className="text-muted-foreground">
                       <span className="sr-only">Now in the CRM: </span>
@@ -380,14 +430,26 @@ export function ProposalCard({
         <Toolbar aria-label={`Actions: ${model.type.toLowerCase()}`} className="pt-1">
           <ToolbarButton
             render={<Button size="sm" />}
-            aria-keyshortcuts={keys("A")}
+            aria-keyshortcuts={keys(model.keepCrm && !model.chooser ? "A 1" : "A")}
             aria-describedby={hint ? hintId : undefined}
             onClick={accept}
           >
             <CheckIcon aria-hidden="true" data-icon="inline-start" />
-            Accept
+            {model.keepCrm ? "Keep mine" : "Accept"}
             <ActionKey shortcuts={shortcuts}>A</ActionKey>
           </ToolbarButton>
+          {model.keepCrm ? (
+            <ToolbarButton
+              render={<Button size="sm" variant="outline" />}
+              aria-keyshortcuts={model.chooser ? undefined : keys("2")}
+              onClick={(event) => actions.keepCrm(proposalId, event)}
+              data-slot="keep-crm"
+            >
+              <DatabaseIcon aria-hidden="true" data-icon="inline-start" />
+              Keep the CRM's
+              {model.chooser ? null : <ActionKey shortcuts={shortcuts}>2</ActionKey>}
+            </ToolbarButton>
+          ) : null}
           <ToolbarButton
             render={<Button size="sm" variant="outline" />}
             aria-keyshortcuts={keys("E")}
@@ -438,6 +500,24 @@ export function ProposalCard({
                 Correct the record
                 <ActionKey shortcuts={shortcuts}>C</ActionKey>
               </DropdownMenuItem>
+              {demo ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Demo CRM</DropdownMenuLabel>
+                    {demo.simulate ? (
+                      <DropdownMenuItem onClick={demo.simulate} data-slot="demo-simulate">
+                        Simulate a CRM change
+                      </DropdownMenuItem>
+                    ) : null}
+                    {demo.addMatching ? (
+                      <DropdownMenuItem onClick={demo.addMatching} data-slot="demo-add">
+                        Add a matching record
+                      </DropdownMenuItem>
+                    ) : null}
+                  </DropdownMenuGroup>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </Toolbar>

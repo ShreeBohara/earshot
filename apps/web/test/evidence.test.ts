@@ -290,6 +290,7 @@ describe("where a card puts the target's play button", () => {
   it("on the mention line, on a first-person line about the target, and nowhere else", () => {
     const line = (field: string | null) => ({
       reason: { tier: "loud" as const, kind: "ask" as const, field },
+      field,
       lead: "",
       detail: null,
       text: "",

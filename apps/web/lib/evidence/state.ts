@@ -121,7 +121,7 @@ export function targetWords(
 ): "mention" | "first_person" | null {
   if (model.mention === null) return null;
   if (!model.firstPerson) return "mention";
-  const { field } = model.firstPerson.reason;
+  const { field } = model.firstPerson;
   return field === null || field === TARGET_FIELD ? "first_person" : null;
 }
 

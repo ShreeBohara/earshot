@@ -16,6 +16,7 @@
 // | Mismatch not fixed, otherwise | I may not have written the email the way you said it: dana@acme.io. |
 // | New, with a sound-alike | I didn't find "Atmo Systems" in your CRM. Did you mean Atmos Industrial, or is it new? |
 // | Re-link offer (WP12) | Acme Robotics was added to your CRM after you spoke. Is it this one? |
+// | The CRM changed since (WP12, a 3-way card) | The stage changed in your CRM after you spoke. Keep yours or the CRM's? |
 //
 // The line's first sentence is also the card's accessible description: "Task, Acme Corp, needs a
 // check: I'm not sure I caught the company."
@@ -253,6 +254,18 @@ export function firstPersonLine(
 export function relinkLine(recordName: string): Pick<FirstPersonLine, "lead" | "detail" | "text"> {
   const lead = `${recordName} was added to your CRM after you spoke.`;
   const detail = "Is it this one?";
+  return { lead, detail, text: `${lead} ${detail}` };
+}
+
+/**
+ * A 3-way card's line (WP12), on a card no flag makes loud: "The stage changed in your CRM after
+ * you spoke. Keep yours or the CRM's?" The spec gives only the field's row ("Discovery when you
+ * spoke · Proposal in the CRM now · you said Negotiation"); the line follows the re-link offer's
+ * form, and the card's accessible description repeats its first sentence.
+ */
+export function threeWayLine(fields: string): Pick<FirstPersonLine, "lead" | "detail" | "text"> {
+  const lead = `The ${fields} changed in your CRM after you spoke.`;
+  const detail = "Keep yours or the CRM's?";
   return { lead, detail, text: `${lead} ${detail}` };
 }
 
