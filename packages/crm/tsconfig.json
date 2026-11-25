@@ -1,0 +1,12 @@
+{
+  "extends": "@earshot/tsconfig/base.json",
+  "compilerOptions": {
+    // The source runs in the edge Worker (workerd), the web Worker, and Node, so it gets ES2023 and
+    // the Web APIs all three have (fetch's Request and Response, WebCrypto, TextEncoder) from the
+    // WebWorker library: no DOM and no Node types. A `document`, a `Buffer`, or an import of a
+    // `node:` module in src/ fails the typecheck.
+    "lib": ["ES2023", "WebWorker"],
+    "types": []
+  },
+  "include": ["src"]
+}
