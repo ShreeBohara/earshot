@@ -67,3 +67,30 @@ export async function marker(key: string, index: number): Promise<string> {
   }
   return MARKER_PREFIX + base32(await sha256(`${key}:${index}`)).slice(0, MARKER_CHARS);
 }
+
+const MARKER = /^es_([a-z2-7]{20})$/;
+
+/**
+ * A record id a CRM lets the client choose (`client_id` idempotency, decision 7; Twenty's, if
+ * creates take one): a UUID, version 8, made from the marker's 100 bits, so a retry's create
+ * collides with its first try and a `get` by the same id finds it. The marker's bits fill the
+ * custom bits in order (48, then 12, then 40 of the last 62), and the rest are zero.
+ */
+export function markerUuid(markerText: string): string {
+  const match = MARKER.exec(markerText);
+  if (!match) throw new TypeError("markerUuid takes a marker: es_ and 20 base32 characters");
+  let bits = 0n;
+  for (const char of match[1] as string) bits = (bits << 5n) | BigInt(BASE32.indexOf(char));
+  const a = bits >> 52n;
+  const b = (bits >> 40n) & 0xfffn;
+  const c = bits & ((1n << 40n) - 1n);
+  const value = (a << 80n) | (8n << 76n) | (b << 64n) | (2n << 62n) | (c << 22n);
+  const hexText = value.toString(16).padStart(32, "0");
+  return [
+    hexText.slice(0, 8),
+    hexText.slice(8, 12),
+    hexText.slice(12, 16),
+    hexText.slice(16, 20),
+    hexText.slice(20),
+  ].join("-");
+}

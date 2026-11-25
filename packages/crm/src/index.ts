@@ -50,7 +50,7 @@ export {
   parseRetryAfter,
   retryAfterMs,
 } from "./errors";
-export { idempotencyKey, MARKER_CHARS, MARKER_PREFIX, marker } from "./markers";
+export { idempotencyKey, MARKER_CHARS, MARKER_PREFIX, marker, markerUuid } from "./markers";
 export * from "./plan";
 export { CREDENTIAL_PREVIEW, holdsSecret, REDACTED, redact, redactCause } from "./redact";
 export {

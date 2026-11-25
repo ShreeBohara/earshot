@@ -1,7 +1,7 @@
 // The idempotency key and the write markers (Phase 6 spec §4.4): committed vectors, made outside
 // this code with Python's hashlib and base64 (RFC 4648), so a change to either function fails here.
 import { describe, expect, it } from "vitest";
-import { idempotencyKey, MARKER_CHARS, MARKER_PREFIX, marker } from "../src";
+import { idempotencyKey, MARKER_CHARS, MARKER_PREFIX, marker, markerUuid } from "../src";
 import { base32 } from "../src/markers";
 
 /** A proposal and the review that approved it, as the fixtures in @earshot/core name them. */
@@ -87,5 +87,22 @@ describe("base32", () => {
 
   it("encodes a SHA-256 digest in 52 characters", () => {
     expect(base32(new Uint8Array(32).fill(0xff))).toBe(`${"7".repeat(51)}q`);
+  });
+});
+
+describe("markerUuid", () => {
+  it.each([
+    ["es_oxmttwqjbgqfzongy4te", "75d939da-0909-8a05-b2e6-9b1c99000000"],
+    ["es_c6smbbo5tyzkd4jsongl", "17a4c085-dd9e-832a-87c4-c9cd32c00000"],
+    ["es_aaaaaaaaaaaaaaaaaaaa", "00000000-0000-8000-8000-000000000000"],
+    ["es_77777777777777777777", "ffffffff-ffff-8fff-bfff-ffffffc00000"],
+  ])("makes %s into a UUID v8 (a committed vector, made with Python)", (text, uuid) => {
+    expect(markerUuid(text)).toBe(uuid);
+    expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+
+  it("takes a marker only", () => {
+    expect(() => markerUuid("es_SHORT")).toThrow(TypeError);
+    expect(() => markerUuid("oxmttwqjbgqfzongy4te")).toThrow(TypeError);
   });
 });
