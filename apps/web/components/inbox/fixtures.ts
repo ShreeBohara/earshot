@@ -302,6 +302,40 @@ const ACCEPTED = proposal(9, {
   },
 });
 
+/**
+ * Approved by the workspace's approval policy as it was made (Phase 5 WP11): a note linked by the
+ * account's exact name, nothing to mark, so the "notes" rule took it. Reviewed shows it with Undo.
+ */
+export const AUTO_APPROVED = proposal(12, {
+  type: "note",
+  targetEntityId: ENTITY_IDS.acme,
+  target: target({
+    entityId: ENTITY_IDS.acme,
+    kind: "company",
+    mention: { quote: "Acme", evidence: evidence(UTTERANCES.one, "Acme") },
+    candidates: [{ entityId: ENTITY_IDS.acme, p: 0.99 }],
+  }),
+  fields: {
+    body: {
+      value: "Dana is their new VP of Operations.",
+      evidence: evidence(UTTERANCES.one, "she's their new VP of Operations"),
+    },
+  },
+  status: "approved",
+  review: {
+    reviewId: "01a1c6e2-0000-7000-8000-0000000f0012",
+    decision: "approved",
+    target: null,
+    mode: "policy",
+    batchId: null,
+    policy: { id: "01a1c6f2-7d10-7a3b-9c4d-5e6f7a8b9c0d", version: 2, rule: "notes" },
+    undoes: null,
+    // Far ahead, so the story's Undo stays Undo.
+    syncEligibleAt: "2099-01-01T00:00:00.000Z",
+    ts: "2026-11-20T14:15:00.000Z",
+  },
+});
+
 const SNOOZED = proposal(10, {
   ...QUIET,
   proposalId: "01a1c6e2-0000-7000-8000-0000000b0010",
@@ -331,6 +365,15 @@ export const QUOTES: Record<string, string> = SAID;
 /** The inbox: one debrief to review, one finishing, a decision with Undo, and a snooze. */
 export const INBOX: InboxData = {
   sessions: [FINISHING, SESSION],
+  entities: ENTITIES,
+  quotes: QUOTES,
+  older: null,
+  loadedAt: "2026-11-20T16:00:00.000Z",
+};
+
+/** A debrief whose policy approved one note as it was made, with one card left to review. */
+export const POLICY_INBOX: InboxData = {
+  sessions: [{ ...SESSION, proposals: [PLAIN, AUTO_APPROVED] }],
   entities: ENTITIES,
   quotes: QUOTES,
   older: null,

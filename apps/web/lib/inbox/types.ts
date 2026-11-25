@@ -13,6 +13,12 @@ export type InboxReview = Pick<
   "reviewId" | "decision" | "target" | "mode" | "batchId" | "undoes" | "syncEligibleAt" | "ts"
 > & {
   /**
+   * The approval policy behind an auto-approval (Phase 5 WP11): its id, version, and the rule
+   * that matched, for Reviewed's "Approved by your policy: notes". Null or absent for a person's
+   * review, the page's own included.
+   */
+  readonly policy?: ReviewView["policy"];
+  /**
    * The review event's seq in the session's log, when known. The tray's cards come from the
    * session's own events, which carry it. The `proposals` row doesn't keep it, and the page's own
    * optimistic review has none. `OptimisticReviews.reconcile` reads it.
