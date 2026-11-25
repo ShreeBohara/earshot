@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15). Phase 3 WP3 builds the web app's half: the session, ticket, and token routes in `apps/web`. The edge Worker's half, checking tickets before a socket opens and pinning them in `SessionDO`, follows in WP6. WP1's spike confirms the provider mint requests against the live APIs.
+Accepted (2026-11-15). Phase 3 WP3 builds the web app's half: the session, ticket, and token routes in `apps/web`. The edge Worker's half, checking tickets before a socket opens and pinning them in `SessionDO`, follows in WP6. WP1's spike confirms the provider mint requests against the live APIs. Amended for Phase 5 (2026-11-25): tickets carry how and when the viewer signed in (`am`, `sat`), a ticket can be had for an ended session until it's sealed, and the ticket secret also signs each session's approval policy. See "Amendment: Phase 5" below.
 
 ## Context and problem
 
@@ -96,6 +96,17 @@ Surrounding whitespace is trimmed from the secret, and the edge Worker must trim
 - Every mint costs one or two rate-limit upserts and a tenant transaction, and the per-IP limit is shared by everyone behind one address.
 - The keyterm token estimate is a guess until WP1 measures Deepgram, and the entity list is a snapshot from the session's start.
 - `SessionDO` receives the entity list from the client, so it must treat it as untrusted. A proposal's target outside the workspace is already stored as null by the projection.
+
+## Amendment: Phase 5 (2026-11-25)
+
+Phase 5's reviews come over the socket as well as through the web app, and each has to say how its reviewer signed in (ADR-0032, ADR-0033).
+
+- **Two optional claims, still version 1.** `am` is how the web session that asked for the ticket signed in (`passkey`, `magic_link`, `github`, `google`, or `unknown`; ADR-0006's Phase 5 amendment), and `sat` is when, in whole Unix seconds. They come together or not at all, and `sat` can't be later than the ticket's `iat` plus the clock skew, which also catches milliseconds. They're written after `exp`, so a ticket without them signs to exactly the bytes it did before, and an old web app's tickets still open sockets on the new edge. Tickets stay within 1,024 characters.
+- **Issuing.** `POST /api/sessions` and `/ticket` sign each ticket with the viewer's `signInMethod` (`unknown` for sign-in sessions from before migration 0013) and the session's `createdAt` in whole seconds; a sign-in time ahead of the route's clock is claimed at the ticket's own time, so two clocks can't fail a ticket.
+- **Using them.** `SessionDO` records the socket's `am` and `sat` as each tray review's `by.auth`. A ticket without them, from a web app older than the edge during a deploy, records `by.auth: null`: unknown, not unauthenticated, since the ticket itself proves a signed-in user asked for it.
+- **Tickets after `end`.** `/ticket` now answers for an ended session until it's sealed, since the tray still reviews over the socket in the seal's grace; a sealed session answers 409. `/api/voice/token` still refuses an ended session: capture is over.
+- **A second use of the ticket secret.** `POST /api/sessions` signs the workspace's approval policy into each session with `EARSHOT_SESSION_TICKET_SECRET` (ADR-0034): HMAC-SHA256 over `"earshot.policy.v1."` and the canonical policy with the session's id, which `SessionDO` verifies on `start`. The prefix keeps the two uses apart: a ticket's HMAC covers base64url text, which never holds the prefix's dots, and a test shows a ticket's signature doesn't pass for a snapshot's. A policy can't ride in the ticket itself: it would pass the 1,024 characters.
+- **Tests.** `packages/core/test/session-ticket.test.ts` holds tickets with and without `am` and `sat`, and refuses one without the other, a method that isn't one, or a `sat` after `iat` plus the skew; `apps/edge/test/sessions/reviews.test.ts` records the claims as a socket review's `by.auth`, and `auth: null` for a ticket without them.
 
 ## More information
 

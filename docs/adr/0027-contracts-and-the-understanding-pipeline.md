@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-20). Phase 4 WP1 built the contracts below: proposal schema v2 with its upcaster, two new event types, the protocol additions, and migration 0012. WP8 (2026-11-20) built the pipeline: tool schema v2, prompt v2, `understand()`, and `SessionDO` writing `proposal.created` v2, with the web app sending the open account and each record's parent. The second witness's message and comparison in `SessionDO` are WP9's, which built them on 2026-11-20 (ADR-0029). Amends ADR-0020 (see its "Phase 4 event types") and ADR-0025 (no CRM list, tool schema v2).
+Accepted (2026-11-20). Phase 4 WP1 built the contracts below: proposal schema v2 with its upcaster, two new event types, the protocol additions, and migration 0012. WP8 (2026-11-20) built the pipeline: tool schema v2, prompt v2, `understand()`, and `SessionDO` writing `proposal.created` v2, with the web app sending the open account and each record's parent. The second witness's message and comparison in `SessionDO` are WP9's, which built them on 2026-11-20 (ADR-0029). Amends ADR-0020 (see its "Phase 4 event types") and ADR-0025 (no CRM list, tool schema v2). Amended for Phase 5 (2026-11-25): `supersedes` is in use, reviews choose the record, and the likely-edit tiers read the flags; see "Amendment: Phase 5" below.
 
 ## Context and problem
 
@@ -154,6 +154,14 @@ Each is a safe outcome, a question rather than a wrong account, and each is inpu
 - Linker v1 asks on phrasings its set never had: a word dropped from a deal's company, and a company named while its own deal is in play (4 of the scripts' 100 targets).
 - `link_uncertain` flags most context links, which pushes the scripts' flag rate to 41%.
 - Folding a deal's company into its words is a product-side reading the confusable set doesn't measure. It matches the set's spoken form, but WP10's generated debriefs are where it's scored.
+
+## Amendment: Phase 5 (2026-11-25)
+
+Three parts of this decision that Phase 4 left for later are now in use.
+
+- **`supersedes` is written.** A correction (ADR-0038) appends a new `proposal.created` v2 whose `supersedes` names the card it corrects, with an id derived from the correction's (SHA-256 over the session and the correction), so a resend to either writer finds the same proposal. `correctProposal` (`@earshot/understanding/correct`) reads the correction's words with the same linker and normalizers as the turn path, keeps every other field's evidence and flags, and points the corrected field's evidence at the correction's words. The projection marks the earlier proposal `superseded` with its `supersededBy`, and migration 0014 gives both their columns (`proposals.supersedes`, `superseded_by`), so the Consequences' "no columns for them yet" no longer holds; `linker` still lives only in the events. Every writer refuses a review or a snooze of a superseded proposal, and no policy approves a proposal that supersedes another.
+- **Reviews choose the record.** A `proposal.reviewed` v2 carries `target`, the record the reviewer chose, or `{ entityId: null }` for a new one (ADR-0032). The writers' rules (`checkReview`) hold it to this decision's data: an ask can't be approved without one of its own candidates (`target_required`, `target_not_offered`), a linked proposal may take its own record or one of its candidates, a target of `none` can't be approved (`no_target`), and a record offered at review time counts only on a new-record proposal (ADR-0035, WP12). The card offers a question's records on 1–3 (and 4 when the linker offered three records and "New"), and a linked card's other candidates only in the correction panel, so a stray digit never changes a record.
+- **The tiers read the flags.** `tierOf` (`@earshot/understanding/tiers`, ADR-0035) turns a proposal's flags, its target's decision, basis, and candidates, and each field's `norm` into loud, quiet, or none: an ask, a `witness_conflict`, `unsupported`, `ambiguous_value`, an unfixed `value_mismatch`, or a new record with a sound-alike is loud; `implied_target`, a fixed `value_mismatch`, `negation`, `low_confidence`, `weak_support`, a new record with no sound-alike, and v1's `date` and `number` are quiet notes; `link_uncertain` on a linked target is the name note beside the record (ADR-0031's option 2). Every kind in `RiskKindV2` has a role, and a type test fails when a new kind arrives without one. The flags themselves are unchanged: the tiers decide only what a card shows and what "accept all" and policies may take.
 
 ## More information
 

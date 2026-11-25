@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-20). Phase 4 WP9 built it: the Groq Whisper runner, each turn's audio buffer, the session's witness queue, the price row, Settings → Capture with its one-time consent, `SessionDO`'s handling of `witness`, the scripted fake witness, and the end-to-end test of a mishearing. **The live check is pending the user's approval**: ten real turns from the user's own browser, under $0.01 (see "The live check"). Until it runs, everything about Groq's answers here is as documented, not observed. The fallback witness (spec WP9 step 7, cut third) isn't built.
+Accepted (2026-11-20). Phase 4 WP9 built it: the Groq Whisper runner, each turn's audio buffer, the session's witness queue, the price row, Settings → Capture with its one-time consent, `SessionDO`'s handling of `witness`, the scripted fake witness, and the end-to-end test of a mishearing. **The live check is pending the user's approval**: ten real turns from the user's own browser, under $0.01 (see "The live check"). Until it runs, everything about Groq's answers here is as documented, not observed. The fallback witness (spec WP9 step 7, cut third) isn't built. Amended for Phase 5 (2026-11-25): each turn's audio is also kept for evidence clips, on the device, whether or not the witness runs; see "Amendment: Phase 5" below and ADR-0036.
 
 Builds on ADR-0027 (the `witness` message, `proposal.flagged`, `turn.witnessed`) and ADR-0028 (`readUnbiased`, `compareWitnesses`, θ_d). Amends ADR-0002: one provider key, the user's Groq key, goes from the browser straight to its provider, since Groq mints no short-lived credential for batch transcription. Follows ADR-0021 for where that key lives.
 
@@ -134,6 +134,16 @@ Nothing in WP9 called Groq or any other paid API. The tests use a fake `fetch`, 
 - The 0.9 s trim drops words the biased stream missed at a turn's edges. They're outside every quote, so no comparison needed them, but the stored unbiased transcript is shorter than what Groq heard.
 - A turn with no witness message at all (no audio, a tap, silence) leaves no `turn.witnessed`, since the contract has no reason for it.
 - Until the live check, the confidence proxy and the CORS behaviour of a real POST are as documented, not observed.
+
+## Amendment: Phase 5 (2026-11-25)
+
+Evidence clips (ADR-0036) reuse the turn audio this ADR built, rather than a second recorder.
+
+- **Recorded for either reason.** The Debrief engine records each turn's audio when the witness runs or the device keeps clips: `turnAudio` is `witness.recordsAudio || clips.enabled()`, read as each engine starts (`apps/web/lib/capture/controller.ts`). Clips are on by default, per device, in Settings → Capture, so most debriefs record turn audio now, witness or not.
+- **The same recording, two destinations.** Each turn's `turn_audio` goes to the witness when it runs (to Groq, on the rep's key, as above) and, while clips are on, to the clip store (`clips.keep`), which encrypts it on the device for 24 hours. A turn past the 120 s cap is kept as a record with no audio that says so; a late final's turn, with no audio of its own, keeps nothing.
+- **The witness's rule is unchanged.** Recording for clips sends nothing anywhere: without the rep's consent, or without a Groq key on the device, no audio goes to Groq. Clips never leave the device, and nothing in a message to `SessionDO` carries audio.
+- **One clock.** Sample k is still the session clock's sample `start + k`, which is what lets a clip play a field's evidence span exactly. While a clip plays, a hands-free engine is muted, and muted frames are skipped by the speech stream and the recorder alike, so the clock stays one and the clip's sound can't come back as a turn; pressing push-to-talk stops the clip.
+- **Spoken corrections** (ADR-0038). A turn the tray's microphone armed as a correction is sent as `correct`, not `turn_end`, and the witness drops it: there's nothing to compare, since a correction is read by `correctProposal`, not extracted. Its clip is kept like any turn's.
 
 ## More information
 
