@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 5 WP2 built the hash chain and its trigger (migration 0013), signed checkpoints, the signing key with its script, rotation, and development key, `/api/audit/keys`, the export's audit sections and the offline check (`db:audit-verify`), the health flag, and the sign-in method on each session. WP3 writes the review rows and their checkpoints (the web Worker's review route and the flush consumer); WP11 adds the step-up for policy changes. The browser's saved head (WP2 step 8) was cut, first on the spec's list; see "Cut" below.
+Proposed (2026-11-20). Phase 5 WP2 built the hash chain and its trigger (migration 0013), signed checkpoints, the signing key with its script, rotation, and development key, `/api/audit/keys`, the export's audit sections and the offline check (`db:audit-verify`), the health flag, and the sign-in method on each session. WP3 writes the review rows and their checkpoints (the web Worker's review route and the flush consumer); WP11 built the step-up for policy changes, a sign-in from the last 5 minutes, and the `policy.changed` entry and checkpoint each change writes (ADR-0034). The browser's saved head (WP2 step 8) was cut, first on the spec's list; see "Cut" below.
 
 ## Context and problem
 
