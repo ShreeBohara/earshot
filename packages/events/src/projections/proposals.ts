@@ -1,5 +1,6 @@
 import type {
   FieldEdit,
+  FollowupRule,
   ProposalFieldV2,
   ProposalTypeV2,
   ReopenReason,
@@ -18,7 +19,13 @@ import type {
   WitnessConflict,
 } from "@earshot/core";
 import { ProjectionError } from "../errors";
-import type { ProposalFlaggedEvent, ProposalReviewedEvent, SessionEvent } from "../types";
+import type {
+  FollowupAskedEvent,
+  FollowupClosedEvent,
+  ProposalFlaggedEvent,
+  ProposalReviewedEvent,
+  SessionEvent,
+} from "../types";
 import type { Projection } from "./projection";
 
 /**
@@ -54,6 +61,36 @@ export interface ReviewView {
   ts: string;
 }
 
+/** Where a follow-up question stands: waiting, answered by a correction, or skipped. */
+export type FollowupStatus = "open" | "answered" | "skipped";
+
+/**
+ * A follow-up question about a proposal (Phase 5 WP13): `followup.asked`, and its
+ * `followup.closed` once a correction answers it or the rep skips it. An open question moves with
+ * its proposal: when a correction replaces the proposal, the question goes to the replacement, so it
+ * stays on the card the inbox shows.
+ */
+export interface FollowupView {
+  questionId: string;
+  turnId: string;
+  /** The proposal it was asked about, which may since have been replaced. */
+  askedAbout: string;
+  /** The field it asks for, such as `dueDate`. */
+  field: string;
+  rule: FollowupRule;
+  /** The question as the card shows it. */
+  text: string;
+  status: FollowupStatus;
+  /** The proposal whose correction answered it; set exactly when the status is `answered`. */
+  answeredBy: string | null;
+  /** Seq and timestamp of the `followup.asked` event. */
+  seq: number;
+  ts: string;
+  /** Seq and timestamp of the `followup.closed` event; null while it's open. */
+  closedSeq: number | null;
+  closedAt: string | null;
+}
+
 /** One proposal with its evidence and review status: the `proposals` row. */
 export interface ProposalView {
   proposalId: string;
@@ -81,6 +118,12 @@ export interface ProposalView {
    * never snoozed or was woken. A review leaves it as it is: the status says whether it's open.
    */
   snoozedUntil: string | null;
+  /**
+   * The follow-up questions about it (Phase 5 WP13), in the order they were asked: each asked about
+   * it, or still open on a proposal it replaced. A replaced proposal keeps only those closed before
+   * it was replaced.
+   */
+  followups: FollowupView[];
   /** Seq and timestamp of the `proposal.created` event. */
   seq: number;
   ts: string;
@@ -88,8 +131,9 @@ export interface ProposalView {
 }
 
 /**
- * Folds `proposal.created`, `proposal.flagged`, `proposal.reviewed`, and `proposal.snoozed` into
- * the session's proposals, in the order they were created.
+ * Folds `proposal.created`, `proposal.flagged`, `proposal.reviewed`, `proposal.snoozed`,
+ * `followup.asked`, and `followup.closed` into the session's proposals, in the order they were
+ * created.
  *
  * - A review sets the status to its decision, and a reopen returns it to `proposed`. The latest
  *   review, a reopen included, is the proposal's `review`. A reopen must name that review, which
@@ -102,6 +146,9 @@ export interface ProposalView {
  *   a proposal the log already has, and that nothing has replaced yet, can be superseded.
  * - A flag adds its flags and conflict, and a downgrade turns the target into a question (see
  *   `downgrade`), whether or not the proposal has been reviewed or replaced.
+ * - A follow-up question (Phase 5 WP13) is asked about a proposal nothing has replaced, under an id
+ *   no other question has, and closes once: answered by the correction that replaced its proposal,
+ *   or skipped. When a correction replaces a proposal, its open questions move to the replacement.
  */
 export const proposalsProjection: Projection<readonly ProposalView[]> = {
   initial: [],
@@ -120,6 +167,13 @@ export const proposalsProjection: Projection<readonly ProposalView[]> = {
           payload.supersedes === null
             ? state
             : supersede(state, payload.supersedes, payload.proposalId, event);
+        // The replaced proposal's open questions move here, so its card keeps asking them.
+        const moved =
+          payload.supersedes === null
+            ? []
+            : (state
+                .find((proposal) => proposal.proposalId === payload.supersedes)
+                ?.followups.filter((followup) => followup.status === "open") ?? []);
         return [
           ...earlier,
           {
@@ -134,6 +188,7 @@ export const proposalsProjection: Projection<readonly ProposalView[]> = {
             supersedes: payload.supersedes,
             supersededBy: null,
             snoozedUntil: null,
+            followups: moved,
             seq: event.seq,
             ts: event.ts,
             review: null,
@@ -173,6 +228,10 @@ export const proposalsProjection: Projection<readonly ProposalView[]> = {
         refuseIfSuperseded(proposal, event, "snooze");
         return state.with(index, { ...proposal, snoozedUntil: payload.until });
       }
+      case "followup.asked":
+        return asked(state, event);
+      case "followup.closed":
+        return closed(state, event);
       default:
         return state;
     }
@@ -184,7 +243,7 @@ function find(
   state: readonly ProposalView[],
   proposalId: string,
   event: SessionEvent,
-  verb: "flag" | "review" | "snooze" | "supersede",
+  verb: "flag" | "review" | "snooze" | "supersede" | "ask about",
 ): [number, ProposalView] {
   const index = state.findIndex((proposal) => proposal.proposalId === proposalId);
   const proposal = state[index];
@@ -209,7 +268,112 @@ function supersede(
       `proposal ${earlierId} was already superseded by ${earlier.supersededBy}`,
     );
   }
-  return state.with(index, { ...earlier, status: "superseded", supersededBy: laterId });
+  // Its open questions move to the proposal that replaced it (`proposal.created` takes them).
+  return state.with(index, {
+    ...earlier,
+    status: "superseded",
+    supersededBy: laterId,
+    followups: earlier.followups.filter((followup) => followup.status !== "open"),
+  });
+}
+
+/**
+ * A follow-up question asked (Phase 5 WP13): on a proposal the log has and nothing has replaced,
+ * under an id no question in the session has.
+ */
+function asked(state: readonly ProposalView[], event: FollowupAskedEvent): readonly ProposalView[] {
+  const { payload } = event;
+  if (holderOf(state, payload.questionId) !== undefined) {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `question ${payload.questionId} was asked before`,
+    );
+  }
+  const [index, proposal] = find(state, payload.proposalId, event, "ask about");
+  if (proposal.supersededBy !== null) {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `proposal ${proposal.proposalId} was superseded by ${proposal.supersededBy}, so it takes no question`,
+    );
+  }
+  const followup: FollowupView = {
+    questionId: payload.questionId,
+    turnId: payload.turnId,
+    askedAbout: payload.proposalId,
+    field: payload.field,
+    rule: payload.rule,
+    text: payload.text,
+    status: "open",
+    answeredBy: null,
+    seq: event.seq,
+    ts: event.ts,
+    closedSeq: null,
+    closedAt: null,
+  };
+  return state.with(index, { ...proposal, followups: [...proposal.followups, followup] });
+}
+
+/**
+ * A follow-up question closed (Phase 5 WP13). It must be open. An answer names the proposal its
+ * correction made, which replaced the one asked about and so holds the question now; a skip names
+ * none. Anything else is a writer's bug, and fails the fold.
+ */
+function closed(
+  state: readonly ProposalView[],
+  event: FollowupClosedEvent,
+): readonly ProposalView[] {
+  const { payload } = event;
+  const held = holderOf(state, payload.questionId);
+  if (held === undefined) {
+    throw new ProjectionError("proposals", event, `no question ${payload.questionId} to close`);
+  }
+  const [index, holder, at] = held;
+  const followup = holder.followups[at] as FollowupView;
+  if (followup.status !== "open") {
+    throw new ProjectionError(
+      "proposals",
+      event,
+      `question ${payload.questionId} was ${followup.status} before`,
+    );
+  }
+  if (payload.outcome === "answered") {
+    const answer = payload.proposalId;
+    if (answer !== holder.proposalId || holder.supersedes === null) {
+      throw new ProjectionError(
+        "proposals",
+        event,
+        `question ${payload.questionId} is answered by the correction that replaced its proposal, not ${answer ?? "none"}`,
+      );
+    }
+  } else if (payload.proposalId !== null) {
+    throw new ProjectionError("proposals", event, "a skipped question names no proposal");
+  }
+  const close: FollowupView = {
+    ...followup,
+    status: payload.outcome,
+    answeredBy: payload.outcome === "answered" ? payload.proposalId : null,
+    closedSeq: event.seq,
+    closedAt: event.ts,
+  };
+  return state.with(index, { ...holder, followups: holder.followups.with(at, close) });
+}
+
+/**
+ * The proposal holding a question (where its id is in `followups`), its index, and the question's
+ * place there. A question is held once: a replacement takes its open questions, and the replaced
+ * proposal keeps only its closed ones.
+ */
+function holderOf(
+  state: readonly ProposalView[],
+  questionId: string,
+): [number, ProposalView, number] | undefined {
+  for (const [index, proposal] of state.entries()) {
+    const at = proposal.followups.findIndex((followup) => followup.questionId === questionId);
+    if (at >= 0) return [index, proposal, at];
+  }
+  return undefined;
 }
 
 function refuseIfSuperseded(

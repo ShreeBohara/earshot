@@ -1,4 +1,6 @@
 import {
+  type FollowupStatus,
+  type FollowupView,
   type ProposalStatus,
   type ProposalView,
   proposalsProjection,
@@ -16,6 +18,8 @@ export const defaultProjections = {
 
 export type { Projection } from "./projection";
 export {
+  type FollowupStatus,
+  type FollowupView,
   type ProposalStatus,
   type ProposalView,
   proposalsProjection,

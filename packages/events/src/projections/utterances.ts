@@ -1,4 +1,4 @@
-import type { Witness, Word } from "@earshot/core";
+import type { UtteranceInput, Witness, Word } from "@earshot/core";
 import { ProjectionError } from "../errors";
 import type { Projection } from "./projection";
 
@@ -9,6 +9,11 @@ export interface UtteranceView {
   seq: number;
   ts: string;
   witness: Witness;
+  /**
+   * How the words arrived: `speech`, or `typed` into a correction (Phase 5 WP13). Every utterance
+   * from before WP13 is `speech`.
+   */
+  input: UtteranceInput;
   text: string;
   confidence: number;
   startMs: number;
@@ -37,6 +42,7 @@ export const utterancesProjection: Projection<readonly UtteranceView[]> = {
         seq: event.seq,
         ts: event.ts,
         witness: payload.witness,
+        input: payload.input,
         text: payload.text,
         confidence: payload.confidence,
         startMs: payload.startMs,
