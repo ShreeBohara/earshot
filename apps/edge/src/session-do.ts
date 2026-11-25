@@ -1563,11 +1563,12 @@ export class SessionRuntime extends DurableObject<Env> {
    * Appended with a `followup.closed` for each open question it answers.
    *
    * Its limits (ADR-0038, after a security review): `CORRECTION_LIMITS`' corrections per window
-   * and per session, and typed characters per session, refused with `turn_limit`; typed words not
-   * past the capture limit by more than `TYPED_CORRECTION_GRACE_MS`, refused with
-   * `duration_limit`. A correction doesn't keep the session alive: the idle end counts from before
-   * it. Words with no value of the field's kind are refused with `unreadable`, recorded so a resend
-   * gets the same answer, and nothing is appended. It approves nothing, so it needs no audit key.
+   * and per session, typed characters per session, and the depth of a chain, refused with
+   * `turn_limit`; typed words not past the capture limit by more than `TYPED_CORRECTION_GRACE_MS`,
+   * refused with `duration_limit`. A correction doesn't keep the session alive: the idle end counts
+   * from before it. Words with no value of the field's kind are refused with `unreadable`, and
+   * nothing is appended. Refusals aren't recorded: a resend is checked again, to the same answer.
+   * It approves nothing, so it needs no audit key.
    */
   async #correct(message: ClientMessageOf<"correct">): Promise<void> {
     if (this.#answered(message.msgId) || this.#inflight.has(message.msgId)) return;
@@ -1591,9 +1592,9 @@ export class SessionRuntime extends DurableObject<Env> {
       this.#refuse(message.msgId, "bad_message", false);
     };
     const limited = (reason: string) => {
-      // Recorded, as a turn over its limit is: a resend gets the same answer.
+      // Refused, not recorded: the client hears a refusal, and a resend is checked again.
       this.#log.warn("correction refused", { reason });
-      this.#commit(message.msgId, [], { error: { code: "turn_limit", retryable: false } });
+      this.#refuse(message.msgId, "turn_limit", false);
     };
     const prior = store.recordedWrite(message.correctionId);
     if (prior) {
@@ -1669,12 +1670,10 @@ export class SessionRuntime extends DurableObject<Env> {
       },
     );
     if (!result.ok) {
-      // Nothing appended, the typed words included, and the card stays as it was. Codes only.
+      // Nothing appended, the typed words included, and the card stays as it was: refused, so the
+      // client hears it, and a resend is read again to the same answer. Codes only.
       this.#log.info("correction unreadable", { reason: result.reason, kind: result.kind });
-      this.#commit(message.msgId, [], {
-        error: { code: "unreadable", retryable: false },
-        idleNeutral: true,
-      });
+      this.#refuse(message.msgId, "unreadable", false);
       return;
     }
     // The words: cleaned of anything Postgres's jsonb would refuse.

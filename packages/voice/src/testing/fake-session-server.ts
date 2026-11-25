@@ -884,7 +884,7 @@ export class FakeSessionServer {
     const original = created.payload as ProposalCreatedV2;
     const read = this.#correctWith?.({ message, original }) ?? {};
     if (read === "unreadable") {
-      this.#commit(message.msgId, [], { code: "unreadable", retryable: false });
+      this.#refuse(message.msgId, "unreadable", false);
       return;
     }
     const proposalId = this.#newId();

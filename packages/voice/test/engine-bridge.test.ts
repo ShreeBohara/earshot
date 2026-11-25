@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { VoiceEvent } from "../src/engine";
 import { createDebriefEngine } from "../src/engines/debrief";
 import { createSessionClient } from "../src/session/client";
-import { connectEngine } from "../src/session/engine-bridge";
+import { type ArmedCorrection, connectEngine } from "../src/session/engine-bridge";
 import { SessionWitness } from "../src/session/witness";
 import { FakeCaptureSource } from "../src/testing/fake-capture";
 import { FakePageLifecycle } from "../src/testing/fake-page";
@@ -63,8 +63,51 @@ function fakeClient() {
     reportIssue: (issue: { code: string }) => {
       calls.push(`issue ${issue.code}`);
     },
+    sendCorrection: async (input: { turnId: string; proposalId: string; field: string }) => {
+      calls.push(`correct ${input.turnId} ${input.proposalId} ${input.field}`);
+      return { ok: true as const, via: "socket" as const };
+    },
   };
 }
+
+describe("connectEngine: a spoken correction (Phase 5 WP13)", () => {
+  it("ends the armed turn with correct, no key, and no witness, then goes back to turn_end", async () => {
+    const engine = fakeEngine();
+    const client = fakeClient();
+    const dropped: string[] = [];
+    const settled: unknown[] = [];
+    let armed: ArmedCorrection | undefined = {
+      correctionId: "c1",
+      proposalId: "p1",
+      field: "dueDate",
+      settled: (delivery) => void settled.push(delivery),
+    };
+    connectEngine(engine, client, {
+      llm: () => LLM,
+      key: () => KEY,
+      witness: {
+        finalHeard: () => {},
+        turnEnded: () => {},
+        turnDropped: (turnId: string) => dropped.push(turnId),
+        turnAudio: () => {},
+      },
+      takeCorrection: () => {
+        const taken = armed;
+        armed = undefined;
+        return taken;
+      },
+    });
+    engine.emit({ type: "turn_end", turnId: "t1", trigger: "ptt_release" });
+    engine.emit({ type: "turn_end", turnId: "t2", trigger: "ptt_release" });
+    await Promise.resolve();
+    expect(client.calls).toEqual([
+      "correct t1 p1 dueDate",
+      `turn_end t2 ptt_release ${KEY} ${JSON.stringify(LLM)}`,
+    ]);
+    expect(dropped).toEqual(["t1"]);
+    expect(settled).toEqual([{ ok: true, via: "socket" }]);
+  });
+});
 
 describe("connectEngine", () => {
   it("sends finals, turn ends with this turn's key, and usage; keeps the rest on the device", () => {

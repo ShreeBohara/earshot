@@ -310,7 +310,7 @@ describe("the correction limits (a security review's)", () => {
     });
   });
 
-  it("refuses typed characters past the session's budget, and answers a resend the same", async () => {
+  it("refuses typed characters past the session's budget, and a resend the same", async () => {
     const { socket, deal, stub } = await withProposals();
     await setMeta(stub, { typed_chars: CORRECTION_LIMITS.typedCharsPerSession - 5 });
     const over = typedCorrection(deal.proposalId, "fifty thousand");

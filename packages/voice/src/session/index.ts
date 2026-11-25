@@ -3,10 +3,13 @@
 // subscribes to; the store also takes a recorded log, for `/demo`'s replay. `SessionWitness`
 // runs the second witness on each turn's audio and sends its transcript (Phase 4 WP9).
 export {
+  type CorrectionDelivery,
+  type CorrectionRoute,
   createSessionClient,
   type MessageAck,
   MessageRefusedError,
   type ReviewDelivery,
+  type SendCorrectionInput,
   type SendStartInput,
   type SendTurnEndInput,
   type SendUsageInput,
@@ -16,7 +19,7 @@ export {
   SessionClosedError,
   type SessionLog,
 } from "./client";
-export { connectEngine, type EngineBridgeOptions } from "./engine-bridge";
+export { type ArmedCorrection, connectEngine, type EngineBridgeOptions } from "./engine-bridge";
 export {
   browserPageLifecycle,
   isIosPlatform,
