@@ -19,6 +19,8 @@ const ENTRIES = {
   normalize: "src/normalize/index.ts",
   faithfulness: "src/faithfulness.ts",
   tiers: "src/tiers/index.ts",
+  correct: "src/correct/index.ts",
+  followups: "src/followups/index.ts",
 };
 const DOUBLE_METAPHONE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?double-metaphone\//;
 const CHRONO_LOCALE =
@@ -86,6 +88,24 @@ describe("the Worker bundle", () => {
       path.join(root, ENTRIES.tiers),
     ]);
     expect(tiers.text.length).toBeLessThan(12_000);
+
+    // Corrections (Phase 5 WP13) carry the linker, the normalizers, and the faithfulness check's
+    // field table, for the web Worker and the edge Worker; the follow-up rules carry the tiers and
+    // nothing else, as the tiers carry nothing else.
+    const correct = result.outputFiles.find((file) => path.basename(file.path) === "correct.js");
+    const followups = result.outputFiles.find(
+      (file) => path.basename(file.path) === "followups.js",
+    );
+    const followupsMeta = Object.entries(result.metafile.outputs).find(
+      ([output]) => path.basename(output) === "followups.js",
+    )?.[1];
+    if (!correct || !followups || !followupsMeta) throw new Error("no correct or followups bundle");
+    expect(correct.text.length).toBeLessThan(450_000);
+    expect(
+      Object.keys(followupsMeta.inputs)
+        .map((input) => path.resolve(input))
+        .sort(),
+    ).toEqual([path.join(root, ENTRIES.followups), path.join(root, ENTRIES.tiers)].sort());
 
     const dir = mkdtempSync(path.join(tmpdir(), "earshot-understanding-bundle-"));
     try {
@@ -158,6 +178,67 @@ describe("the Worker bundle", () => {
           fields: {},
         }),
       ).toEqual({ tier: "quiet", reasons: [], nameNote: "context" });
+
+      const correctFile = path.join(dir, "correct.mjs");
+      writeFileSync(correctFile, correct.text);
+      const { correctProposal } = (await import(
+        /* @vite-ignore */ pathToFileURL(correctFile).href
+      )) as typeof import("../src/correct");
+      const evidence = {
+        utteranceId: "u1",
+        span: [0, 4] as [number, number],
+        audioMs: [0, 400] as [number, number],
+        confidence: 0.9,
+      };
+      const corrected = correctProposal(
+        {
+          proposalId: "p1",
+          type: "task",
+          target: {
+            decision: "none",
+            entityId: null,
+            kind: null,
+            basis: null,
+            p: null,
+            mention: null,
+            company: null,
+            candidates: [],
+          },
+          fields: { title: { value: "Send the deck", evidence } },
+          riskFlags: [],
+          linker: "linker.v1",
+        },
+        "dueDate",
+        [{ utteranceId: "u2", text: "Make it the 14th.", confidence: 1, startMs: 900, endMs: 900 }],
+        {
+          index: buildLinkIndex([]),
+          focusEntityId: null,
+          recent: [],
+          kinds: ["company", "contact", "deal"],
+          callTime: "2026-12-04T19:00:00Z",
+          timeZone: "America/New_York",
+        },
+      );
+      expect(corrected).toMatchObject({ ok: true, value: "2026-12-14", words: "the 14th" });
+
+      const followupsFile = path.join(dir, "followups.mjs");
+      writeFileSync(followupsFile, followups.text);
+      const { followupsFor } = (await import(
+        /* @vite-ignore */ pathToFileURL(followupsFile).href
+      )) as typeof import("../src/followups");
+      expect(
+        followupsFor([
+          {
+            proposalId: "p1",
+            type: "task",
+            riskFlags: [],
+            target: { decision: "linked", basis: "exact", candidates: [] },
+            fields: { title: { value: "Send the deck" } },
+          },
+        ]),
+      ).toEqual([
+        { proposalId: "p1", field: "dueDate", rule: "due_date", text: "When is it due?" },
+      ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

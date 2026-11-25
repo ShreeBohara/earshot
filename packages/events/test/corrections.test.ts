@@ -1,11 +1,16 @@
 // The writers' rules for corrections and follow-up skips (Phase 5 WP13; ADR-0038): which proposals
 // take a correction, on which fields, and which questions a correction answers or a skip closes.
+import { correctProposal } from "@earshot/understanding/correct";
+import { buildLinkIndex } from "@earshot/understanding/link";
+import { tierOf } from "@earshot/understanding/tiers";
 import { describe, expect, it } from "vitest";
 import {
   checkCorrection,
   checkFollowupSkip,
+  checkReview,
   correctableFields,
   type ProposalView,
+  policyRuleFor,
   proposalsProjection,
   replay,
 } from "../src";
@@ -13,10 +18,12 @@ import {
   followupAsked,
   followupClosed,
   proposalV2,
+  REVIEWER,
   reviewV2,
   sessionLog,
   started,
   utterance,
+  utteranceV3,
   uuid,
 } from "./helpers";
 
@@ -154,5 +161,93 @@ describe("checkFollowupSkip", () => {
       ok: false,
       reason: "question_closed",
     });
+  });
+});
+
+describe("a correction's proposal under the review rules (WP11 and WP12 kept true)", () => {
+  // Proposal 1 links "Akme" to uuid(6001) by sound; the rep corrects it to the exact name.
+  const index = buildLinkIndex([
+    { id: uuid(6001), kind: "company", name: "Acme Dynamics", aliases: [] },
+    { id: uuid(6002), kind: "company", name: "Atlas Freight", aliases: [] },
+  ]);
+  const original = proposalsOf(base)[0] as ProposalView;
+  const corrected = correctProposal(
+    original,
+    "target",
+    [{ utteranceId: uuid(2002), text: "Acme Dynamics", confidence: 1, startMs: 2000, endMs: 2000 }],
+    {
+      index,
+      focusEntityId: null,
+      recent: [],
+      kinds: ["company", "contact", "deal"],
+      callTime: "2026-11-10T19:15:00Z",
+      timeZone: "UTC",
+    },
+  );
+  if (!corrected.ok) throw new Error("refused");
+  const proposals = proposalsOf([
+    ...base,
+    utteranceV3(2, "Acme Dynamics", "typed"),
+    {
+      type: "proposal.created",
+      schemaVersion: 2,
+      payload: { proposalId: uuid(3002), ...corrected.proposal },
+    },
+  ]);
+  const replacement = proposals.find((p) => p.proposalId === uuid(3002)) as ProposalView;
+
+  it("is unmarked once the right record is linked exactly", () => {
+    expect(replacement.supersedes).toBe(uuid(3001));
+    expect(replacement.target).toMatchObject({ decision: "linked", basis: "exact" });
+    expect(tierOf(replacement).tier).toBe("none");
+  });
+
+  it("is never approved by a policy: it replaces another (WP11)", () => {
+    const rules = { version: 1, autoApprove: [{ id: "tasks", type: "task", alwaysReview: [] }] };
+    expect(policyRuleFor(replacement, rules as never, { tierOf })).toEqual({
+      ok: false,
+      reason: "supersedes",
+    });
+    const approval = reviewV2(2, "approved", {
+      mode: "policy",
+      policy: { id: uuid(9900), version: 1, rule: "tasks" },
+      input: "none",
+      surface: "session",
+      timing: { decisionMs: 0, handlingMs: 0 },
+      by: { userId: REVIEWER.userId, auth: null },
+    }).payload;
+    expect(checkReview(proposals, approval as never, { tierOf, from: "session" })).toMatchObject({
+      ok: false,
+      reason: "policy_excluded",
+    });
+  });
+
+  it("stays out of a batch when its CRM value moved since (WP12), and joins one otherwise", () => {
+    const batch = (seen: Record<string, unknown>) =>
+      reviewV2(2, "approved", { mode: "batch", batchId: uuid(9901), seen }).payload;
+    const plain = {
+      tier: "none",
+      fields: { title: { proposed: "Send the deck" } },
+      target: null,
+      relinked: null,
+      clip: "none",
+    };
+    expect(checkReview(proposals, batch(plain) as never, { tierOf, from: "client" }).ok).toBe(true);
+    const moved = {
+      ...plain,
+      fields: { title: { proposed: "Send the deck", base: "a", current: "b" } },
+    };
+    expect(checkReview(proposals, batch(moved) as never, { tierOf, from: "client" })).toMatchObject(
+      {
+        ok: false,
+        reason: "marked",
+      },
+    );
+  });
+
+  it("leaves the proposal it replaced refusing every review", () => {
+    expect(
+      checkReview(proposals, reviewV2(1).payload as never, { tierOf, from: "client" }),
+    ).toMatchObject({ ok: false, reason: "superseded" });
   });
 });

@@ -7,6 +7,7 @@ export {
   checkCorrection,
   checkFollowupSkip,
   correctableFields,
+  linkerOf,
   type SkipCheck,
 } from "./corrections";
 export {

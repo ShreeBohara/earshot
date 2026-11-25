@@ -2,8 +2,15 @@
 // SessionDO for the socket's `correct` and `followup`, and the web Worker after the seal. Like the
 // review rules, they live here, pure, and each writer checks against the session's folded proposals
 // before it appends; `proposalsProjection` refuses the worst of them again.
-import { PROPOSAL_TYPE_FIELDS, type ProposalTypeV2, TARGET_FIELD } from "@earshot/core";
+import {
+  type EventEnvelope,
+  PROPOSAL_TYPE_FIELDS,
+  type ProposalTypeV2,
+  TARGET_FIELD,
+} from "@earshot/core";
 import type { FollowupView, ProposalView } from "./projections";
+import { defaultRegistry } from "./registry";
+import type { ProposalCreatedEvent } from "./types";
 
 /** Why a correction or a skip was refused. */
 export type CorrectionRefusal =
@@ -121,4 +128,17 @@ export function checkFollowupSkip(
     return { ok: true, question };
   }
   return refuse("unknown_question", `no question ${questionId}`);
+}
+
+/**
+ * The linker that resolved a proposal's record, from its `proposal.created` in `log`: what a
+ * correction of one of its fields carries over (the projection doesn't keep it). Null when the log
+ * has no such proposal, or it was upcast from v1.
+ */
+export function linkerOf(log: readonly EventEnvelope[], proposalId: string): string | null {
+  for (const event of log) {
+    if (event.type !== "proposal.created" || event.payload.proposalId !== proposalId) continue;
+    return (defaultRegistry.toLatest(event) as ProposalCreatedEvent).payload.linker;
+  }
+  return null;
 }
