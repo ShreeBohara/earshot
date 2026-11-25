@@ -18,11 +18,13 @@
 //   does the rest.
 // - Each review records the viewer's sign-in: the method, and when the sign-in session began.
 // - A record a review says was offered at review time (`seen.relinked`, Phase 5 WP12) must be a
-//   company or contact the workspace's mirror holds (400 otherwise); `checkReview` lets it count
-//   as offered only on a new-record proposal.
+//   record the workspace's mirror holds, of a kind the proposal's type can target (400
+//   otherwise); `checkReview` lets it count as offered only on a new-record proposal.
 // - Every answer is `cache-control: no-store` and quotes nothing from the request.
+import { TARGET_KINDS } from "@earshot/agent/link-context";
 import {
   MAX_REVIEW_REQUEST_BYTES,
+  type ProposalTypeV2,
   type Reviewer,
   type ReviewRouteError,
   type ReviewRouteErrorBody,
@@ -170,7 +172,7 @@ export async function sessionReviewsRoute(
         .limit(1);
       // Another member's session is as missing as another workspace's.
       if (!row || row.userId !== viewer.user.id) return { ok: false, reason: "not_found" };
-      const unknown = await unknownRelinks(tx, viewer.workspaceId, reviews);
+      const unknown = await unknownRelinks(tx, viewer.workspaceId, id, reviews);
       if (unknown !== null) {
         return {
           ok: false,
@@ -245,37 +247,53 @@ export async function sessionReviewsRoute(
 
 /**
  * The index of the first review whose record offered at review time (`seen.relinked`, WP12) isn't
- * a company or contact in the workspace's mirror, or null when every one is (or none names one).
- * One read for all of them, under row-level security.
+ * a record in the workspace's mirror of a kind its proposal's type can target (a contact
+ * proposal's, a contact), or null when every one is (or none names one). One read of the records
+ * and one of the proposals, under row-level security.
  */
 async function unknownRelinks(
   tx: Parameters<Parameters<ReviewRouteDeps["withViewerTenant"]>[0]>[0],
   workspaceId: string,
+  sessionId: string,
   reviews: readonly ReviewPayload[],
 ): Promise<number | null> {
   const named = reviews.flatMap((review, index) => {
     const entityId = review.seen?.relinked;
-    return entityId ? [{ index, entityId }] : [];
+    return entityId
+      ? [{ index, entityId: entityId.toLowerCase(), proposalId: review.proposalId }]
+      : [];
   });
   if (named.length === 0) return null;
-  const ids = [...new Set(named.map(({ entityId }) => entityId.toLowerCase()))].filter((id) =>
-    UUID.test(id),
-  );
-  const { crmEntities } = schema;
-  const found =
-    ids.length === 0
-      ? []
-      : await tx
-          .select({ id: crmEntities.id })
-          .from(crmEntities)
-          .where(
-            and(
-              eq(crmEntities.workspaceId, workspaceId),
-              inArray(crmEntities.id, ids),
-              inArray(crmEntities.kind, ["company", "contact"]),
-            ),
-          );
-  const known = new Set(found.map((row) => row.id));
-  const first = named.find(({ entityId }) => !known.has(entityId.toLowerCase()));
+  const ids = [...new Set(named.map(({ entityId }) => entityId))].filter((id) => UUID.test(id));
+  if (ids.length === 0) return named[0]?.index ?? null;
+  const { crmEntities, proposals } = schema;
+  const records = await tx
+    .select({ id: crmEntities.id, kind: crmEntities.kind })
+    .from(crmEntities)
+    .where(and(eq(crmEntities.workspaceId, workspaceId), inArray(crmEntities.id, ids)));
+  const types = await tx
+    .select({ id: proposals.id, type: proposals.type })
+    .from(proposals)
+    .where(
+      and(
+        eq(proposals.workspaceId, workspaceId),
+        eq(proposals.sessionId, sessionId),
+        inArray(
+          proposals.id,
+          named.map(({ proposalId }) => proposalId),
+        ),
+      ),
+    );
+  const kindOf = new Map(records.map((row) => [row.id, row.kind]));
+  const typeOf = new Map(types.map((row) => [row.id, row.type as ProposalTypeV2]));
+  const first = named.find(({ entityId, proposalId }) => {
+    const kind = kindOf.get(entityId);
+    const type = typeOf.get(proposalId);
+    return (
+      kind === undefined ||
+      type === undefined ||
+      !(TARGET_KINDS[type] as readonly string[] | undefined)?.includes(kind)
+    );
+  });
   return first ? first.index : null;
 }

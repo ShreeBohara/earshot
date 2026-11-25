@@ -170,7 +170,10 @@ function byType(data: InboxData, type: InboxProposal["type"]) {
 }
 
 /** The new-record proposal a debrief makes of "Atmo Systems", a company no record matches. */
-function newRecordDebrief(mention = "Atmo Systems"): EventDraft[] {
+function newRecordDebrief(
+  mention = "Atmo Systems",
+  as: { type: "task" | "contact"; kind: "company" | "contact" } = { type: "task", kind: "company" },
+): EventDraft[] {
   const evidence = {
     utteranceId: "00000000-0000-7000-8000-0000000007d1",
     span: [0, mention.length],
@@ -187,13 +190,13 @@ function newRecordDebrief(mention = "Atmo Systems"): EventDraft[] {
         {
           decision: "new",
           entityId: null,
-          kind: "company",
+          kind: as.kind,
           basis: null,
           p: 0.94,
           mention: { quote: mention, evidence },
           candidates: [{ entityId: null, p: 0.94 }],
         },
-        { riskFlags: [{ kind: "new_entity", field: "target" }] },
+        { type: as.type, riskFlags: [{ kind: "new_entity", field: "target" }] },
       ),
     ),
     draft(4, ended()),
@@ -505,6 +508,63 @@ describe("re-linking a new record at review time", () => {
       .from(proposals)
       .where(eq(proposals.id, proposal.proposalId));
     expect(row?.status).toBe("proposed");
+  });
+
+  it("refuses an offered record of a kind the proposal can't target", async () => {
+    const viewer = await signIn("dana@earshot.example");
+    await withTenant(db, tenantOf(viewer), (tx) => loadDemoCrm(tx));
+    const sessionId = await sessionWithLog(
+      viewer,
+      newRecordDebrief("Dana Leigh", { type: "contact", kind: "contact" }),
+    );
+    const { proposal } = byType(await load(viewer), "contact");
+    // A real record of the workspace's, but a company, which a contact proposal can't be.
+    const [company] = await db
+      .select({ id: crmEntities.id })
+      .from(crmEntities)
+      .where(eq(crmEntities.name, "Pier Logistics"));
+    const companyId = company?.id as string;
+    const review = decisionReview({
+      proposal: { ...proposal, crm: { moved: {}, relink: companyId } },
+      entities: {},
+      decision: "approved",
+      target: { entityId: companyId },
+      timing: { decisionMs: 700, handlingMs: 700 },
+      input: "keyboard",
+    });
+    const response = await reviewsRoute.POST(
+      new Request(`${ORIGIN}/api/sessions/${sessionId}/reviews`, {
+        method: "POST",
+        headers: { cookie: scope.cookie, "content-type": "application/json", origin: ORIGIN },
+        body: JSON.stringify({ reviews: [review] }),
+      }),
+      { params: Promise.resolve({ id: sessionId }) },
+    );
+    expect(response.status).toBe(400);
+
+    // The same review naming a contact goes through: it was the kind.
+    const [contact] = await db
+      .select({ id: crmEntities.id })
+      .from(crmEntities)
+      .where(eq(crmEntities.name, "Dana Lee"));
+    const contactId = contact?.id as string;
+    const fine = decisionReview({
+      proposal: { ...proposal, crm: { moved: {}, relink: contactId } },
+      entities: {},
+      decision: "approved",
+      target: { entityId: contactId },
+      timing: { decisionMs: 700, handlingMs: 700 },
+      input: "keyboard",
+    });
+    const accepted = await reviewsRoute.POST(
+      new Request(`${ORIGIN}/api/sessions/${sessionId}/reviews`, {
+        method: "POST",
+        headers: { cookie: scope.cookie, "content-type": "application/json", origin: ORIGIN },
+        body: JSON.stringify({ reviews: [fine] }),
+      }),
+      { params: Promise.resolve({ id: sessionId }) },
+    );
+    expect(accepted.status).toBe(200);
   });
 });
 

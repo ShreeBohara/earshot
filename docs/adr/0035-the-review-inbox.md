@@ -180,7 +180,7 @@ The time is the reviewer's own: the server renders it in UTC, saying so, and the
 
 **Neither is a flag.** `tierOf`, the evals, their budgets, and every baseline are unchanged; the card's tier as shown (`CardModel.tier`, `seen.tier`) is loud. "Accept all" leaves both out ("Needs a check: The stage changed in your CRM after you spoke."), and the writers agree: `checkReview` refuses a batch approval whose `seen` records a CRM change (a field's `current`) or a re-link offer (`seenLoudAtReview`), and a policy's likewise. No policy could take either anyway: a policy runs once, as `SessionDO` creates the proposal, before anything could have moved, and never on a new record (`not_linked`).
 
-**Trusting a re-link.** `seen.relinked` counts as offered only on a new-record proposal (`checkReview`'s target rule; before WP12 it widened any proposal's choices), and the review route refuses one that isn't a company or contact the workspace's mirror holds (400), so a page can't reach a record nothing offered, or one that isn't there.
+**Trusting a re-link.** `seen.relinked` counts as offered only on a new-record proposal (`checkReview`'s target rule; before WP12 it widened any proposal's choices), and the review route refuses one that isn't a record the workspace's mirror holds, of a kind the proposal's type can target (400), so a page can't reach a record nothing offered, one that isn't there, or one of the wrong kind.
 
 **What each review records** now (`seenOf`): each update field's `base` (the history's value at the proposal's time, else the value now), its `current` only where it moved, any record offered (`relinked`), and the tier as shown.
 
