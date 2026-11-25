@@ -1,6 +1,8 @@
 // @earshot/crm/testing (Phase 6 WP2; docs/adr/0041): the reference CRM, the conformance suite's
 // harness types, seeded faults, and what tests build plans from. Worker-safe (no Node APIs and no
 // Vitest), so the outbox's tests can run MemoryCrm in workerd too; no Worker's own code imports it.
+export { type DemoRaw, demoHarness, demoMirrorValues, memoryDemoRaw } from "./demo-harness";
+export { type DemoChangeRow, MemoryDemoStore } from "./demo-store";
 export { type FaultPlan, type FaultPoint, faultSchedule, seeded } from "./faults";
 export type {
   ConformanceHarness,

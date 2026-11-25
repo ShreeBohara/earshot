@@ -1,0 +1,80 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [
+        {
+          "ref": {
+            "object": "contact",
+            "id": "ct_001",
+            "url": null
+          },
+          "field": "title",
+          "crmField": "title",
+          "seen": "Director"
+        },
+        {
+          "ref": {
+            "object": "contact",
+            "id": "ct_001",
+            "url": null
+          },
+          "field": "email",
+          "crmField": "email",
+          "seen": "dana.lee@acme.example"
+        },
+        {
+          "ref": {
+            "object": "contact",
+            "id": "ct_001",
+            "url": null
+          },
+          "field": "phone",
+          "crmField": "phone",
+          "seen": "555-0100"
+        }
+      ],
+      "writes": [
+        {
+          "index": 0,
+          "op": "update",
+          "object": "contact",
+          "marker": "es_my6fdk4paotmywizwwzf",
+          "ref": {
+            "object": "contact",
+            "id": "ct_001",
+            "url": null
+          },
+          "properties": {
+            "title": "Chief Operating Officer",
+            "email": "priya.raman@acme.example",
+            "phone": "555-0177"
+          },
+          "associate": []
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PATCH",
+      "url": "demo:/contacts/ct_001",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "title": "Chief Operating Officer",
+          "email": "priya.raman@acme.example",
+          "phone": "555-0177"
+        }
+      }
+    }
+  ],
+  "checks": [
+    "Checks that the title is still Director",
+    "Checks that the email is still dana.lee@acme.example",
+    "Checks that the phone number is still 555-0100"
+  ]
+}

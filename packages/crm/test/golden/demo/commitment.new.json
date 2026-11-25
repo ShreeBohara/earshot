@@ -1,0 +1,80 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "company",
+          "marker": "es_7dpjh52iv736e2tz3hb2",
+          "ref": null,
+          "properties": {
+            "name": "Atlas Freight",
+            "writeId": "es_7dpjh52iv736e2tz3hb2"
+          },
+          "associate": []
+        },
+        {
+          "index": 1,
+          "op": "create",
+          "object": "task",
+          "marker": "es_bj5z5aoiaedj3t4asadf",
+          "ref": null,
+          "properties": {
+            "body": "Commitment: Share the SOC 2 report\n\nCounterpart: Dana\n\nvia Earshot · ref es_bj5z5aoiaedj3t4asadf",
+            "dueAt": "2026-12-01T15:00:00.000Z"
+          },
+          "associate": [
+            {
+              "to": {
+                "write": 0
+              },
+              "type": "record"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/companies?writeId=es_7dpjh52iv736e2tz3hb2",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "name": "Atlas Freight",
+          "writeId": "es_7dpjh52iv736e2tz3hb2"
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "url": "demo:/tasks?writeId=es_bj5z5aoiaedj3t4asadf",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "body": "Commitment: Share the SOC 2 report\n\nCounterpart: Dana\n\nvia Earshot · ref es_bj5z5aoiaedj3t4asadf",
+          "dueAt": "2026-12-01T15:00:00.000Z"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "company",
+              "id": "(write-0)"
+            },
+            "type": "record"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

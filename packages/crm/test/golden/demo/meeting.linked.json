@@ -1,0 +1,57 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "meeting",
+          "marker": "es_eufenergogqgsra7f42x",
+          "ref": null,
+          "properties": {
+            "body": "Security review\n\nAttendees: Dana and their CISO\n\nvia Earshot · ref es_eufenergogqgsra7f42x",
+            "startsAt": "2026-12-03T20:30:00.000Z"
+          },
+          "associate": [
+            {
+              "to": {
+                "object": "company",
+                "id": "co_001",
+                "url": null
+              },
+              "type": "record"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/meetings?writeId=es_eufenergogqgsra7f42x",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "body": "Security review\n\nAttendees: Dana and their CISO\n\nvia Earshot · ref es_eufenergogqgsra7f42x",
+          "startsAt": "2026-12-03T20:30:00.000Z"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "company",
+              "id": "co_001"
+            },
+            "type": "record"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

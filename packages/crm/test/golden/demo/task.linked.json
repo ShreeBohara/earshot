@@ -1,0 +1,57 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "task",
+          "marker": "es_zcgedpueneh2q4foldzm",
+          "ref": null,
+          "properties": {
+            "body": "Send the revised pricing\n\nvia Earshot · ref es_zcgedpueneh2q4foldzm",
+            "dueAt": "2026-12-04T15:00:00.000Z"
+          },
+          "associate": [
+            {
+              "to": {
+                "object": "contact",
+                "id": "ct_001",
+                "url": null
+              },
+              "type": "record"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/tasks?writeId=es_zcgedpueneh2q4foldzm",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "body": "Send the revised pricing\n\nvia Earshot · ref es_zcgedpueneh2q4foldzm",
+          "dueAt": "2026-12-04T15:00:00.000Z"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "contact",
+              "id": "ct_001"
+            },
+            "type": "record"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

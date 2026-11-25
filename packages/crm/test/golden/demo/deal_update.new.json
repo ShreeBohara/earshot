@@ -1,0 +1,63 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "deal",
+          "marker": "es_3rniu4lodplgtvz2hkio",
+          "ref": null,
+          "properties": {
+            "name": "the Acme pilot",
+            "stage": "qualifiedtobuy",
+            "amount": 25000,
+            "closeDate": "2027-01-15",
+            "writeId": "es_3rniu4lodplgtvz2hkio"
+          },
+          "associate": [
+            {
+              "to": {
+                "object": "company",
+                "id": "co_001",
+                "url": null
+              },
+              "type": "companyId"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/deals?writeId=es_3rniu4lodplgtvz2hkio",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "name": "the Acme pilot",
+          "stage": "qualifiedtobuy",
+          "amount": 25000,
+          "closeDate": "2027-01-15",
+          "writeId": "es_3rniu4lodplgtvz2hkio"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "company",
+              "id": "co_001"
+            },
+            "type": "companyId"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

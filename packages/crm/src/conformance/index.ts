@@ -9,6 +9,7 @@ import type { ConformanceHarness } from "../testing/harness";
 import { type ConformanceOptions, conformanceSuite } from "./suite";
 
 export { CASES, type Case, type CaseTarget, type CaseWorld, caseInput } from "./cases";
+export { demoConformanceOptions, demoLimits } from "./demo";
 export {
   type Check,
   type CheckGroup,

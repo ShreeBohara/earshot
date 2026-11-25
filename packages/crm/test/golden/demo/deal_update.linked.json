@@ -1,0 +1,80 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [
+        {
+          "ref": {
+            "object": "deal",
+            "id": "deal_001",
+            "url": null
+          },
+          "field": "stage",
+          "crmField": "stage",
+          "seen": "appointmentscheduled"
+        },
+        {
+          "ref": {
+            "object": "deal",
+            "id": "deal_001",
+            "url": null
+          },
+          "field": "amount",
+          "crmField": "amount",
+          "seen": 30000
+        },
+        {
+          "ref": {
+            "object": "deal",
+            "id": "deal_001",
+            "url": null
+          },
+          "field": "closeDate",
+          "crmField": "closeDate",
+          "seen": "2026-12-31"
+        }
+      ],
+      "writes": [
+        {
+          "index": 0,
+          "op": "update",
+          "object": "deal",
+          "marker": "es_gscpw5nvl37vchjlfog6",
+          "ref": {
+            "object": "deal",
+            "id": "deal_001",
+            "url": null
+          },
+          "properties": {
+            "stage": "qualifiedtobuy",
+            "amount": 48000,
+            "closeDate": "2026-12-15"
+          },
+          "associate": []
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PATCH",
+      "url": "demo:/deals/deal_001",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "stage": "qualifiedtobuy",
+          "amount": 48000,
+          "closeDate": "2026-12-15"
+        }
+      }
+    }
+  ],
+  "checks": [
+    "Checks that the stage is still Appointment scheduled",
+    "Checks that the amount is still $30,000",
+    "Checks that the close date is still 2026-12-31"
+  ]
+}
