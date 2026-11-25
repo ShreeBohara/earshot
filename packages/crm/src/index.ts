@@ -53,3 +53,14 @@ export {
 export { idempotencyKey, MARKER_CHARS, MARKER_PREFIX, marker } from "./markers";
 export * from "./plan";
 export { CREDENTIAL_PREVIEW, holdsSecret, REDACTED, redact, redactCause } from "./redact";
+export {
+  checkSentences,
+  outcomeRef,
+  placeholderId,
+  previewOf,
+  previewRef,
+  type RequestSpec,
+  requestOf,
+  resolvePreview,
+  urlOf,
+} from "./render";
