@@ -94,7 +94,7 @@
                 {
                   "type": "string",
                   "maxLength": 2048,
-                  "format": "uri"
+                  "pattern": "^https?:\\/\\/[^\\s/?#@]+(?:[/?#]\\S*)?$"
                 },
                 {
                   "type": "null"

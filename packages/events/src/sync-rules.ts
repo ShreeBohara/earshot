@@ -5,7 +5,6 @@
 // `proposalsProjection` refuses the worst of them again, so a writer that skipped this check still
 // can't commit a log that won't replay.
 import type {
-  ExternalRef,
   ProposalSyncConflictedV1,
   ProposalSyncedV1,
   ProposalSyncFailedV1,
@@ -69,10 +68,10 @@ const ERROR_CODE = /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/;
  *
  * 1. The session is sealed, whatever the event.
  * 2. Its shape, beyond the schema: a start names a connection exactly when its CRM isn't the demo
- *    CRM; a record's link is `http` or `https`, since the inbox shows it as a link; a success names
- *    each planned write once; a failure names a field only for a refused value or a plan that
- *    can't read one, and carries a code, never a message; a conflict lists the fields that moved
- *    exactly when its cause is `moved`, and names an existing record only when it's `duplicate`.
+ *    CRM; a success names each planned write once; a failure names a field only for a refused
+ *    value or a plan that can't read one, and carries a code, never a message; a conflict lists the
+ *    fields that moved exactly when its cause is `moved`, and names an existing record only when
+ *    it's `duplicate`. (A record's link is `http` or `https`: the schema holds that one.)
  * 3. A start (`proposal.sync_started`): its review is the latest review of a proposal, approving
  *    or editing it; nothing replaced that proposal; no attempt is syncing it; and if the proposal's
  *    last attempt was this job's, that attempt failed and may be retried, and this one is later.
@@ -185,17 +184,17 @@ function checkShape(event: SyncEventInput): string | null {
       if (new Set(records.map((record) => record.write)).size !== records.length) {
         return "a sync names each planned write once";
       }
-      return linkProblem(records.map((record) => record.ref));
+      return null;
     }
     case "proposal.sync_failed": {
-      const { kind, code, field, landed } = event.payload;
+      const { kind, code, field } = event.payload;
       if (field !== null && !FIELD_KINDS.has(kind)) {
         return `a ${kind} failure names no field`;
       }
       if (code !== null && !ERROR_CODE.test(code)) {
         return "a failure carries the CRM's code, never its message";
       }
-      return linkProblem(landed);
+      return null;
     }
     case "proposal.sync_conflicted": {
       const { cause, fields, existing } = event.payload;
@@ -205,17 +204,7 @@ function checkShape(event: SyncEventInput): string | null {
       if (existing !== null && cause !== "duplicate") {
         return "only a duplicate names the record that exists";
       }
-      return linkProblem(existing === null ? [] : [existing]);
+      return null;
     }
   }
-}
-
-/** Why a record's link can't be shown as one, or null: links are `http` or `https`. */
-function linkProblem(refs: readonly ExternalRef[]): string | null {
-  for (const ref of refs) {
-    if (ref.url !== null && !/^https?:\/\//i.test(ref.url)) {
-      return "a record's link is http or https";
-    }
-  }
-  return null;
 }

@@ -21,13 +21,29 @@ export type CrmObject = z.infer<typeof CrmObject>;
 /** The most writes one sync plans (target), so the most records one attempt reports. */
 export const MAX_SYNC_WRITES = 8;
 
+/** The longest link to a record a sync event holds. */
+export const MAX_CRM_URL_CHARS = 2048;
+
+/**
+ * A record's link in its CRM's own app, which the inbox shows as a link ("Open in HubSpot"): `http`
+ * or `https` only, a host with no spaces or credentials, then any path, query, or fragment without
+ * spaces, at most 2,048 characters. A review fix: the spec's `z.url()` takes any scheme,
+ * `javascript:` and `data:` among them. It's a pattern rather than `z.url()`, so the JSON Schema
+ * export carries the rule to the lab: Pydantic drops a pattern and a length on a `format: uri`
+ * string. `http` is for a self-hosted Twenty on `localhost`, in development and in CI.
+ */
+export const CrmRecordUrl = z
+  .string()
+  .max(MAX_CRM_URL_CHARS)
+  .regex(/^https?:\/\/[^\s/?#@]+(?:[/?#]\S*)?$/);
+
 /** A record in a CRM: what it is, its id there, and its link in the CRM's app. */
 export const ExternalRef = z
   .strictObject({
     object: CrmObject,
     id: z.string().min(1).max(256),
     /** The record in the CRM's own app, when the adapter knows the link; null otherwise. */
-    url: z.url().max(2048).nullable(),
+    url: CrmRecordUrl.nullable(),
   })
   .meta({ title: "ExternalRef" });
 export type ExternalRef = z.infer<typeof ExternalRef>;

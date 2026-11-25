@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class Provider(StrEnum):
@@ -32,8 +32,8 @@ class Object(StrEnum):
     meeting = 'meeting'
 
 
-class Url(RootModel[AnyUrl]):
-    root: AnyUrl
+class Url(RootModel[str]):
+    root: Annotated[str, Field(max_length=2048, pattern='^https?:\\/\\/[^\\s/?#@]+(?:[/?#]\\S*)?$')]
 
 
 class Ref(BaseModel):

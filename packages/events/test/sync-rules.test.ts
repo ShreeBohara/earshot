@@ -233,15 +233,6 @@ describe("checkSyncEvent refuses", () => {
       }),
       "malformed",
     ],
-    [
-      "a record whose link isn't http or https",
-      synced(5, {
-        records: [
-          { write: 0, op: "created", ref: { object: "note", id: "1", url: "javascript:alert(1)" } },
-        ],
-      }),
-      "malformed",
-    ],
     ["a failure naming a field its kind doesn't", syncFailed(5, { field: "title" }), "malformed"],
     [
       "a failure quoting the CRM's message",

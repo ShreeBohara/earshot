@@ -1,0 +1,27 @@
+{
+  "jobId": "01a1c6f0-1a2b-7c3d-8e4f-5a6b7c8d9e01",
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d01",
+  "attempt": 1,
+  "provider": "hubspot",
+  "records": [
+    {
+      "write": 0,
+      "op": "updated",
+      "ref": {
+        "object": "deal",
+        "id": "18837412",
+        "url": "https:///record/18837412"
+      }
+    },
+    {
+      "write": 1,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "70023115",
+        "url": null
+      }
+    }
+  ],
+  "associations": 1
+}
