@@ -3,6 +3,9 @@
 // - j and k move; a accepts; e edits; r rejects; s snoozes until tomorrow at 9:00; c opens the
 //   correction panel; u undoes; 1 to 4 choose and accept (on a 3-way card with no choices of its
 //   own, Phase 5 WP12, 1 keeps the rep's value and 2 the CRM's); ? lists the keys.
+// - On a follow-up question's card (Phase 5 WP13), c answers it and r skips it; its buttons show
+//   both keys. The list below stays as it is: /pilot shares it, and has neither questions nor typed
+//   corrections.
 // - They act only while focus is in the inbox's list, and never from a text field. The page wires
 //   that scope (use-inbox-keys.ts); this module only reads a key.
 // - Settings → Review turns them off, per device (`earshot.inbox.shortcuts`, in localStorage, like

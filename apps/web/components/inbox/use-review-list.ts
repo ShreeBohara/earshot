@@ -1,6 +1,13 @@
 "use client";
 
-import { type FieldEdit, type FieldValue, type ReviewSurface, UNDO_WINDOW_MS } from "@earshot/core";
+import {
+  type FieldEdit,
+  type FieldValue,
+  PROPOSAL_TYPE_FIELDS,
+  type ReviewSurface,
+  UNDO_WINDOW_MS,
+} from "@earshot/core";
+import type { FollowupView } from "@earshot/events";
 import { toast } from "@earshot/ui/components/toast";
 import {
   type KeyboardEvent,
@@ -11,6 +18,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { fieldLabel } from "@/lib/capture/copy";
 import {
   type BatchPlan,
   batchItems,
@@ -33,9 +41,19 @@ import {
   noRecordHint,
   shownValue,
 } from "@/lib/inbox/copy";
+import {
+  type CorrectionOutcome,
+  type CorrectionSink,
+  correctionFailureLine,
+} from "@/lib/inbox/corrections";
 import { canAddMatching, simulatedField } from "@/lib/inbox/demo";
 import { editDiff } from "@/lib/inbox/edit";
-import { adjacentCard, focusAfterBatch, focusAfterRemoval } from "@/lib/inbox/focus";
+import {
+  adjacentCard,
+  focusAfterBatch,
+  focusAfterRemoval,
+  followupStopId,
+} from "@/lib/inbox/focus";
 import {
   cardOrder,
   type InboxSections,
@@ -61,6 +79,9 @@ import {
 import { type SnoozeOption, snoozeUntil, whenWords } from "@/lib/inbox/time";
 import type { InboxEntity, InboxProposal, InboxSession } from "@/lib/inbox/types";
 import type { CardActions, CardDemo } from "./proposal-card";
+
+export { followupStopId } from "@/lib/inbox/focus";
+
 import { useInboxKeys } from "./use-inbox-keys";
 import { BATCH_CLOCK_KEY, useReviewClock } from "./use-review-clock";
 import { type RovingFocus, useRovingFocus } from "./use-roving-focus";
@@ -90,6 +111,55 @@ interface ToastActions {
   readonly undoBatch: (batchId: string, event: InputEventLike) => void;
 }
 
+/**
+ * A card's correction panel, past the candidates (Phase 5 WP13): the field picker, the text box,
+ * and the microphone on the capture screen while it's live. Absent where corrections can't be
+ * written (the pilot), where the panel keeps only the candidates.
+ */
+export interface CorrectionBinding {
+  /** What can be corrected: the record, then the type's fields. */
+  readonly fields: readonly { readonly value: string; readonly label: string }[];
+  readonly field: string;
+  readonly text: string;
+  readonly busy: boolean;
+  /** Why the last try didn't go through: "I couldn't read a date in …". */
+  readonly error: string | null;
+  /** Whether the microphone is listening for this card's correction. */
+  readonly listening: boolean;
+  /** Whether a spoken correction can be made here now. */
+  readonly canSpeak: boolean;
+  readonly onField: (field: string) => void;
+  readonly onText: (text: string) => void;
+  readonly onSubmit: (event: InputEventLike) => void;
+  readonly onSpeak: () => void;
+}
+
+/** A follow-up question's card, after its proposal's (Phase 5 WP13): c answers it, r skips it. */
+export interface FollowupBinding {
+  /** Its stop in the roving focus: `followup:` and the question's id. */
+  readonly id: string;
+  readonly question: FollowupView;
+  /** The proposal it asks about: "Task · Pier Logistics". */
+  readonly about: string;
+  readonly active: boolean;
+  readonly shortcuts: boolean;
+  readonly answering: boolean;
+  readonly text: string;
+  readonly busy: boolean;
+  readonly error: string | null;
+  readonly listening: boolean;
+  readonly canSpeak: boolean;
+  readonly answer: (event: InputEventLike) => void;
+  readonly skip: (event: InputEventLike) => void;
+  readonly close: () => void;
+  readonly onText: (text: string) => void;
+  readonly onSubmit: (event: InputEventLike) => void;
+  readonly onSpeak: () => void;
+  readonly focused: () => void;
+  /** Registers the question's card with the roving focus (not the review clock: it's no card). */
+  readonly cardRef: (element: HTMLElement | null) => void;
+}
+
 /** What a card's component needs from the list, but its heading level. */
 export interface CardBinding {
   readonly proposal: InboxProposal;
@@ -107,6 +177,8 @@ export interface CardBinding {
   readonly cardRef: Ref<HTMLElement>;
   /** The card's demo controls in More (WP12), or absent where it gets none. */
   readonly demo?: CardDemo;
+  /** The correction panel's field picker and text box (WP13), where corrections can be written. */
+  readonly correction?: CorrectionBinding;
 }
 
 /**
@@ -153,6 +225,16 @@ export interface ReviewListOptions {
   readonly loadedAt: string;
   /** The inbox's demo controls (WP12); the tray and the pilot pass none. */
   readonly demo?: DemoControls;
+  /**
+   * Where corrections and follow-up skips go (WP13): the route in the inbox, the socket in the
+   * tray. The pilot passes none: its panel keeps only the candidates, and it shows no questions.
+   */
+  readonly corrections?: CorrectionSink;
+  /**
+   * After a correction lands, so its card arrives: the inbox reads itself again. The tray needs
+   * none: the session's events bring it.
+   */
+  readonly onCorrected?: () => Promise<void> | void;
 }
 
 export interface ReviewList {
@@ -174,6 +256,8 @@ export interface ReviewList {
   readonly roving: RovingFocus;
   /** Everything a card's component takes but its heading level, or null for a card not shown. */
   readonly card: (proposalId: string) => CardBinding | null;
+  /** The open follow-up questions' cards after a proposal's card (WP13), in the order asked. */
+  readonly followups: (proposalId: string) => readonly FollowupBinding[];
   /** The list's key handler, for the element holding its cards and "All caught up". */
   readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   /** Undo or Reopen: a reopen naming the card's latest review. */
@@ -208,6 +292,17 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
   const [corrections, setCorrections] = useState<Readonly<Record<string, number>>>({});
   const [hints, setHints] = useState<Readonly<Record<string, string>>>({});
   const [checkpoint, setCheckpoint] = useState<string | null>(null);
+  // Corrections and follow-up questions (WP13), each keyed by its card's or question's stop.
+  const sink = options.corrections;
+  const [correctionFields, setCorrectionFields] = useState<Readonly<Record<string, string>>>({});
+  const [correctionTexts, setCorrectionTexts] = useState<Readonly<Record<string, string>>>({});
+  const [correctionErrors, setCorrectionErrors] = useState<Readonly<Record<string, string>>>({});
+  const [correctionBusy, setCorrectionBusy] = useState<string | null>(null);
+  const [listening, setListening] = useState<string | null>(null);
+  const [answering, setAnswering] = useState<string | null>(null);
+  const [closedQuestions, setClosedQuestions] = useState<ReadonlySet<string>>(() => new Set());
+  /** The proposal a correction just replaced: its replacement takes focus once it arrives. */
+  const replacing = useRef<string | null>(null);
   // The server's clock until the page has its own, so the first render matches the server's.
   const [now, setNow] = useState(() => Date.parse(options.loadedAt));
   const [refreshNow] = useState(() => () => setNow(Date.now()));
@@ -236,7 +331,28 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     () => inboxSections(sessions, entities, now, reviewable),
     [sessions, entities, now, reviewable],
   );
-  const order = useMemo(() => cardOrder(sections.review), [sections.review]);
+  /** The open questions a card shows after it: none where corrections can't be written. */
+  const openQuestions = useMemo(() => {
+    return (proposal: InboxProposal): FollowupView[] =>
+      sink
+        ? proposal.followups.filter(
+            (question) => question.status === "open" && !closedQuestions.has(question.questionId),
+          )
+        : [];
+  }, [sink, closedQuestions]);
+  // Each group's stops: every card, each followed by its open questions' cards.
+  const order = useMemo(
+    () =>
+      sections.review.map((group) =>
+        group.accounts.flatMap((account) =>
+          account.proposals.flatMap((proposal) => [
+            proposal.proposalId,
+            ...openQuestions(proposal).map((question) => followupStopId(question.questionId)),
+          ]),
+        ),
+      ),
+    [sections.review, openQuestions],
+  );
   const found = useMemo(() => {
     const map = new Map<string, { proposal: InboxProposal; sessionId: string }>();
     for (const session of sessions) {
@@ -286,6 +402,18 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
           observe(proposalId, element);
         };
         refs.set(proposalId, ref);
+      }
+      return ref;
+    };
+  });
+  /** One ref callback per question's card (WP13): the roving focus only. */
+  const [questionRef] = useState(() => {
+    const refs = new Map<string, (element: HTMLElement | null) => void>();
+    return (stop: string) => {
+      let ref = refs.get(stop);
+      if (!ref) {
+        ref = (element: HTMLElement | null) => register(stop, element);
+        refs.set(stop, ref);
       }
       return ref;
     };
@@ -404,9 +532,24 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     }, 0);
   }
 
-  /** A card leaves the list: focus moves on by the rules, before the card is gone. */
+  /** A card's open questions' stops, which leave with it. */
+  function questionStops(proposal: InboxProposal | undefined): Set<string> {
+    return new Set(
+      proposal
+        ? openQuestions(proposal).map((question) => followupStopId(question.questionId))
+        : [],
+    );
+  }
+
+  /** A card leaves the list, its questions with it: focus moves on by the rules, before it's gone. */
   function leave(proposalId: string) {
-    moveFocus(focusAfterRemoval(order, proposalId));
+    const stops = questionStops(found.get(proposalId)?.proposal);
+    moveFocus(
+      focusAfterRemoval(
+        order.map((group) => group.filter((id) => !stops.has(id))),
+        proposalId,
+      ),
+    );
     settle(proposalId);
   }
 
@@ -642,8 +785,9 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     const model = models.get(proposalId);
     if (!model) return;
     clock.decide(proposalId);
-    // A question's choices are its correction already.
-    if (model.choosesRecord) {
+    // A question's choices are its correction already, unless corrections can be written (WP13):
+    // then the panel takes a typed record or a field too.
+    if (model.choosesRecord && !sink) {
       focusChooser(proposalId);
       return;
     }
@@ -700,6 +844,207 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     );
   }
 
+  // ─── Corrections and follow-up questions (WP13) ────────────────────────────────────────────────
+
+  /** What a card's panel can correct: its record, then its type's fields. */
+  function correctableFields(proposal: InboxProposal) {
+    return [
+      { value: "target", label: "The record" },
+      ...PROPOSAL_TYPE_FIELDS[proposal.type].map((field) => ({
+        value: field,
+        label: fieldLabel(field),
+      })),
+    ];
+  }
+
+  /** The record on a card about one; otherwise the type's first field. */
+  function defaultField(proposal: InboxProposal): string {
+    return proposal.target.decision === "none"
+      ? (PROPOSAL_TYPE_FIELDS[proposal.type][0] ?? "target")
+      : "target";
+  }
+
+  function setKeyed(set: typeof setCorrectionTexts, key: string, value: string | null): void {
+    set((current) => {
+      if ((current[key] ?? null) === value) return current;
+      const next = { ...current };
+      if (value === null) delete next[key];
+      else next[key] = value;
+      return next;
+    });
+  }
+
+  /**
+   * After a correction: the panel or answer closes, one polite message says so, and the card
+   * that replaced it takes the original's place and its focus once it arrives. A failure stays in
+   * the panel, the words kept, its line an alert there (a form's error, not a toast).
+   */
+  async function settleCorrection(
+    stop: string,
+    proposal: InboxProposal,
+    field: string,
+    words: string | null,
+    outcome: CorrectionOutcome,
+  ) {
+    setCorrectionBusy(null);
+    if (!outcome.ok) {
+      const line = correctionFailureLine(outcome.code, { type: proposal.type, field, words });
+      setKeyed(setCorrectionErrors, stop, line);
+      return;
+    }
+    // Focus holds on the card until its replacement arrives and takes it (the effect below).
+    replacing.current = proposal.proposalId;
+    roving.focus({ kind: "card", id: proposal.proposalId });
+    setCorrecting((current) => (current === proposal.proposalId ? null : current));
+    setAnswering(null);
+    setKeyed(setCorrectionTexts, stop, null);
+    setKeyed(setCorrectionErrors, stop, null);
+    announce(`Corrected: ${cardWords(proposal, nameOf)}. Its corrected card is back for review.`);
+    await options.onCorrected?.();
+  }
+
+  /** Sends typed words as a correction of `field`, maybe answering a question. */
+  async function sendCorrection(
+    stop: string,
+    proposal: InboxProposal,
+    sessionId: string,
+    field: string,
+    questionId: string | null,
+  ) {
+    const words = (correctionTexts[stop] ?? "").trim();
+    if (!sink || words === "" || correctionBusy !== null) return;
+    setCorrectionBusy(stop);
+    setKeyed(setCorrectionErrors, stop, null);
+    const outcome = await sink.correct({
+      sessionId,
+      proposalId: proposal.proposalId,
+      field,
+      questionId,
+      text: words,
+    });
+    await settleCorrection(stop, proposal, field, words, outcome);
+  }
+
+  /** The microphone: arms the next turn as the correction's words, or stops listening. */
+  async function speak(
+    stop: string,
+    proposal: InboxProposal,
+    field: string,
+    questionId: string | null,
+  ) {
+    const speech = sink?.speech;
+    if (!speech) return;
+    if (listening === stop) {
+      speech.finish();
+      return;
+    }
+    if (listening !== null || correctionBusy !== null) return;
+    setListening(stop);
+    setKeyed(setCorrectionErrors, stop, null);
+    const outcome = await speech.start({ proposalId: proposal.proposalId, field, questionId });
+    setListening(null);
+    await settleCorrection(stop, proposal, field, null, outcome);
+  }
+
+  /** r on a question: it closes, and focus moves on as when a card leaves. */
+  async function skipQuestion(stop: string, question: FollowupView, sessionId: string) {
+    if (!sink || correctionBusy !== null) return;
+    setCorrectionBusy(stop);
+    const outcome = await sink.skip(sessionId, question.questionId);
+    setCorrectionBusy(null);
+    if (!outcome.ok) {
+      warn(
+        outcome.code === "stale"
+          ? "That question was answered or skipped already. Reload to see it as it is."
+          : "Earshot couldn't skip that question. Try again in a minute.",
+      );
+      return;
+    }
+    moveFocus(focusAfterRemoval(order, stop));
+    setAnswering((current) => (current === question.questionId ? null : current));
+    setClosedQuestions((current) => new Set([...current, question.questionId]));
+    announce(`Skipped the question: ${question.text}`);
+  }
+
+  // The card a correction made takes the original's place (the groups keep its spot) and its focus,
+  // once it arrives: from the inbox's next read, or the session's events in the tray.
+  useEffect(() => {
+    const replaced = replacing.current;
+    if (replaced === null) return;
+    for (const { proposal } of found.values()) {
+      if (
+        proposal.supersedes !== replaced ||
+        !order.some((group) => group.includes(proposal.proposalId))
+      ) {
+        continue;
+      }
+      replacing.current = null;
+      roving.focus({ kind: "card", id: proposal.proposalId });
+      return;
+    }
+  });
+
+  /** Each open question's stop: its question, the proposal it asks about, and the debrief. */
+  const questions = useMemo(() => {
+    const map = new Map<
+      string,
+      { question: FollowupView; proposal: InboxProposal; sessionId: string }
+    >();
+    for (const { proposal, sessionId } of found.values()) {
+      for (const question of openQuestions(proposal)) {
+        map.set(followupStopId(question.questionId), { question, proposal, sessionId });
+      }
+    }
+    return map;
+  }, [found, openQuestions]);
+
+  function followupBinding(stop: string): FollowupBinding | null {
+    const entry = questions.get(stop);
+    const model = entry ? models.get(entry.proposal.proposalId) : undefined;
+    if (!entry || !model || !sink) return null;
+    const { question, proposal, sessionId } = entry;
+    return {
+      id: stop,
+      question,
+      about: `${model.type} · ${model.record}`,
+      active: roving.activeId === stop,
+      shortcuts,
+      answering: answering === question.questionId,
+      text: correctionTexts[stop] ?? "",
+      busy: correctionBusy === stop,
+      error: correctionErrors[stop] ?? null,
+      listening: listening === stop,
+      canSpeak: sink.speech !== undefined,
+      answer: () => {
+        focusMoved.current = true;
+        setAnswering(question.questionId);
+        window.setTimeout(() => {
+          focusMoved.current = false;
+        }, 0);
+      },
+      skip: () => void skipQuestion(stop, question, sessionId),
+      close: () => {
+        setAnswering(null);
+        roving.focus({ kind: "card", id: stop });
+      },
+      onText: (text) => setKeyed(setCorrectionTexts, stop, text),
+      onSubmit: () =>
+        void sendCorrection(stop, proposal, sessionId, question.field, question.questionId),
+      onSpeak: () => void speak(stop, proposal, question.field, question.questionId),
+      focused: () => roving.arrived(stop),
+      cardRef: questionRef(stop),
+    };
+  }
+
+  function followups(proposalId: string): FollowupBinding[] {
+    const entry = found.get(proposalId);
+    if (!entry) return [];
+    return openQuestions(entry.proposal).flatMap((question) => {
+      const binding = followupBinding(followupStopId(question.questionId));
+      return binding ? [binding] : [];
+    });
+  }
+
   // ─── "Accept all from this call" ───────────────────────────────────────────────────────────────
 
   function toggleCheckpoint(sessionId: string) {
@@ -748,7 +1093,10 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     });
     const removed = new Set(items.map((item) => item.proposalId));
     const left = sections.openCount - removed.size;
-    moveFocus(focusAfterBatch(order, removed));
+    // The cards' questions leave with them.
+    const gone = new Set(removed);
+    for (const proposal of plan.accept) for (const stop of questionStops(proposal)) gone.add(stop);
+    moveFocus(focusAfterBatch(order, gone));
     for (const proposalId of removed) {
       settle(proposalId);
       // A card the batch took starts again from zero if an undo brings it back.
@@ -917,6 +1265,15 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
       default:
         break;
     }
+    if (cardId !== null && questions.has(cardId)) {
+      // A question's card: c answers it, r skips it, and nothing else acts on it.
+      const binding = followupBinding(cardId);
+      if (!binding) return false;
+      if (action.kind === "correct") binding.answer(event);
+      else if (action.kind === "reject") binding.skip(event);
+      else return false;
+      return true;
+    }
     if (cardId === null || !models.has(cardId)) return false;
     switch (action.kind) {
       case "accept":
@@ -998,6 +1355,30 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     const model = models.get(proposalId);
     if (!entry || !model) return null;
     const demo = demoOf(entry.proposal, entry.sessionId);
+    const { proposal, sessionId } = entry;
+    const field = correctionFields[proposalId] ?? defaultField(proposal);
+    const correction: CorrectionBinding | undefined = sink
+      ? {
+          fields: correctableFields(proposal),
+          field,
+          text: correctionTexts[proposalId] ?? "",
+          busy: correctionBusy === proposalId,
+          error: correctionErrors[proposalId] ?? null,
+          listening: listening === proposalId,
+          canSpeak: sink.speech !== undefined,
+          onField: (value) => {
+            clock.input();
+            setKeyed(setCorrectionFields, proposalId, value);
+            setKeyed(setCorrectionErrors, proposalId, null);
+          },
+          onText: (text) => {
+            clock.input();
+            setKeyed(setCorrectionTexts, proposalId, text);
+          },
+          onSubmit: () => void sendCorrection(proposalId, proposal, sessionId, field, null),
+          onSpeak: () => void speak(proposalId, proposal, field, null),
+        }
+      : undefined;
     return {
       proposal: entry.proposal,
       model,
@@ -1013,6 +1394,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
       menuFinalFocus,
       cardRef: cardRef(proposalId),
       ...(demo ? { demo } : {}),
+      ...(correction ? { correction } : {}),
     };
   }
 
@@ -1028,6 +1410,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     store,
     roving,
     card,
+    followups,
     onKeyDown,
     reopen,
     wake,

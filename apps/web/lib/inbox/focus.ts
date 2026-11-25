@@ -17,6 +17,11 @@ export type FocusTarget =
 
 const CAUGHT_UP: FocusTarget = { kind: "caught-up" };
 
+/** The roving stop id of a follow-up question's card. */
+export function followupStopId(questionId: string): string {
+  return `followup:${questionId}`;
+}
+
 function card(id: string): FocusTarget {
   return { kind: "card", id };
 }

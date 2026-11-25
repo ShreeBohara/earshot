@@ -1,6 +1,6 @@
 "use client";
 
-import type { FieldValue } from "@earshot/core";
+import { type FieldValue, MAX_CORRECTION_TEXT_CHARS } from "@earshot/core";
 import { Button } from "@earshot/ui/components/button";
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import {
   CheckIcon,
   DatabaseIcon,
   EllipsisIcon,
+  MicIcon,
   PencilIcon,
   TriangleAlertIcon,
   XIcon,
@@ -35,6 +36,7 @@ import { CaptureLink } from "../capture/link";
 import { PlayEvidenceButton } from "../evidence/play-evidence";
 import { ChoiceList } from "./choice-list";
 import { EditForm } from "./edit-form";
+import type { CorrectionBinding } from "./use-review-list";
 
 /** What a card asks of the page. The page decides, sends, and moves focus. */
 export interface CardActions {
@@ -109,6 +111,11 @@ export interface ProposalCardProps {
   evidence?: CardEvidence;
   /** The demo controls in More (WP12): the inbox passes them on demo records only. */
   demo?: CardDemo;
+  /**
+   * The correction panel's field picker and text box (WP13): the inbox and the tray pass it. The
+   * pilot doesn't, and its panel keeps only the candidates.
+   */
+  correction?: CorrectionBinding;
 }
 
 /**
@@ -185,12 +192,136 @@ function NoAudioLine({ reason }: { reason: NoAudioReason }) {
   );
 }
 
-function ActionKey({ shortcuts, children }: { shortcuts: boolean; children: string }) {
+export function ActionKey({ shortcuts, children }: { shortcuts: boolean; children: string }) {
   return shortcuts ? (
     <Kbd aria-hidden="true" className="ms-0.5 h-4 min-w-4 bg-current/15 px-1 text-current">
       {children}
     </Kbd>
   ) : null;
+}
+
+/** The correction panel's line under its choices: what the keys and the text box do. */
+function correctionHint(
+  correction: CorrectionBinding | undefined,
+  shortcuts: boolean,
+  candidates: boolean,
+): string {
+  if (!correction) {
+    return shortcuts && candidates
+      ? "Press a number to choose it and accept, or Esc to close."
+      : "Choose a record and use it, or close this.";
+  }
+  if (correction.field === "target" && candidates) {
+    return shortcuts
+      ? "Press a number to choose it and accept, or type the right one and press Enter."
+      : "Choose a record and use it, or type the right one.";
+  }
+  return "Type what's right and press Enter, or close this.";
+}
+
+/** The panel's field picker (WP13): the record, preselected on a card about one, or a field. */
+function CorrectionField({ id, correction }: { id: string; correction: CorrectionBinding }) {
+  const fieldId = `${id}-correction-field`;
+  return (
+    <div className="grid gap-1">
+      <label htmlFor={fieldId} className="text-muted-foreground text-xs">
+        What's wrong
+      </label>
+      <select
+        id={fieldId}
+        value={correction.field}
+        disabled={correction.busy || correction.listening}
+        onChange={(event) => correction.onField(event.target.value)}
+        className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:focus-ring disabled:opacity-50"
+        data-slot="correction-field"
+      >
+        {correction.fields.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/**
+ * The panel's text box (WP13): Enter sends it, and its words are read on the server. A failure
+ * stays here, the words kept: "I couldn't read a date in “whenever suits”." On the capture screen
+ * while the session is live, the microphone takes the next thing said instead.
+ */
+function CorrectionText({
+  id,
+  correction,
+  model,
+}: {
+  id: string;
+  correction: CorrectionBinding;
+  model: CardModel;
+}) {
+  const textId = `${id}-correction-text`;
+  const errorId = `${id}-correction-error`;
+  const label =
+    correction.field === "target"
+      ? model.correction.length > 0
+        ? "Or type the record's name"
+        : "The record's name"
+      : `The right ${(correction.fields.find((option) => option.value === correction.field)?.label ?? "value").toLowerCase()}`;
+  return (
+    <div className="grid gap-1">
+      <label htmlFor={textId} className="text-muted-foreground text-xs">
+        {label}
+      </label>
+      <div className="flex gap-2">
+        <input
+          id={textId}
+          type="text"
+          value={correction.text}
+          maxLength={MAX_CORRECTION_TEXT_CHARS}
+          autoComplete="off"
+          disabled={correction.busy || correction.listening}
+          aria-invalid={correction.error ? true : undefined}
+          aria-describedby={correction.error ? errorId : undefined}
+          onChange={(event) => correction.onText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            correction.onSubmit(event);
+          }}
+          className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:focus-ring disabled:opacity-50 aria-invalid:border-destructive"
+          data-correction-text=""
+        />
+        {correction.canSpeak ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={correction.busy}
+            onClick={correction.onSpeak}
+            data-slot="correction-speak"
+          >
+            <MicIcon aria-hidden="true" data-icon="inline-start" />
+            {correction.listening ? "Done" : "Say it"}
+          </Button>
+        ) : null}
+      </div>
+      {correction.listening ? (
+        <p className="text-muted-foreground text-xs" data-slot="correction-listening">
+          Listening. Say what's right, then press Done.
+        </p>
+      ) : null}
+      {correction.error ? (
+        <p
+          id={errorId}
+          role="alert"
+          className="text-destructive text-xs"
+          data-slot="correction-error"
+        >
+          {correction.error}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 /**
@@ -219,6 +350,7 @@ export function ProposalCard({
   audioNote,
   evidence: clips,
   demo,
+  correction,
 }: ProposalCardProps) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -235,13 +367,14 @@ export function ProposalCard({
   const targetPlay = evidence?.target ?? null;
   const targetAt = targetPlay ? targetWords(model) : null;
 
-  // Into the correction panel as it opens: its picked record, or its first.
+  // Into the correction panel as it opens: its picked record, or its first, else its text box.
   useLayoutEffect(() => {
     if (!correcting) return;
     const panel = correctionRef.current;
     const target =
       panel?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]') ??
       panel?.querySelector<HTMLElement>('[role="radio"]') ??
+      panel?.querySelector<HTMLElement>("input[data-correction-text]") ??
       panel?.querySelector<HTMLElement>("button");
     target?.focus();
   }, [correcting]);
@@ -391,7 +524,8 @@ export function ProposalCard({
           }}
         >
           <legend className="px-1 font-medium text-sm">Correct the record</legend>
-          {model.correction.length > 0 ? (
+          {correction ? <CorrectionField id={id} correction={correction} /> : null}
+          {correction && correction.field !== "target" ? null : model.correction.length > 0 ? (
             <ChoiceList
               label="Which is it?"
               options={model.correction}
@@ -399,24 +533,38 @@ export function ProposalCard({
               shortcuts={shortcuts}
               onSelect={(index) => actions.select(proposalId, index, "correction")}
             />
-          ) : (
+          ) : correction ? null : (
             <p className="text-muted-foreground text-sm">
               No other records came close. Reject it if it isn't right.
             </p>
           )}
           <p className="text-muted-foreground text-xs">
-            {shortcuts && model.correction.length > 0
-              ? "Press a number to choose it and accept, or Esc to close."
-              : "Choose a record and use it, or close this."}
+            {correctionHint(correction, shortcuts, model.correction.length > 0)}
           </p>
+          {correction ? <CorrectionText id={id} correction={correction} model={model} /> : null}
           <div className="flex flex-wrap gap-2">
-            {model.correction.length > 0 ? (
+            {model.correction.length > 0 && (!correction || correction.field === "target") ? (
               <Button
                 size="sm"
                 disabled={correctionChoice === null}
                 onClick={(event) => actions.useCorrection(proposalId, event)}
               >
                 Use this record
+              </Button>
+            ) : null}
+            {correction ? (
+              <Button
+                size="sm"
+                variant={
+                  model.correction.length > 0 && correction.field === "target"
+                    ? "outline"
+                    : "default"
+                }
+                disabled={correction.busy || correction.listening || correction.text.trim() === ""}
+                onClick={(event) => correction.onSubmit(event)}
+                data-slot="correction-submit"
+              >
+                Correct it
               </Button>
             ) : null}
             <Button variant="ghost" size="sm" onClick={() => actions.closeCorrection(proposalId)}>
