@@ -1,0 +1,55 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "note",
+          "marker": "es_hdlpduh5lobotir2bl4w",
+          "ref": null,
+          "properties": {
+            "body": "Dana wants the security review before legal signs.\n\nvia Earshot · ref es_hdlpduh5lobotir2bl4w"
+          },
+          "associate": [
+            {
+              "to": {
+                "object": "deal",
+                "id": "deal_001",
+                "url": null
+              },
+              "type": "record"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/notes?writeId=es_hdlpduh5lobotir2bl4w",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "body": "Dana wants the security review before legal signs.\n\nvia Earshot · ref es_hdlpduh5lobotir2bl4w"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "deal",
+              "id": "deal_001"
+            },
+            "type": "record"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

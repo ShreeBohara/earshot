@@ -131,3 +131,63 @@ export const crmEntityChanges = pgTable(
     check("crm_entity_changes_field_check", sql`${t.field} ~ '^[a-z][A-Za-z0-9]{0,63}$'`),
   ],
 );
+
+/** The kinds of activity the demo CRM keeps (Phase 6 WP2). */
+export const CRM_DEMO_ACTIVITY_KINDS = ["note", "task", "meeting"] as const;
+export type CrmDemoActivityKind = (typeof CRM_DEMO_ACTIVITY_KINDS)[number];
+
+/** The longest body a demo activity keeps. */
+export const MAX_DEMO_ACTIVITY_BODY_CHARS = 20_000;
+
+/**
+ * The demo CRM's notes, tasks, and meetings (Phase 6 WP2, migration 0020; docs/adr/0041): what the
+ * demo adapter writes when an approval syncs to the demo CRM (`createDemoStore` in
+ * ../demo-store.ts). Each is on one of the workspace's demo records, which it goes with (the
+ * composite key cascades), and carries the marker of the write that made it (`write_id`, unique in
+ * its workspace), so a retried write finds its first try instead of landing twice. A task has a due
+ * time, and a meeting a start; the activity line ("via Earshot · ref es_…") ends every body.
+ *
+ * Append-only for the app, like `crm_entity_changes`: its role may only read and insert here, in its
+ * own workspace. Exported with the account, as every tenant table is.
+ */
+export const crmDemoActivities = pgTable(
+  "crm_demo_activities",
+  {
+    workspaceId: workspaceId(),
+    id: uuid().primaryKey().defaultRandom(),
+    /** `CRM_DEMO_ACTIVITY_KINDS`. */
+    kind: text().notNull(),
+    /** The demo record it's on. */
+    entityId: uuid("entity_id").notNull(),
+    /** The marker of the write that made it: `es_` and 20 base32 characters. */
+    writeId: text("write_id").notNull(),
+    body: text().notNull(),
+    /** A task's due time; null for anything else. */
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    /** A meeting's start; null for anything else. */
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("crm_demo_activities_workspace_id_write_id_unique").on(t.workspaceId, t.writeId),
+    // Composite, like every key between tenant tables, so no activity can sit on another
+    // workspace's record.
+    foreignKey({
+      name: "crm_demo_activities_entity_fk",
+      columns: [t.workspaceId, t.entityId],
+      foreignColumns: [crmEntities.workspaceId, crmEntities.id],
+    }).onDelete("cascade"),
+    index("crm_demo_activities_entity_idx").on(t.workspaceId, t.entityId, t.createdAt),
+    check("crm_demo_activities_kind_check", sql`${t.kind} in ('note', 'task', 'meeting')`),
+    check("crm_demo_activities_write_id_check", sql`${t.writeId} ~ '^es_[a-z2-7]{20}$'`),
+    check(
+      "crm_demo_activities_body_check",
+      sql`char_length(${t.body}) between 1 and ${sql.raw(String(MAX_DEMO_ACTIVITY_BODY_CHARS))}`,
+    ),
+    check("crm_demo_activities_due_at_check", sql`${t.dueAt} is null or ${t.kind} = 'task'`),
+    check(
+      "crm_demo_activities_starts_at_check",
+      sql`${t.startsAt} is null or ${t.kind} = 'meeting'`,
+    ),
+  ],
+);

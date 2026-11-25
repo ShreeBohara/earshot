@@ -7,6 +7,7 @@ import {
   commitments,
   credentials,
   crmConnections,
+  crmDemoActivities,
   crmEntities,
   crmEntityChanges,
   facts,
@@ -49,6 +50,7 @@ export const tenantTables = [
   auditCheckpoints,
   approvalPolicies,
   crmEntityChanges,
+  crmDemoActivities,
 ] as const;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

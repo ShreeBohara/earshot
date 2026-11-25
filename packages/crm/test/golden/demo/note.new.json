@@ -1,0 +1,78 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "company",
+          "marker": "es_ageemlp52fimi5ec7rzu",
+          "ref": null,
+          "properties": {
+            "name": "Northwind Foods",
+            "writeId": "es_ageemlp52fimi5ec7rzu"
+          },
+          "associate": []
+        },
+        {
+          "index": 1,
+          "op": "create",
+          "object": "note",
+          "marker": "es_ll3pdqyc472c7wzbrwoa",
+          "ref": null,
+          "properties": {
+            "body": "Dana wants the security review before legal signs.\n\nvia Earshot · ref es_ll3pdqyc472c7wzbrwoa"
+          },
+          "associate": [
+            {
+              "to": {
+                "write": 0
+              },
+              "type": "record"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/companies?writeId=es_ageemlp52fimi5ec7rzu",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "name": "Northwind Foods",
+          "writeId": "es_ageemlp52fimi5ec7rzu"
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "url": "demo:/notes?writeId=es_ll3pdqyc472c7wzbrwoa",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "body": "Dana wants the security review before legal signs.\n\nvia Earshot · ref es_ll3pdqyc472c7wzbrwoa"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "company",
+              "id": "(write-0)"
+            },
+            "type": "record"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

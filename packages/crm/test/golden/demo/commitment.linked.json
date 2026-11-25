@@ -1,0 +1,57 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "task",
+          "marker": "es_kyuwoj6h2j5wdud4c6x2",
+          "ref": null,
+          "properties": {
+            "body": "Commitment: Share the SOC 2 report\n\nCounterpart: Dana\n\nvia Earshot · ref es_kyuwoj6h2j5wdud4c6x2",
+            "dueAt": "2026-12-01T15:00:00.000Z"
+          },
+          "associate": [
+            {
+              "to": {
+                "object": "company",
+                "id": "co_001",
+                "url": null
+              },
+              "type": "record"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/tasks?writeId=es_kyuwoj6h2j5wdud4c6x2",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "body": "Commitment: Share the SOC 2 report\n\nCounterpart: Dana\n\nvia Earshot · ref es_kyuwoj6h2j5wdud4c6x2",
+          "dueAt": "2026-12-01T15:00:00.000Z"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "company",
+              "id": "co_001"
+            },
+            "type": "record"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

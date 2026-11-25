@@ -1,0 +1,67 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "contact",
+          "marker": "es_zqbihm4w2zogl4m5km5z",
+          "ref": null,
+          "properties": {
+            "name": "Priya Raman",
+            "firstName": "Priya",
+            "lastName": "Raman",
+            "title": "VP of Operations",
+            "email": "priya.raman@acme.example",
+            "phone": "555-0142",
+            "writeId": "es_zqbihm4w2zogl4m5km5z"
+          },
+          "associate": [
+            {
+              "to": {
+                "object": "company",
+                "id": "co_001",
+                "url": null
+              },
+              "type": "companyId"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/contacts?writeId=es_zqbihm4w2zogl4m5km5z",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "name": "Priya Raman",
+          "firstName": "Priya",
+          "lastName": "Raman",
+          "title": "VP of Operations",
+          "email": "priya.raman@acme.example",
+          "phone": "555-0142",
+          "writeId": "es_zqbihm4w2zogl4m5km5z"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "company",
+              "id": "co_001"
+            },
+            "type": "companyId"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

@@ -1,0 +1,102 @@
+{
+  "result": {
+    "ok": true,
+    "plan": {
+      "v": 1,
+      "checks": [],
+      "writes": [
+        {
+          "index": 0,
+          "op": "create",
+          "object": "contact",
+          "marker": "es_dlc2igwlvhl6o5rc4fyf",
+          "ref": null,
+          "properties": {
+            "name": "Sam Ortiz",
+            "firstName": "Sam",
+            "lastName": "Ortiz",
+            "writeId": "es_dlc2igwlvhl6o5rc4fyf"
+          },
+          "associate": [
+            {
+              "to": {
+                "object": "company",
+                "id": "co_001",
+                "url": null
+              },
+              "type": "companyId"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "op": "create",
+          "object": "task",
+          "marker": "es_hrzwospzcvkaa442fc7c",
+          "ref": null,
+          "properties": {
+            "body": "Send the revised pricing\n\nvia Earshot · ref es_hrzwospzcvkaa442fc7c",
+            "dueAt": "2026-12-04T15:00:00.000Z"
+          },
+          "associate": [
+            {
+              "to": {
+                "write": 0
+              },
+              "type": "record"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "method": "PUT",
+      "url": "demo:/contacts?writeId=es_dlc2igwlvhl6o5rc4fyf",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "name": "Sam Ortiz",
+          "firstName": "Sam",
+          "lastName": "Ortiz",
+          "writeId": "es_dlc2igwlvhl6o5rc4fyf"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "company",
+              "id": "co_001"
+            },
+            "type": "companyId"
+          }
+        ]
+      }
+    },
+    {
+      "method": "PUT",
+      "url": "demo:/tasks?writeId=es_hrzwospzcvkaa442fc7c",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "properties": {
+          "body": "Send the revised pricing\n\nvia Earshot · ref es_hrzwospzcvkaa442fc7c",
+          "dueAt": "2026-12-04T15:00:00.000Z"
+        },
+        "associations": [
+          {
+            "to": {
+              "object": "contact",
+              "id": "(write-0)"
+            },
+            "type": "record"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": []
+}

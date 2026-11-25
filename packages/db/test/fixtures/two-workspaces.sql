@@ -6,7 +6,7 @@
 --   01 credentials, 02 crm_connections, 03 crm_entities, 04 sessions, 05 session_events,
 --   06 utterances, 07 proposals, 08 sync_jobs, 09 commitments, 10 facts, 11 audit_log,
 --   12 audit_checkpoints, 13 approval_policies (the policy's id, at version 1), 14
---   crm_entity_changes. The audit log's trigger (migration 0013) gives each entry chain_seq 1;
+--   crm_entity_changes, 15 crm_demo_activities. The audit log's trigger (migration 0013) gives each entry chain_seq 1;
 --   each checkpoint names it, with a placeholder signature (nothing here verifies it).
 
 insert into "user" (id, name, email) values
@@ -137,3 +137,13 @@ insert into sync_jobs (id, workspace_id, proposal_id, review_id, provider, idemp
   ('b0000000-0000-4000-8000-000000000008', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
    'b0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-0000000007e1', 'twenty',
    repeat('b', 64), '2026-11-10T19:16:30Z');
+
+-- One note in each workspace's demo CRM activities (migration 0020), on each workspace's record,
+-- with the line and marker a sync's write gives it.
+insert into crm_demo_activities (id, workspace_id, kind, entity_id, write_id, body, created_at) values
+  ('a0000000-0000-4000-8000-000000000015', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'note',
+   'a0000000-0000-4000-8000-000000000003', 'es_aaaaaaaaaaaaaaaaaaaa',
+   E'Met Dana Lee.\n\nvia Earshot · ref es_aaaaaaaaaaaaaaaaaaaa', '2026-11-15T17:40:00Z'),
+  ('b0000000-0000-4000-8000-000000000015', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'note',
+   'b0000000-0000-4000-8000-000000000003', 'es_bbbbbbbbbbbbbbbbbbbb',
+   E'Called Sam.\n\nvia Earshot · ref es_bbbbbbbbbbbbbbbbbbbb', '2026-11-15T18:10:00Z');

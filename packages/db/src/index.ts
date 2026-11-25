@@ -71,6 +71,7 @@ export {
   moveDemoField,
   removeDemoCrm,
 } from "./demo-crm";
+export { createDemoStore, type DemoStoreOptions, toDemoRecord } from "./demo-store";
 export {
   appendEvents,
   PgEventStore,
