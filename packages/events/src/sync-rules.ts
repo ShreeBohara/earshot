@@ -132,7 +132,7 @@ function checkStart(proposals: readonly ProposalView[], start: ProposalSyncStart
     if (start.attempt <= last.attempt) {
       return refuse(
         "not_retryable",
-        `job ${start.jobId} made attempt ${last.attempt} already, so its next is later than ${start.attempt}`,
+        `attempt ${start.attempt} of job ${start.jobId} isn't later than its attempt ${last.attempt}`,
       );
     }
   } else if (last !== null && last.reviewId === start.reviewId) {
