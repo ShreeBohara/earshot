@@ -1,6 +1,7 @@
-// @earshot/crm: the CRM adapter SDK (Phase 6 spec §4.2, §4.4; docs/adr/0040). WP1 holds its
-// types, its errors, and the idempotency key and markers; WP2 adds the planning helpers, the
-// renderer, the reference CRM (`./testing`), and the conformance suite (`./conformance`).
+// @earshot/crm: the CRM adapter SDK (Phase 6 spec §4.2 to §4.4, §4.9; docs/adr/0040, docs/adr/0041).
+// WP1 holds its types, its errors, and the idempotency key and markers; WP2 adds the error mapping
+// and redaction, shared planning, and the dry run's renderer here, and the reference CRM
+// (`./testing`), the conformance suite (`./conformance`), and the demo CRM's adapter (`./demo`).
 export type {
   CrmMapping,
   CrmObject,
@@ -38,5 +39,16 @@ export type {
   WritePlan,
   WriteRef,
 } from "./adapter";
-export { CrmError, type CrmErrorOptions } from "./errors";
+export {
+  CrmError,
+  type CrmErrorOptions,
+  type ErrorBody,
+  type ErrorContext,
+  errorFromResponse,
+  type HeadersLike,
+  networkError,
+  parseRetryAfter,
+  retryAfterMs,
+} from "./errors";
 export { idempotencyKey, MARKER_CHARS, MARKER_PREFIX, marker } from "./markers";
+export { CREDENTIAL_PREVIEW, holdsSecret, REDACTED, redact, redactCause } from "./redact";
