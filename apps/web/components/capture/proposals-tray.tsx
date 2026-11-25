@@ -10,6 +10,7 @@ import { tierOf } from "@earshot/understanding/tiers";
 import { CheckIcon, PencilIcon, ReplaceIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import {
   type FocusEvent,
+  Fragment,
   useDeferredValue,
   useEffect,
   useId,
@@ -29,9 +30,15 @@ import {
 } from "@/lib/capture/copy";
 import { afterNextPaint } from "@/lib/capture/feedback";
 import { CAUGHT_UP_COPY } from "@/lib/inbox/copy";
+import {
+  type CorrectionWriter,
+  type SpokenCorrections,
+  socketCorrectionSink,
+} from "@/lib/inbox/corrections";
 import { type ReviewWriter, socketSink } from "@/lib/inbox/sinks";
 import type { InboxEntity, InboxSession } from "@/lib/inbox/types";
 import { EvidenceCard } from "../evidence/evidence-card";
+import { FollowupCard } from "../inbox/followup-card";
 import { ReviewedSection, SnoozedSection } from "../inbox/inbox-sections";
 import { InboxShortcutsDialog } from "../inbox/shortcuts-dialog";
 import { useReviewList } from "../inbox/use-review-list";
@@ -48,6 +55,13 @@ export interface TrayReview {
   readonly endedAt: string | null;
   /** Set once SessionDO's `session.sealed` arrives: the tray hands over to the inbox. */
   readonly sealedAt: string | null;
+  /**
+   * Where the cards' corrections and follow-up skips go (WP13): the session client too. Without
+   * it, the panel keeps only the candidates and no question shows.
+   */
+  readonly corrections?: CorrectionWriter;
+  /** The cards' microphone (WP13), while the session captures in push-to-talk. */
+  readonly speech?: SpokenCorrections;
 }
 
 export interface ProposalsTrayProps {
@@ -355,6 +369,11 @@ function LiveTray({
 }: ProposalsTrayProps & { review: TrayReview }) {
   const headingId = useId();
   const [sink] = useState(() => socketSink(review.writer));
+  const corrections = useMemo(
+    () =>
+      review.corrections ? socketCorrectionSink(review.corrections, review.speech) : undefined,
+    [review.corrections, review.speech],
+  );
   const [loadedAt] = useState(() => new Date().toISOString());
   // New cards render in a transition, which is what lets <ViewTransition> animate them.
   const shown = useDeferredValue(proposals);
@@ -381,6 +400,7 @@ function LiveTray({
     surface: "tray",
     reviewable: ALWAYS,
     loadedAt,
+    ...(corrections ? { corrections } : {}),
   });
   const { store, sections, sending } = list;
   // The debrief this page is recording: its clips are kept here as each turn ends.
@@ -457,15 +477,22 @@ function LiveTray({
                 const card = list.card(proposal.proposalId);
                 if (!card) return null;
                 return (
-                  <ViewTransition key={proposal.proposalId} enter="proposal-enter" default="none">
-                    <li
-                      {...highlight(proposal.proposalId)}
-                      data-highlighted={highlightedId === proposal.proposalId ? "" : undefined}
-                    >
-                      <PaintMark proposalId={proposal.proposalId} onPainted={onPainted} />
-                      <EvidenceCard {...card} session={clipSession} headingLevel={3} />
-                    </li>
-                  </ViewTransition>
+                  <Fragment key={proposal.proposalId}>
+                    <ViewTransition enter="proposal-enter" default="none">
+                      <li
+                        {...highlight(proposal.proposalId)}
+                        data-highlighted={highlightedId === proposal.proposalId ? "" : undefined}
+                      >
+                        <PaintMark proposalId={proposal.proposalId} onPainted={onPainted} />
+                        <EvidenceCard {...card} session={clipSession} headingLevel={3} />
+                      </li>
+                    </ViewTransition>
+                    {list.followups(proposal.proposalId).map((followup) => (
+                      <li key={followup.id}>
+                        <FollowupCard binding={followup} />
+                      </li>
+                    ))}
+                  </Fragment>
                 );
               })}
             </ol>
