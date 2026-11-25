@@ -7,7 +7,8 @@
 // - **Accounts:** a sub-heading per account when a debrief's open cards name more than one.
 //
 // A sealed debrief's proposals are reviewable; an unsealed one's wait under "Finishing" until
-// `session.sealed` reaches Postgres. Superseded proposals appear nowhere: their correction does.
+// `session.sealed` reaches Postgres. Superseded proposals appear nowhere: their correction does,
+// in the original's place (WP13).
 import type { SessionRecap } from "@earshot/events";
 import type { InboxEntity, InboxProposal, InboxSession } from "./types";
 
@@ -168,6 +169,23 @@ function cardGroup(
   };
 }
 
+/**
+ * A debrief's open cards in the order its proposals were made, except that a correction's card
+ * takes the place of the card it replaced (WP13), down a chain of corrections. The sort is stable.
+ */
+function inPlace(
+  all: readonly InboxProposal[],
+  open: readonly InboxProposal[],
+): readonly InboxProposal[] {
+  const place = new Map<string, number>();
+  all.forEach((proposal, index) => {
+    const replaced = proposal.supersedes === null ? undefined : place.get(proposal.supersedes);
+    place.set(proposal.proposalId, replaced ?? index);
+  });
+  if (!open.some((proposal) => proposal.supersedes !== null)) return open;
+  return [...open].sort((a, b) => (place.get(a.proposalId) ?? 0) - (place.get(b.proposalId) ?? 0));
+}
+
 /** Whether a debrief's cards can be reviewed: in the inbox, once it's sealed in Postgres. */
 export function isSealed(session: Pick<InboxSession, "sealedAt">): boolean {
   return session.sealedAt !== null;
@@ -205,7 +223,8 @@ export function inboxSections(
       else if (isSnoozed(proposal, now)) snoozed.push({ sessionId: session.sessionId, proposal });
       else if (isDecided(proposal)) reviewed.push({ sessionId: session.sessionId, proposal });
     }
-    if (open.length > 0) review.push(cardGroup(session, open, entities));
+    if (open.length > 0)
+      review.push(cardGroup(session, inPlace(session.proposals, open), entities));
   }
   const decidedAt = (item: SessionItem) => Date.parse(item.proposal.review?.ts ?? item.proposal.ts);
   reviewed.sort((a, b) => decidedAt(b) - decidedAt(a));

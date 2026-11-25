@@ -127,6 +127,13 @@
       "when": 1795599944210,
       "tag": "0017_crm_entity_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795605208771,
+      "tag": "0018_typed_input_and_followups",
+      "breakpoints": true
     }
   ]
 }

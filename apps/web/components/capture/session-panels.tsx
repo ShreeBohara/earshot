@@ -6,6 +6,7 @@ import type { SessionState } from "@earshot/voice/session";
 import { useMemo, useState } from "react";
 import { type ActivityRow, deriveActivity } from "@/lib/capture/activity";
 import { evidenceSpans } from "@/lib/capture/mentions";
+import type { CorrectionWriter, SpokenCorrections } from "@/lib/inbox/corrections";
 import type { ReviewWriter } from "@/lib/inbox/sinks";
 import { ActivityFeed } from "./activity-feed";
 import { LiveTranscript } from "./live-transcript";
@@ -26,6 +27,13 @@ export interface SessionPanelsProps {
    * the socket, and the web route after the seal (Phase 5 WP6).
    */
   reviews?: ReviewWriter | null;
+  /**
+   * Where the tray's corrections and follow-up skips go (Phase 5 WP13): the session client too.
+   * Without it the tray's panel keeps only the candidates.
+   */
+  corrections?: CorrectionWriter | null;
+  /** The tray cards' microphone (WP13), while the session captures in push-to-talk. */
+  speech?: SpokenCorrections | null;
   onPainted?: (proposalId: string, at: number) => void;
   transcriptEmptyText?: string;
   className?: string;
@@ -45,6 +53,8 @@ export function SessionPanels({
   activity = NO_ROWS,
   showReview = false,
   reviews = null,
+  corrections = null,
+  speech = null,
   onPainted,
   transcriptEmptyText,
   className,
@@ -58,6 +68,8 @@ export function SessionPanels({
           startedAt: session.startedAt,
           endedAt: session.endedAt,
           sealedAt: session.sealedAt,
+          ...(corrections ? { corrections } : {}),
+          ...(speech ? { speech } : {}),
         }
       : undefined;
   const utterances = state?.projections.utterances;

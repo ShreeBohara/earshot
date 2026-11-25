@@ -71,7 +71,9 @@ describe("a session from start to end", () => {
       providers: start.providers,
       startedAt: start.startedAt,
     });
-    expect(events[1]?.payload).toEqual(firstUtterance);
+    // Written as `utterance.final` v3 (Phase 5 WP13): the client's words, said into the microphone.
+    expect(events[1]).toMatchObject({ type: "utterance.final", schemaVersion: 3 });
+    expect(events[1]?.payload).toEqual({ ...firstUtterance, input: "speech" });
     expect(events.at(-2)?.payload).toEqual({
       turnId,
       mode: "push_to_talk",

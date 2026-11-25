@@ -59,7 +59,10 @@ describe("replay", () => {
       apply: (seen, event) => [...seen, event],
     };
     const { seen } = replay(log, { seen: everything });
-    expect(seen[1]).toMatchObject({ schemaVersion: 2, payload: { witness: "biased" } });
+    expect(seen[1]).toMatchObject({
+      schemaVersion: 3,
+      payload: { witness: "biased", input: "speech" },
+    });
   });
 
   it("validates every event before folding any", () => {
@@ -105,13 +108,13 @@ describe("replay", () => {
     const log = sessionLog([
       started(),
       utterance(1),
-      { type: "followup.asked", schemaVersion: 1, payload: { question: "Which plan?" } },
+      { type: "brief.drafted", schemaVersion: 1, payload: { question: "Which plan?" } },
       proposal(1),
     ]);
 
     it("are rejected by default", () => {
       expect(() => replay(log, defaultProjections)).toThrow(UnknownEventError);
-      expect(() => replay(log, defaultProjections)).toThrow(/followup.asked v1 at seq 2/);
+      expect(() => replay(log, defaultProjections)).toThrow(/brief.drafted v1 at seq 2/);
     });
 
     it("are skipped, never reaching a projection, when the caller allows them", () => {
@@ -126,9 +129,9 @@ describe("replay", () => {
     });
 
     it("don't cover a newer version of a known type", () => {
-      const v3 = sessionLog([started(), { ...utterance(1), schemaVersion: 3 }]);
-      expect(() => replay(v3, defaultProjections, { allowUnknownTypes: true })).toThrow(
-        /utterance.final v3 at seq 1: newer than this reader knows/,
+      const v4 = sessionLog([started(), { ...utterance(1), schemaVersion: 4 }]);
+      expect(() => replay(v4, defaultProjections, { allowUnknownTypes: true })).toThrow(
+        /utterance.final v4 at seq 1: newer than this reader knows/,
       );
     });
   });

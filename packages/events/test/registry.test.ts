@@ -17,6 +17,7 @@ import {
   UpcastError,
   type Upcaster,
   utteranceFinalV1ToV2,
+  utteranceFinalV2ToV3,
 } from "../src";
 import {
   deepFreeze,
@@ -35,6 +36,7 @@ import {
   usageRecorded,
   utterance,
   utteranceV1,
+  utteranceV3,
   uuid,
 } from "./helpers";
 
@@ -199,8 +201,26 @@ describe("defaultRegistry", () => {
   it("upcasts a stored v1 utterance to the latest version", () => {
     const v1 = envelope(utteranceV1(1));
     const latest = defaultRegistry.toLatest(v1);
-    expect(latest.schemaVersion).toBe(2);
-    expect(latest.payload).toEqual({ ...v1.payload, witness: "biased" });
+    expect(latest.schemaVersion).toBe(3);
+    expect(latest.payload).toEqual({ ...v1.payload, witness: "biased", input: "speech" });
+  });
+
+  it("upcasts a stored v2 utterance to v3 as speech, and leaves a typed v3 one as it is", () => {
+    const v2 = envelope(utterance(1));
+    expect(utteranceFinalV2ToV3.up(v2)).toEqual({
+      ...v2,
+      schemaVersion: 3,
+      payload: { ...v2.payload, input: "speech" },
+    });
+    expect(defaultRegistry.toLatest(v2)).toEqual(utteranceFinalV2ToV3.up(v2));
+    const typed = envelope(utteranceV3(2, "the 14th", "typed"));
+    expect(defaultRegistry.toLatest(typed)).toBe(typed);
+  });
+
+  it("fails when it loads, not on replay, if utterance.final v2 loses its upcaster", () => {
+    expect(() =>
+      createEventRegistry({ payloads: eventPayloadContracts, upcasters: [utteranceFinalV1ToV2] }),
+    ).toThrow(/utterance.final v2 has no upcaster to v3/);
   });
 
   it("upcasts a stored v1 proposal to v2, and leaves a v2 proposal as it is", () => {
@@ -221,7 +241,10 @@ describe("defaultRegistry", () => {
 
   it("fails when it loads, not on replay, if proposal.created v1 loses its upcaster", () => {
     expect(() =>
-      createEventRegistry({ payloads: eventPayloadContracts, upcasters: [utteranceFinalV1ToV2] }),
+      createEventRegistry({
+        payloads: eventPayloadContracts,
+        upcasters: [utteranceFinalV1ToV2, utteranceFinalV2ToV3],
+      }),
     ).toThrow(/proposal.created v1 has no upcaster to v2/);
     expect(() =>
       createEventRegistry({ payloads: eventPayloadContracts, upcasters: [proposalCreatedV1ToV2] }),
@@ -232,7 +255,7 @@ describe("defaultRegistry", () => {
     expect(() =>
       createEventRegistry({
         payloads: eventPayloadContracts,
-        upcasters: [utteranceFinalV1ToV2, proposalCreatedV1ToV2],
+        upcasters: [utteranceFinalV1ToV2, utteranceFinalV2ToV3, proposalCreatedV1ToV2],
       }),
     ).toThrow(/proposal.reviewed v1 has no upcaster to v2/);
   });
@@ -257,8 +280,8 @@ describe("defaultRegistry", () => {
   });
 
   it("returns an event already at the latest version as is", () => {
-    const v2 = envelope(utterance(1));
-    expect(defaultRegistry.toLatest(v2)).toBe(v2);
+    const v3 = envelope(utteranceV3(1));
+    expect(defaultRegistry.toLatest(v3)).toBe(v3);
   });
 
   it("knows the latest version of every event type, matching SessionEvent", () => {
@@ -275,11 +298,11 @@ describe("defaultRegistry", () => {
   });
 
   it("rejects an unknown type and a version newer than it knows", () => {
-    const unknown = envelope({ type: "followup.asked", schemaVersion: 1, payload: {} });
+    const unknown = envelope({ type: "brief.drafted", schemaVersion: 1, payload: {} });
     expect(() => defaultRegistry.toLatest(unknown)).toThrow(UnknownEventError);
-    const v3 = envelope({ ...utterance(1), schemaVersion: 3 });
-    expect(() => defaultRegistry.toLatest(v3)).toThrow(
-      /newer than this reader knows \(latest is v2\)/,
+    const v4 = envelope({ ...utterance(1), schemaVersion: 4 });
+    expect(() => defaultRegistry.toLatest(v4)).toThrow(
+      /newer than this reader knows \(latest is v3\)/,
     );
   });
 });

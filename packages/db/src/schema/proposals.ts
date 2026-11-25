@@ -32,7 +32,8 @@ import { workspaceId } from "./workspaces";
  * fields the inbox and Phase 6's sync query by in columns of their own: `review_id`,
  * `review_mode`, `batch_id`, `policy_id`, and `sync_eligible_at`. It also holds the snooze
  * (`snoozed_until`) and the corrections that replace proposals (`supersedes`, `superseded_by`,
- * with the status `superseded`).
+ * with the status `superseded`). From migration 0018 (Phase 5 WP13, docs/adr/0038) it holds its
+ * follow-up questions too (`followups`).
  *
  * `target_entity_id` references `crm_entities` through a foreign key that lives in migration
  * 0004 instead of here: it needs `ON DELETE SET NULL (target_entity_id)`, which Drizzle can't
@@ -88,6 +89,11 @@ export const proposals = pgTable(
     supersedes: uuid(),
     /** The proposal that replaced this one; set exactly when the status is `superseded`. */
     supersededBy: uuid("superseded_by"),
+    /**
+     * Its follow-up questions (migration 0018, Phase 5 WP13; docs/adr/0038), as the projection
+     * keeps them (`FollowupView`): each asked about it, or still open on a proposal it replaced.
+     */
+    followups: jsonb().$type<Record<string, unknown>[]>().notNull().default(sql`'[]'::jsonb`),
     ...timestamps(),
   },
   (t) => [

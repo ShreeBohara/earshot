@@ -63,7 +63,7 @@ describe("the session store's fold", () => {
     // Version 1 utterances arrive upcast, as replay() upcasts them.
     expect(state.events.filter((event) => event.type === "utterance.final")).not.toHaveLength(0);
     expect(
-      state.events.every((event) => event.type !== "utterance.final" || event.schemaVersion === 2),
+      state.events.every((event) => event.type !== "utterance.final" || event.schemaVersion === 3),
     ).toBe(true);
   });
 

@@ -11,6 +11,8 @@ import {
 import {
   deepFreeze,
   ended,
+  followupAsked,
+  followupClosed,
   proposal,
   proposalFlagged,
   proposalV2,
@@ -30,6 +32,7 @@ import {
   turnWitnessed,
   usageRecorded,
   utterance,
+  utteranceV3,
   uuid,
 } from "./helpers";
 
@@ -238,6 +241,7 @@ describe("utterancesProjection", () => {
         seq: 1,
         ts: tsFor(1),
         witness: "biased",
+        input: "speech",
         text: "Send the deck.",
         confidence: 0.9,
         startMs: 1000,
@@ -249,6 +253,7 @@ describe("utterancesProjection", () => {
         seq: 3,
         ts: tsFor(3),
         witness: "unbiased",
+        input: "speech",
         text: "Thursday works.",
         confidence: 0.9,
         startMs: 2000,
@@ -305,6 +310,7 @@ describe("proposalsProjection", () => {
       supersedes: null,
       supersededBy: null,
       snoozedUntil: null,
+      followups: [],
       seq: 2,
       ts: tsFor(2),
       // Stored at v1: upcast to v2, with the event's own id as the review id (seq 5's id).
@@ -721,6 +727,133 @@ describe("proposalsProjection: Phase 5 reviews, undo, snoozes, and supersedes", 
       proposalFlagged(1),
     ]);
     expect(old).toMatchObject({ status: "superseded", conflicts: [expect.anything()] });
+  });
+});
+
+describe("Phase 5 WP13: typed words and follow-up questions", () => {
+  const fold = (bodies: Parameters<typeof sessionLog>[0]) =>
+    replay(sessionLog(bodies), defaultProjections);
+  const proposals = (bodies: Parameters<typeof sessionLog>[0]) => fold(bodies).proposals;
+  const correction = (n: number, of: number) => proposalV2(n, {}, { supersedes: uuid(3000 + of) });
+
+  it("keeps how each utterance's words arrived: speech, or typed into a correction", () => {
+    const { utterances } = fold([
+      started(),
+      utterance(1, "Send Dana the deck."),
+      utteranceV3(2, "the 14th", "typed"),
+    ]);
+    expect(utterances.map((u) => [u.input, u.confidence, u.startMs, u.endMs, u.words])).toEqual([
+      ["speech", 0.9, 1000, 1800, null],
+      ["typed", 1, 2000, 2000, null],
+    ]);
+  });
+
+  it("asks a question about its proposal, open until it closes", () => {
+    const [task] = proposals([started(), utterance(1), proposalV2(1), followupAsked(1, 1)]);
+    expect(task?.followups).toEqual([
+      {
+        questionId: uuid(9001),
+        turnId: uuid(5001),
+        askedAbout: uuid(3001),
+        field: "dueDate",
+        rule: "due_date",
+        text: "When is it due?",
+        status: "open",
+        answeredBy: null,
+        seq: 3,
+        ts: tsFor(3),
+        closedSeq: null,
+        closedAt: null,
+      },
+    ]);
+  });
+
+  it("closes a skipped question on its proposal", () => {
+    const [task] = proposals([
+      started(),
+      utterance(1),
+      proposalV2(1),
+      followupAsked(1, 1),
+      followupClosed(1),
+    ]);
+    expect(task?.followups[0]).toMatchObject({
+      status: "skipped",
+      answeredBy: null,
+      closedSeq: 4,
+      closedAt: tsFor(4),
+    });
+  });
+
+  it("moves an open question to the correction that replaced its proposal, which answers it", () => {
+    const [original, corrected] = proposals([
+      started(),
+      utterance(1),
+      proposalV2(1),
+      followupAsked(1, 1),
+      utteranceV3(2, "the 14th", "typed"),
+      correction(2, 1),
+      followupClosed(1, 2),
+    ]);
+    expect(original).toMatchObject({ status: "superseded", followups: [] });
+    expect(corrected?.followups).toEqual([
+      expect.objectContaining({
+        questionId: uuid(9001),
+        askedAbout: uuid(3001),
+        status: "answered",
+        answeredBy: uuid(3002),
+        closedSeq: 6,
+      }),
+    ]);
+  });
+
+  it("keeps an open question on the card through a correction of another field", () => {
+    const [, corrected] = proposals([
+      started(),
+      utterance(1),
+      proposalV2(1),
+      followupAsked(1, 1),
+      correction(2, 1),
+    ]);
+    expect(corrected?.followups).toEqual([
+      expect.objectContaining({ questionId: uuid(9001), status: "open" }),
+    ]);
+  });
+
+  it("leaves a closed question where it closed when its proposal is replaced", () => {
+    const [original, corrected] = proposals([
+      started(),
+      utterance(1),
+      proposalV2(1),
+      followupAsked(1, 1),
+      followupClosed(1),
+      correction(2, 1),
+    ]);
+    expect(original?.followups).toEqual([expect.objectContaining({ status: "skipped" })]);
+    expect(corrected?.followups).toEqual([]);
+  });
+
+  it("fails the fold on a writer's bug: a question twice, on nothing, or on a replaced proposal", () => {
+    const base = [started(), utterance(1), proposalV2(1)];
+    expect(() => fold([...base, followupAsked(1, 1), followupAsked(1, 1)])).toThrow(/asked before/);
+    expect(() => fold([...base, followupAsked(1, 7)])).toThrow(/no proposal .* to ask about/);
+    expect(() => fold([...base, correction(2, 1), followupAsked(1, 1)])).toThrow(
+      /takes no question/,
+    );
+  });
+
+  it("fails the fold on a close of nothing, a second close, or an answer the correction didn't make", () => {
+    const asked = [started(), utterance(1), proposalV2(1), followupAsked(1, 1)];
+    expect(() => fold([...asked, followupClosed(2)])).toThrow(/no question .* to close/);
+    expect(() => fold([...asked, followupClosed(1), followupClosed(1)])).toThrow(/skipped before/);
+    // Answered, but nothing replaced the proposal: no correction answered it.
+    expect(() => fold([...asked, followupClosed(1, 1)])).toThrow(/answered by the correction/);
+    // Answered by a proposal that doesn't hold it.
+    expect(() => fold([...asked, proposalV2(2), followupClosed(1, 2)])).toThrow(
+      /answered by the correction/,
+    );
+    const skipNaming = followupClosed(1);
+    skipNaming.payload.proposalId = uuid(3001);
+    expect(() => fold([...asked, skipNaming])).toThrow(/skipped question names no proposal/);
   });
 });
 

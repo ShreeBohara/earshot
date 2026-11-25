@@ -140,6 +140,11 @@ export const utterances = pgTable(
     /** The `utterance.final` event's `ts`. */
     ts: timestamp({ withTimezone: true }),
     witness: text().notNull(),
+    /**
+     * How the words arrived (migration 0018, Phase 5 WP13; docs/adr/0038): `speech`, or `typed`
+     * into a correction. Rows from before WP13 are speech, as their events upcast.
+     */
+    input: text().notNull().default("speech"),
     text: text().notNull(),
     /** Word timings and confidences, as the provider reported them; null when it sent none. */
     words: jsonb().$type<unknown[]>().default([]),
@@ -163,5 +168,6 @@ export const utterances = pgTable(
     index("utterances_workspace_id_session_id_idx").on(t.workspaceId, t.sessionId),
     check("utterances_seq_check", sql`${t.seq} >= 0`),
     check("utterances_witness_check", sql`${t.witness} in ('biased', 'unbiased')`),
+    check("utterances_input_check", sql`${t.input} in ('speech', 'typed')`),
   ],
 );

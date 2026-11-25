@@ -1,6 +1,20 @@
 // The envelope every store reads and writes, so a store's users need not depend on @earshot/core.
 export type { EventEnvelope } from "@earshot/core";
 export {
+  CORRECTION_LIMITS,
+  type CorrectionCheck,
+  type CorrectionRefusal,
+  type CorrectionTarget,
+  carriedFlag,
+  checkCorrection,
+  checkFollowupSkip,
+  correctableFields,
+  correctionBudget,
+  correctionDepth,
+  linkerOf,
+  type SkipCheck,
+} from "./corrections";
+export {
   ConcurrencyError,
   EventValidationError,
   JsonlError,
@@ -13,6 +27,8 @@ export { type FromJsonlOptions, fromJsonl, toJsonl } from "./jsonl";
 export { type PolicyExclusion, type PolicyMatch, policyRuleFor } from "./policy";
 export {
   defaultProjections,
+  type FollowupStatus,
+  type FollowupView,
   type Projection,
   type ProposalStatus,
   type ProposalView,
@@ -54,6 +70,8 @@ export {
   prepareAppend,
 } from "./store";
 export {
+  type FollowupAskedEvent,
+  type FollowupClosedEvent,
   latestVersions,
   type PayloadDefinition,
   type ProposalCreatedEvent,
@@ -78,4 +96,5 @@ export {
   proposalReviewedV1ToV2,
   upcasters,
   utteranceFinalV1ToV2,
+  utteranceFinalV2ToV3,
 } from "./upcasters";

@@ -119,6 +119,7 @@ function proposal(overrides: Partial<InboxProposal> = {}): InboxProposal {
     supersedes: null,
     supersededBy: null,
     snoozedUntil: null,
+    followups: [],
     seq: next,
     ts: "2026-11-20T15:00:00.000Z",
     review: null,

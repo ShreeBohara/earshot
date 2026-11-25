@@ -7,7 +7,7 @@ import { captureErrorKind } from "@earshot/voice/machines";
 import { FlaskConicalIcon, PauseIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { linkButton } from "@/components/link-button";
-import type { WitnessView } from "@/lib/capture/controller";
+import { canSpeakCorrections, type WitnessView } from "@/lib/capture/controller";
 import type { FakeVoice, FakeVoiceSetup } from "@/lib/capture/fake";
 import { defaultSelection, type ProviderSelection, providerChoices } from "@/lib/capture/providers";
 import { WITNESS_COPY, witnessPromptDue } from "@/lib/capture/witness";
@@ -369,6 +369,8 @@ export function CaptureScreen({ fake: fakeSetup }: { fake: FakeVoiceSetup | null
             partial={ui.paused ? null : ui.partial}
             activity={ui.activity}
             reviews={ui.reviews}
+            corrections={ui.reviews}
+            speech={canSpeakCorrections(ui) ? controller.spokenCorrections : null}
             onPainted={(proposalId, at) => controller.cardPainted(proposalId, at)}
           />
 

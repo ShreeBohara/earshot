@@ -8,6 +8,8 @@ export {
   draft,
   type EventBody,
   ended,
+  followupAsked,
+  followupClosed,
   proposal,
   proposalFlagged,
   proposalV2,
@@ -28,6 +30,7 @@ export {
   usageRecorded,
   utterance,
   utteranceV1,
+  utteranceV3,
   uuid,
 } from "../src/testing";
 

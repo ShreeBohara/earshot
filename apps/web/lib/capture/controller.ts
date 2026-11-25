@@ -33,17 +33,23 @@
 // writes the debrief's recap right after the end, and the device's lens. The key rides in the
 // outbox until the end's ack, as each turn's does, and the controller drops it then.
 //
+// Corrections (Phase 5 WP13; ADR-0038): a tray card's typed correction rides on `correct` over the
+// socket (the corrections route after the seal). Its microphone, in push-to-talk, arms the next
+// turn as the correction (`spokenCorrections`): the bridge sends that turn as `correct`, so its
+// words are read by `correctProposal` and never extracted, and the turn's clip stays on the device.
+//
 // Evidence clips (Phase 5 WP9; ADR-0036): with clips on for this device, the engine records each
 // turn's audio even without a witness, and each turn's `turn_audio` goes to `clips.keep`, which
 // encrypts it into this browser's clip store for 24 hours. It never goes anywhere else. While a
 // clip plays on this page, a hands-free engine takes no microphone audio, so the clip's sound
 // can't come back as a turn; pressing push-to-talk stops the clip instead.
-import type {
-  EntityRef,
-  LlmProvider,
-  RecapLensId,
-  RecapRequest,
-  SessionProviders,
+import {
+  type EntityRef,
+  type LlmProvider,
+  type RecapLensId,
+  type RecapRequest,
+  type SessionProviders,
+  uuidv7,
 } from "@earshot/core";
 import type { ProviderId, StoredKeyMeta } from "@earshot/keys";
 import {
@@ -77,6 +83,7 @@ import {
   silentResponseTransition,
 } from "@earshot/voice/machines";
 import {
+  type ArmedCorrection,
   connectEngine,
   createReviewRoute,
   createTicketFetcher,
@@ -87,6 +94,14 @@ import {
   SessionWitness,
   type WitnessSetup,
 } from "@earshot/voice/session";
+import {
+  type CorrectionOutcome,
+  type CorrectionWriter,
+  correctionRoute,
+  failureOf,
+  type SpokenCorrections,
+  type SpokenRequest,
+} from "../inbox/corrections";
 import type { ReviewWriter } from "../inbox/sinks";
 import type { CreateSessionResponse, VoiceRouteError } from "../voice/types";
 import type { ActivityKind, ActivityRow } from "./activity";
@@ -158,10 +173,10 @@ export interface CaptureUiState {
   /** Development fake mode: how long to hold, and the line the next press says. */
   readonly fake: { readonly holdMs: number; readonly nextLine: string | null } | null;
   /**
-   * The tray's writer: the session client, whose reviews go over the socket until the seal and to
-   * the web route after it, under the same ids. Null before a session opens.
+   * The tray's writer: the session client, whose reviews and corrections (WP13) go over the socket
+   * until the seal and to the web routes after it, under the same ids. Null before a session opens.
    */
-  readonly reviews: ReviewWriter | null;
+  readonly reviews: (ReviewWriter & CorrectionWriter) | null;
   /** SessionDO sealed the session: the inbox has it from here on (the tray hands over). */
   readonly sealed: boolean;
 }
@@ -305,6 +320,26 @@ const CAPTURE_RUNNING: ReadonlySet<Capture["state"]> = new Set([
   "provider_unavailable",
 ]);
 
+/**
+ * How long a spoken correction waits for its turn to be read (WP13): the rep's words and SessionDO's
+ * answer. Past it the card says it couldn't send, and drops what's still armed.
+ */
+const SPOKEN_CORRECTION_WAIT_MS = 120_000;
+
+/**
+ * Whether a card's microphone can take a spoken correction now (WP13): a live session capturing in
+ * push-to-talk, not paused or sealed, and no turn being said. Hands-free has no press to arm.
+ */
+export function canSpeakCorrections(state: CaptureUiState): boolean {
+  return (
+    state.phase === "live" &&
+    state.mode === "push_to_talk" &&
+    !state.suspended &&
+    !state.sealed &&
+    CAPTURE_RUNNING.has(state.capture.state)
+  );
+}
+
 function sameCapture(a: Capture, b: Capture): boolean {
   return (
     a.state === b.state &&
@@ -329,6 +364,21 @@ export class CaptureController {
   #mic: Microphone | null = null;
   #releasing: Promise<void> = Promise.resolve();
   #rowCount = 0;
+  /** A card's spoken correction (WP13), armed until the next turn ends and the bridge takes it. */
+  #armed: {
+    readonly correction: ArmedCorrection;
+    readonly settle: (outcome: CorrectionOutcome) => void;
+  } | null = null;
+
+  /**
+   * Corrections by voice from the tray's cards (Phase 5 WP13; ADR-0038): `start` arms the next turn
+   * as the correction and presses push-to-talk, `finish` releases it, and the turn's words go to
+   * SessionDO as `correct`, not as a turn to extract. Only while `canSpeakCorrections`.
+   */
+  readonly spokenCorrections: SpokenCorrections = {
+    start: (request) => this.#speakCorrection(request),
+    finish: () => this.release(),
+  };
 
   constructor(deps: CaptureDeps) {
     this.#deps = deps;
@@ -604,6 +654,8 @@ export class CaptureController {
         onSuspend: () => this.#suspendCapture(),
         // A sealed session's tray reviews go to the web route, with the same review ids.
         reviewRoute: createReviewRoute({ sessionId: created.sessionId, fetch: this.#deps.fetch }),
+        // And its typed corrections and skips (WP13) to the corrections route.
+        correctionRoute: correctionRoute(created.sessionId, this.#deps.fetch),
         ...this.#deps.clientOptions,
       });
       const witnessSetup = plan.witness?.setup;
@@ -747,6 +799,7 @@ export class CaptureController {
       llm: () => live.plan.llm,
       key: () => live.turnKey,
       ...(live.witness ? { witness: live.witness } : {}),
+      takeCorrection: () => this.#takeCorrection(),
     });
     try {
       await engine.start({
@@ -900,6 +953,55 @@ export class CaptureController {
     const at = this.#deps.clock();
     if (this.#state.pressed) marks.released(at);
     else if (this.#engineState === "recording") marks.speechStopped(at);
+  }
+
+  #speakCorrection(request: SpokenRequest): Promise<CorrectionOutcome> {
+    if (this.#armed !== null || this.#state.pressed || !canSpeakCorrections(this.#state)) {
+      return Promise.resolve({ ok: false, code: "unavailable" });
+    }
+    // The bridge gives the armed correction to the next turn that ends. A turn released but still
+    // waiting on its finals ends first, so arming now would make it the correction, and send the
+    // correction's own words to be extracted. The engine reports armed, unpressed in push-to-talk,
+    // only when no turn waits: then the next turn to end is the one this press starts.
+    if (this.#engineState !== "armed") return Promise.resolve({ ok: false, code: "busy" });
+    return new Promise((resolve) => {
+      let done = false;
+      const timer = this.#timers.setTimeout(() => {
+        // Never read: whatever's still armed goes, and push-to-talk comes up.
+        if (this.#armed?.settle === settle) this.#armed = null;
+        if (this.#state.pressed) this.release();
+        settle({ ok: false, code: "unavailable" });
+      }, SPOKEN_CORRECTION_WAIT_MS);
+      const settle = (outcome: CorrectionOutcome) => {
+        if (done) return;
+        done = true;
+        this.#timers.clearTimeout(timer);
+        resolve(outcome);
+      };
+      this.#armed = {
+        correction: {
+          correctionId: uuidv7(),
+          proposalId: request.proposalId,
+          field: request.field,
+          ...(request.questionId ? { questionId: request.questionId } : {}),
+          settled: (delivery) =>
+            settle(delivery.ok ? { ok: true } : { ok: false, code: failureOf(delivery.code) }),
+        },
+        settle,
+      };
+      this.press();
+      if (!this.#state.pressed) {
+        this.#armed = null;
+        settle({ ok: false, code: "unavailable" });
+      }
+    });
+  }
+
+  /** The bridge, at a turn's end: the armed correction, which that turn's words are. */
+  #takeCorrection(): ArmedCorrection | undefined {
+    const armed = this.#armed;
+    this.#armed = null;
+    return armed?.correction;
   }
 
   /** Push-to-talk down. `at` is the DOM event's timestamp, on the page's clock. */
@@ -1162,6 +1264,10 @@ export class CaptureController {
   }
 
   #teardownSession(): void {
+    // A spoken correction still armed has no turn to ride on now.
+    const armed = this.#armed;
+    this.#armed = null;
+    armed?.settle({ ok: false, code: "unavailable" });
     const live = this.#live;
     if (!live) return;
     this.#live = null;

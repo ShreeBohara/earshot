@@ -157,6 +157,8 @@ function readProjections(db: Db, sessionId: string) {
         seq: row.seq,
         ts: row.ts?.toISOString(),
         witness: row.witness,
+        // Migration 0018 (Phase 5 WP13): how the words arrived.
+        input: row.input,
         text: row.text,
         confidence: row.confidence,
         startMs: row.startedMs,
@@ -178,6 +180,8 @@ function readProjections(db: Db, sessionId: string) {
         supersedes: row.supersedes,
         supersededBy: row.supersededBy,
         snoozedUntil: row.snoozedUntil?.toISOString() ?? null,
+        // Migration 0018 (Phase 5 WP13): the follow-up questions, as the projection keeps them.
+        followups: row.followups,
         seq: row.seq,
         ts: row.createdAt.toISOString(),
         review:

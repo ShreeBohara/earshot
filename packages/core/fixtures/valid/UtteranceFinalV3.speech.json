@@ -1,0 +1,35 @@
+{
+  "utteranceId": "01a1c6e9-3a10-7c41-8b2e-6f0d4c1a9e01",
+  "text": "No, it's Acme Robotics.",
+  "confidence": 0.91,
+  "words": [
+    {
+      "w": "No,",
+      "startMs": 41200,
+      "endMs": 41380,
+      "confidence": 0.94
+    },
+    {
+      "w": "it's",
+      "startMs": 41400,
+      "endMs": 41560,
+      "confidence": 0.92
+    },
+    {
+      "w": "Acme",
+      "startMs": 41600,
+      "endMs": 41930,
+      "confidence": 0.9
+    },
+    {
+      "w": "Robotics.",
+      "startMs": 41960,
+      "endMs": 42540,
+      "confidence": 0.89
+    }
+  ],
+  "startMs": 41200,
+  "endMs": 42540,
+  "witness": "biased",
+  "input": "speech"
+}

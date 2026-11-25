@@ -1,5 +1,7 @@
 import type {
   EventEnvelope,
+  FollowupAskedV1,
+  FollowupClosedV1,
   ProposalCreatedV2,
   ProposalFlaggedV1,
   ProposalReviewedV2,
@@ -12,7 +14,7 @@ import type {
   TurnMeasuredV1,
   TurnWitnessedV1,
   UsageRecordedV1,
-  UtteranceFinalV2,
+  UtteranceFinalV3,
 } from "@earshot/core";
 import type { z } from "zod";
 
@@ -27,7 +29,7 @@ export type TypedEvent<T extends string, V extends number, P> = Omit<
 };
 
 export type SessionStartedEvent = TypedEvent<"session.started", 1, SessionStartedV1>;
-export type UtteranceFinalEvent = TypedEvent<"utterance.final", 2, UtteranceFinalV2>;
+export type UtteranceFinalEvent = TypedEvent<"utterance.final", 3, UtteranceFinalV3>;
 export type ProposalCreatedEvent = TypedEvent<"proposal.created", 2, ProposalCreatedV2>;
 export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 2, ProposalReviewedV2>;
 export type SessionEndedEvent = TypedEvent<"session.ended", 1, SessionEndedV1>;
@@ -39,6 +41,8 @@ export type TurnWitnessedEvent = TypedEvent<"turn.witnessed", 1, TurnWitnessedV1
 export type ProposalSnoozedEvent = TypedEvent<"proposal.snoozed", 1, ProposalSnoozedV1>;
 export type SessionSealedEvent = TypedEvent<"session.sealed", 1, SessionSealedV1>;
 export type RecapCreatedEvent = TypedEvent<"recap.created", 1, RecapCreatedV1>;
+export type FollowupAskedEvent = TypedEvent<"followup.asked", 1, FollowupAskedV1>;
+export type FollowupClosedEvent = TypedEvent<"followup.closed", 1, FollowupClosedV1>;
 
 /**
  * A validated event at the latest schema version of its type. Replay upcasts every stored event
@@ -57,12 +61,14 @@ export type SessionEvent =
   | TurnWitnessedEvent
   | ProposalSnoozedEvent
   | SessionSealedEvent
-  | RecapCreatedEvent;
+  | RecapCreatedEvent
+  | FollowupAskedEvent
+  | FollowupClosedEvent;
 
 /** The latest schema version of each event type. A test checks it against the default registry. */
 export const latestVersions = {
   "session.started": 1,
-  "utterance.final": 2,
+  "utterance.final": 3,
   "proposal.created": 2,
   "proposal.reviewed": 2,
   "session.ended": 1,
@@ -74,6 +80,8 @@ export const latestVersions = {
   "proposal.snoozed": 1,
   "session.sealed": 1,
   "recap.created": 1,
+  "followup.asked": 1,
+  "followup.closed": 1,
 } as const satisfies { [E in SessionEvent as E["type"]]: E["schemaVersion"] };
 
 /** A payload schema and the event type and schema version it belongs to. */

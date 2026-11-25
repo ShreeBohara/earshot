@@ -15,13 +15,19 @@ import {
   FakeCaptureSource,
   FakePageLifecycle,
   FakeSessionServer,
+  type FakeSessionServerOptions,
   fakeCredential,
   NO_TARGET,
   settle,
 } from "@earshot/voice/testing";
 import { describe, expect, it } from "vitest";
 import { SpokenConfirmations } from "@/lib/capture/audio-out";
-import { type CaptureClips, CaptureController, type CaptureDeps } from "@/lib/capture/controller";
+import {
+  type CaptureClips,
+  CaptureController,
+  type CaptureDeps,
+  canSpeakCorrections,
+} from "@/lib/capture/controller";
 import { createFakeVoice } from "@/lib/capture/dev/fake-voice";
 import type { FakeScenario } from "@/lib/capture/fake";
 import type { WitnessSetting } from "@/lib/capture/witness";
@@ -64,11 +70,14 @@ function setup(
     clips?: CaptureClips;
     /** The device's recap lens (Phase 5 WP10); absent, the app wires none. */
     recapLens?: RecapLensId | null;
+    /** How the fake SessionDO reads a correction (Phase 5 WP13); absent, it changes nothing. */
+    correct?: FakeSessionServerOptions["correct"];
   } = {},
 ) {
   const clock = new ManualClock();
   const server = new FakeSessionServer({
     sessionId: SESSION_ID,
+    ...(options.correct ? { correct: options.correct } : {}),
     propose: (turn) =>
       turn.utterances
         .filter((u) => u.text.includes("Dana"))
@@ -916,5 +925,155 @@ describe("CaptureController with evidence clips (Phase 5 WP9)", () => {
     expect(ptt.controller.getState().pressed).toBe(true);
     ptt.controller.release();
     ptt.controller.dispose();
+  });
+});
+
+describe("CaptureController's spoken corrections (Phase 5 WP13)", () => {
+  async function liveWithCard(t: ReturnType<typeof setup>) {
+    const fake = createFakeVoice(SCENARIO);
+    t.controller.start({ selection: null, fake });
+    await settle(100);
+    await t.clock.advance(200);
+    await talk(t, fake.holdMs);
+    const [card] = t.controller.getState().store?.getState().projections.proposals ?? [];
+    if (!card) throw new Error("the first line made no card");
+    return { fake, card };
+  }
+
+  it("arms the next push-to-talk turn as a card's correction: it goes out as `correct`, not as a turn to extract", async () => {
+    const t = setup();
+    const { fake, card } = await liveWithCard(t);
+    expect(canSpeakCorrections(t.controller.getState())).toBe(true);
+
+    const outcome = t.controller.spokenCorrections.start({
+      proposalId: card.proposalId,
+      field: "name",
+      questionId: null,
+    });
+    expect(t.controller.getState().pressed).toBe(true);
+    // A second microphone can't arm while one listens.
+    expect(
+      await t.controller.spokenCorrections.start({
+        proposalId: card.proposalId,
+        field: "name",
+        questionId: null,
+      }),
+    ).toEqual({ ok: false, code: "unavailable" });
+    await speak(t, fake.holdMs);
+    t.controller.spokenCorrections.finish();
+    await t.clock.advance(1_500);
+    await settle(100);
+    await t.clock.advance(300);
+    expect(await outcome).toEqual({ ok: true });
+
+    // The turn's words went out as utterances, then `correct` under the same turn, and no turn_end.
+    const corrections = t.server.received.filter((m) => m.t === "correct");
+    expect(corrections).toHaveLength(1);
+    const [correct] = corrections as { turnId: string; proposalId: string; field: string }[];
+    expect(correct).toMatchObject({ proposalId: card.proposalId, field: "name" });
+    expect(correct).not.toHaveProperty("typed");
+    const utterances = t.server.received.filter(
+      (m) => m.t === "utterance" && (m as { turnId: string }).turnId === correct?.turnId,
+    );
+    expect(utterances.length).toBeGreaterThan(0);
+    expect(
+      t.server.received.filter(
+        (m) => m.t === "turn_end" && (m as { turnId: string }).turnId === correct?.turnId,
+      ),
+    ).toEqual([]);
+    // The superseding card arrived from the session's events, and the original is superseded.
+    const proposals = t.controller.getState().store?.getState().projections.proposals ?? [];
+    expect(proposals.map((p) => [p.status, p.supersedes])).toEqual([
+      ["superseded", null],
+      ["proposed", card.proposalId],
+    ]);
+
+    // The next press is an ordinary turn again.
+    await talk(t, fake.holdMs);
+    expect(t.server.received.filter((m) => m.t === "correct")).toHaveLength(1);
+    expect(t.server.received.filter((m) => m.t === "turn_end")).toHaveLength(2);
+    t.controller.dispose();
+  });
+
+  it("won't arm while the last turn is still being read: that turn would become the correction", async () => {
+    const t = setup();
+    const { fake, card } = await liveWithCard(t);
+
+    // An ordinary turn, released and waiting on its finals.
+    t.controller.press();
+    await speak(t, fake.holdMs);
+    t.controller.release();
+    expect(t.controller.getState().capture.state).toBe("finalizing");
+    expect(
+      await t.controller.spokenCorrections.start({
+        proposalId: card.proposalId,
+        field: "name",
+        questionId: null,
+      }),
+    ).toEqual({ ok: false, code: "busy" });
+    expect(t.controller.getState().pressed).toBe(false);
+
+    // That turn ends as an ordinary turn, and nothing went out as a correction.
+    await t.clock.advance(1_500);
+    await settle(100);
+    await t.clock.advance(300);
+    expect(t.server.received.filter((m) => m.t === "turn_end")).toHaveLength(2);
+    expect(t.server.received.filter((m) => m.t === "correct")).toEqual([]);
+
+    // Once it's read, the microphone arms the next turn as before.
+    const outcome = t.controller.spokenCorrections.start({
+      proposalId: card.proposalId,
+      field: "name",
+      questionId: null,
+    });
+    expect(t.controller.getState().pressed).toBe(true);
+    await speak(t, fake.holdMs);
+    t.controller.spokenCorrections.finish();
+    await t.clock.advance(1_500);
+    await settle(100);
+    await t.clock.advance(300);
+    expect(await outcome).toEqual({ ok: true });
+    expect(t.server.received.filter((m) => m.t === "correct")).toHaveLength(1);
+    expect(t.server.received.filter((m) => m.t === "turn_end")).toHaveLength(2);
+    t.controller.dispose();
+  });
+
+  it("says what SessionDO couldn't read, and offers no microphone in hands-free", async () => {
+    const t = setup({ correct: () => "unreadable" });
+    const { fake, card } = await liveWithCard(t);
+    const outcome = t.controller.spokenCorrections.start({
+      proposalId: card.proposalId,
+      field: "name",
+      questionId: null,
+    });
+    await speak(t, fake.holdMs);
+    t.controller.spokenCorrections.finish();
+    await t.clock.advance(1_500);
+    await settle(100);
+    await t.clock.advance(300);
+    expect(await outcome).toEqual({ ok: false, code: "unreadable" });
+
+    t.controller.toggleHandsFree();
+    expect(canSpeakCorrections(t.controller.getState())).toBe(false);
+    expect(
+      await t.controller.spokenCorrections.start({
+        proposalId: card.proposalId,
+        field: "name",
+        questionId: null,
+      }),
+    ).toEqual({ ok: false, code: "unavailable" });
+    t.controller.dispose();
+  });
+
+  it("gives the card its answer when the screen goes before the turn is read", async () => {
+    const t = setup();
+    const { card } = await liveWithCard(t);
+    const outcome = t.controller.spokenCorrections.start({
+      proposalId: card.proposalId,
+      field: "name",
+      questionId: null,
+    });
+    t.controller.dispose();
+    expect(await outcome).toEqual({ ok: false, code: "unavailable" });
   });
 });

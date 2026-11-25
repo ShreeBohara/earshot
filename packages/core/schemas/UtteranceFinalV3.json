@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "utteranceId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "words": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "w": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "endMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "w",
+          "startMs",
+          "endMs",
+          "confidence"
+        ],
+        "additionalProperties": false,
+        "title": "Word"
+      }
+    },
+    "startMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "endMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "witness": {
+      "type": "string",
+      "enum": [
+        "biased",
+        "unbiased"
+      ]
+    },
+    "input": {
+      "type": "string",
+      "enum": [
+        "speech",
+        "typed"
+      ]
+    }
+  },
+  "required": [
+    "utteranceId",
+    "text",
+    "confidence",
+    "startMs",
+    "endMs",
+    "witness",
+    "input"
+  ],
+  "additionalProperties": false,
+  "title": "UtteranceFinalV3",
+  "description": "Payload of `utterance.final`, schema version 3: adds how the words arrived, said or typed.",
+  "x-event-type": "utterance.final",
+  "x-schema-version": 3
+}

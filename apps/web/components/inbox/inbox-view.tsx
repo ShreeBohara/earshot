@@ -6,6 +6,7 @@ import { KeyboardIcon } from "lucide-react";
 import { Fragment, useEffect, useId, useRef, useState } from "react";
 import type { InboxDemoInput, InboxDemoResult } from "@/app/actions/inbox-demo";
 import { CAUGHT_UP_COPY, SECTION_TITLES } from "@/lib/inbox/copy";
+import { type CorrectionSink, routeCorrectionSink } from "@/lib/inbox/corrections";
 import { publishInboxCount } from "@/lib/inbox/count-store";
 import { readPageOf, withFirstPage, withOlderPage } from "@/lib/inbox/pages";
 import { type ReviewSink, routeSink } from "@/lib/inbox/sinks";
@@ -15,6 +16,7 @@ import { CaptureLink } from "../capture/link";
 import { EvidenceCard } from "../evidence/evidence-card";
 import { RecapPanel } from "../recap/recap-panel";
 import { AcceptAllButton, BatchCheckpoint } from "./accept-all";
+import { FollowupCard } from "./followup-card";
 import {
   accountName,
   FinishingSection,
@@ -55,6 +57,8 @@ export interface InboxViewProps {
   readonly initial: InboxData;
   /** Where reviews go: the web route, unless a story passes another. */
   readonly sink?: ReviewSink;
+  /** Where corrections and follow-up skips go (WP13): the web route, unless a story passes another. */
+  readonly corrections?: CorrectionSink;
   /** Reads the inbox again: `GET /api/inbox`, unless a story passes another. */
   readonly reload?: (before?: string) => Promise<InboxData | null>;
   /** The demo controls' actions (WP12); without them, no card offers a demo control. */
@@ -69,9 +73,19 @@ export interface InboxViewProps {
  * and Reviewed, Snoozed, and Finishing beside the cards. The review engine is `useReviewList`,
  * which the capture screen's tray shares.
  */
-export function InboxView({ initial, sink, reload = fetchInbox, demoActions }: InboxViewProps) {
+export function InboxView({
+  initial,
+  sink,
+  corrections,
+  reload = fetchInbox,
+  demoActions,
+}: InboxViewProps) {
   const [data, setData] = useState(initial);
   const [routed] = useState(() => sink ?? routeSink());
+  const [correctionSink] = useState(() => corrections ?? routeCorrectionSink());
+  // A correction's card comes from the server (WP13): the page reads the inbox again once it lands.
+  // Read from a ref, so the list's options stay one object.
+  const readAgain = useRef<(sessionId: string) => Promise<void>>(async () => {});
   const [loadingOlder, setLoadingOlder] = useState(false);
   const headingId = useId();
   // The demo controls (WP12) act on the server, then the page reads the inbox again, so a card
@@ -90,8 +104,21 @@ export function InboxView({ initial, sink, reload = fetchInbox, demoActions }: I
     surface: "inbox",
     loadedAt: initial.loadedAt,
     ...(demoActions ? { demo: { ...demo, demoCrm: data.demoCrm === true } } : {}),
+    corrections: correctionSink,
+    onCorrected: (sessionId) => readAgain.current(sessionId),
   });
   const { sections, store, refreshNow, batch, shortcuts } = list;
+
+  useEffect(() => {
+    readAgain.current = async (sessionId) => {
+      // The page holding the corrected card's debrief, which "Load older" may have brought in.
+      const read = await readPageOf(data, sessionId, reload);
+      if (!read) return;
+      setData(read.apply);
+      store.reconcile(read.fresh.sessions.flatMap((session) => session.proposals));
+      refreshNow();
+    };
+  });
 
   useEffect(() => {
     runDemo.current = async (action, input) => {
@@ -257,13 +284,20 @@ export function InboxView({ initial, sink, reload = fetchInbox, demoActions }: I
                           const session = clipSessions.get(group.sessionId);
                           if (!card || !session) return null;
                           return (
-                            <li key={proposal.proposalId}>
-                              <EvidenceCard
-                                {...card}
-                                session={session}
-                                headingLevel={group.byAccount ? 5 : 4}
-                              />
-                            </li>
+                            <Fragment key={proposal.proposalId}>
+                              <li>
+                                <EvidenceCard
+                                  {...card}
+                                  session={session}
+                                  headingLevel={group.byAccount ? 5 : 4}
+                                />
+                              </li>
+                              {list.followups(proposal.proposalId).map((followup) => (
+                                <li key={followup.id}>
+                                  <FollowupCard binding={followup} />
+                                </li>
+                              ))}
+                            </Fragment>
                           );
                         })}
                       </ol>

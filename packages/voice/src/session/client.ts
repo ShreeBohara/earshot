@@ -130,7 +130,47 @@ export interface SessionClientOptions {
    * (`createReviewRoute`). Without it, one the socket refuses with `sealed` is reported refused.
    */
   readonly reviewRoute?: ReviewRoute;
+  /**
+   * Where a typed correction or a skip goes once the session is sealed (Phase 5 WP13): the web
+   * route, `POST /api/sessions/:id/corrections`. It answers the superseding proposal's id, or
+   * rejects with the route's code. Without it, one the socket refuses with `sealed` is refused.
+   */
+  readonly correctionRoute?: CorrectionRoute;
 }
+
+/** A correction as `sendCorrection` takes it: the `correct` message's fields, less its msgId. */
+export interface SendCorrectionInput {
+  /** The correction turn: a fresh turn id, or a spoken correction's, whose utterances went first. */
+  readonly turnId: string;
+  readonly correctionId: string;
+  readonly proposalId: string;
+  readonly field: string;
+  readonly questionId?: string;
+  /** A typed correction's words, with their utterance's id; absent for a spoken one. */
+  readonly typed?: { readonly utteranceId: string; readonly text: string };
+}
+
+/** The web route a sealed session's typed correction or skip goes to. */
+export type CorrectionRoute = (
+  request:
+    | {
+        readonly t: "correct";
+        readonly correctionId: string;
+        readonly proposalId: string;
+        readonly field: string;
+        readonly questionId?: string;
+        readonly text: string;
+      }
+    | { readonly t: "skip"; readonly questionId: string },
+) => Promise<{ readonly proposalId: string | null }>;
+
+/**
+ * Where a correction or a skip was written, or why it wasn't: SessionDO's code (`unreadable`,
+ * `turn_limit`, `bad_message`, ...), the route's (`stale`, `too_many`, ...), or `closed`.
+ */
+export type CorrectionDelivery =
+  | { readonly ok: true; readonly via: "socket" | "route" }
+  | { readonly ok: false; readonly code: string };
 
 export interface SendStartInput {
   readonly providers: SessionProviders;
@@ -272,6 +312,7 @@ export class SessionClient {
     ticketMarginMs: number;
   };
   readonly #reviewRoute: ReviewRoute | undefined;
+  readonly #correctionRoute: CorrectionRoute | undefined;
   readonly #outbox = new Outbox();
   readonly #waiters = new Map<string, Waiter[]>();
   readonly #refusals = new Map<string, number>();
@@ -305,6 +346,7 @@ export class SessionClient {
     this.#page = options.page ?? browserPageLifecycle();
     this.#onSuspend = options.onSuspend;
     this.#reviewRoute = options.reviewRoute;
+    this.#correctionRoute = options.correctionRoute;
     this.#log = options.log ?? SILENT_LOG;
     this.store =
       options.store ??
@@ -464,6 +506,87 @@ export class SessionClient {
       );
     });
     return Promise.all(sends);
+  }
+
+  /**
+   * A correction (Phase 5 WP13), sent instead of `turn_end` for a correction turn: SessionDO reads
+   * its words into a superseding proposal, which arrives as an event. Resolves once it's settled;
+   * never rejects. A typed one the socket refuses with `sealed`, or one sent once the client has
+   * closed for good, goes to the correction route with the same `correctionId`. A spoken one can't:
+   * its words are in the session's turn, which the route never sees.
+   */
+  sendCorrection(input: SendCorrectionInput): Promise<CorrectionDelivery> {
+    const { typed } = input;
+    const toRoute = typed
+      ? () =>
+          this.#routeCorrection({
+            t: "correct",
+            correctionId: input.correctionId,
+            proposalId: input.proposalId,
+            field: input.field,
+            ...(input.questionId ? { questionId: input.questionId } : {}),
+            text: typed.text,
+          })
+      : null;
+    return this.#sendCorrectionMessage(
+      {
+        t: "correct",
+        msgId: this.#createId(),
+        turnId: input.turnId,
+        correctionId: input.correctionId,
+        proposalId: input.proposalId,
+        field: input.field,
+        ...(input.questionId ? { questionId: input.questionId } : {}),
+        ...(typed ? { typed: { utteranceId: typed.utteranceId, text: typed.text } } : {}),
+      },
+      toRoute,
+    );
+  }
+
+  /** A follow-up question skipped (Phase 5 WP13), under the same rules as `sendCorrection`. */
+  sendFollowupSkip(questionId: string): Promise<CorrectionDelivery> {
+    return this.#sendCorrectionMessage(
+      { t: "followup", msgId: this.#createId(), questionId, outcome: "skipped" },
+      () => this.#routeCorrection({ t: "skip", questionId }),
+    );
+  }
+
+  async #routeCorrection(request: Parameters<CorrectionRoute>[0]): Promise<CorrectionDelivery> {
+    if (!this.#correctionRoute) return { ok: false, code: "sealed" };
+    try {
+      await this.#correctionRoute(request);
+      return { ok: true, via: "route" };
+    } catch (error) {
+      const code =
+        error instanceof Error && "code" in error && typeof error.code === "string"
+          ? error.code
+          : "unavailable";
+      return { ok: false, code };
+    }
+  }
+
+  #sendCorrectionMessage(
+    message: Extract<OutboxMessage, { t: "correct" } | { t: "followup" }>,
+    toRoute: (() => Promise<CorrectionDelivery>) | null,
+  ): Promise<CorrectionDelivery> {
+    const fallback = (code: string) =>
+      toRoute ? toRoute() : Promise.resolve<CorrectionDelivery>({ ok: false, code });
+    if (this.#connection.state === "closed") return fallback("closed");
+    const msgId = this.#enqueue(message);
+    if (msgId === null) return Promise.resolve({ ok: false, code: "bad_message" });
+    return this.acked(msgId).then(
+      (): CorrectionDelivery => ({ ok: true, via: "socket" }),
+      (error: unknown): Promise<CorrectionDelivery> | CorrectionDelivery => {
+        if (error instanceof MessageRefusedError && error.code === "sealed") {
+          return fallback("sealed");
+        }
+        if (error instanceof SessionClosedError) return fallback("closed");
+        return {
+          ok: false,
+          code: error instanceof MessageRefusedError ? error.code : "closed",
+        };
+      },
+    );
   }
 
   /** A snooze, or a wake (`until: null`), under the same rules as `sendReview`. */
