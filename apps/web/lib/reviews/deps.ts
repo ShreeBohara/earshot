@@ -4,6 +4,8 @@ import { log } from "../auth";
 import { MODE } from "../auth/config";
 import { sealSessionsViaEdge } from "../auth/edge";
 import { withViewerTenant } from "../auth/viewer";
+import { getDb } from "../db";
+import type { CorrectionRouteDeps } from "./corrections";
 import type { SealRepairDeps } from "./repair";
 import type { ReviewRouteDeps } from "./routes";
 
@@ -21,4 +23,18 @@ export function reviewRouteDeps(): ReviewRouteDeps {
 /** What the inbox loader's repair path runs on: the same, and the edge Worker's `sealSessions`. */
 export function sealRepairDeps(): SealRepairDeps {
   return { withViewerTenant, sealSessions: sealSessionsViaEdge(log), now: () => new Date(), log };
+}
+
+/**
+ * What the correction route runs on in this request: its database pool (for the rate limit), the
+ * viewer's tenant transaction on the same pool, the log, the clock, and whether limits count.
+ */
+export async function correctionRouteDeps(): Promise<CorrectionRouteDeps> {
+  return {
+    db: await getDb(),
+    withViewerTenant,
+    log,
+    now: () => new Date(),
+    rateLimit: MODE === "production",
+  };
 }
