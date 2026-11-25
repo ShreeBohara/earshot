@@ -68,7 +68,7 @@ async function phoneticKeysOf(): Promise<KeysOf> {
 }
 
 /** Matches the workspace's demo rows and nothing else. */
-function isDemoRow(workspaceId: string) {
+export function isDemoRow(workspaceId: string) {
   return and(
     // RLS already limits the rows to the workspace; the filter keeps the query explicit.
     eq(crmEntities.workspaceId, workspaceId),

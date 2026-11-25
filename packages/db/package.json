@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@earshot/core": "workspace:*",
+    "@earshot/crm": "workspace:*",
     "@earshot/demo-crm": "workspace:*",
     "@earshot/events": "workspace:*",
     "@earshot/keys": "workspace:*",

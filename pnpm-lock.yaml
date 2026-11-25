@@ -603,6 +603,9 @@ importers:
       '@earshot/core':
         specifier: workspace:*
         version: link:../core
+      '@earshot/crm':
+        specifier: workspace:*
+        version: link:../crm
       '@earshot/demo-crm':
         specifier: workspace:*
         version: link:../demo-crm
