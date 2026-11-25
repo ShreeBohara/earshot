@@ -134,6 +134,13 @@
       "when": 1795605208771,
       "tag": "0018_typed_input_and_followups",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795629659409,
+      "tag": "0019_sync_columns",
+      "breakpoints": true
     }
   ]
 }

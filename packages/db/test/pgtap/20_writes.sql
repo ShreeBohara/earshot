@@ -36,9 +36,10 @@ select lives_ok($$insert into proposals (workspace_id, session_id, type, target_
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a0000000-0000-4000-8000-000000000004', 'task',
           'a0000000-0000-4000-8000-000000000003', '{}')$$,
   'proposals: A can insert its own row');
-select lives_ok($$insert into sync_jobs (workspace_id, proposal_id, adapter, idempotency_key)
+select lives_ok($$insert into sync_jobs (workspace_id, proposal_id, review_id, provider,
+                                          idempotency_key, not_before)
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a0000000-0000-4000-8000-000000000007',
-          'hubspot', 'a0000000-0000-4000-8000-000000000007:retry')$$,
+          gen_random_uuid(), 'hubspot', repeat('a1', 32), now())$$,
   'sync_jobs: A can insert its own row');
 select lives_ok($$insert into commitments (workspace_id, owner, text)
   values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'prospect', 'Loop in legal')$$,
@@ -95,9 +96,10 @@ select throws_ok($$insert into proposals (workspace_id, session_id, type, fields
   values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b0000000-0000-4000-8000-000000000004', 'task', '{}')$$,
   '42501', 'new row violates row-level security policy for table "proposals"',
   'proposals: A can''t insert into B');
-select throws_ok($$insert into sync_jobs (workspace_id, proposal_id, adapter, idempotency_key)
+select throws_ok($$insert into sync_jobs (workspace_id, proposal_id, review_id, provider,
+                                           idempotency_key, not_before)
   values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b0000000-0000-4000-8000-000000000007',
-          'twenty', 'b0000000-0000-4000-8000-000000000007:retry')$$,
+          gen_random_uuid(), 'twenty', repeat('b1', 32), now())$$,
   '42501', 'new row violates row-level security policy for table "sync_jobs"',
   'sync_jobs: A can''t insert into B');
 select throws_ok($$insert into commitments (workspace_id, owner, text)
@@ -165,7 +167,7 @@ from (values
   (4, 'sessions', 'engine = ''pwned''', 'b0000000-0000-4000-8000-000000000004'),
   (5, 'utterances', 'text = ''Pwned''', 'b0000000-0000-4000-8000-000000000006'),
   (6, 'proposals', 'status = ''rejected''', 'b0000000-0000-4000-8000-000000000007'),
-  (7, 'sync_jobs', 'attempts = attempts + 1', 'b0000000-0000-4000-8000-000000000008'),
+  (7, 'sync_jobs', 'attempt = attempt + 1', 'b0000000-0000-4000-8000-000000000008'),
   (8, 'commitments', 'status = ''cancelled''', 'b0000000-0000-4000-8000-000000000009'),
   (9, 'facts', 'key = ''pwned''', 'b0000000-0000-4000-8000-000000000010')
 ) as v(ord, t, change, b_id)
@@ -222,8 +224,10 @@ select throws_ok($$insert into proposals (workspace_id, session_id, type, target
           'b0000000-0000-4000-8000-000000000003', '{}')$$,
   '23503', 'insert or update on table "proposals" violates foreign key constraint "proposals_target_entity_fk"',
   'proposals: A can''t target B''s entity');
-select throws_ok($$insert into sync_jobs (workspace_id, proposal_id, adapter, idempotency_key)
-  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'b0000000-0000-4000-8000-000000000007', 'hubspot', 'eve')$$,
+select throws_ok($$insert into sync_jobs (workspace_id, proposal_id, review_id, provider,
+                                           idempotency_key, not_before)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'b0000000-0000-4000-8000-000000000007',
+          gen_random_uuid(), 'hubspot', repeat('e1', 32), now())$$,
   '23503', 'insert or update on table "sync_jobs" violates foreign key constraint "sync_jobs_proposal_fk"',
   'sync_jobs: A can''t queue a sync of B''s proposal');
 select throws_ok($$insert into facts (workspace_id, entity_id, key, value)

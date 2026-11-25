@@ -71,9 +71,10 @@ export const auditLog = pgTable(
 
 /**
  * Why a checkpoint was signed: a web request with reviews, a flush message with them, a policy
- * change, or an account export (which signs the head it exports).
+ * change, an account export (which signs the head it exports), or the sync outbox's record of an
+ * attempt's result (Phase 6, migration 0019).
  */
-export const AUDIT_CHECKPOINT_REQUESTS = ["review", "flush", "policy", "export"] as const;
+export const AUDIT_CHECKPOINT_REQUESTS = ["review", "flush", "policy", "export", "sync"] as const;
 export type AuditCheckpointRequest = (typeof AUDIT_CHECKPOINT_REQUESTS)[number];
 
 /**
@@ -112,7 +113,7 @@ export const auditCheckpoints = pgTable(
     index("audit_checkpoints_workspace_id_chain_seq_idx").on(t.workspaceId, t.chainSeq),
     check(
       "audit_checkpoints_request_check",
-      sql`${t.request} in ('review', 'flush', 'policy', 'export')`,
+      sql`${t.request} in ('review', 'flush', 'policy', 'export', 'sync')`,
     ),
     check("audit_checkpoints_chain_seq_check", sql`${t.chainSeq} > 0`),
     check("audit_checkpoints_entry_hash_check", sql`octet_length(${t.entryHash}) = 32`),

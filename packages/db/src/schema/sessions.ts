@@ -55,6 +55,12 @@ export const sessions = pgTable(
      * after the end, and for sessions from before Phase 5's recap.
      */
     recap: jsonb().$type<Record<string, unknown>>(),
+    /**
+     * The rep's IANA time zone, from `session.started` v2 (migration 0019, Phase 6 WP1;
+     * docs/adr/0040), which the sync reads a task's due time and a meeting's start in. Null when
+     * `start` carried none (read then as UTC), and for sessions from before.
+     */
+    timeZone: text("time_zone"),
     costUsd: numeric("cost_usd", { precision: 10, scale: 4 }).notNull().default("0"),
     /** Latency and usage measurements. */
     metrics: jsonb().$type<Record<string, unknown>>().notNull().default({}),
@@ -70,6 +76,12 @@ export const sessions = pgTable(
     index("sessions_workspace_id_started_at_idx").on(t.workspaceId, t.startedAt),
     index("sessions_workspace_id_user_id_idx").on(t.workspaceId, t.userId),
     check("sessions_mode_check", sql`${t.mode} in ('debrief', 'conversation', 'local')`),
+    // The shape `session.started` v2 checks: letters, digits, `_`, `+`, and `-`, in parts split by
+    // slashes, starting with a letter, at most 64 characters.
+    check(
+      "sessions_time_zone_check",
+      sql`${t.timeZone} ~ '^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$' and char_length(${t.timeZone}) <= 64`,
+    ),
   ],
 );
 

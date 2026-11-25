@@ -248,8 +248,10 @@ describe("rebuildProjections", () => {
     await db.insert(syncJobs).values({
       workspaceId: A.workspaceId,
       proposalId: approved,
-      adapter: "hubspot",
-      idempotencyKey: `${approved}:hubspot`,
+      reviewId: uuid(0x7e1),
+      provider: "demo",
+      idempotencyKey: "e".repeat(64),
+      notBefore: new Date("2026-11-10T19:16:30Z"),
     });
     await rebuild(db, demoSessionId);
     expect(await db.select({ id: syncJobs.proposalId }).from(syncJobs)).toEqual([{ id: approved }]);

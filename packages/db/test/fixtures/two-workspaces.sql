@@ -79,12 +79,6 @@ insert into proposals (id, workspace_id, session_id, type, target_entity_id, fie
    'b0000000-0000-4000-8000-000000000004', 'note', 'b0000000-0000-4000-8000-000000000003',
    '{"body": {"value": "Called Sam.", "evidence": []}}');
 
-insert into sync_jobs (id, workspace_id, proposal_id, adapter, idempotency_key) values
-  ('a0000000-0000-4000-8000-000000000008', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-   'a0000000-0000-4000-8000-000000000007', 'hubspot', 'a0000000-0000-4000-8000-000000000007:hubspot'),
-  ('b0000000-0000-4000-8000-000000000008', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
-   'b0000000-0000-4000-8000-000000000007', 'twenty', 'b0000000-0000-4000-8000-000000000007:twenty');
-
 insert into commitments (id, workspace_id, owner, counterpart, text, due_at) values
   ('a0000000-0000-4000-8000-000000000009', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
    'rep', 'Dana Lee', 'Send the security questionnaire', '2026-11-19T17:00:00Z'),
@@ -131,3 +125,15 @@ insert into crm_entity_changes (id, workspace_id, entity_id, field, old, new, ch
   ('b0000000-0000-4000-8000-000000000014', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
    'b0000000-0000-4000-8000-000000000003', 'city', null, '"Lisbon"',
    '2026-11-14T10:00:00Z', 'sync');
+
+-- Each job syncs its proposal's approval (a review id named for its proposal), under a key of 64
+-- hex digits, as a SHA-256 is. Last, after the checkpoints: its columns are migration 0019's, and
+-- migration 0013's backfill test seeds a database from before 0013 with what comes before them.
+insert into sync_jobs (id, workspace_id, proposal_id, review_id, provider, idempotency_key,
+                       not_before) values
+  ('a0000000-0000-4000-8000-000000000008', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+   'a0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-0000000007e1', 'hubspot',
+   repeat('a', 64), '2026-11-10T19:16:30Z'),
+  ('b0000000-0000-4000-8000-000000000008', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+   'b0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-0000000007e1', 'twenty',
+   repeat('b', 64), '2026-11-10T19:16:30Z');

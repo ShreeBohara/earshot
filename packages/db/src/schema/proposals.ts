@@ -33,7 +33,9 @@ import { workspaceId } from "./workspaces";
  * `review_mode`, `batch_id`, `policy_id`, and `sync_eligible_at`. It also holds the snooze
  * (`snoozed_until`) and the corrections that replace proposals (`supersedes`, `superseded_by`,
  * with the status `superseded`). From migration 0018 (Phase 5 WP13, docs/adr/0038) it holds its
- * follow-up questions too (`followups`).
+ * follow-up questions too (`followups`). From migration 0019 (Phase 6 WP1, docs/adr/0040) it holds
+ * its latest sync attempt whole (`sync`, as the projection's `SyncView` keeps it), with its state in
+ * a column of its own for queries (`sync_state`), and the statuses `synced` and `failed`.
  *
  * `target_entity_id` references `crm_entities` through a foreign key that lives in migration
  * 0004 instead of here: it needs `ON DELETE SET NULL (target_entity_id)`, which Drizzle can't
@@ -94,6 +96,14 @@ export const proposals = pgTable(
      * keeps them (`FollowupView`): each asked about it, or still open on a proposal it replaced.
      */
     followups: jsonb().$type<Record<string, unknown>[]>().notNull().default(sql`'[]'::jsonb`),
+    /**
+     * The latest sync attempt (migration 0019, Phase 6 WP1; docs/adr/0040), as the projection keeps
+     * it (`SyncView`): its job, review, attempt, and CRM, what it wrote, or why it didn't. Null until
+     * the outbox claims a job for the proposal.
+     */
+    sync: jsonb().$type<Record<string, unknown>>(),
+    /** That attempt's state, for queries: `syncing`, `synced`, `failed`, or `conflicted`. */
+    syncState: text("sync_state"),
     ...timestamps(),
   },
   (t) => [
@@ -116,27 +126,78 @@ export const proposals = pgTable(
       "proposals_review_mode_check",
       sql`${t.reviewMode} in ('single', 'batch', 'policy', 'system')`,
     ),
+    check(
+      "proposals_sync_state_check",
+      sql`${t.syncState} in ('syncing', 'synced', 'failed', 'conflicted')`,
+    ),
   ],
 );
 
-/** The CRM sync outbox: one job per approved proposal and adapter. */
+/** Where a sync job stands (Phase 6 spec §4.5). */
+export const SYNC_JOB_STATES = [
+  "pending",
+  "syncing",
+  "synced",
+  "failed",
+  "conflicted",
+  "canceled",
+] as const;
+export type SyncJobState = (typeof SYNC_JOB_STATES)[number];
+
+/**
+ * The CRM sync outbox (Phase 6 spec §4.5, decisions 1 to 3; docs/adr/0040): one job per approval,
+ * inserted in the same transaction as the event that makes its proposal eligible (WP3), and keyed
+ * by `idempotency_key`, so a second insert for the same approval does nothing.
+ *
+ * Migration 0019 (Phase 6 WP1) shaped it for the outbox before anything had written it: the review
+ * it syncs, the CRM and connection it writes to, the attempt, when it may run (`not_before`, the
+ * review's `syncEligibleAt`), the mapping version it plans with, its state (`status` renamed, with
+ * a check), how its last attempt ended, and what its writes did. `adapter` became `provider` and
+ * `attempts` became `attempt`; `external_id` went, since a job's writes can make up to eight
+ * records (`records`).
+ */
 export const syncJobs = pgTable(
   "sync_jobs",
   {
     id: uuid().primaryKey().defaultRandom(),
     workspaceId: workspaceId(),
     proposalId: uuid("proposal_id").notNull(),
-    adapter: text().notNull(),
+    /** The approval it syncs: its `proposal.reviewed` event's `reviewId`. */
+    reviewId: uuid("review_id").notNull(),
+    /** `hubspot`, `twenty`, `attio`, or `demo`. */
+    provider: text().notNull(),
     /**
-     * Unique across all workspaces, so derive it from random ids (for example the proposal
-     * id): a guessable key would let one tenant probe for another's through a conflict.
+     * The CRM connection it writes through; null for the demo CRM. No foreign key yet: what a
+     * disconnect does to a connection's jobs is WP5's (docs/adr/0040).
+     */
+    connectionId: uuid("connection_id"),
+    /**
+     * Lowercase hex SHA-256 of `earshot.sync.v1:`, the proposal id, and the review id (Phase 6 spec
+     * decision 3; `idempotencyKey` in `@earshot/crm`). Unique across all workspaces, which is why
+     * it's derived from random ids: a guessable key would let one tenant probe for another's
+     * through a conflict.
      */
     idempotencyKey: text("idempotency_key").notNull().unique(),
-    attempts: integer().notNull().default(0),
+    /** The attempt under way, or the last one made, from 1. A Retry starts the next. */
+    attempt: integer().notNull().default(1),
+    /** `SYNC_JOB_STATES`. */
+    state: text().notNull().default("pending"),
+    /** When it may run: its review's `syncEligibleAt`, the end of the undo window. */
+    notBefore: timestamp("not_before", { withTimezone: true }).notNull(),
+    /** The version of the connection's mapping it plans with; null for the demo CRM. */
+    mappingVersion: integer("mapping_version"),
+    /** How its last attempt failed: a `SyncErrorKind` from `@earshot/core`; null otherwise. */
+    errorKind: text("error_kind"),
+    /**
+     * Why it failed or was canceled, as a fixed code: the CRM's error code or category, or the
+     * claim's reason. Never the CRM's message, which can quote a record.
+     */
     lastError: text("last_error"),
-    /** The record id the CRM returned. */
-    externalId: text("external_id"),
-    status: text().notNull().default("pending"),
+    /** What each write did, as `proposal.synced` records it: `{ write, op, ref }` each. */
+    records: jsonb().$type<Record<string, unknown>[]>().notNull().default(sql`'[]'::jsonb`),
+    /** When the outbox claimed its latest attempt, and when that attempt ended. */
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
     ...timestamps(),
   },
   (t) => [
@@ -146,6 +207,20 @@ export const syncJobs = pgTable(
       foreignColumns: [proposals.workspaceId, proposals.id],
     }).onDelete("cascade"),
     index("sync_jobs_workspace_id_proposal_id_idx").on(t.workspaceId, t.proposalId),
-    check("sync_jobs_attempts_check", sql`${t.attempts} >= 0`),
+    // The sweep's query: a workspace's jobs in a state, by when they may run.
+    index("sync_jobs_workspace_id_state_not_before_idx").on(t.workspaceId, t.state, t.notBefore),
+    check("sync_jobs_attempt_check", sql`${t.attempt} between 1 and 20`),
+    check(
+      "sync_jobs_state_check",
+      sql`${t.state} in ('pending', 'syncing', 'synced', 'failed', 'conflicted', 'canceled')`,
+    ),
+    check("sync_jobs_provider_check", sql`${t.provider} in ('hubspot', 'twenty', 'attio', 'demo')`),
+    check("sync_jobs_idempotency_key_check", sql`${t.idempotencyKey} ~ '^[0-9a-f]{64}$'`),
+    check("sync_jobs_mapping_version_check", sql`${t.mappingVersion} > 0`),
+    check(
+      "sync_jobs_error_kind_check",
+      sql`${t.errorKind} in ('rate_limited', 'transient', 'auth', 'forbidden', 'not_found', 'validation', 'duplicate', 'unmapped', 'unsupported', 'unknown')`,
+    ),
+    check("sync_jobs_last_error_check", sql`${t.lastError} ~ '^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$'`),
   ],
 );
