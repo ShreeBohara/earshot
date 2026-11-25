@@ -47,7 +47,7 @@ What corrections have to work within:
 - **Lead-ins** ("actually", "no, it's", "make that", and so on) are stripped by a scan, not a regular expression.
 - **The record** goes through linker v1 (ADR-0028) over the caller's index, with the session's focus account and earlier links. The original's kind is tried first, and its answer stands if it links or asks; otherwise the type's other kinds are tried for a link. A typed exact name or alias of exactly one asked candidate links it, basis `exact`: typing "Peer Logistics" settles a question between homophones that speech couldn't. A contact's target and its `name` are corrected together.
 - **Dates** take the last expression that isn't negated ("not Friday, Monday" is Monday), on the call's time and the rep's time zone (ADR-0030). An ambiguous reading keeps its readings and `ambiguous_value`, so the card stays loud. Words with no reading are refused (`unreadable`). **Times** go through `resolveTime`; **amounts** take the last amount not negated, and a currency other than USD is flagged `value_mismatch`.
-- **Text fields** take the words as said; a spoken email address is written out.
+- **Text fields** take the words as said; a spoken email address is written out. The value keeps the punctuation it carries at its edges (a phone's "+44", an email's leading "_", a closing bracket whose opening one it holds) and drops only sentence punctuation and quotes (Codex on #67).
 - **Evidence:** the corrected field's points at the correction's words, under the agent's evidence rules; every other field keeps its evidence and flags.
 
 ### Follow-up questions (`@earshot/understanding/followups`)
@@ -63,6 +63,7 @@ What corrections have to work within:
 - **Unreadable words** are refused with `unreadable`, and nothing is appended, the typed words included: the card stays as it was. **Refusals aren't recorded:** a resend is checked again, to the same answer.
 - **`followup`** appends `followup.closed` (`skipped`) once `checkFollowupSkip` passes; a second skip of the same question gets the first one's seq.
 - Neither writes an audit row or needs the audit key: a correction decides nothing, it makes a proposal for the rep to review. Neither pushes back the idle end.
+- **A witness that answers after a correction** (Codex on #67): the corrected card kept the original's evidence for every field it didn't change, so the witness's flags, its downgrade of the target, and its conflict also go to the card that replaced the flagged one, for each part no correction on the way changed (`carriedFlag` in `@earshot/events`). An approval of that card reopens, as any flagged approval does (decision 15). `turn.witnessed` still counts the conflicts the witness found.
 
 ### The web Worker's route (`POST /api/sessions/:id/corrections`)
 
@@ -77,7 +78,7 @@ What corrections have to work within:
 
 - **`SessionClient`:** `sendCorrection` and `sendFollowupSkip` over the socket, each answered by its ack or refusal. A typed correction or a skip refused with `sealed`, or sent once the client has closed, goes to the corrections route under the same ids. A spoken one can't (its words are a turn's), and answers `sealed`.
 - **The engine bridge** (`connectEngine`'s `takeCorrection`): at a turn's end, an armed correction takes the turn, which is sent as `correct` instead of `turn_end`. Its utterances went out as usual; the witness drops it.
-- **The capture controller** (`spokenCorrections`): a card's microphone arms the next turn and presses push-to-talk; Done releases it. Only while `canSpeakCorrections`: live, push-to-talk (hands-free has no press to arm), not paused, not sealed. A turn never read gives the card its answer ("couldn't send") after two minutes, or when the screen goes. The turn's audio goes to the speech-to-text provider like any turn's, and its clip, with clips on, stays on the device (ADR-0036).
+- **The capture controller** (`spokenCorrections`): a card's microphone arms the next turn and presses push-to-talk; Done releases it. Only while `canSpeakCorrections`: live, push-to-talk (hands-free has no press to arm), not paused, not sealed. Not while a released turn still waits on its finals either (Codex on #67): the bridge gives the armed correction to the next turn that ends, which would be that one, so the card says Earshot is still reading what was said. A turn never read gives the card its answer ("couldn't send") after two minutes, or when the screen goes. The turn's audio goes to the speech-to-text provider like any turn's, and its clip, with clips on, stays on the device (ADR-0036).
 
 ### The UI
 
