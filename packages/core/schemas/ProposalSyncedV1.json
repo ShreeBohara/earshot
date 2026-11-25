@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "jobId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "reviewId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "hubspot",
+        "twenty",
+        "attio",
+        "demo"
+      ]
+    },
+    "records": {
+      "minItems": 1,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "write": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "found"
+            ]
+          },
+          "ref": {
+            "type": "object",
+            "properties": {
+              "object": {
+                "type": "string",
+                "enum": [
+                  "company",
+                  "contact",
+                  "deal",
+                  "note",
+                  "task",
+                  "meeting"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "object",
+              "id",
+              "url"
+            ],
+            "additionalProperties": false,
+            "title": "ExternalRef"
+          }
+        },
+        "required": [
+          "write",
+          "op",
+          "ref"
+        ],
+        "additionalProperties": false,
+        "title": "SyncedRecord"
+      }
+    },
+    "associations": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "jobId",
+    "reviewId",
+    "attempt",
+    "provider",
+    "records",
+    "associations"
+  ],
+  "additionalProperties": false,
+  "title": "ProposalSyncedV1",
+  "description": "Payload of `proposal.synced`, schema version 1: every write of a sync attempt landed, with the CRM's records.",
+  "x-event-type": "proposal.synced",
+  "x-schema-version": 1
+}

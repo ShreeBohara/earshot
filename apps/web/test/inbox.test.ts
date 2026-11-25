@@ -123,6 +123,7 @@ function proposal(overrides: Partial<InboxProposal> = {}): InboxProposal {
     seq: next,
     ts: "2026-11-20T15:00:00.000Z",
     review: null,
+    sync: null,
     ...overrides,
   };
 }

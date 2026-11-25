@@ -21,7 +21,7 @@ import { workspaceId } from "./workspaces";
  * its evidence: utterance, character span, audio offsets, and confidence. `rebuildProjections`
  * writes each row from one `ProposalView` in `@earshot/events`: `id` is the event's
  * `proposalId`, `created_at` the `proposal.created` event's `ts`, and `updated_at` the latest
- * review's `ts`, or `created_at` before any review.
+ * review's or sync event's `ts`, or `created_at` before either.
  *
  * `target` is the entity linker's decision (`TargetV2`, migration 0012), after any downgrade by
  * the second witness, and `target_entity_id` holds its `entityId`. Flags on the target are in

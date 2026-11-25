@@ -5,6 +5,10 @@ import {
   type ProposalView,
   proposalsProjection,
   type ReviewView,
+  type SyncConflict,
+  type SyncFailure,
+  type SyncState,
+  type SyncView,
 } from "./proposals";
 import { recapProblem, type SessionRecap, type SessionView, sessionProjection } from "./session";
 import { type UtteranceView, utterancesProjection } from "./utterances";
@@ -27,6 +31,10 @@ export {
   recapProblem,
   type SessionRecap,
   type SessionView,
+  type SyncConflict,
+  type SyncFailure,
+  type SyncState,
+  type SyncView,
   sessionProjection,
   type UtteranceView,
   utterancesProjection,

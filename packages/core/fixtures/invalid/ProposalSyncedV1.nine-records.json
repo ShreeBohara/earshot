@@ -1,0 +1,90 @@
+{
+  "jobId": "01a1c6f0-1a2b-7c3d-8e4f-5a6b7c8d9e01",
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d01",
+  "attempt": 1,
+  "provider": "hubspot",
+  "records": [
+    {
+      "write": 0,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "0",
+        "url": null
+      }
+    },
+    {
+      "write": 1,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "1",
+        "url": null
+      }
+    },
+    {
+      "write": 2,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "2",
+        "url": null
+      }
+    },
+    {
+      "write": 3,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "3",
+        "url": null
+      }
+    },
+    {
+      "write": 4,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "4",
+        "url": null
+      }
+    },
+    {
+      "write": 5,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "5",
+        "url": null
+      }
+    },
+    {
+      "write": 6,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "6",
+        "url": null
+      }
+    },
+    {
+      "write": 7,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "7",
+        "url": null
+      }
+    },
+    {
+      "write": 8,
+      "op": "created",
+      "ref": {
+        "object": "note",
+        "id": "8",
+        "url": null
+      }
+    }
+  ],
+  "associations": 1
+}
