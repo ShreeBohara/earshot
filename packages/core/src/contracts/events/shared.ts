@@ -16,6 +16,15 @@ export const FieldName = z.string().regex(/^[a-z][A-Za-z0-9]*$/);
 export const FieldValue = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 export type FieldValue = z.infer<typeof FieldValue>;
 
+/** A SHA-256 digest in lowercase hex: 64 characters. */
+export const Sha256Hex = z.string().regex(/^[0-9a-f]{64}$/);
+
+/**
+ * The most attempts one sync job makes (Phase 6 spec §4.1, target): its first, then each Retry,
+ * which starts the next attempt under the same idempotency key.
+ */
+export const MAX_SYNC_ATTEMPTS = 20;
+
 /**
  * JSON Schema metadata for an event payload. Besides the title and description, it records the
  * event type and schema version the payload belongs to, so the exported schema is self-describing.

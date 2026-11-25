@@ -1,0 +1,31 @@
+{
+  "v": 1,
+  "stages": [
+    {
+      "stageId": "NEW",
+      "pipelineId": null,
+      "label": "New",
+      "words": []
+    },
+    {
+      "stageId": "MEETING",
+      "pipelineId": null,
+      "label": "Meeting",
+      "words": ["met them"]
+    },
+    {
+      "stageId": "PROPOSAL",
+      "pipelineId": null,
+      "label": "Proposal",
+      "words": ["proposal stage"]
+    }
+  ],
+  "newDeals": {
+    "pipelineId": null
+  },
+  "owners": [],
+  "destinations": {
+    "commitment": "note",
+    "meeting": "note"
+  }
+}

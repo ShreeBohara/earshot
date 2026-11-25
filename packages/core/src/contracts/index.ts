@@ -1,4 +1,5 @@
 import { ApprovalPolicyRules } from "./approval-policy";
+import { CrmMapping } from "./crm-mapping";
 import { EntityRef } from "./entity-ref";
 import { EventEnvelope } from "./event-envelope";
 import {
@@ -23,6 +24,7 @@ import {
   UtteranceFinalV3,
 } from "./events";
 import { HealthResponse } from "./health";
+import { SyncRouteRequest } from "./sync-route";
 
 /**
  * Every contract that crosses a process or language boundary. Each one is exported
@@ -30,7 +32,8 @@ import { HealthResponse } from "./health";
  *
  * The session socket protocol (`session-protocol.ts`) and session tickets are the exceptions:
  * only TypeScript speaks them, and their key-shape and signature checks have no JSON Schema form,
- * so an export would accept data that Zod refuses.
+ * so an export would accept data that Zod refuses. So are the review, correction, and policy
+ * routes' requests. The sync retry route's (Phase 6) is exported: it holds no string to check.
  */
 export const contracts = {
   EventEnvelope,
@@ -56,6 +59,9 @@ export const contracts = {
   UtteranceFinalV3,
   FollowupAskedV1,
   FollowupClosedV1,
+  // Phase 6 WP1: a CRM connection's mapping, and the sync retry route's request.
+  CrmMapping,
+  SyncRouteRequest,
 } as const;
 
 export type ContractName = keyof typeof contracts;
@@ -79,6 +85,13 @@ export {
   MAX_DICTATED_UTTERANCES,
   MAX_DICTATED_WORDS,
 } from "./correction-route";
+export {
+  CrmMappedOwner,
+  CrmMappedStage,
+  MAX_MAPPED_OWNERS,
+  MAX_MAPPED_STAGES,
+  MAX_STAGE_WORDS,
+} from "./crm-mapping";
 export { EntityKind } from "./entity-ref";
 export {
   CaptureMode,
@@ -101,6 +114,7 @@ export {
   MAX_RECAP_QUOTE_CHARS,
   MAX_RECAP_SENTENCE_CHARS,
   MAX_RECAP_SENTENCES,
+  MAX_SYNC_ATTEMPTS,
   MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
   ProposalCreatedV2,
@@ -145,6 +159,7 @@ export {
   SessionProviders,
   SessionSealedV1,
   SessionStartedV1,
+  Sha256Hex,
   SignInMethod,
   TARGET_FIELD,
   TargetBasis,
@@ -231,4 +246,11 @@ export {
   TurnMarks,
   TurnTrigger,
 } from "./session-protocol";
-export { ApprovalPolicyRules, EntityRef, EventEnvelope, HealthResponse };
+export {
+  ApprovalPolicyRules,
+  CrmMapping,
+  EntityRef,
+  EventEnvelope,
+  HealthResponse,
+  SyncRouteRequest,
+};

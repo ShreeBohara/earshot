@@ -73,7 +73,7 @@ import {
   SessionStartedV1,
   VoiceEngine,
 } from "./session-started";
-import { FieldName, FieldValue } from "./shared";
+import { FieldName, FieldValue, MAX_SYNC_ATTEMPTS, Sha256Hex } from "./shared";
 import { TurnCompletedV1, TurnOutcome } from "./turn-completed";
 import { CaptureMode, TurnMeasuredV1 } from "./turn-measured";
 import { TurnWitnessedV1, WitnessOutcome, WitnessReason } from "./turn-witnessed";
@@ -148,6 +148,7 @@ export {
   MAX_RECAP_QUOTE_CHARS,
   MAX_RECAP_SENTENCE_CHARS,
   MAX_RECAP_SENTENCES,
+  MAX_SYNC_ATTEMPTS,
   MAX_TARGET_CANDIDATES,
   ProposalCreatedV1,
   ProposalCreatedV2,
@@ -192,6 +193,7 @@ export {
   SessionProviders,
   SessionSealedV1,
   SessionStartedV1,
+  Sha256Hex,
   SignInMethod,
   TARGET_FIELD,
   TargetBasis,

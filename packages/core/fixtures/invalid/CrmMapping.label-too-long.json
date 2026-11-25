@@ -1,0 +1,24 @@
+{
+  "v": 1,
+  "stages": [
+    {
+      "stageId": "contractsent",
+      "pipelineId": "default",
+      "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+      "words": ["proposal"]
+    }
+  ],
+  "newDeals": {
+    "pipelineId": "default"
+  },
+  "owners": [
+    {
+      "userId": "u_9fK2mQx7Lr",
+      "ownerId": "83729104"
+    }
+  ],
+  "destinations": {
+    "commitment": "task",
+    "meeting": "meeting"
+  }
+}

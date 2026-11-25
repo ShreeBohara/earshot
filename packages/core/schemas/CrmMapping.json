@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "v": {
+      "type": "number",
+      "const": 1
+    },
+    "stages": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "stageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "pipelineId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "words": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          }
+        },
+        "required": [
+          "stageId",
+          "pipelineId",
+          "label",
+          "words"
+        ],
+        "additionalProperties": false,
+        "title": "CrmMappedStage"
+      }
+    },
+    "newDeals": {
+      "type": "object",
+      "properties": {
+        "pipelineId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "pipelineId"
+      ],
+      "additionalProperties": false,
+      "title": "CrmNewDeals"
+    },
+    "owners": {
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "ownerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "userId",
+          "ownerId"
+        ],
+        "additionalProperties": false,
+        "title": "CrmMappedOwner"
+      }
+    },
+    "destinations": {
+      "type": "object",
+      "properties": {
+        "commitment": {
+          "type": "string",
+          "enum": [
+            "task",
+            "note"
+          ]
+        },
+        "meeting": {
+          "type": "string",
+          "enum": [
+            "meeting",
+            "note"
+          ]
+        }
+      },
+      "required": [
+        "commitment",
+        "meeting"
+      ],
+      "additionalProperties": false,
+      "title": "CrmDestinations"
+    }
+  },
+  "required": [
+    "v",
+    "stages",
+    "newDeals",
+    "owners",
+    "destinations"
+  ],
+  "additionalProperties": false,
+  "title": "CrmMapping",
+  "description": "A version of a CRM connection's mapping, version 1 of its form: the deal stages a rep's words map to, the pipeline for new deals, each rep's CRM owner, and where commitments and meetings land."
+}

@@ -1,0 +1,23 @@
+{
+  "v": 1,
+  "stages": [
+    {
+      "stageId": "contractsent",
+      "label": "Contract sent",
+      "words": []
+    }
+  ],
+  "newDeals": {
+    "pipelineId": "default"
+  },
+  "owners": [
+    {
+      "userId": "u_9fK2mQx7Lr",
+      "ownerId": "83729104"
+    }
+  ],
+  "destinations": {
+    "commitment": "task",
+    "meeting": "meeting"
+  }
+}
