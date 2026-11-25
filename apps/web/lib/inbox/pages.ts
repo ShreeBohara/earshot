@@ -98,7 +98,8 @@ export function withSessionsRead(current: InboxData, fresh: InboxData): InboxDat
 /**
  * Reads again the page holding one debrief, and how to put it in place: the first page for the
  * newest debrief, else the page that starts with it. After a demo control acts on a card (WP12),
- * the card shows what changed wherever "Load older" put it. Null when the read failed.
+ * or a correction lands (WP13), the card shows what changed wherever "Load older" put it. Null when
+ * the read failed.
  */
 export async function readPageOf(
   current: Pick<InboxData, "sessions">,

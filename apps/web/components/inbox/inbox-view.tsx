@@ -85,7 +85,7 @@ export function InboxView({
   const [correctionSink] = useState(() => corrections ?? routeCorrectionSink());
   // A correction's card comes from the server (WP13): the page reads the inbox again once it lands.
   // Read from a ref, so the list's options stay one object.
-  const readAgain = useRef<() => Promise<void>>(async () => {});
+  const readAgain = useRef<(sessionId: string) => Promise<void>>(async () => {});
   const [loadingOlder, setLoadingOlder] = useState(false);
   const headingId = useId();
   // The demo controls (WP12) act on the server, then the page reads the inbox again, so a card
@@ -105,16 +105,17 @@ export function InboxView({
     loadedAt: initial.loadedAt,
     ...(demoActions ? { demo: { ...demo, demoCrm: data.demoCrm === true } } : {}),
     corrections: correctionSink,
-    onCorrected: () => readAgain.current(),
+    onCorrected: (sessionId) => readAgain.current(sessionId),
   });
   const { sections, store, refreshNow, batch, shortcuts } = list;
 
   useEffect(() => {
-    readAgain.current = async () => {
-      const fresh = await reload();
-      if (!fresh) return;
-      setData((current) => merged(current, fresh));
-      store.reconcile(fresh.sessions.flatMap((session) => session.proposals));
+    readAgain.current = async (sessionId) => {
+      // The page holding the corrected card's debrief, which "Load older" may have brought in.
+      const read = await readPageOf(data, sessionId, reload);
+      if (!read) return;
+      setData(read.apply);
+      store.reconcile(read.fresh.sessions.flatMap((session) => session.proposals));
       refreshNow();
     };
   });

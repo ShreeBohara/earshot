@@ -231,10 +231,11 @@ export interface ReviewListOptions {
    */
   readonly corrections?: CorrectionSink;
   /**
-   * After a correction lands, so its card arrives: the inbox reads itself again. The tray needs
-   * none: the session's events bring it.
+   * After a correction lands, so its card arrives: the inbox reads again the page holding the
+   * debrief (`sessionId`), wherever "Load older" put it. The tray needs none: the session's events
+   * bring it.
    */
-  readonly onCorrected?: () => Promise<void> | void;
+  readonly onCorrected?: (sessionId: string) => Promise<void> | void;
 }
 
 export interface ReviewList {
@@ -885,6 +886,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     field: string,
     words: string | null,
     outcome: CorrectionOutcome,
+    sessionId: string | null,
   ) {
     setCorrectionBusy(null);
     if (!outcome.ok) {
@@ -900,7 +902,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     setKeyed(setCorrectionTexts, stop, null);
     setKeyed(setCorrectionErrors, stop, null);
     announce(`Corrected: ${cardWords(proposal, nameOf)}. Its corrected card is back for review.`);
-    await options.onCorrected?.();
+    if (sessionId !== null) await options.onCorrected?.(sessionId);
   }
 
   /** Sends typed words as a correction of `field`, maybe answering a question. */
@@ -922,7 +924,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
       questionId,
       text: words,
     });
-    await settleCorrection(stop, proposal, field, words, outcome);
+    await settleCorrection(stop, proposal, field, words, outcome, sessionId);
   }
 
   /** The microphone: arms the next turn as the correction's words, or stops listening. */
@@ -943,7 +945,8 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     setKeyed(setCorrectionErrors, stop, null);
     const outcome = await speech.start({ proposalId: proposal.proposalId, field, questionId });
     setListening(null);
-    await settleCorrection(stop, proposal, field, null, outcome);
+    // Spoken corrections are the tray's, whose session's events bring the corrected card.
+    await settleCorrection(stop, proposal, field, null, outcome, null);
   }
 
   /** r on a question: it closes, and focus moves on as when a card leaves. */
