@@ -51,4 +51,5 @@ export {
   retryAfterMs,
 } from "./errors";
 export { idempotencyKey, MARKER_CHARS, MARKER_PREFIX, marker } from "./markers";
+export * from "./plan";
 export { CREDENTIAL_PREVIEW, holdsSecret, REDACTED, redact, redactCause } from "./redact";

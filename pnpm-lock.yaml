@@ -581,6 +581,9 @@ importers:
       '@earshot/events':
         specifier: workspace:*
         version: link:../events
+      '@earshot/understanding':
+        specifier: workspace:*
+        version: link:../understanding
     devDependencies:
       '@earshot/tsconfig':
         specifier: workspace:*

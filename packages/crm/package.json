@@ -5,7 +5,8 @@
   "description": "Earshot's CRM adapter SDK, pure TypeScript with no DOM or Node APIs, since the edge Worker imports it: the adapter's types (plans, writes, the dry run's requests, capabilities, and the context its I/O goes through), the error taxonomy, the idempotency key, and the write markers. The reference CRM, the conformance suite, and the adapters follow.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -13,7 +14,8 @@
   },
   "dependencies": {
     "@earshot/core": "workspace:*",
-    "@earshot/events": "workspace:*"
+    "@earshot/events": "workspace:*",
+    "@earshot/understanding": "workspace:*"
   },
   "devDependencies": {
     "@earshot/tsconfig": "workspace:*",
