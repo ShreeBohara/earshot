@@ -30,7 +30,7 @@ Phase 6 writes approved proposals to real CRMs (HubSpot, Twenty, Attio) and the 
 
 ### Events
 
-**The sync's own events** (`packages/core/src/contracts/events/proposal-sync.ts`), all v1. Each names the job (`jobId`), the approval it syncs (`reviewId`), the attempt (1 to 20; a Retry starts the next under the same key), and the CRM (`provider`: `hubspot`, `twenty`, `attio`, or `demo`). The proposal is the one whose latest review that is.
+**The sync's own events** (`packages/core/src/contracts/events/proposal-sync.ts`), all v1. Each names its proposal (`proposalId`), the job (`jobId`), the approval it syncs (`reviewId`, the proposal's latest review when the job starts), the attempt (1 to 20; a Retry starts the next under the same key), and the CRM (`provider`: `hubspot`, `twenty`, `attio`, or `demo`). The spec's field list left `proposalId` out; it was added at review, for consistency with every other `proposal.*` event, so a reader of one event, its audit row, or an export can tell what it's about without folding the log.
 
 | Event | Adds |
 |---|---|
@@ -51,7 +51,7 @@ All six new payloads are registered in `eventPayloadContracts`, exported to JSON
 
 - **`ProposalView.sync`** is the proposal's latest attempt, or null: its job, review, attempt, CRM, and the time of its latest event, and its state. `syncing` from the start; then `synced`, with the records; `failed`, with the failure (kind, code, field, what landed, whether it's retryable); or `conflicted`, with the cause, the fields, and the existing record. The next attempt, a Retry's or a later approval's, takes its place. In TypeScript it's a union by state, so `error` narrows with it.
 - **Statuses.** `proposal.synced` sets `synced` and `proposal.sync_failed` sets `failed`. A later start (a Retry) sets the review's decision again. A conflict changes no status: the system reopen after it returns the proposal to `proposed`.
-- **What fails the fold,** as writer bugs, like the review checks: a start for a review that isn't a proposal's latest, approving or editing; a start for a superseded proposal; a result without a start; two results for one attempt; a result that names another review or CRM than its start.
+- **What fails the fold,** as writer bugs, like the review checks: a sync event for a proposal the log doesn't have; a start for a superseded proposal, or for a review that isn't its proposal's latest, approving or editing; a result without a start on its proposal; two results for one attempt; a result that names another review or CRM than its start.
 - **Waiting and canceled jobs aren't events.** They're `sync_jobs` rows (WP3), which the inbox reads beside the view.
 - **`sessionProjection`** gains `timeZone`.
 - **The demo session.** `demo-session.jsonl` is byte for byte unchanged and replays. Its committed projections were regenerated on purpose: the session gained `"timeZone": null`, and each proposal `"sync": null`.
@@ -70,8 +70,9 @@ All six new payloads are registered in `eventPayloadContracts`, exported to JSON
 
 1. Every sync event needs a sealed session (`unsealed`).
 2. Shape rules the schema can't carry (`malformed`): a start names a connection exactly when its CRM isn't the demo CRM; a success names each planned write once; a failure names a field only for a refused value or an unreadable plan (`validation`, `unmapped`, `unsupported`), and carries a code shaped like one (`VALIDATION_ERROR`, `invalid_grant`), never a message; a conflict lists fields exactly when its cause is `moved`, and names an existing record only when it's `duplicate`.
-3. A start needs its review to be a proposal's latest (`not_latest`), approving or editing (`not_approved`), nothing superseding the proposal (`superseded`), and no attempt syncing (`syncing`). If the proposal's last attempt was the same job's, that attempt must have failed retryably, and the new attempt must be later (`not_retryable`); a sweep that failed an attempt before its claim leaves a gap in the numbers, which is fine. A job syncs one review to one CRM, and a review syncs through one job (`malformed`).
-4. A result needs the attempt syncing a proposal (`unknown_attempt`), no result for it yet (`settled`), and its start's review and CRM (`malformed`).
+3. Every sync event names a proposal the session has (`unknown_proposal`).
+4. A start needs nothing superseding its proposal (`superseded`), its review to be the proposal's latest (`not_latest`), approving or editing (`not_approved`), and no attempt syncing (`syncing`). If the proposal's last attempt was the same job's, that attempt must have failed retryably, and the new attempt must be later (`not_retryable`); a sweep that failed an attempt before its claim leaves a gap in the numbers, which is fine. A job syncs one review to one CRM, and a review syncs through one job (`malformed`).
+5. A result needs the attempt syncing its proposal (`unknown_attempt`), no result for it yet (`settled`), and its start's review and CRM (`malformed`).
 
 On success it answers with the proposal, for the writer's audit rows. The web review and correction routes and the pilot's log read the new refusals `syncing` and `synced` as stale, as they read `not_proposed`.
 

@@ -5,10 +5,10 @@ import { FieldName, FieldValue, MAX_SYNC_ATTEMPTS, payloadMeta, Sha256Hex } from
 // a session's log after the seal, under the session's lock, as Phase 5's writers append reviews:
 // `proposal.sync_started` when it claims a job, the point of no return (from it on nothing reopens
 // the proposal), then one result for that attempt, `proposal.synced`, `proposal.sync_failed`, or
-// `proposal.sync_conflicted`. Each names its job, the review it syncs, the attempt, and the CRM; the
-// proposal is the one whose latest review that is. The rules the writers keep, which the schemas
-// can't express in JSON Schema and therefore don't check, are `checkSyncEvent` in
-// `@earshot/events`.
+// `proposal.sync_conflicted`. Each names its proposal, as every `proposal.*` event does, then the
+// job, the approval it syncs (the proposal's latest review), the attempt, and the CRM. The rules the
+// writers keep, which the schemas can't express in JSON Schema and therefore don't check, are
+// `checkSyncEvent` in `@earshot/events`.
 
 /** The CRMs Earshot syncs to, and its own demo CRM. */
 export const CrmProvider = z.enum(["hubspot", "twenty", "attio", "demo"]);
@@ -79,10 +79,13 @@ export const SyncConflictCause = z.enum(["moved", "gone", "duplicate"]);
 export type SyncConflictCause = z.infer<typeof SyncConflictCause>;
 
 /**
- * What every sync event names: the job, the approval it syncs (its `reviewId`), which attempt (a
- * Retry starts the next, under the same key), and the CRM.
+ * What every sync event names: the proposal (added at review, for consistency with the other
+ * `proposal.*` events: a reader of one event, its audit row, or an export can tell what it's about
+ * without folding the log), the job, the approval it syncs (its `reviewId`), which attempt (a Retry
+ * starts the next, under the same key), and the CRM.
  */
 const SyncAttempt = {
+  proposalId: z.uuid(),
   jobId: z.uuid(),
   reviewId: z.uuid(),
   attempt: z.int().min(1).max(MAX_SYNC_ATTEMPTS),

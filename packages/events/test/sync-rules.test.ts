@@ -181,6 +181,26 @@ describe("checkSyncEvent refuses", () => {
       syncStarted(1, { reviewId: uuid(7999) }),
       "not_latest",
     ],
+    [
+      "a start naming one proposal with another's approval",
+      syncStarted(1, { reviewId: uuid(7002) }),
+      "not_latest",
+    ],
+    [
+      "a start for a proposal the session doesn't have",
+      syncStarted(1, { proposalId: uuid(3999) }),
+      "unknown_proposal",
+    ],
+    [
+      "a result for a proposal the session doesn't have",
+      synced(5, { proposalId: uuid(3999) }),
+      "unknown_proposal",
+    ],
+    [
+      "a result naming another proposal than the one its attempt syncs",
+      synced(5, { proposalId: uuid(3001) }),
+      "unknown_attempt",
+    ],
     ["a start for a rejection", syncStarted(3), "not_approved"],
     ["a start for a proposal a correction replaced", syncStarted(10), "superseded"],
     ["a second start while one is syncing", syncStarted(5, { jobId: uuid(0xa105) }), "syncing"],

@@ -900,12 +900,32 @@ describe("proposalsProjection: Phase 6 sync attempts", () => {
 
   it("fails on a start for a review that isn't the latest, or doesn't approve", () => {
     const undone = [...approved, reopen(1, uuid(7001))];
-    expect(() => fold([...undone, syncStarted(1)])).toThrow(/isn't any proposal's latest/);
+    expect(() => fold([...undone, syncStarted(1)])).toThrow(
+      /names review 00000000-0000-7000-8000-000000001b59, but its latest is 00000000-0000-7000-8000-000000001bbd/,
+    );
     expect(() => fold([...approved, syncStarted(1, { reviewId: uuid(7999) })])).toThrow(
       ProjectionError,
     );
     const rejected = [started(), proposalV2(1), reviewV2(1, "rejected"), sealed()];
     expect(() => fold([...rejected, syncStarted(1)])).toThrow(/only an approval or an edit/);
+  });
+
+  it("finds each sync event's proposal by its id, and fails on one the log doesn't have", () => {
+    expect(() => fold([...approved, syncStarted(1, { proposalId: uuid(3999) })])).toThrow(
+      /no proposal 00000000-0000-7000-8000-000000000f9f to sync/,
+    );
+    // A start naming one proposal with another's approval is a start for a review that isn't its.
+    const two = [started(), proposalV2(1), proposalV2(2), reviewV2(1), reviewV2(2), sealed()];
+    expect(() => fold([...two, syncStarted(1, { reviewId: uuid(7002) })])).toThrow(
+      /but its latest is/,
+    );
+    // A result naming another proposal than the one its attempt started on has no start there.
+    expect(() => fold([...two, syncStarted(1), synced(1, { proposalId: uuid(3002) })])).toThrow(
+      /has no start/,
+    );
+    expect(() => fold([...approved, synced(1, { proposalId: uuid(3999) })])).toThrow(
+      /no proposal .* to sync/,
+    );
   });
 
   it("fails on a start for a proposal a correction replaced", () => {

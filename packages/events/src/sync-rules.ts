@@ -25,6 +25,8 @@ export type SyncRefusal =
   | "malformed"
   /** The session isn't sealed: only a sealed session syncs (Phase 5's rule). */
   | "unsealed"
+  /** The session has no proposal with that id. */
+  | "unknown_proposal"
   /** The job's review isn't its proposal's latest: an undo or a later review came first. */
   | "not_latest"
   /** The latest review neither approves nor edits, so there's nothing to sync. */
@@ -35,7 +37,10 @@ export type SyncRefusal =
   | "syncing"
   /** The job's last attempt synced, conflicted, or failed for good, or this attempt isn't later. */
   | "not_retryable"
-  /** A result for an attempt that isn't the one syncing: it never started, or a later one did. */
+  /**
+   * A result for an attempt that isn't the one syncing its proposal: it never started there, or a
+   * later one did.
+   */
   | "unknown_attempt"
   /** The attempt has its result already. */
   | "settled";
@@ -43,7 +48,7 @@ export type SyncRefusal =
 export type SyncCheck =
   | {
       readonly ok: true;
-      /** The proposal the event is about: the one whose latest review the job syncs. */
+      /** The proposal the event names, as the session folds it. */
       readonly proposal: ProposalView;
     }
   | { readonly ok: false; readonly reason: SyncRefusal; readonly detail: string };
@@ -72,15 +77,16 @@ const ERROR_CODE = /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/;
  *    value or a plan that can't read one, and carries a code, never a message; a conflict lists the
  *    fields that moved exactly when its cause is `moved`, and names an existing record only when
  *    it's `duplicate`. (A record's link is `http` or `https`: the schema holds that one.)
- * 3. A start (`proposal.sync_started`): its review is the latest review of a proposal, approving
- *    or editing it; nothing replaced that proposal; no attempt is syncing it; and if the proposal's
- *    last attempt was this job's, that attempt failed and may be retried, and this one is later.
- *    A job syncs one review to one CRM, and a review syncs through one job.
- * 4. A result (`proposal.synced`, `proposal.sync_failed`, `proposal.sync_conflicted`): the attempt
- *    is the one syncing a proposal (`unknown_attempt` otherwise), it has no result yet
+ * 3. Its proposal: the session has it (`unknown_proposal` otherwise).
+ * 4. A start (`proposal.sync_started`): nothing replaced its proposal; its review is the proposal's
+ *    latest, approving or editing it; no attempt is syncing it; and if the proposal's last attempt
+ *    was this job's, that attempt failed and may be retried, and this one is later. A job syncs one
+ *    review to one CRM, and a review syncs through one job.
+ * 5. A result (`proposal.synced`, `proposal.sync_failed`, `proposal.sync_conflicted`): the attempt
+ *    is the one syncing its proposal (`unknown_attempt` otherwise), it has no result yet
  *    (`settled`), and it names the review and CRM its start named.
  *
- * On success it answers with the proposal the event is about, for the writer's audit rows.
+ * On success it answers with the proposal, for the writer's audit rows.
  */
 export function checkSyncEvent(
   proposals: readonly ProposalView[],
@@ -90,22 +96,26 @@ export function checkSyncEvent(
   if (!session?.sealedAt) return refuse("unsealed", "only a sealed session syncs");
   const shape = checkShape(event);
   if (shape !== null) return refuse("malformed", shape);
+  const proposal = proposals.find((candidate) => candidate.proposalId === event.payload.proposalId);
+  if (!proposal) return refuse("unknown_proposal", `no proposal ${event.payload.proposalId}`);
   return event.type === "proposal.sync_started"
-    ? checkStart(proposals, event.payload)
-    : checkResult(proposals, event.payload);
+    ? checkStart(proposal, event.payload)
+    : checkResult(proposal, event.payload);
 }
 
-/** A start's rules (step 3 of `checkSyncEvent`). */
-function checkStart(proposals: readonly ProposalView[], start: ProposalSyncStartedV1): SyncCheck {
-  const proposal = proposals.find((candidate) => candidate.review?.reviewId === start.reviewId);
-  const review = proposal?.review;
-  if (!proposal || !review) {
-    return refuse("not_latest", `review ${start.reviewId} isn't any proposal's latest review`);
-  }
+/** A start's rules (step 4 of `checkSyncEvent`). */
+function checkStart(proposal: ProposalView, start: ProposalSyncStartedV1): SyncCheck {
   if (proposal.supersededBy !== null) {
     return refuse(
       "superseded",
       `proposal ${proposal.proposalId} was superseded by ${proposal.supersededBy}`,
+    );
+  }
+  const review = proposal.review;
+  if (review?.reviewId !== start.reviewId) {
+    return refuse(
+      "not_latest",
+      `the job syncs review ${start.reviewId}, but proposal ${proposal.proposalId}'s latest is ${review?.reviewId ?? "none"}`,
     );
   }
   if (review.decision !== "approved" && review.decision !== "edited") {
@@ -141,20 +151,16 @@ function checkStart(proposals: readonly ProposalView[], start: ProposalSyncStart
   return { ok: true, proposal };
 }
 
-/** A result's rules (step 4 of `checkSyncEvent`). */
+/** A result's rules (step 5 of `checkSyncEvent`). */
 function checkResult(
-  proposals: readonly ProposalView[],
+  proposal: ProposalView,
   result: ProposalSyncedV1 | ProposalSyncFailedV1 | ProposalSyncConflictedV1,
 ): SyncCheck {
-  const proposal = proposals.find(
-    (candidate) =>
-      candidate.sync?.jobId === result.jobId && candidate.sync.attempt === result.attempt,
-  );
-  const sync = proposal?.sync;
-  if (!proposal || !sync) {
+  const sync = proposal.sync ?? null;
+  if (sync === null || sync.jobId !== result.jobId || sync.attempt !== result.attempt) {
     return refuse(
       "unknown_attempt",
-      `no proposal's latest sync is attempt ${result.attempt} of job ${result.jobId}`,
+      `proposal ${proposal.proposalId}'s latest sync isn't attempt ${result.attempt} of job ${result.jobId}`,
     );
   }
   if (sync.state !== "syncing") {

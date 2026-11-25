@@ -64,6 +64,7 @@ class ProposalSyncFailedV1(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
+    proposalId: UUID
     jobId: UUID
     reviewId: UUID
     attempt: Annotated[int, Field(ge=1, le=20)]

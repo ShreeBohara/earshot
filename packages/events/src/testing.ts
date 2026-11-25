@@ -367,11 +367,18 @@ export function followupClosed(n: number, answeredBy: number | null = null): Eve
 }
 
 /**
- * The fields every sync event of job `uuid(0xa000 + n)` names (Phase 6 WP1): attempt 1 of the sync
- * of review `uuid(7000 + n)`, which `reviewV2(n)` approves, to the demo CRM.
+ * The fields every sync event of job `uuid(0xa000 + n)` names (Phase 6 WP1): proposal
+ * `uuid(3000 + n)`, and attempt 1 of the sync of review `uuid(7000 + n)`, which `reviewV2(n)`
+ * approves, to the demo CRM.
  */
 function syncAttempt(n: number) {
-  return { jobId: uuid(0xa000 + n), reviewId: uuid(7000 + n), attempt: 1, provider: "demo" };
+  return {
+    proposalId: uuid(3000 + n),
+    jobId: uuid(0xa000 + n),
+    reviewId: uuid(7000 + n),
+    attempt: 1,
+    provider: "demo",
+  };
 }
 
 /** The outbox's claim of job `uuid(0xa000 + n)`: its start, with no connection or mapping. */
