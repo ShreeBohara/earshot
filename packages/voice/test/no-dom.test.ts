@@ -33,6 +33,7 @@ interface SubtleCrypto {
   importKey(format: "raw", keyData: BufferSource, algorithm: HmacImportParams, extractable: boolean, keyUsages: readonly string[]): Promise<CryptoKey>;
   sign(algorithm: string | KeyAlgorithm, key: CryptoKey, data: BufferSource): Promise<ArrayBuffer>;
   verify(algorithm: string | KeyAlgorithm, key: CryptoKey, signature: BufferSource, data: BufferSource): Promise<boolean>;
+  digest(algorithm: string | KeyAlgorithm, data: BufferSource): Promise<ArrayBuffer>;
 }
 interface Crypto {
   readonly subtle: SubtleCrypto;

@@ -504,8 +504,12 @@ export class FakeSessionServer {
       this.#ackExisting(message.msgId, existing);
       return;
     }
+    // `utterance.final` v3, as SessionDO writes it (Phase 5 WP13): an older client's is speech.
     const [event] = this.#commit(message.msgId, [
-      { type: "utterance.final", payload: message.utterance },
+      {
+        type: "utterance.final",
+        payload: { ...message.utterance, input: message.utterance.input ?? "speech" },
+      },
     ]);
     if (!event) return;
     this.#utterances.set(message.utterance.utteranceId, event.seq);
@@ -615,7 +619,10 @@ export class FakeSessionServer {
       const drafts: { type: string; payload: unknown }[] = [];
       let flagged: readonly ProposalFlaggedV1[] = [];
       if (message.outcome === "transcribed") {
-        drafts.push({ type: "utterance.final", payload: message.utterance });
+        drafts.push({
+          type: "utterance.final",
+          payload: { ...message.utterance, input: "speech" },
+        });
         flagged =
           this.#compare?.({
             turnId: message.turnId,
