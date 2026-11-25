@@ -952,20 +952,20 @@ describe("Phase 5 WP13: corrections, follow-up questions, and typed words", () =
     expect(accepts({ ...followup, proposalId: PROPOSAL_ID })).toBe(false);
   });
 
-  it("lets an utterance say it was typed, and an older client leave that out", () => {
-    const { utterance } = clientMessages();
-    const typed = {
-      ...utterance,
-      utterance: { ...utterance.utterance, input: "typed", confidence: 1, words: undefined },
-    };
-    expect(accepts(typed)).toBe(true);
-    expect(accepts({ ...utterance, utterance: { ...utterance.utterance, input: "speech" } })).toBe(
-      true,
-    );
-    expect(accepts(utterance)).toBe(true);
-    expect(accepts({ ...utterance, utterance: { ...utterance.utterance, input: "pasted" } })).toBe(
+  it("carries typed words only on the correction they belong to, capped, never on an utterance", () => {
+    const { correct, utterance } = clientMessages();
+    const typed = { utteranceId: UTTERANCE_ID, text: "the 14th" };
+    expect(accepts({ ...correct, typed })).toBe(true);
+    expect(accepts({ ...correct, typed: { ...typed, text: "x".repeat(500) } })).toBe(true);
+    expect(accepts({ ...correct, typed: { ...typed, text: "x".repeat(501) } })).toBe(false);
+    expect(accepts({ ...correct, typed: { ...typed, text: "" } })).toBe(false);
+    expect(accepts({ ...correct, typed: { text: "the 14th" } })).toBe(false);
+    expect(accepts({ ...correct, typed: { ...typed, confidence: 1 } })).toBe(false);
+    // An utterance is speech: it can't say it was typed.
+    expect(accepts({ ...utterance, utterance: { ...utterance.utterance, input: "typed" } })).toBe(
       false,
     );
+    expect(accepts(utterance)).toBe(true);
   });
 
   it("keeps the second witness's utterance speech: it can't say it was typed", () => {
@@ -975,11 +975,16 @@ describe("Phase 5 WP13: corrections, follow-up questions, and typed words", () =
     expect(accepts(typed)).toBe(false);
   });
 
-  it("has no free text where a key could hide: every field of a correction or a skip is shaped", () => {
+  it("refuses a key-shaped string anywhere in a correction or a skip, typed words above all", () => {
     const { correct, followup } = clientMessages();
     expect(accepts({ ...correct, field: FAKE_KEYS.groq })).toBe(false);
     expect(accepts({ ...correct, questionId: FAKE_KEYS.jwt })).toBe(false);
     expect(accepts({ ...followup, [FAKE_KEYS.anthropic]: 1 })).toBe(false);
+    const typed = { utteranceId: UTTERANCE_ID, text: `it's ${FAKE_KEYS.groq}` };
+    expect(parseClientMessage(frame({ ...correct, typed }))).toEqual({
+      ok: false,
+      reason: "stray_key",
+    });
   });
 
   it("adds unreadable to the error codes, which the server may send", () => {

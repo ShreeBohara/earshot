@@ -12,6 +12,7 @@ import {
   type CorrectionRefusal,
   checkCorrection,
   checkFollowupSkip,
+  correctionBudget,
   defaultProjections,
   type EventDraft,
   linkerOf,
@@ -185,7 +186,9 @@ export function correctionUtterances(
  * 2. Reads the log. Without `session.sealed` it answers `not_sealed` and writes nothing.
  * 3. Folds it. A log that already holds the proposal the correction's id derives to is a resend,
  *    answered with that proposal. Otherwise `checkCorrection`: a proposal still under review, a
- *    field it has, and any question it names open on it and for that field.
+ *    field it has, any question it names open on it and for that field, and a chain of corrections
+ *    behind it shorter than the cap; then the session's limits (`correctionBudget`): corrections in
+ *    all and in the window, and typed words.
  * 4. Places the words at the session's last audio time and hands them to `read`. Words with no
  *    value of the field's kind are `unreadable`, and nothing is appended.
  * 5. Appends the utterances, the superseding `proposal.created`, and a `followup.closed`
@@ -233,6 +236,10 @@ export async function writeSessionCorrection<
   if (!check.ok) {
     return { ok: false, reason: "refused", refusal: check.reason, detail: check.detail };
   }
+  // The session's correction limits (ADR-0038): in all, in the window, and in typed words.
+  const typedChars = request.words.input === "typed" ? request.words.text.length : 0;
+  const over = correctionBudget({ proposals, utterances }, options.now, typedChars);
+  if (over) return { ok: false, reason: "refused", refusal: over.reason, detail: over.detail };
   const placed = correctionUtterances(request.words, lastAudioMs(utterances), options.newId);
   const result = await options.read({
     original: { ...check.proposal, linker: linkerOf(log, check.proposal.proposalId) },

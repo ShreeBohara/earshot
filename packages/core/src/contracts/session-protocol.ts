@@ -21,7 +21,7 @@ import { SessionProviders } from "./events/session-started";
 import { Timestamp } from "./events/shared";
 import { CaptureMode } from "./events/turn-measured";
 import { WitnessReason } from "./events/turn-witnessed";
-import { UtteranceFinalV2, UtteranceInput } from "./events/utterance-final";
+import { UtteranceFinalV2 } from "./events/utterance-final";
 
 /** The protocol version that `hello` and `welcome` carry. */
 export const SESSION_PROTOCOL_VERSION = 1;
@@ -137,11 +137,13 @@ const CappedUtterance = UtteranceFinalV2.extend({
 
 /**
  * An utterance as the `utterance` message carries it: `utterance.final` v2 capped for the socket,
- * plus how its words arrived (Phase 5 WP13), which `SessionDO` writes as v3. A client from before
- * WP13 leaves `input` out, and its utterances are `speech`. A `typed` one is a correction's words,
- * and its turn must end with `correct`, never `turn_end`.
+ * always speech. `SessionDO` writes it as v3 with `input: "speech"` (Phase 5 WP13). Typed words
+ * never come this way: they ride on the `correct` message they belong to.
  */
-const SocketUtterance = CappedUtterance.extend({ input: UtteranceInput.optional() });
+const SocketUtterance = CappedUtterance;
+
+/** The longest typed correction, in UTF-16 code units (target): a name, a date, a sentence. */
+export const MAX_CORRECTION_TEXT_CHARS = 500;
 
 /**
  * `utterance.final` v2 from the unbiased witness, capped like the biased stream's. Only the
@@ -388,23 +390,33 @@ const Snooze = z.strictObject({
 });
 
 /**
- * A correction (Phase 5 spec §4.2, WP13), sent instead of `turn_end` for a correction turn: the
- * turn's `utterance` messages carry what the rep said or typed, and `SessionDO` reads them into a
- * proposal that supersedes `proposalId` (`correctProposal`, no model call and no key). With
+ * A correction (Phase 5 spec §4.2, WP13), sent instead of `turn_end` for a correction turn.
+ * `SessionDO` reads its words into a proposal that supersedes `proposalId` (`correctProposal`, no
+ * model call and no key): the turn's `utterance` messages, sent first, for a spoken correction; or
+ * `typed`, for a typed one, which `SessionDO` writes as a typed utterance in the same transaction
+ * as the correction, so typed words never exist without the correction they belong to. With
  * `questionId` it answers that follow-up question. Taken from `start` until the seal, like
- * `review`; idempotent by `msgId`, and a repeated `correctionId` gets the first one's seq. Words
- * with no value of the field's kind are refused with `unreadable`, and nothing is written.
+ * `review`, within the correction limits; idempotent by `msgId`, and a repeated `correctionId`
+ * gets the first one's answer. Words with no value of the field's kind are refused with
+ * `unreadable`, and nothing is written.
  */
 const Correct = z.strictObject({
   t: z.literal("correct"),
   msgId: MsgId,
-  /** The correction turn: its utterances, sent before this message, are the words to read. */
+  /** The correction turn: a fresh turn id, ended by nothing else. */
   turnId: TurnId,
   /** UUIDv7 from the client. The superseding proposal's id derives from it. */
   correctionId: z.uuid(),
   proposalId: z.uuid(),
   field: CorrectionField,
   questionId: z.uuid().optional(),
+  /** A typed correction's words, with the id their utterance takes; absent for a spoken one. */
+  typed: z
+    .strictObject({
+      utteranceId: z.uuid(),
+      text: z.string().min(1).max(MAX_CORRECTION_TEXT_CHARS),
+    })
+    .optional(),
 });
 
 /** A follow-up question skipped (Phase 5 spec §4.2, WP13): `SessionDO` closes it. */

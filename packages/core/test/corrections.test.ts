@@ -75,6 +75,12 @@ describe("the correction route's request", () => {
     expect(accepts({ ...typed, field: "Due date" })).toBe(false);
   });
 
+  it("takes the rep's time zone, and nothing that isn't one", () => {
+    expect(accepts({ ...typed, timeZone: "America/Chicago" })).toBe(true);
+    expect(accepts({ ...typed, timeZone: "Mars/Olympus_Mons" })).toBe(false);
+    expect(accepts({ ...typed, timeZone: "x".repeat(65) })).toBe(false);
+  });
+
   it("refuses anything shaped like a key, in the words above all", () => {
     expect(accepts({ ...typed, said: { input: "typed", text: `it's ${FAKE_GROQ_KEY}` } })).toBe(
       false,

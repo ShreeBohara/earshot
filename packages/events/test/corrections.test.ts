@@ -5,10 +5,13 @@ import { buildLinkIndex } from "@earshot/understanding/link";
 import { tierOf } from "@earshot/understanding/tiers";
 import { describe, expect, it } from "vitest";
 import {
+  CORRECTION_LIMITS,
   checkCorrection,
   checkFollowupSkip,
   checkReview,
   correctableFields,
+  correctionBudget,
+  correctionDepth,
   type ProposalView,
   policyRuleFor,
   proposalsProjection,
@@ -249,5 +252,62 @@ describe("a correction's proposal under the review rules (WP11 and WP12 kept tru
     expect(
       checkReview(proposals, reviewV2(1).payload as never, { tierOf, from: "client" }),
     ).toMatchObject({ ok: false, reason: "superseded" });
+  });
+});
+
+describe("the correction limits (a security review's)", () => {
+  it("refuses a card corrected the most times over, with a fixed reason", () => {
+    expect(CORRECTION_LIMITS.maxDepth).toBe(5);
+    const chain = [...base];
+    for (let n = 2; n <= 6; n += 1) chain.push(correction(n, n - 1));
+    const proposals = proposalsOf(chain);
+    const last = proposals.find((p) => p.proposalId === uuid(3006)) as ProposalView;
+    expect(correctionDepth(proposals, last)).toBe(5);
+    expect(checkCorrection(proposals, { proposalId: uuid(3006), field: "title" })).toMatchObject({
+      ok: false,
+      reason: "too_deep",
+    });
+    // One step short of the cap still takes one.
+    const shorter = proposalsOf(chain.slice(0, -1));
+    expect(checkCorrection(shorter, { proposalId: uuid(3005), field: "title" }).ok).toBe(true);
+  });
+
+  it("counts a session's corrections in all and in the window, and its typed words", () => {
+    const now = new Date("2026-11-10T19:30:00.000Z");
+    const correctionAt = (ts: string) => ({ supersedes: uuid(3001), ts });
+    const plain = { supersedes: null, ts: "2026-11-10T19:15:00.000Z" };
+    const typed = (length: number) => ({ input: "typed", text: "x".repeat(length) });
+    expect(correctionBudget({ proposals: [plain], utterances: [] }, now, 10)).toBeNull();
+    const old = Array.from({ length: CORRECTION_LIMITS.perSession }, () =>
+      correctionAt("2026-11-10T18:00:00.000Z"),
+    );
+    expect(correctionBudget({ proposals: old, utterances: [] }, now, 0)).toMatchObject({
+      reason: "too_many",
+    });
+    const recent = Array.from({ length: CORRECTION_LIMITS.perWindow }, () =>
+      correctionAt("2026-11-10T19:25:00.000Z"),
+    );
+    expect(correctionBudget({ proposals: recent, utterances: [] }, now, 0)).toMatchObject({
+      reason: "too_many",
+    });
+    // Older than the window, they count only toward the session's total.
+    expect(
+      correctionBudget(
+        { proposals: recent.map(() => correctionAt("2026-11-10T19:00:00.000Z")), utterances: [] },
+        now,
+        0,
+      ),
+    ).toBeNull();
+    const full = { proposals: [], utterances: [typed(CORRECTION_LIMITS.typedCharsPerSession - 5)] };
+    expect(correctionBudget(full, now, 5)).toBeNull();
+    expect(correctionBudget(full, now, 6)).toMatchObject({ reason: "too_many" });
+    // Speech doesn't count toward typed words.
+    expect(
+      correctionBudget(
+        { proposals: [], utterances: [{ input: "speech", text: "x".repeat(30_000) }] },
+        now,
+        6,
+      ),
+    ).toBeNull();
   });
 });

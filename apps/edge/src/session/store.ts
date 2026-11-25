@@ -78,6 +78,13 @@ export type MetaKey =
   // The cost meter's totals (JSON), and recent turn starts for the turn limit (JSON).
   | "meter"
   | "turn_starts"
+  // Corrections (Phase 5 WP13): recent correction starts for their limit (JSON), and the characters
+  // of typed words the session holds.
+  | "correction_starts"
+  | "typed_chars"
+  // When the last event that keeps a session alive was written, while later ones (a correction's)
+  // don't: the idle end counts from it. Absent: from the last event of any kind.
+  | "idle_anchor_ms"
   // Set by `purge()`: the object refuses everything until the tombstone itself is deleted.
   | "purged_ms";
 
@@ -426,6 +433,30 @@ export class SessionStore {
       seq: row.seq,
       proposalId: row.proposal_id,
     };
+  }
+
+  /** How many corrections the log holds (Phase 5 WP13). */
+  countCorrections(): number {
+    if (!this.#hasTables) return 0;
+    return (
+      this.#sql
+        .exec<{ n: number }>("SELECT count(*) AS n FROM writes WHERE kind = 'correction'")
+        .toArray()[0]?.n ?? 0
+    );
+  }
+
+  /**
+   * The session's last audio time: where its latest utterance ends, or 0 before any. Where a typed
+   * correction sits on the session's clock.
+   */
+  lastAudioMs(): number {
+    if (!this.#hasTables) return 0;
+    const row = this.#sql
+      .exec<{ at: number | null }>(
+        "SELECT max(json_extract(payload, '$.endMs')) AS at FROM events WHERE type = 'utterance.final'",
+      )
+      .toArray()[0];
+    return typeof row?.at === "number" ? row.at : 0;
   }
 
   /** Records a review's, snooze's, or correction's id. Call in the transaction that appended it. */

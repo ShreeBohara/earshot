@@ -43,6 +43,8 @@ import {
   type UtteranceFinalV2,
 } from "@earshot/core";
 import {
+  checkCorrection,
+  checkFollowupSkip,
   checkReviews,
   checkSnooze,
   defaultRegistry,
@@ -112,6 +114,14 @@ export interface FakeSessionServerOptions {
   }) => readonly ProposalFlaggedV1[];
   /** Who the socket's reviews and snoozes are by. Defaults to a user with no recorded sign-in. */
   readonly reviewer?: Reviewer;
+  /**
+   * Reads a correction (Phase 5 WP13): the stand-in for `correctProposal`. Returns the fields the
+   * superseding proposal changes, or `unreadable`. Defaults to the original's fields, unchanged.
+   */
+  readonly correct?: (input: {
+    readonly message: ClientMessageOf<"correct">;
+    readonly original: ProposalCreatedV2;
+  }) => Partial<Pick<ProposalCreatedV2, "fields" | "target" | "riskFlags">> | "unreadable";
 }
 
 export interface FakeSessionTicket {
@@ -197,6 +207,7 @@ export class FakeSessionServer {
   readonly #newId: () => string;
   readonly #propose: ((turn: FakeTurn) => readonly FakeProposal[]) | undefined;
   readonly #compare: FakeSessionServerOptions["compare"];
+  readonly #correctWith: FakeSessionServerOptions["correct"];
   /** Turns whose `turn_end` arrived, with their proposals once the turn has run. */
   readonly #turnRuns = new Map<string, { proposals: ProposalCreatedV2[] | null }>();
   /** Turns that have a witness. */
@@ -212,7 +223,7 @@ export class FakeSessionServer {
   /** Reviews and snoozes by their client-made ids. */
   readonly #writes = new Map<
     string,
-    { kind: "review" | "snooze"; seq: number; proposalId: string }
+    { kind: "review" | "snooze" | "correction"; seq: number; proposalId: string }
   >();
   readonly #reviewer: Reviewer;
   #ticketCount = 0;
@@ -236,6 +247,7 @@ export class FakeSessionServer {
       });
     this.#propose = options.propose;
     this.#compare = options.compare;
+    this.#correctWith = options.correct;
     this.#reviewer = options.reviewer ?? { userId: "fake-user", auth: null };
     this.#rateClock = options.rateClock;
     this.#sockets.onConnection = (socket) => this.#onConnection(socket);
@@ -435,6 +447,12 @@ export class FakeSessionServer {
       case "snooze":
         this.#snooze(message);
         return;
+      case "correct":
+        this.#correct(message);
+        return;
+      case "followup":
+        this.#followup(message);
+        return;
     }
   }
 
@@ -506,10 +524,7 @@ export class FakeSessionServer {
     }
     // `utterance.final` v3, as SessionDO writes it (Phase 5 WP13): an older client's is speech.
     const [event] = this.#commit(message.msgId, [
-      {
-        type: "utterance.final",
-        payload: { ...message.utterance, input: message.utterance.input ?? "speech" },
-      },
+      { type: "utterance.final", payload: { ...message.utterance, input: "speech" } },
     ]);
     if (!event) return;
     this.#utterances.set(message.utterance.utteranceId, event.seq);
@@ -831,6 +846,99 @@ export class FakeSessionServer {
         proposalId: snooze.proposalId,
       });
     }
+  }
+
+  /**
+   * A correction, as SessionDO takes one (Phase 5 WP13), less its reading: the typed words, if it
+   * carries them, then a proposal superseding the original with what `correct` returns, then the
+   * open questions on the original that ask for the field, answered; or `unreadable`, writing
+   * nothing. A repeated `correctionId` gets the first one's answer.
+   */
+  #correct(message: ClientMessageOf<"correct">): void {
+    if (this.#answered(message.msgId)) return;
+    if (this.#startedSeq === undefined) {
+      this.#refuse(message.msgId, "not_started", true);
+      return;
+    }
+    const prior = this.#writes.get(message.correctionId);
+    if (prior) {
+      this.#ackExisting(message.msgId, prior.seq);
+      return;
+    }
+    const proposals = this.#proposals();
+    const check = checkCorrection(proposals, {
+      proposalId: message.proposalId,
+      field: message.field,
+      questionId: message.questionId ?? null,
+    });
+    const created = this.log
+      .map((event) => defaultRegistry.toLatest(event))
+      .find(
+        (event) =>
+          event.type === "proposal.created" && event.payload.proposalId === message.proposalId,
+      );
+    if (!check.ok || !created) {
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    const original = created.payload as ProposalCreatedV2;
+    const read = this.#correctWith?.({ message, original }) ?? {};
+    if (read === "unreadable") {
+      this.#commit(message.msgId, [], { code: "unreadable", retryable: false });
+      return;
+    }
+    const proposalId = this.#newId();
+    const at = Math.max(
+      0,
+      ...this.log.flatMap((event) =>
+        event.type === "utterance.final" ? [Number(event.payload.endMs)] : [],
+      ),
+    );
+    const appended = this.#commit(message.msgId, [
+      ...(message.typed
+        ? [
+            {
+              type: "utterance.final",
+              payload: {
+                utteranceId: message.typed.utteranceId,
+                text: message.typed.text,
+                confidence: 1,
+                startMs: at,
+                endMs: at,
+                witness: "biased",
+                input: "typed",
+              },
+            },
+          ]
+        : []),
+      {
+        type: "proposal.created",
+        payload: { ...original, ...read, proposalId, supersedes: original.proposalId },
+      },
+      ...check.answers.map((question) => ({
+        type: "followup.closed",
+        payload: { questionId: question.questionId, outcome: "answered", proposalId },
+      })),
+    ]);
+    const last = appended.at(-1);
+    if (last) {
+      this.#writes.set(message.correctionId, { kind: "correction", seq: last.seq, proposalId });
+    }
+  }
+
+  /** A follow-up question skipped: `followup.closed`, once, if the question is open. */
+  #followup(message: ClientMessageOf<"followup">): void {
+    if (this.#answered(message.msgId)) return;
+    if (!checkFollowupSkip(this.#proposals(), message.questionId).ok) {
+      this.#refuse(message.msgId, "bad_message", false);
+      return;
+    }
+    this.#commit(message.msgId, [
+      {
+        type: "followup.closed",
+        payload: { questionId: message.questionId, outcome: "skipped", proposalId: null },
+      },
+    ]);
   }
 
   /** The log's proposals, folded, as the writers' rules read them. */

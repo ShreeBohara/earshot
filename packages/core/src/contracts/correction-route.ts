@@ -8,10 +8,14 @@
 import { z } from "zod";
 import { Confidence } from "./events/shared";
 import { Word } from "./events/utterance-final";
-import { CorrectionField, MAX_UTTERANCE_TEXT_CHARS, refuseStrayKeys } from "./session-protocol";
-
-/** The longest typed correction, in UTF-16 code units (target): a name, a date, a sentence. */
-export const MAX_CORRECTION_TEXT_CHARS = 500;
+import {
+  CorrectionField,
+  isIanaTimeZone,
+  MAX_CORRECTION_TEXT_CHARS,
+  MAX_TIME_ZONE_CHARS,
+  MAX_UTTERANCE_TEXT_CHARS,
+  refuseStrayKeys,
+} from "./session-protocol";
 /** The most final segments one dictation sends (target): a correction is a few words. */
 export const MAX_DICTATED_UTTERANCES = 8;
 /** The most word timings one dictated segment carries (target). */
@@ -57,6 +61,11 @@ const CorrectRequest = z.strictObject({
   field: CorrectionField,
   questionId: z.uuid().optional(),
   said: z.discriminatedUnion("input", [TypedWords, SpokenWords]),
+  /**
+   * The rep's IANA time zone, which the session's log doesn't keep: "Friday" and "the 14th" are
+   * read on the rep's calendar, from the call's start. Without it, dates are read in UTC.
+   */
+  timeZone: z.string().max(MAX_TIME_ZONE_CHARS).refine(isIanaTimeZone).optional(),
 });
 
 /** A follow-up question skipped. */
@@ -95,6 +104,8 @@ export interface CorrectionRouteResponse {
  * - `stale` (409): the proposal was decided, replaced, or the question closed since the card loaded.
  * - `unreadable` (422): the words hold no value of the field's kind ("I couldn't read a date in …");
  *   nothing was written.
+ * - `too_many` (429): the session reached a correction limit (too many in a window or in all, too
+ *   many typed words, or a card corrected too many times over); nothing was written.
  */
 export type CorrectionRouteError =
   | "unauthorized"
@@ -105,6 +116,7 @@ export type CorrectionRouteError =
   | "not_sealed"
   | "stale"
   | "unreadable"
+  | "too_many"
   | "server_error";
 
 /** The body of every refusal. */

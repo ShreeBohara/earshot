@@ -76,7 +76,6 @@ export {
   type CorrectionRouteResponse,
   DictatedUtterance,
   MAX_CORRECTION_REQUEST_BYTES,
-  MAX_CORRECTION_TEXT_CHARS,
   MAX_DICTATED_UTTERANCES,
   MAX_DICTATED_WORDS,
 } from "./correction-route";
@@ -198,6 +197,7 @@ export {
   isSessionCloseCode,
   LlmProvider,
   MAX_CORRECTION_FIELD_CHARS,
+  MAX_CORRECTION_TEXT_CHARS,
   MAX_ENTITY_ALIASES,
   MAX_ENTITY_ID_CHARS,
   MAX_ENTITY_NAME_CHARS,

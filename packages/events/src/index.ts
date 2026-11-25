@@ -1,12 +1,15 @@
 // The envelope every store reads and writes, so a store's users need not depend on @earshot/core.
 export type { EventEnvelope } from "@earshot/core";
 export {
+  CORRECTION_LIMITS,
   type CorrectionCheck,
   type CorrectionRefusal,
   type CorrectionTarget,
   checkCorrection,
   checkFollowupSkip,
   correctableFields,
+  correctionBudget,
+  correctionDepth,
   linkerOf,
   type SkipCheck,
 } from "./corrections";

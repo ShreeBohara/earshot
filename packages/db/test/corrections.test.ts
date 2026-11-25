@@ -289,6 +289,38 @@ describe("writeSessionCorrection", () => {
     ).toMatchObject({ ok: false, reason: "refused", refusal: "superseded" });
   });
 
+  it("refuses a correction past the session's limits, with a fixed reason, writing nothing", async () => {
+    const db = await fresh();
+    await seed(db, S1, debrief());
+    // Typed words past the session's budget.
+    const long = "Friday ".repeat(3_000).slice(0, 20_001);
+    expect(
+      await correct(db, { correctionId: uuid(0xcc10), words: { input: "typed", text: long } }),
+    ).toMatchObject({ ok: false, reason: "refused", refusal: "too_many" });
+    // A card corrected five times over takes no sixth.
+    let proposalId = uuid(3001);
+    for (let n = 0; n < 5; n += 1) {
+      const outcome = await correct(db, {
+        correctionId: uuid(0xcd00 + n),
+        proposalId,
+        field: "title",
+        words: { input: "typed", text: `Send the deck v${n}` },
+      });
+      if (!outcome.ok) throw new Error(`correction ${n} refused`);
+      proposalId = outcome.proposalId;
+    }
+    const before = (await logOf(db)).length;
+    expect(
+      await correct(db, {
+        correctionId: uuid(0xcd10),
+        proposalId,
+        field: "title",
+        words: { input: "typed", text: "Send the deck v5" },
+      }),
+    ).toMatchObject({ ok: false, reason: "refused", refusal: "too_deep" });
+    expect(await logOf(db)).toHaveLength(before);
+  });
+
   it("can't reach another workspace's session", async () => {
     const db = await fresh();
     await seed(db, SB, distinct(debrief()), B);

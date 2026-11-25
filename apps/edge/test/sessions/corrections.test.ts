@@ -1,7 +1,9 @@
 // Corrections and follow-up questions in SessionDO (Phase 5 spec WP13 step 4): `followup.asked`
-// after a turn's proposals; `correct` reading a correction turn's utterances into a superseding
+// after a turn's proposals; `correct` reading a correction turn's words into a superseding
 // proposal, with no model call and no key, and closing the question it answers; `followup` skipping
-// one; and a superseded proposal refusing reviews in the object.
+// one; a superseded proposal refusing reviews in the object; and the limits a security review asked
+// for: typed words only on a correction, within the capture limit and a grace, corrections per
+// window and per session, typed characters, the depth of a chain, and no idle end pushed back.
 
 import { DEMO_FOCUS_ID, scenario } from "@earshot/agent/testing";
 import {
@@ -11,20 +13,25 @@ import {
   type ProposalCreatedV2,
   uuidv7,
 } from "@earshot/core";
-import { defaultProjections, replay } from "@earshot/events";
+import { CORRECTION_LIMITS, defaultProjections, replay } from "@earshot/events";
 import { describe, expect, it } from "vitest";
+import { SESSION_LIMITS, TYPED_CORRECTION_GRACE_MS } from "../../src/session/limits";
 import {
   ANTHROPIC,
   canaryKey,
   endMessage,
+  freezeClock,
+  meta,
   open,
   reviewInput,
   reviewMessage,
+  setMeta,
   startMessage,
   type TestSocket,
   turnEndMessage,
   utteranceMessage,
   utteranceOf,
+  withSql,
 } from "./helpers";
 
 /** Runs one of the demo's scenario turns; resolves with the proposals it created. */
@@ -56,26 +63,26 @@ async function withProposals() {
   return { ...opened, deal, task };
 }
 
-/** A typed correction's words: one utterance, confidence 1, no words. */
-function typedMessage(turnId: string, text: string): ClientMessageOf<"utterance"> {
-  return utteranceMessage(turnId, {
-    ...utteranceOf(text, 20_000),
-    confidence: 1,
-    endMs: 20_000,
-    input: "typed",
-  } as never);
-}
-
-function correctMessage(
-  overrides: Partial<ClientMessageOf<"correct">> & { turnId: string; proposalId: string },
+/** A typed correction of `proposalId`'s amount, on a fresh correction turn. */
+function typedCorrection(
+  proposalId: string,
+  text: string,
+  overrides: Partial<ClientMessageOf<"correct">> = {},
 ): ClientMessageOf<"correct"> {
   return {
     t: "correct",
     msgId: uuidv7(),
+    turnId: uuidv7(),
     correctionId: uuidv7(),
+    proposalId,
     field: "amount",
+    typed: { utteranceId: uuidv7(), text },
     ...overrides,
   };
+}
+
+function skipMessage(questionId: string): ClientMessageOf<"followup"> {
+  return { t: "followup", msgId: uuidv7(), questionId, outcome: "skipped" };
 }
 
 const proposalsOf = (socket: TestSocket) => replay(socket.events(), defaultProjections).proposals;
@@ -111,40 +118,44 @@ describe("follow-up questions", () => {
   it("skips a question once, and answers a second skip with the first one's seq", async () => {
     const { socket } = await withProposals();
     const questionId = socket.eventsOf("followup.asked")[0]?.payload.questionId as string;
-    const first = await socket.request({
-      t: "followup",
-      msgId: uuidv7(),
-      questionId,
-      outcome: "skipped",
-    });
+    const first = await socket.request(skipMessage(questionId));
     expect(socket.eventsOf("followup.closed").map((event) => event.payload)).toEqual([
       { questionId, outcome: "skipped", proposalId: null },
     ]);
-    const again = await socket.request({
-      t: "followup",
-      msgId: uuidv7(),
-      questionId,
-      outcome: "skipped",
-    });
+    const again = await socket.request(skipMessage(questionId));
     expect(again.seq).toBe(first.seq);
-    const unknown = { t: "followup", msgId: uuidv7(), questionId: uuidv7(), outcome: "skipped" };
+    const unknown = skipMessage(uuidv7());
     socket.send(unknown);
     expect(await socket.error(unknown.msgId)).toMatchObject({ code: "bad_message" });
   });
 });
 
 describe("correct", () => {
-  it("reads typed words into a proposal that supersedes the one corrected, and answers its question", async () => {
+  it("writes typed words with the proposal that supersedes the one corrected, and answers its question", async () => {
     const { socket, deal, ids } = await withProposals();
     const questionId = socket.eventsOf("followup.asked")[0]?.payload.questionId as string;
-    const turnId = uuidv7();
-    await socket.request(typedMessage(turnId, "Make it forty thousand."));
-    const correction = correctMessage({ turnId, proposalId: deal.proposalId, questionId });
+    const correction = typedCorrection(deal.proposalId, "Make it forty thousand.", { questionId });
+    const lastAudio = Math.max(
+      ...socket.eventsOf("utterance.final").map((event) => event.payload.endMs as number),
+    );
     await socket.request(correction);
     const proposalId = await correctionProposalId(ids.sid, correction.correctionId);
 
+    // The typed words and the correction arrive in one commit: typed, at the last audio time.
+    const types = socket.events().map((event) => event.type);
+    expect(types.slice(-3)).toEqual(["utterance.final", "proposal.created", "followup.closed"]);
     const typed = socket.eventsOf("utterance.final").at(-1);
-    expect(typed).toMatchObject({ schemaVersion: 3, payload: { input: "typed", confidence: 1 } });
+    expect(typed).toMatchObject({
+      schemaVersion: 3,
+      payload: {
+        utteranceId: correction.typed?.utteranceId,
+        text: "Make it forty thousand.",
+        input: "typed",
+        confidence: 1,
+        startMs: lastAudio,
+        endMs: lastAudio,
+      },
+    });
     const created = socket.eventsOf("proposal.created").at(-1)?.payload as ProposalCreatedV2;
     expect(created).toMatchObject({
       proposalId,
@@ -155,7 +166,7 @@ describe("correct", () => {
         stage: deal.fields.stage,
         amount: {
           value: 40_000,
-          evidence: { utteranceId: typed?.payload.utteranceId, span: [8, 22] },
+          evidence: { utteranceId: correction.typed?.utteranceId, span: [8, 22] },
         },
       },
     });
@@ -172,11 +183,19 @@ describe("correct", () => {
     ]);
   });
 
-  it("re-links a record from typed words, with no model call", async () => {
+  it("reads a spoken correction turn's utterances, with no turn run", async () => {
     const { socket, task } = await withProposals();
     const turnId = uuidv7();
-    await socket.request(typedMessage(turnId, "No, it's Acme Corp."));
-    await socket.request(correctMessage({ turnId, proposalId: task.proposalId, field: "target" }));
+    await socket.request(utteranceMessage(turnId, utteranceOf("No, it's Acme Corp.", 30_000)));
+    const correction: ClientMessageOf<"correct"> = {
+      t: "correct",
+      msgId: uuidv7(),
+      turnId,
+      correctionId: uuidv7(),
+      proposalId: task.proposalId,
+      field: "target",
+    };
+    await socket.request(correction);
     const created = socket.eventsOf("proposal.created").at(-1)?.payload as ProposalCreatedV2;
     expect(created.supersedes).toBe(task.proposalId);
     // Linked in context: the open account settles "Acme Corp" against Akme and Acmi Dynamics.
@@ -194,9 +213,7 @@ describe("correct", () => {
 
   it("answers a resend under a new msgId with the first one's seq, appending nothing", async () => {
     const { socket, deal } = await withProposals();
-    const turnId = uuidv7();
-    await socket.request(typedMessage(turnId, "fifty thousand"));
-    const correction = correctMessage({ turnId, proposalId: deal.proposalId });
+    const correction = typedCorrection(deal.proposalId, "fifty thousand");
     const first = await socket.request(correction);
     const count = socket.events().length;
     const again = await socket.request({ ...correction, msgId: uuidv7() });
@@ -204,74 +221,156 @@ describe("correct", () => {
     expect(socket.events()).toHaveLength(count);
   });
 
-  it("refuses words it can't read with unreadable, and appends nothing", async () => {
+  it("refuses words it can't read with unreadable, writing nothing, the typed words included", async () => {
     const { socket, deal } = await withProposals();
-    const turnId = uuidv7();
-    await socket.request(typedMessage(turnId, "about what we said last time"));
-    const proposalsBefore = socket.eventsOf("proposal.created").length;
-    const correction = correctMessage({ turnId, proposalId: deal.proposalId });
+    const count = socket.events().length;
+    const correction = typedCorrection(deal.proposalId, "about what we said last time");
     socket.send(correction);
     expect(await socket.error(correction.msgId)).toMatchObject({
       code: "unreadable",
       retryable: false,
     });
-    expect(socket.eventsOf("proposal.created")).toHaveLength(proposalsBefore);
+    expect(socket.events()).toHaveLength(count);
     expect(proposalsOf(socket).find((p) => p.proposalId === deal.proposalId)?.status).toBe(
       "proposed",
     );
   });
 
   it("leaves a superseded proposal refusing reviews and corrections in the object", async () => {
-    const { socket, deal, stub } = await withProposals();
-    const turnId = uuidv7();
-    await socket.request(typedMessage(turnId, "sixty thousand"));
-    await socket.request(correctMessage({ turnId, proposalId: deal.proposalId }));
-    void stub;
+    const { socket, deal } = await withProposals();
+    await socket.request(typedCorrection(deal.proposalId, "sixty thousand"));
     const review = reviewMessage(reviewInput(deal.proposalId));
     socket.send(review);
     expect(await socket.error(review.msgId)).toMatchObject({ code: "bad_message" });
     expect(socket.eventsOf("proposal.reviewed")).toHaveLength(0);
-    const nextTurn = uuidv7();
-    await socket.request(typedMessage(nextTurn, "seventy thousand"));
-    const again = correctMessage({ turnId: nextTurn, proposalId: deal.proposalId });
+    const again = typedCorrection(deal.proposalId, "seventy thousand");
     socket.send(again);
     expect(await socket.error(again.msgId)).toMatchObject({ code: "bad_message" });
   });
 
-  it("refuses a correction with no words, and one on a turn that already ended", async () => {
+  it("refuses a correction with no words, on a turn that ended, or with typed and spoken words both", async () => {
     const { socket, deal } = await withProposals();
-    const empty = correctMessage({ turnId: uuidv7(), proposalId: deal.proposalId });
+    const { typed: _, ...empty } = typedCorrection(deal.proposalId, "x");
     socket.send(empty);
     expect(await socket.error(empty.msgId)).toMatchObject({ code: "bad_message" });
-    const ended = correctMessage({
+    const ended = typedCorrection(deal.proposalId, "fifty thousand", {
       turnId: scenario("anthropic", "demo-turn-3").turn.turnId,
-      proposalId: deal.proposalId,
     });
     socket.send(ended);
     expect(await socket.error(ended.msgId)).toMatchObject({ code: "bad_message" });
-  });
-
-  it("never ends a typed turn with turn_end: typed words are a correction's", async () => {
-    const { socket } = await withProposals();
     const turnId = uuidv7();
-    await socket.request(typedMessage(turnId, "fifty thousand"));
-    const turnEnd = turnEndMessage(turnId, canaryKey(), ANTHROPIC);
-    socket.send(turnEnd);
-    expect(await socket.error(turnEnd.msgId)).toMatchObject({ code: "bad_message" });
+    await socket.request(utteranceMessage(turnId, utteranceOf("Fifty thousand.", 30_000)));
+    const both = typedCorrection(deal.proposalId, "fifty thousand", { turnId });
+    socket.send(both);
+    expect(await socket.error(both.msgId)).toMatchObject({ code: "bad_message" });
   });
 
-  it("takes typed words after the end, before the seal, though speech is over", async () => {
+  it("takes typed words only on a correction: an utterance can't say it was typed", async () => {
+    const { socket } = await withProposals();
+    const typed = utteranceMessage(uuidv7(), {
+      ...utteranceOf("fifty thousand", 30_000),
+      input: "typed",
+    } as never);
+    socket.send(typed);
+    expect(await socket.error(typed.msgId)).toMatchObject({ code: "bad_message" });
+    expect(
+      socket.eventsOf("utterance.final").every((event) => event.payload.input === "speech"),
+    ).toBe(true);
+  });
+
+  it("takes a typed correction after the end, before the seal, though speech is over", async () => {
     const { socket, deal } = await withProposals();
     await socket.request(endMessage());
     const speech = utteranceMessage(uuidv7(), utteranceOf("One more thing."));
     socket.send(speech);
     expect(await socket.error(speech.msgId)).toMatchObject({ code: "already_ended" });
-    const turnId = uuidv7();
-    await socket.request(typedMessage(turnId, "forty five thousand"));
-    await socket.request(correctMessage({ turnId, proposalId: deal.proposalId }));
+    await socket.request(typedCorrection(deal.proposalId, "forty five thousand"));
     expect(socket.eventsOf("proposal.created").at(-1)?.payload).toMatchObject({
       supersedes: deal.proposalId,
       fields: { amount: { value: 45_000 } },
     });
+  });
+});
+
+describe("the correction limits (a security review's)", () => {
+  it("refuses typed words past the capture limit and its grace", async () => {
+    const { socket, deal, stub } = await withProposals();
+    const started = Number((await meta(stub)).capture_started_ms);
+    await freezeClock(stub, started + SESSION_LIMITS.captureMs + TYPED_CORRECTION_GRACE_MS - 1);
+    await socket.request(typedCorrection(deal.proposalId, "fifty thousand"));
+    await freezeClock(stub, started + SESSION_LIMITS.captureMs + TYPED_CORRECTION_GRACE_MS);
+    const late = typedCorrection(
+      socket.eventsOf("proposal.created").at(-1)?.payload.proposalId as string,
+      "sixty thousand",
+    );
+    socket.send(late);
+    expect(await socket.error(late.msgId)).toMatchObject({
+      code: "duration_limit",
+      retryable: false,
+    });
+  });
+
+  it("refuses typed characters past the session's budget, and answers a resend the same", async () => {
+    const { socket, deal, stub } = await withProposals();
+    await setMeta(stub, { typed_chars: CORRECTION_LIMITS.typedCharsPerSession - 5 });
+    const over = typedCorrection(deal.proposalId, "fifty thousand");
+    socket.send(over);
+    expect(await socket.error(over.msgId)).toMatchObject({ code: "turn_limit", retryable: false });
+    socket.send(over);
+    await socket.waitForCount(
+      (message) => message.t === "error" && message.msgId === over.msgId,
+      2,
+    );
+  });
+
+  it("counts every attempt in the window, read or not, and refuses past the limit", async () => {
+    const { socket, deal } = await withProposals();
+    for (let n = 0; n < CORRECTION_LIMITS.perWindow; n += 1) {
+      const attempt = typedCorrection(deal.proposalId, "whenever suits them");
+      socket.send(attempt);
+      expect(await socket.error(attempt.msgId)).toMatchObject({ code: "unreadable" });
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    }
+    const over = typedCorrection(deal.proposalId, "fifty thousand");
+    socket.send(over);
+    expect(await socket.error(over.msgId)).toMatchObject({ code: "turn_limit" });
+  });
+
+  it("refuses corrections past the session's total", async () => {
+    const { socket, deal, stub } = await withProposals();
+    await withSql(stub, (sql) => {
+      for (let n = 0; n < CORRECTION_LIMITS.perSession; n += 1) {
+        sql.exec(
+          "INSERT INTO writes (id, kind, seq, proposal_id) VALUES (?, 'correction', 0, ?)",
+          uuidv7(),
+          uuidv7(),
+        );
+      }
+    });
+    const over = typedCorrection(deal.proposalId, "fifty thousand");
+    socket.send(over);
+    expect(await socket.error(over.msgId)).toMatchObject({ code: "turn_limit" });
+  });
+
+  it("refuses a sixth correction of one card, with a fixed reason", async () => {
+    const { socket, deal } = await withProposals();
+    let proposalId = deal.proposalId;
+    for (let n = 1; n <= CORRECTION_LIMITS.maxDepth; n += 1) {
+      await socket.request(typedCorrection(proposalId, `${n * 10} thousand`));
+      proposalId = socket.eventsOf("proposal.created").at(-1)?.payload.proposalId as string;
+    }
+    const sixth = typedCorrection(proposalId, "ninety thousand");
+    socket.send(sixth);
+    expect(await socket.error(sixth.msgId)).toMatchObject({ code: "turn_limit" });
+  });
+
+  it("doesn't push back the idle end: it counts from the last event before the correction", async () => {
+    const { socket, deal, stub } = await withProposals();
+    const before = socket.events().at(-1)?.ts as string;
+    await socket.request(typedCorrection(deal.proposalId, "fifty thousand"));
+    expect(Number((await meta(stub)).idle_anchor_ms)).toBe(Date.parse(before));
+    // A spoken word is capture again: the anchor goes, and the idle end counts from it.
+    await socket.request(utteranceMessage(uuidv7(), utteranceOf("One more thing.", 40_000)));
+    expect((await meta(stub)).idle_anchor_ms).toBeUndefined();
   });
 });

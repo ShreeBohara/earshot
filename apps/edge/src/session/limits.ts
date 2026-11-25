@@ -20,6 +20,14 @@ export const SESSION_LIMITS = Object.freeze({
 });
 
 /**
+ * Typed corrections (Phase 5 WP13; ADR-0038; target, set after a security review): typed words
+ * aren't capture, so they're taken after `end`, but not past the capture limit (`captureMs` after
+ * `start`) by more than this grace. Corrections' counts, the window, typed characters, and the
+ * depth of a chain are `CORRECTION_LIMITS` in `@earshot/events`, which the web Worker keeps too.
+ */
+export const TYPED_CORRECTION_GRACE_MS = 5 * 60_000;
+
+/**
  * The seal (Phase 5 spec §4.3, targets): `SessionDO` keeps taking reviews, snoozes, usage, and
  * metrics after `end` until it writes `session.sealed`, its last event. That's `graceMs` after
  * `end`, or after the last write that followed it, whichever is later, and never later than
@@ -94,6 +102,11 @@ export function takeMessage(bucket: RateBucket, now: number): "ok" | "close" {
 
 /** The turn starts still inside the window, oldest first, from `meta.turn_starts`. */
 export function recentTurnStarts(stored: string | undefined, now: number): number[] {
+  return recentStarts(stored, now, SESSION_LIMITS.turnWindowMs);
+}
+
+/** The starts still inside a window of `windowMs`, oldest first, from a JSON list of times. */
+export function recentStarts(stored: string | undefined, now: number, windowMs: number): number[] {
   if (!stored) return [];
   let starts: unknown;
   try {
@@ -103,8 +116,7 @@ export function recentTurnStarts(stored: string | undefined, now: number): numbe
   }
   if (!Array.isArray(starts)) return [];
   return starts.filter(
-    (start): start is number =>
-      typeof start === "number" && now - start < SESSION_LIMITS.turnWindowMs,
+    (start): start is number => typeof start === "number" && now - start < windowMs,
   );
 }
 

@@ -107,18 +107,18 @@ import {
   verifyPolicySnapshot,
 } from "@earshot/core";
 import {
+  CORRECTION_LIMITS,
   checkCorrection,
   checkFollowupSkip,
   checkReview,
   checkReviews,
   checkSnooze,
+  defaultRegistry,
   type EventEnvelope,
-  linkerOf,
   type PolicyExclusion,
   type ProposalView,
   policyRuleFor,
   proposalsProjection,
-  replay,
   type SessionEvent,
   type TierOf,
 } from "@earshot/events";
@@ -138,10 +138,12 @@ import {
   newBucket,
   type RateBucket,
   RECAP_TIMING,
+  recentStarts,
   recentTurnStarts,
   resendDueMs,
   SEAL_TIMING,
   SESSION_LIMITS,
+  TYPED_CORRECTION_GRACE_MS,
   takeMessage,
 } from "./session/limits";
 import { addUsage, readMeter } from "./session/meter";
@@ -213,6 +215,13 @@ const TIER_OF: TierOf = tierOf;
 
 /** The approval policy as `meta` keeps it: the verified snapshot, without its signature. */
 const StoredPolicy = PolicySnapshot.omit({ sig: true });
+
+/** The session's proposals as the log folds them, and each one's linker, as of event `seq`. */
+interface FoldedLog {
+  readonly seq: number;
+  readonly proposals: readonly ProposalView[];
+  readonly linkers: ReadonlyMap<string, string | null>;
+}
 
 /** A turn's proposals as the session's policy judged them: approvals by proposal, the rest by why. */
 interface PolicyJudgement {
@@ -404,6 +413,12 @@ export class SessionRuntime extends DurableObject<Env> {
    * from the stored entities (spec WP8 step 4).
    */
   #linkIndex: LinkIndex | null = null;
+  /**
+   * The session's proposals as its log folds them, and the linker each one's `proposal.created`
+   * names, as of the last event folded: carried on from there, so a message costs the events since
+   * rather than a replay of the whole log. In memory; a woken object folds anew.
+   */
+  #folded: FoldedLog | null = null;
 
   constructor(ctx: DurableObjectState, env: Env, deps: SessionDeps) {
     super(ctx, env);
@@ -744,22 +759,14 @@ export class SessionRuntime extends DurableObject<Env> {
   }
 
   /**
-   * `utterance.final` v3 (Phase 5 WP13): speech unless the client says the words were typed (an
-   * older client says nothing, and its words are speech). Speech is capture, taken while the
-   * session captures; typed words are a correction's, taken from `start` until the seal, so the
-   * tray can correct a card in the grace after `end`. The same utterance under a new msgId gets the
-   * first one's seq.
+   * `utterance.final` v3 (Phase 5 WP13): the client's words, said into the microphone, written with
+   * `input: "speech"`. Typed words never come this way: they ride on the `correct` message they
+   * belong to. The same utterance under a new msgId gets the first one's seq.
    */
   #utterance(message: ClientMessageOf<"utterance">): void {
     const store = this.#store;
     if (this.#answered(message.msgId)) return;
-    const input = message.utterance.input ?? "speech";
-    const refusal =
-      input === "typed"
-        ? store.getNumber("started_seq") === undefined
-          ? ({ code: "not_started", retryable: true } as const)
-          : undefined
-        : this.#speechRefusal();
+    const refusal = this.#speechRefusal();
     if (refusal) {
       this.#refuse(message.msgId, refusal.code, refusal.retryable);
       return;
@@ -770,7 +777,7 @@ export class SessionRuntime extends DurableObject<Env> {
       this.#ackExisting(message.msgId, existing);
       return;
     }
-    const payload: UtteranceFinalV3 = { ...message.utterance, input };
+    const payload: UtteranceFinalV3 = { ...message.utterance, input: "speech" };
     this.#commit(
       message.msgId,
       [{ type: "utterance.final", schemaVersion: 3, payload: { ...payload } }],
@@ -1545,20 +1552,28 @@ export class SessionRuntime extends DurableObject<Env> {
 
   /**
    * A correction (Phase 5 spec WP13 step 4), sent instead of `turn_end` for a correction turn, from
-   * `start` until the seal: the turn's utterances, said or typed, read into a proposal that
-   * supersedes the one corrected (`correctProposal`: the linker over `start`'s records with the
-   * open account and earlier links, the normalizers on the call's time and the rep's time zone, the
-   * words as said for the rest; no model call and no key), checked first with the writers' rules
-   * (`checkCorrection`). The new proposal's id derives from the correction's id, so a resend under
-   * a new msgId gets the first one's seq. Appended with a `followup.closed` for each open question
-   * it answers. Words with no value of the field's kind are refused with `unreadable`, recorded so
-   * a resend gets the same answer, and nothing is appended. It approves nothing, so it needs no
-   * audit key.
+   * `start` until the seal. Its words are the turn's utterances, said before it, or the typed words
+   * it carries, which are written as a typed utterance in the correction's own transaction, so
+   * typed words exist only with a correction that passed its checks. They're read into a proposal
+   * that supersedes the one corrected (`correctProposal`: the linker over `start`'s records with
+   * the open account and earlier links, the normalizers on the call's time and the rep's time zone,
+   * the words as said for the rest; no model call and no key), after the writers' rules
+   * (`checkCorrection`, a chain of corrections under its cap included). The new proposal's id
+   * derives from the correction's id, so a resend under a new msgId gets the first one's answer.
+   * Appended with a `followup.closed` for each open question it answers.
+   *
+   * Its limits (ADR-0038, after a security review): `CORRECTION_LIMITS`' corrections per window
+   * and per session, and typed characters per session, refused with `turn_limit`; typed words not
+   * past the capture limit by more than `TYPED_CORRECTION_GRACE_MS`, refused with
+   * `duration_limit`. A correction doesn't keep the session alive: the idle end counts from before
+   * it. Words with no value of the field's kind are refused with `unreadable`, recorded so a resend
+   * gets the same answer, and nothing is appended. It approves nothing, so it needs no audit key.
    */
   async #correct(message: ClientMessageOf<"correct">): Promise<void> {
     if (this.#answered(message.msgId) || this.#inflight.has(message.msgId)) return;
     const store = this.#store;
-    if (store.getNumber("started_seq") === undefined) {
+    const startedMs = store.getNumber("capture_started_ms");
+    if (store.getNumber("started_seq") === undefined || startedMs === undefined) {
       this.#refuse(message.msgId, "not_started", true);
       return;
     }
@@ -1575,54 +1590,99 @@ export class SessionRuntime extends DurableObject<Env> {
       this.#log.warn("correction refused", { reason });
       this.#refuse(message.msgId, "bad_message", false);
     };
+    const limited = (reason: string) => {
+      // Recorded, as a turn over its limit is: a resend gets the same answer.
+      this.#log.warn("correction refused", { reason });
+      this.#commit(message.msgId, [], { error: { code: "turn_limit", retryable: false } });
+    };
     const prior = store.recordedWrite(message.correctionId);
     if (prior) {
       if (prior.kind !== "correction") return refuse("id_reused");
       this.#ackExisting(message.msgId, prior.seq);
       return;
     }
-    // A correction turn is its own: its words came first, and nothing else ended it.
+    // A correction turn is its own: nothing else ended it.
     if (store.turn(message.turnId) || this.#runningTurns.has(message.turnId)) {
       return refuse("turn_taken");
     }
     // Validated as `utterance.final` when they arrived; v2 for an older object's, read as speech.
-    const utterances = (
-      store.turnUtterances(message.turnId) as unknown as UtteranceFinalV3[]
-    ).filter((utterance) => utterance.witness !== "unbiased");
-    if (utterances.length === 0) return refuse("no_words");
-    const log = [...store.events(sessionId, 0)];
-    const { proposals } = replay(log, { proposals: proposalsProjection });
+    const said = (store.turnUtterances(message.turnId) as unknown as UtteranceFinalV3[]).filter(
+      (utterance) => utterance.witness !== "unbiased",
+    );
+    const { typed } = message;
+    const now = this.#now();
+    if (typed) {
+      // Typed words are the correction's own: its turn holds no speech, and they're new.
+      if (said.length > 0) return refuse("typed_and_spoken");
+      if (store.utteranceSeq(typed.utteranceId) !== undefined) return refuse("utterance_reused");
+      if (now - startedMs >= SESSION_LIMITS.captureMs + TYPED_CORRECTION_GRACE_MS) {
+        this.#log.warn("correction refused", { reason: "duration_limit" });
+        this.#refuse(message.msgId, "duration_limit", false);
+        return;
+      }
+      if (
+        store.getNumber("typed_chars", 0) + typed.text.length >
+        CORRECTION_LIMITS.typedCharsPerSession
+      ) {
+        return limited("typed_chars");
+      }
+    } else if (said.length === 0) {
+      return refuse("no_words");
+    }
+    if (store.countCorrections() >= CORRECTION_LIMITS.perSession) return limited("per_session");
+    const starts = recentStarts(store.get("correction_starts"), now, CORRECTION_LIMITS.windowMs);
+    if (starts.length >= CORRECTION_LIMITS.perWindow) return limited("per_window");
+    // Every attempt that gets this far counts, read or not, as each turn's start does.
+    store.transaction(() => store.set("correction_starts", JSON.stringify([...starts, now])));
+
+    const { proposals, linkers } = this.#fold();
     const check = checkCorrection(proposals, {
       proposalId: message.proposalId,
       field: message.field,
       questionId: message.questionId ?? null,
     });
-    if (!check.ok) return refuse(check.reason);
+    if (!check.ok) return check.reason === "too_deep" ? limited("too_deep") : refuse(check.reason);
+    const at = store.lastAudioMs();
+    const typedUtterance: UtteranceFinalV3 | null = typed
+      ? {
+          utteranceId: typed.utteranceId,
+          text: typed.text,
+          confidence: 1,
+          startMs: at,
+          endMs: at,
+          witness: "biased",
+          input: "typed",
+        }
+      : null;
     const recent = readRecent(store.get("link_recent"));
     const result = correctProposal(
-      { ...check.proposal, linker: linkerOf(log, check.proposal.proposalId) },
+      { ...check.proposal, linker: linkers.get(check.proposal.proposalId) ?? null },
       message.field,
-      utterances,
+      typedUtterance ? [typedUtterance] : said,
       {
         index: this.#index(),
         focusEntityId: store.get("focus_entity_id") ?? null,
         recent,
         kinds: TARGET_KINDS[check.proposal.type],
-        callTime:
-          store.get("call_time") ??
-          new Date(store.getNumber("capture_started_ms", this.#now())).toISOString(),
+        callTime: store.get("call_time") ?? new Date(startedMs).toISOString(),
         timeZone: store.get("time_zone") ?? "UTC",
       },
     );
     if (!result.ok) {
-      // Nothing appended, and the card stays as it was. Codes only, never the words.
+      // Nothing appended, the typed words included, and the card stays as it was. Codes only.
       this.#log.info("correction unreadable", { reason: result.reason, kind: result.kind });
-      this.#commit(message.msgId, [], { error: { code: "unreadable", retryable: false } });
+      this.#commit(message.msgId, [], {
+        error: { code: "unreadable", retryable: false },
+        idleNeutral: true,
+      });
       return;
     }
     // The words: cleaned of anything Postgres's jsonb would refuse.
     const created = toStorable({ proposalId, ...result.proposal }) as unknown as ProposalCreatedV2;
     const events: NewEvent[] = [
+      ...(typedUtterance
+        ? [{ type: "utterance.final", schemaVersion: 3, payload: { ...typedUtterance } }]
+        : []),
       {
         type: "proposal.created",
         schemaVersion: 2,
@@ -1635,19 +1695,25 @@ export class SessionRuntime extends DurableObject<Env> {
       })),
     ];
     this.#commit(message.msgId, events, {
+      idleNeutral: true,
       during: (appended) => {
         const [first] = appended;
         if (!first) return;
+        if (typedUtterance) {
+          store.addUtterance(typedUtterance.utteranceId, message.turnId, first.seq);
+          store.set("typed_chars", store.getNumber("typed_chars", 0) + typedUtterance.text.length);
+        }
         // The commit's last seq, which its ack carries: a resend gets the same answer.
         const last = appended.at(-1)?.seq ?? first.seq;
         store.addWrite(message.correctionId, { kind: "correction", seq: last, proposalId });
         // The turn is used: a later `turn_end` or `correct` for it is refused.
-        store.addTurn(message.turnId, first.seq, "[]");
+        store.addTurn(message.turnId, last, "[]");
         // A record the rep named is the session's latest link, as a turn's is.
         store.set("link_recent", JSON.stringify(withRecentLinks(recent, [created])));
       },
     });
     this.#log.info("correction recorded", {
+      input: typed ? "typed" : "speech",
       field: message.field === "target" ? "target" : "field",
       decision: created.target.decision,
       flags: created.riskFlags.length,
@@ -1681,13 +1747,17 @@ export class SessionRuntime extends DurableObject<Env> {
       this.#refuse(message.msgId, "bad_message", false);
       return;
     }
-    this.#commit(message.msgId, [
-      {
-        type: "followup.closed",
-        schemaVersion: 1,
-        payload: { questionId: message.questionId, outcome: "skipped", proposalId: null },
-      },
-    ]);
+    this.#commit(
+      message.msgId,
+      [
+        {
+          type: "followup.closed",
+          schemaVersion: 1,
+          payload: { questionId: message.questionId, outcome: "skipped", proposalId: null },
+        },
+      ],
+      { idleNeutral: true },
+    );
   }
 
   /**
@@ -1707,9 +1777,34 @@ export class SessionRuntime extends DurableObject<Env> {
 
   /** The session's proposals, folded from its log, as the writers' rules read them. */
   #proposals(): readonly ProposalView[] {
-    const sessionId = this.#store.get("sid") ?? "";
-    return replay([...this.#store.events(sessionId, 0)], { proposals: proposalsProjection })
-      .proposals;
+    return this.#fold().proposals;
+  }
+
+  /**
+   * The fold, carried on from the last event it saw to the log's end: each event upcast and folded
+   * as `replay` would (the store validated it on the way in). Folded anew if the log is shorter
+   * than the fold (storage deleted under it).
+   */
+  #fold(): FoldedLog {
+    const store = this.#store;
+    let folded = this.#folded;
+    if (folded === null || folded.seq > store.lastSeq) {
+      folded = { seq: -1, proposals: [], linkers: new Map() };
+    }
+    if (folded.seq < store.lastSeq) {
+      let { proposals } = folded;
+      const linkers = new Map(folded.linkers);
+      for (const raw of store.events(store.get("sid") ?? "", folded.seq + 1)) {
+        const event = defaultRegistry.toLatest(raw) as SessionEvent;
+        proposals = proposalsProjection.apply(proposals, event);
+        if (event.type === "proposal.created") {
+          linkers.set(event.payload.proposalId, event.payload.linker);
+        }
+      }
+      folded = { seq: store.lastSeq, proposals, linkers };
+    }
+    this.#folded = folded;
+    return folded;
   }
 
   /** Whether reviews' audit checkpoints can be signed: a usable key, or development's. */
@@ -2017,6 +2112,11 @@ export class SessionRuntime extends DurableObject<Env> {
     options: {
       readonly during?: (appended: readonly EventEnvelope[], now: number) => void;
       readonly error?: DoneMessage["error"];
+      /**
+       * A write that doesn't keep the session alive (a correction or a skip, Phase 5 WP13): the
+       * idle end still counts from the last event before it.
+       */
+      readonly idleNeutral?: boolean;
     } = {},
   ): readonly EventEnvelope[] {
     const store = this.#store;
@@ -2026,7 +2126,14 @@ export class SessionRuntime extends DurableObject<Env> {
     const pendingBefore = store.lastSeq > store.getNumber("enqueued_seq", -1);
     const error = options.error ?? null;
     const appended = store.transaction(() => {
+      const lastBefore = store.lastEventMs;
       const appended = store.append(sessionId, events, { now, newId: uuidv7 });
+      if (appended.length > 0) {
+        if (!options.idleNeutral) store.delete("idle_anchor_ms");
+        else if (store.get("idle_anchor_ms") === undefined) {
+          store.set("idle_anchor_ms", lastBefore ?? store.getNumber("capture_started_ms", now));
+        }
+      }
       options.during?.(appended, now);
       if (!pendingBefore && appended.length > 0) store.set("unflushed_since_ms", now);
       if (msgId !== null) store.markDone(msgId, { seq: appended.at(-1)?.seq ?? null, error }, now);
@@ -2256,11 +2363,14 @@ export class SessionRuntime extends DurableObject<Env> {
     this.#writeSeal();
   }
 
-  /** When an abandoned session is ended: after both the capture limit and its last event. */
+  /**
+   * When an abandoned session is ended: after both the capture limit and its last event that keeps
+   * it alive (a correction or a skip doesn't, Phase 5 WP13).
+   */
   #idleEndDue(): number {
     const store = this.#store;
     const started = store.getNumber("capture_started_ms", this.#now());
-    const lastEvent = store.lastEventMs ?? started;
+    const lastEvent = store.getNumber("idle_anchor_ms") ?? store.lastEventMs ?? started;
     return Math.max(started + SESSION_LIMITS.captureMs, lastEvent) + FLUSH_TIMING.idleEndMs;
   }
 
@@ -2348,6 +2458,7 @@ export class SessionRuntime extends DurableObject<Env> {
     await this.ctx.storage.deleteAll();
     this.#store.forget();
     this.#linkIndex = null;
+    this.#folded = null;
     this.#alarmAt = null;
   }
 
@@ -2428,6 +2539,7 @@ export class SessionRuntime extends DurableObject<Env> {
     await this.ctx.storage.deleteAll();
     this.#store.forget();
     this.#linkIndex = null;
+    this.#folded = null;
     const now = this.#now();
     this.#store.transaction(() => this.#store.set("purged_ms", now));
     this.#alarmAt = now + FLUSH_TIMING.tombstoneMs;

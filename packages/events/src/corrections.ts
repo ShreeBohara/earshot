@@ -12,6 +12,25 @@ import type { FollowupView, ProposalView } from "./projections";
 import { defaultRegistry } from "./registry";
 import type { ProposalCreatedEvent } from "./types";
 
+/**
+ * What a session takes in corrections (Phase 5 WP13; ADR-0038; targets, set after a security
+ * review): both writers keep them, SessionDO before the seal and the web Worker after it. A
+ * correction costs no model call, but each one reads and links words, so they're bounded like
+ * turns.
+ */
+export const CORRECTION_LIMITS = Object.freeze({
+  /** How many times over one card can be corrected: the chain of `supersedes` behind it. */
+  maxDepth: 5,
+  /** Corrections a session takes, all told. */
+  perSession: 100,
+  /** Corrections a session takes in a window, as turns are limited... */
+  perWindow: 30,
+  /** ...of this long (the turn limit's window). */
+  windowMs: 10 * 60_000,
+  /** Characters of typed words a session holds, all told. */
+  typedCharsPerSession: 20_000,
+});
+
 /** Why a correction or a skip was refused. */
 export type CorrectionRefusal =
   /** The field is neither `target` nor one the proposal's type has, or not the question's. */
@@ -25,7 +44,11 @@ export type CorrectionRefusal =
   /** The proposal has no question with that id (or the session has none, for a skip). */
   | "unknown_question"
   /** The question was answered or skipped already. */
-  | "question_closed";
+  | "question_closed"
+  /** The card was corrected `CORRECTION_LIMITS.maxDepth` times over already. */
+  | "too_deep"
+  /** The session reached a correction limit: in a window, in all, or in typed words. */
+  | "too_many";
 
 export type CorrectionCheck =
   | {
@@ -66,6 +89,7 @@ function refuse(reason: CorrectionRefusal, detail: string) {
  * 2. The field is `target` or one the proposal's type has (`PROPOSAL_TYPE_FIELDS`).
  * 3. A named question is on the proposal (asked about it, or moved to it from one it replaced),
  *    still open, and asks for the field corrected.
+ * 4. The proposal wasn't corrected `CORRECTION_LIMITS.maxDepth` times over already (`too_deep`).
  *
  * The answer lists the open questions the correction answers: the named one, and any other open
  * question on the proposal asking for the same field. The writers close each, `answered`, right
@@ -105,10 +129,62 @@ export function checkCorrection(
       return refuse("malformed", `question ${questionId} asks for ${question.field}`);
     }
   }
+  const depth = correctionDepth(proposals, proposal);
+  if (depth >= CORRECTION_LIMITS.maxDepth) {
+    return refuse("too_deep", `proposal ${proposal.proposalId} was corrected ${depth} times over`);
+  }
   const answers = proposal.followups.filter(
     (followup) => followup.status === "open" && followup.field === correction.field,
   );
   return { ok: true, proposal, answers };
+}
+
+/** How many corrections stand behind a proposal: the length of its chain of `supersedes`. */
+export function correctionDepth(
+  proposals: readonly ProposalView[],
+  proposal: Pick<ProposalView, "supersedes">,
+): number {
+  const byId = new Map(proposals.map((candidate) => [candidate.proposalId, candidate]));
+  let depth = 0;
+  for (let at = proposal; at.supersedes !== null && depth <= CORRECTION_LIMITS.maxDepth; ) {
+    const earlier = byId.get(at.supersedes);
+    if (!earlier) break;
+    at = earlier;
+    depth += 1;
+  }
+  return depth;
+}
+
+/**
+ * Whether a session has room for one more correction, from its folded log: the web Worker's check
+ * (SessionDO keeps its own count of attempts). Corrections are the proposals that supersede
+ * another; typed words are the typed utterances. Null when it has room; otherwise `too_many`, with a
+ * fixed detail.
+ */
+export function correctionBudget(
+  folded: {
+    readonly proposals: readonly Pick<ProposalView, "supersedes" | "ts">[];
+    readonly utterances: readonly { readonly input: string; readonly text: string }[];
+  },
+  now: Date,
+  typedChars: number,
+): { readonly reason: "too_many"; readonly detail: string } | null {
+  const corrections = folded.proposals.filter((proposal) => proposal.supersedes !== null);
+  if (corrections.length >= CORRECTION_LIMITS.perSession) {
+    return { reason: "too_many", detail: "the session took its corrections" };
+  }
+  const since = now.getTime() - CORRECTION_LIMITS.windowMs;
+  const recent = corrections.filter((proposal) => Date.parse(proposal.ts) > since).length;
+  if (recent >= CORRECTION_LIMITS.perWindow) {
+    return { reason: "too_many", detail: "too many corrections in the window" };
+  }
+  const typed = folded.utterances
+    .filter((utterance) => utterance.input === "typed")
+    .reduce((sum, utterance) => sum + utterance.text.length, 0);
+  if (typed + typedChars > CORRECTION_LIMITS.typedCharsPerSession) {
+    return { reason: "too_many", detail: "the session holds its typed words" };
+  }
+  return null;
 }
 
 /**
