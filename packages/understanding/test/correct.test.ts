@@ -424,6 +424,34 @@ describe("correctProposal: text", () => {
     expect(result.proposal.riskFlags).toEqual([{ kind: "low_confidence", field: "email" }]);
   });
 
+  it("keeps the punctuation a value carries, and drops only sentence punctuation and quotes (Codex on #67)", () => {
+    const contact: CorrectableProposal = {
+      ...TASK,
+      proposalId: "p-contact",
+      type: "contact",
+      fields: { name: { value: "Dana Lee", evidence: evidence([0, 8]) } },
+      riskFlags: [],
+    };
+    const phone = correctProposal(contact, "phone", typed("No, it's +44 20 7946 0958."), CTX);
+    if (!phone.ok) throw new Error("refused");
+    expect(phone.value).toBe("+44 20 7946 0958");
+    expect(phone.words).toBe("+44 20 7946 0958");
+    expect(phone.proposal.fields.phone?.evidence.span).toEqual([9, 25]);
+    const local = correctProposal(contact, "phone", typed("make it (555) 010-4477"), CTX);
+    expect(local.ok && local.value).toBe("(555) 010-4477");
+    const email = correctProposal(contact, "email", typed("it's _dana@acme.com"), CTX);
+    expect(email.ok && email.value).toBe("_dana@acme.com");
+
+    const titled = (text: string) => {
+      const result = correctProposal(TASK, "title", typed(text), CTX);
+      return result.ok ? result.value : null;
+    };
+    expect(titled("Change it to send the deck (v2).")).toBe("send the deck (v2)");
+    expect(titled("It should say “Send the deck”.")).toBe("Send the deck");
+    expect(titled("no, (send the deck")).toBe("send the deck");
+    expect(titled("send the deck)")).toBe("send the deck");
+  });
+
   it("refuses a correction with nothing left once the lead-in is set aside, and a field the type lacks", () => {
     expect(correctProposal(TASK, "title", typed("No, it's"), CTX)).toEqual({
       ok: false,

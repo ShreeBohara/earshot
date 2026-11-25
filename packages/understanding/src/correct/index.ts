@@ -188,6 +188,9 @@ interface TextWord {
   /** `[start, end)` without edge punctuation. */
   readonly start: number;
   readonly end: number;
+  /** `[runStart, runEnd)`: the whole run between the spaces, its edge punctuation kept. */
+  readonly runStart: number;
+  readonly runEnd: number;
   /** Lowercased, curly apostrophes straightened. */
   readonly key: string;
 }
@@ -226,6 +229,8 @@ function textWords(text: string): TextWord[] {
       words.push({
         start: first,
         end: last,
+        runStart,
+        runEnd: index,
         key: text.slice(first, last).toLowerCase().replaceAll("’", "'").replaceAll("‘", "'"),
       });
     }
@@ -275,8 +280,8 @@ const LEAD_INS: readonly (readonly string[])[] = [
   ["the", "right", "one", "is"],
 ];
 
-/** The words left once lead-ins are set aside: their span in the text, or null when none are. */
-function valueSpan(text: string): readonly [number, number] | null {
+/** The first and last words left once lead-ins are set aside, or null when none are. */
+function valueWords(text: string): readonly [TextWord, TextWord] | null {
   const words = textWords(text);
   let at = 0;
   for (let matched = true; matched && at < words.length; ) {
@@ -292,7 +297,71 @@ function valueSpan(text: string): readonly [number, number] | null {
   const first = words[at];
   const last = words.at(-1);
   if (!first || !last || at >= words.length) return null;
-  return [first.start, last.end];
+  return [first, last];
+}
+
+/** The words left once lead-ins are set aside, their edge punctuation too, for reading a time. */
+function valueSpan(text: string): readonly [number, number] | null {
+  const words = valueWords(text);
+  return words === null ? null : [words[0].start, words[1].end];
+}
+
+/**
+ * Punctuation a value kept as said never starts or ends with: what ends a sentence, and the quotes
+ * around what was said.
+ */
+function isLooseEdge(char: string): boolean {
+  return char.length === 1 && ".,;:!?…\"'“”‘’«»".includes(char);
+}
+
+function count(text: string, char: string): number {
+  let found = 0;
+  for (let index = text.indexOf(char); index !== -1; index = text.indexOf(char, index + 1)) {
+    found += 1;
+  }
+  return found;
+}
+
+/**
+ * The words left once lead-ins are set aside, as written, for a value kept as said: the edge
+ * punctuation a value carries stays (a phone's "+44", an email's leading "_", a closing bracket
+ * whose opening one is in the value), and only sentence punctuation and quotes go (Codex on #67).
+ * Never past the words themselves.
+ */
+function writtenSpan(text: string): readonly [number, number] | null {
+  const words = valueWords(text);
+  if (words === null) return null;
+  const [first, last] = words;
+  let start = first.runStart;
+  let end = last.runEnd;
+  for (let changed = true; changed; ) {
+    changed = false;
+    const value = text.slice(start, end);
+    const head = text.charAt(start);
+    const tail = text.charAt(end - 1);
+    if (start < first.start && (isLooseEdge(head) || unpaired(value, head, "open"))) {
+      start += 1;
+      changed = true;
+    }
+    if (end > last.end && (isLooseEdge(tail) || unpaired(value, tail, "close"))) {
+      end -= 1;
+      changed = true;
+    }
+  }
+  return [start, end];
+}
+
+const BRACKETS: Readonly<Record<string, string>> = { "(": ")", "[": "]" };
+const CLOSING: Readonly<Record<string, string>> = { ")": "(", "]": "[" };
+
+/** A bracket at the value's edge whose partner isn't in the value: "(Acme" or "Acme)". */
+function unpaired(value: string, char: string, side: "open" | "close"): boolean {
+  if (side === "open") {
+    const close = BRACKETS[char];
+    return close !== undefined && count(value, char) > count(value, close);
+  }
+  const open = CLOSING[char];
+  return open !== undefined && count(value, char) > count(value, open);
 }
 
 /** Text with its ends' whitespace scanned off. */
@@ -471,7 +540,7 @@ function readAmount(utterances: readonly CorrectionUtterance[]): Reading | null 
 /** The words as said, from the last utterance that has any once its lead-in is set aside. */
 function readWords(utterances: readonly CorrectionUtterance[]): Reading | null {
   for (const utterance of [...utterances].reverse()) {
-    const span = valueSpan(utterance.text);
+    const span = writtenSpan(utterance.text);
     if (span === null) continue;
     return { value: utterance.text.slice(span[0], span[1]), utterance, span, flags: [] };
   }
