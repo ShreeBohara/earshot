@@ -236,9 +236,15 @@ export async function writeSessionCorrection<
   if (!check.ok) {
     return { ok: false, reason: "refused", refusal: check.reason, detail: check.detail };
   }
-  // The session's correction limits (ADR-0038): in all, in the window, and in typed words.
-  const typedChars = request.words.input === "typed" ? request.words.text.length : 0;
-  const over = correctionBudget({ proposals, utterances }, options.now, typedChars);
+  // The session's correction limits (ADR-0038): in all, in the window, and in the words
+  // corrections carry. A dictation's segments are the client's word as much as typed words are, so
+  // they count the same, and so does every utterance written after the seal (each one a
+  // correction's: SessionDO writes nothing then).
+  const over = correctionBudget(
+    { proposals, utterances: countedAsCarried(log, utterances) },
+    options.now,
+    carriedChars(request.words),
+  );
   if (over) return { ok: false, reason: "refused", refusal: over.reason, detail: over.detail };
   const placed = correctionUtterances(request.words, lastAudioMs(utterances), options.newId);
   const result = await options.read({
@@ -284,6 +290,33 @@ export async function writeSessionCorrection<
     answered: check.answers.map((question) => question.questionId),
     lastSeq: appended.at(-1)?.seq ?? lastSeq,
   };
+}
+
+/** The characters a correction's words carry: typed text, or a dictation's segments. */
+function carriedChars(words: CorrectionWords): number {
+  return words.input === "typed"
+    ? words.text.length
+    : words.utterances.reduce((sum, utterance) => sum + utterance.text.length, 0);
+}
+
+/**
+ * The session's utterances as the budget counts them: typed ones, and every one written after the
+ * seal (a dictation's, through this route), counted as carried words.
+ */
+function countedAsCarried<U extends { readonly utteranceId: string; readonly input: string }>(
+  log: readonly { readonly type: string; readonly payload: unknown }[],
+  utterances: readonly U[],
+): readonly U[] {
+  const sealed = log.findIndex((event) => event.type === "session.sealed");
+  const afterSeal = new Set(
+    log
+      .slice(sealed + 1)
+      .filter((event) => event.type === "utterance.final")
+      .map((event) => (event.payload as { readonly utteranceId?: unknown }).utteranceId),
+  );
+  return utterances.map((utterance) =>
+    afterSeal.has(utterance.utteranceId) ? { ...utterance, input: "typed" } : utterance,
+  );
 }
 
 /** `proposal.created` v2's payload for the superseding proposal. */

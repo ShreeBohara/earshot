@@ -321,6 +321,41 @@ describe("writeSessionCorrection", () => {
     expect(await logOf(db)).toHaveLength(before);
   });
 
+  it("counts a dictation's words against the same budget as typed words, earlier ones included", async () => {
+    const db = await fresh();
+    await seed(db, S1, debrief());
+    const segment = (text: string) => ({ text, confidence: 0.9, startMs: 0, endMs: 1_000 });
+    // One dictation of 4 × 3,999 characters: it fits.
+    const chunk = "Send the deck ".repeat(300).slice(0, 3_999);
+    const first = await correct(db, {
+      correctionId: uuid(0xce01),
+      field: "title",
+      words: { input: "speech", utterances: [1, 2, 3, 4].map(() => segment(chunk)) },
+    });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    // A second, written after the seal like the first: together they pass 20,000 characters.
+    const before = (await logOf(db)).length;
+    expect(
+      await correct(db, {
+        correctionId: uuid(0xce02),
+        proposalId: first.proposalId,
+        field: "title",
+        words: { input: "speech", utterances: [1, 2].map(() => segment(chunk)) },
+      }),
+    ).toMatchObject({ ok: false, reason: "refused", refusal: "too_many" });
+    // Typed words count against what the dictation left too.
+    expect(
+      await correct(db, {
+        correctionId: uuid(0xce03),
+        proposalId: first.proposalId,
+        field: "title",
+        words: { input: "typed", text: "x".repeat(4_005) },
+      }),
+    ).toMatchObject({ ok: false, reason: "refused", refusal: "too_many" });
+    expect(await logOf(db)).toHaveLength(before);
+  });
+
   it("can't reach another workspace's session", async () => {
     const db = await fresh();
     await seed(db, SB, distinct(debrief()), B);

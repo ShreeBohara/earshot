@@ -27,7 +27,10 @@ export const CORRECTION_LIMITS = Object.freeze({
   perWindow: 30,
   /** ...of this long (the turn limit's window). */
   windowMs: 10 * 60_000,
-  /** Characters of typed words a session holds, all told. */
+  /**
+   * Characters of words corrections carry that a session holds, all told: typed words, and a
+   * dictation's segments through the web Worker's route.
+   */
   typedCharsPerSession: 20_000,
 });
 
