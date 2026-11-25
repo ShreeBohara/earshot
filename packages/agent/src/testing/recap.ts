@@ -219,8 +219,19 @@ function lensFields(system: string): string[] {
 function sentencesOf(line: string): string[] {
   return line
     .split(/(?<=[.!?])\s+/u)
-    .map((sentence) => sentence.replace(/[.!?]+$/u, "").trim())
+    .map((sentence) => withoutFinalStops(sentence).trim())
     .filter((sentence) => sentence !== "");
+}
+
+/**
+ * `text` without the periods, question marks, and exclamation marks it ends with. A scan from the
+ * end, not `/[.!?]+$/`: that regex retries from every position of a long run of stops followed by
+ * anything else, which is quadratic on input this exported module doesn't control.
+ */
+function withoutFinalStops(text: string): string {
+  let end = text.length;
+  while (end > 0 && ".!?".includes(text.charAt(end - 1))) end -= 1;
+  return text.slice(0, end);
 }
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
