@@ -512,15 +512,47 @@ function unreadable(
   return { ok: false, reason: "unreadable", kind, words: allWords(utterances) };
 }
 
-/** The record kind a correction of the target names: the only one the type allows, or the original's. */
-function targetKind(
+/**
+ * Links a corrected record's words, kind by kind: first the kind the original's record was said to
+ * be, then each other kind the type allows, taking the first that links (a task first said to be
+ * about a person can be corrected to a company). When none links, the first try's answer stands: a
+ * question, a new company or contact, or nothing. The linker's model weighs the kind, so a name
+ * read with the right kind links where one read with none would only ask.
+ */
+function linkRecord(
+  quote: string,
   original: CorrectableProposal,
-  kinds: readonly EntityKind[],
-): EntityKind | null {
-  if (original.type === "contact") return "contact";
-  const [only, ...more] = kinds;
-  if (only !== undefined && more.length === 0) return only;
-  return original.target.kind;
+  ctx: CorrectionContext,
+  params: LinkerParams,
+): { readonly result: ReturnType<typeof link>; readonly kind: EntityKind | null } {
+  // A contact is linked with its company field as context, as the understanding step links it.
+  const company = original.type === "contact" ? original.fields.company?.value : undefined;
+  const companyText = typeof company === "string" ? company : null;
+  const context = {
+    index: ctx.index,
+    focusEntityId:
+      ctx.focusEntityId !== null && ctx.index.byId.has(ctx.focusEntityId)
+        ? ctx.focusEntityId
+        : null,
+    recent: ctx.recent,
+    turnMentions: [],
+    kinds: ctx.kinds,
+    params,
+  };
+  const said = original.target.kind;
+  const kinds: (EntityKind | null)[] =
+    said !== null && ctx.kinds.includes(said)
+      ? [said, ...ctx.kinds.filter((kind) => kind !== said)]
+      : ctx.kinds.length > 0
+        ? [...ctx.kinds]
+        : [null];
+  let first: { result: ReturnType<typeof link>; kind: EntityKind | null } | null = null;
+  for (const kind of kinds) {
+    const result = link({ text: quote, kind, companyText }, context);
+    if (result.decision === "linked") return { result, kind };
+    first ??= { result, kind };
+  }
+  return first ?? { result: link({ text: quote, kind: null, companyText }, context), kind: null };
 }
 
 /**
@@ -601,23 +633,7 @@ function correctRecord(
   if (words === null)
     return { ok: false, reason: "no_words", kind: null, words: allWords(utterances) };
   const quote = String(words.value);
-  const kind = targetKind(original, ctx.kinds);
-  // A contact is linked with its company field as context, as the understanding step links it.
-  const company = original.type === "contact" ? original.fields.company?.value : undefined;
-  const result = link(
-    { text: quote, kind, companyText: typeof company === "string" ? company : null },
-    {
-      index: ctx.index,
-      focusEntityId:
-        ctx.focusEntityId !== null && ctx.index.byId.has(ctx.focusEntityId)
-          ? ctx.focusEntityId
-          : null,
-      recent: ctx.recent,
-      turnMentions: [],
-      kinds: ctx.kinds,
-      params,
-    },
-  );
+  const { result, kind } = linkRecord(quote, original, ctx, params);
   if (result.decision === "none") return unreadable("record", utterances);
   const evidence = evidenceAt(words.utterance, words.span);
   const target: CorrectionTargetValue = {
