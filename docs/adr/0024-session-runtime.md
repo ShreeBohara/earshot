@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-19). Phase 3 WP6 (the `SessionDO` runtime) and WP7 (the flush) build it together. The first deploy still has to check two things on real accounts: that a scripted session's Durable Object log equals its `session_events` rows (gate G2e), and the open questions under "More information". Amended 2026-11-20 by Phase 5 WP3: the seal, the `review` and `snooze` messages, refusals after the seal, cleanup after a sealed confirmation, audit rows at flush, and `sealSessions` (see "Phase 5: the seal", and ADR-0032).
+Accepted (2026-11-19). Phase 3 WP6 (the `SessionDO` runtime) and WP7 (the flush) build it together. The first deploy still has to check two things on real accounts: that a scripted session's Durable Object log equals its `session_events` rows (gate G2e), and the open questions under "More information". Amended 2026-11-20 by Phase 5 WP3: the seal, the `review` and `snooze` messages, refusals after the seal, cleanup after a sealed confirmation, audit rows at flush, and `sealSessions` (see "Phase 5: the seal", and ADR-0032). Amended 2026-11-25 for the rest of Phase 5: the recap at the end (WP10), the approval policy in `start` (WP11), and the `correct` and `followup` messages (WP13); see "Phase 5: the recap, policies, and corrections" below, and ADR-0034, ADR-0037, and ADR-0038.
 
 ## Context and problem
 
@@ -98,6 +98,23 @@ From Phase 5 a session has two writers that never overlap (ADR-0032): `SessionDO
 - **The flush** records an audit row for each review event an append writes, in the session's user's name, and one checkpoint (`request: "flush"`), in the append's transaction, after the rebuild; none on the "stale, the ids match" path. Without a usable `EARSHOT_AUDIT_SIGNING_KEY` (loaded by `src/config.ts`, development's committed key only under `DEPLOY_ENV=development`), a message carrying reviews is retried until the DLQ, and SessionDO's re-sends try again later.
 - **`sealSessions(ids)`**, a second RPC on the default entrypoint for the web app's `EDGE` binding (at most 500 lowercase UUIDs, answered not thrown, like `purgeSessions`): each object's `sealNow()` answers `live`, `sealing`, `sealed`, or `gone`, for the inbox's repair path.
 - **SQLite** gains `writes`: each review's and snooze's client-made id, with its seq and proposal. `meta` gains `seal_due_ms` and `sealed_seq`.
+
+### Phase 5: the recap, policies, and corrections (amended 2026-11-25, WP14)
+
+| Message | What `SessionDO` does |
+|---|---|
+| `start.policy` (WP11) | Verifies the approval policy's snapshot against its own session id with the ticket secret (ADR-0034) before keeping anything; a forged one, one signed for another session, or one signed with another secret refuses the `start` with `bad_message`, not retryable. One that verifies is kept in `meta` as `policy` (`{ id, version, rules }`, never the signature); a second `start` changes nothing, so a session keeps the policy it started with |
+| `end.recap` (WP10) | After `session.ended`, in the same turn of the serial queue, one recap call on the session's provider with the key `end.recap` carries, within 15 s and two attempts, then `recap.created` and its `usage.recorded` in one transaction, and a flush (ADR-0037). The key lives in that call's closure only. The ack to `end` goes out with `session.ended`, so the client never waits for the recap |
+| `correct` (WP13) | Sent instead of `turn_end` for a correction turn, from `start` until the seal: the turn's utterances, or the typed words the message carries, read by `correctProposal` over `start`'s records, with no model call and no key; then the typed utterance (if any), the superseding `proposal.created`, and a `followup.closed` for each question it answers, in one commit (ADR-0038). Words it can't read are refused with the new code `unreadable`, writing nothing |
+| `followup` (WP13) | Skips a follow-up question: `followup.closed` (`skipped`), once; a second skip of it gets the first one's seq |
+
+- **Policies at each turn.** After `understand()`, each new proposal a rule matches is approved in the turn's own transaction, as a `mode: "policy"` review checked with `checkReview`, right after its proposal; without a usable audit signing key no policy applies (ADR-0034).
+- **Follow-up questions.** After each turn's proposals, in the turn's own transaction, `followup.asked` for each question the rules find: at most two a turn, none about a loud card or one a policy approved.
+- **Every ended session owes one recap.** `session.ended` sets `recap_due`; a session with no recap request (no key, or ended for idling) records it `skipped`, `no_key`. The seal goes through the serial queue, so it comes after the recap; if the object restarts mid-recap, the key is gone with it, and the seal appends the owed recap as `failed`, `timeout` just before `session.sealed`.
+- **Corrections' limits** (a security review's two findings, fixed in WP13): 30 per 10 minutes and 100 per session, counting every attempt that reaches the checks (`correction_starts`); typed words only on `correct`, at most 500 characters each and 20,000 a session (`typed_chars`), and none more than 5 minutes past the capture limit (`duration_limit`); a card corrected at most 5 times over. Over a limit, `turn_limit`. A correction is checked against a cached fold of the session's proposals, never a replay, and neither a correction nor a skip pushes back the idle end (`idle_anchor_ms`).
+- **The key guard** now allows a key-shaped string at `turn_end.key` and `end.recap.key` only.
+- **After the seal** each of these is refused with `sealed`, as every write is. The client sends a typed correction or a skip refused this way to the web Worker's corrections route under the same ids; a spoken correction, whose words are a turn's, can't go there.
+- **SQLite** `meta` gains `policy`, `recap_due`, `recap_seq`, `typed_chars`, `correction_starts`, and `idle_anchor_ms`.
 
 ### Logs
 

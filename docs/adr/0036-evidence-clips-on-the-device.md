@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 5 WP9 built it (below): `@earshot/voice/evidence` (the clip store, the span arithmetic, and the player), the capture controller keeping each turn's clip, the play buttons and no-audio lines on the inbox's card in the inbox and the capture tray, Settings → Capture's switch, the capture screen's notice, and sign-out clearing the store. Threat model rows toward v1.3 are in `docs/threat-model.md`. WP14 amends ADR-0029 (turn audio kept for clips too) and ADR-0021 (the evidence key on the device) to point here.
+Accepted (2026-11-25; proposed 2026-11-20). Phase 5 WP9 built it (below): `@earshot/voice/evidence` (the clip store, the span arithmetic, and the player), the capture controller keeping each turn's clip, the play buttons and no-audio lines on the inbox's card in the inbox and the capture tray, Settings → Capture's switch, the capture screen's notice, and sign-out clearing the store. Threat model v1.3 covers it (`docs/threat-model.md`). WP14 amended ADR-0029 (turn audio kept for clips too) and ADR-0021 (the evidence key on the device) to point here. Unchecked until the maintainer's device passes (spec WP16): IndexedDB under iOS Lockdown Mode, iOS Safari under storage pressure, and playback on an iPhone (spec Appendix B, #5 and #6).
 
 ## Context and problem
 

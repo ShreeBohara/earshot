@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15). Implemented in Phase 2 (2026-11-16); see "Implementation" below.
+Accepted (2026-11-15). Implemented in Phase 2 (2026-11-16); see "Implementation" below. Amended for Phase 5 (2026-11-25): each sign-in session records how it began, and changing an approval policy needs a sign-in from the last 5 minutes. See "Amendment: Phase 5" below, ADR-0033, and ADR-0034.
 
 ## Context and problem
 
@@ -111,6 +111,16 @@ Playwright checks `/sign-in` and `/demo` with axe, in light and dark.
 - Without a cookie cache, rate-limited endpoints cost two or three extra queries for the limiter, and every signed-in page costs a session lookup. A short cookie cache would save queries, but a revoked session would stay usable until the cache expired.
 - Email sign-in needs an email provider in every deployment, previews included. Without one, only passkeys work, and only for users who already have an account.
 - Server components can't set cookies, so a session extended during a page render keeps its cookie's original expiry until an auth request or server action refreshes it. Expect a re-sign-in about a week after signing in.
+
+## Amendment: Phase 5 (2026-11-25)
+
+Phase 5's reviews and approval policies need to know how a reviewer signed in, and a policy change needs more than an hour-old sign-in (spec decisions 4, 5, and 16).
+
+- **The sign-in method on each session** (ADR-0033). Better Auth's `session` table gains `sign_in_method` (migration 0013): `passkey`, `magic_link`, `github`, `google`, or `unknown`, `NOT NULL DEFAULT 'unknown'`, held to those values by a check. It's declared as `session.additionalFields.signInMethod` with `input: false`, so no request can set it, and a `databaseHooks.session.create.before` hook sets it from the route of the endpoint creating the session (`lib/auth/sign-in-method.ts`): `/magic-link/verify`, `/passkey/verify-authentication`, `/callback/:id` (GitHub or Google), or an ID-token `/sign-in/social`; anything else is `unknown`, as are sessions from before migration 0013. Better Auth's last-login-method plugin records the user's latest method on the user row, not each session's, so it isn't used.
+- **Where it goes.** Each review records the reviewer's method and when their sign-in session began (`by.auth`: the session's `createdAt` as `signedInAt`), whether it comes from the inbox's route or, through the session ticket's `am` and `sat` claims (ADR-0023), from the socket. Policy and system reviews record `auth: null`.
+- **The step-up for policies** (ADR-0034). `STEP_UP_SECONDS` (300, target) in `lib/auth/fresh.ts`: `PUT /api/policies` needs a sign-in session that began less than 5 minutes ago, by a recorded method (not `unknown`), checked before the body is read, or answers 403 `step_up_required`. Settings → Review offers "Confirm with your passkey" (a passkey sign-in on the page, which Better Auth limits to the account's own passkeys), "Email me a sign-in link", or the sign-in-again page, `/sign-in?reauth=1`, with every method the deployment offers. Like the fresh hour, it reads the session's `createdAt`, which a refresh never moves.
+- **What's unchanged.** The fresh hour (`FRESH_SESSION_SECONDS`) still guards deleting the account, adding a passkey, and storing a key in the vault. Approvals never prompt for a passkey: a WebAuthn assertion per approval would cost seconds and show no transaction text (ADR-0033).
+- **Tests.** `apps/web/test/sign-in-method.test.ts` drives magic link, passkey (a software P-256 authenticator), and GitHub (its OAuth endpoints stubbed) through Better Auth's real handler on PGlite; `apps/web/test/policy-routes.test.ts` refuses a stale or `unknown` session and allows a fresh passkey session. Passkeys haven't run in a real browser or on a real device yet; the first deploy checks them.
 
 ## More information
 

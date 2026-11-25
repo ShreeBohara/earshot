@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 5 WP2 built the hash chain and its trigger (migration 0013), signed checkpoints, the signing key with its script, rotation, and development key, `/api/audit/keys`, the export's audit sections and the offline check (`db:audit-verify`), the health flag, and the sign-in method on each session. WP3 writes the review rows and their checkpoints (the web Worker's review route and the flush consumer); WP11 built the step-up for policy changes, a sign-in from the last 5 minutes, and the `policy.changed` entry and checkpoint each change writes (ADR-0034). The browser's saved head (WP2 step 8) was cut, first on the spec's list; see "Cut" below.
+Accepted (2026-11-25; proposed 2026-11-20). Phase 5 WP2 built the hash chain and its trigger (migration 0013), signed checkpoints, the signing key with its script, rotation, and development key, `/api/audit/keys`, the export's audit sections and the offline check (`db:audit-verify`), the health flag, and the sign-in method on each session. WP3 wrote the review rows and their checkpoints (the web Worker's review route and the flush consumer); WP11 built the step-up for policy changes, a sign-in from the last 5 minutes, and the `policy.changed` entry and checkpoint each change writes (ADR-0034). The browser's saved head (WP2 step 8) was cut, first on the spec's list (§7, line 1); see "Cut" below. WP14 amended ADR-0006, ADR-0019, and ADR-0021. Still waiting for the maintainer, at the first deploy: generating the signing key (`audit-key:new`) and setting it on both Workers, once the deploy steps pass it (neither does yet). Until then, outside development, reviews fail closed and no policy applies. The same deploy checks that Neon renders the canonical text as PGlite's PostgreSQL 18.6 and PostgreSQL 17.4 do.
 
 ## Context and problem
 
@@ -91,7 +91,7 @@ Writers take any session lock first, then the audit lock, and insert audit rows 
   3. Set the new secret on both Workers.
 
   A retired key's signature counts only up to its `retiredAt`. Each key needs its own `kid`.
-- **Failing closed:** outside development, with no usable key, the review route will answer 503 `audit_unavailable` and `SessionDO` will refuse `review` with `internal` and apply no policy (WP3). `/api/health` reports `audit.signingKey` (`configured`, `development`, `missing`, or `invalid`), never the key, and doesn't count it in `status`: until the key is set, only writes that need a checkpoint fail, and the preview smoke test, which requires `status: "ok"`, keeps passing on deployments without the secret.
+- **Failing closed:** outside development, with no usable key, the review route answers 503 `audit_unavailable`, the flush consumer retries a message carrying reviews and stores nothing, and `SessionDO` refuses `review` with `internal` and applies no policy (WP3, WP11). `/api/health` reports `audit.signingKey` (`configured`, `development`, `missing`, or `invalid`), never the key, and doesn't count it in `status`: until the key is set, only writes that need a checkpoint fail, and the preview smoke test, which requires `status: "ok"`, keeps passing on deployments without the secret.
 
 ### The export and the check
 
@@ -154,7 +154,7 @@ Cut first, per the spec's list; exports remain the outside witness. It would go 
 - Rows after the newest checkpoint, such as key changes and demo CRM loads, are chained but not signed until the next review request or export, and the check fails on them until then.
 - The development key's private half is public by design, so anything it signed proves nothing. The check counts it only when asked, so a development export fails by default.
 - Exports from a deployment without a signing key end in an unsigned entry, so they fail the check by default (they pass only as "intact" with `--allow-unsigned-tail`).
-- Neither CI deploy step passes `EARSHOT_AUDIT_SIGNING_KEY` yet. The user generates and sets it at the first deploy (spec §9), when the steps gain it, and WP3 wires it into the edge Worker.
+- Neither CI deploy step passes `EARSHOT_AUDIT_SIGNING_KEY` yet. The user generates and sets it at the first deploy (spec §9), when the steps gain it. WP3 made the edge Worker load it (`apps/edge/src/config.ts`), as the web Worker does.
 
 ## More information
 
@@ -163,4 +163,4 @@ Cut first, per the spec's list; exports remain the outside witness. It would go 
 - `packages/db/src/audit-chain.ts`, `packages/db/scripts/audit-verify.ts`: the data layer and the offline check. `packages/db/test/audit-chain.test.ts` and `test/pgtap/90_audit_chain.sql` test them.
 - `packages/keys/src/audit-signing.ts`, `packages/keys/scripts/new-audit-key.ts`: the signer, the checkpoint message, public and retired keys, and the key script. `apps/edge/test/audit-signing.test.ts` runs them in workerd.
 - `apps/web/lib/audit/keys.ts`, `app/api/audit/keys/route.ts`, `app/api/health/route.ts`, `app/api/account/export/route.ts`, `lib/auth/sign-in-method.ts`, and `lib/auth/server.ts`.
-- ADR-0019 (tenant isolation) and ADR-0021 (key handling) gain their amendments in WP14.
+- ADR-0006 (the sign-in method and the step-up), ADR-0019 (tenant isolation), and ADR-0021 (key handling) gained their Phase 5 amendments in WP14.

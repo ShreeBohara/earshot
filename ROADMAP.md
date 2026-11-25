@@ -2,7 +2,7 @@
 
 Earshot v2 is a rebuild in ten phases. Each phase ships something that can be demoed and ends with a pass/fail gate. Targets such as latency and error rates are goals, not results.
 
-**Current status (2026-11-20):** Phases 1–4 are built and merged, and Phase 5 is next. Nothing is deployed yet, and the checks that need live providers wait on the maintainer's keys. Each phase's status note says what shipped, what moved, and what's still to run.
+**Current status (2026-11-25):** Phases 1–5 are built, and Phase 6 is next. Nothing is deployed yet. The checks that need live providers, people, or real devices wait on the maintainer: their keys, Phase 5's five-person pilot, and its screen-reader passes. Each phase's status note says what shipped, what was cut or moved, and what's still to run.
 
 The core loop is **capture, understand, verify, sync, remember**. The design principles behind it are in the README, and the decisions are in [docs/adr](docs/adr/README.md).
 
@@ -104,6 +104,21 @@ The core loop is **capture, understand, verify, sync, remember**. The design pri
 - In a 5-person pilot, the median review time per proposal is under 4 seconds.
 - At least 90% of seeded wrong-account errors are caught.
 - The inbox passes axe and a manual screen-reader check.
+
+**Status:** built. The review inbox at `/inbox` and the capture tray share one card: likely-edit tiers, with first-person copy on loud cards only; reviews that can't race, through `SessionDO` until a session is sealed and the web Worker after; undo as a later event; "accept all" for unmarked cards only; a hash-chained audit trail with signed checkpoints; approval policies behind a 5-minute step-up; evidence clips kept on the device for 24 hours; diff cards, with three values when the CRM changed since; a recap in which every sentence quotes the rep, with MEDDIC, SPICED, and BANT lenses; corrections and follow-up questions with no model call; and the review pilot's kit. Its $0 gates run in CI: the tiers' budgets and the recap's checks in `checks`, and axe in every inbox state, the keyboard and focus tests, and the scripted reviewer in `ui`. Gates G2a and G3a pass at $0: every seeded wrong account in the pilot's set shows its marker, 100% of the 200 debriefs' seeded errors are marked (40 of 40), and axe passes in every inbox state, light and dark. G1a passes on keys, at most 2 a decision, but not on time (below). What was cut, what moved, and what's still to run:
+- Cut (spec §7, in its order): the browser's saved audit head (cut first; exports remain the outside witness), and voice corrections in the inbox (cut third; typed corrections stay, and so do spoken ones on the capture screen). Everything else on the cut list was built.
+- Moved to Phase 7: follow-up drafts, beside briefs. A draft's body has no words of the rep's to quote.
+- Held at interim gates, the maintainer's call:
+  - the loud tier is 15.8% of proposals (119 of 751) against the 15% budget, gated at 18% while asks, conflicts, and unsupported values alone are 15.7%;
+  - the scripted reviewer's time estimate is a 6.49 s median against the 4.0 s target, held at its own baseline so it can't get worse. The choices are shorter cards, a different target, or 4.0 s made hard.
+- Reported, never tuned: unmarked cards are 52.5% of the pilot's 40, against the 60–70% a 4 s median needs, and two of its four silent errors share a confusable group.
+- Waiting on the maintainer:
+  - the five-person pilot (gates G1b and G2b), once the pre-registration's three blanks are filled in: the commit, the set's SHA-256, and whether Phase 8's report uses the results, with its ethics question;
+  - the screen-reader passes on a Mac, an iPhone, and a Windows machine with NVDA (G3b);
+  - the recap's live check (under $0.01), and, optionally, the live smoke eval with recaps;
+  - an audit signing key on both Workers at the first deploy. Until then a deployment refuses reviews and applies no policy;
+  - still open from earlier phases: Phase 4's second-witness live check, smoke baseline, and confusion mining; Phase 3's provider spike and latency gate; and every deploy, which needs the Cloudflare, Neon, and Chromatic accounts and their secrets.
+- Checked only on the first deploy: the whole path from the tray through the flush to the inbox, the seal's timing on real networks, and the review route's latency.
 
 ## Phase 6: Real CRM sync (weeks 14-16)
 

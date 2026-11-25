@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-25). Phase 5 WP11 built it (below): the `ApprovalPolicyRules` contract and its writer's checks, migration 0016's `approval_policies`, `PUT /api/policies` behind a 5-minute step-up with its `policy.changed` audit entry and checkpoint, the snapshot `POST /api/sessions` signs into each new session and `start.policy` carries, `SessionDO` verifying it and approving each new proposal a rule matches in the turn's own transaction, Settings → Review's policy, and Reviewed's "Approved by your policy: notes" with Undo. It builds the step-up ADR-0033 left to WP11. WP14 amends ADR-0006 (the step-up), ADR-0007 (policies made concrete), ADR-0019 (a new tenant table), and ADR-0024 (`start.policy`).
+Accepted (2026-11-25). Phase 5 WP11 built it (below): the `ApprovalPolicyRules` contract and its writer's checks, migration 0016's `approval_policies`, `PUT /api/policies` behind a 5-minute step-up with its `policy.changed` audit entry and checkpoint, the snapshot `POST /api/sessions` signs into each new session and `start.policy` carries, `SessionDO` verifying it and approving each new proposal a rule matches in the turn's own transaction, Settings → Review's policy, and Reviewed's "Approved by your policy: notes" with Undo. It builds the step-up ADR-0033 left to WP11. WP14 amended ADR-0006 (the step-up), ADR-0007 (policies made concrete), ADR-0019 (a new tenant table), and ADR-0024 (`start.policy`). Outside development a policy applies only once the audit signing key is set on both Workers (ADR-0033), which waits for the maintainer at the first deploy; so does trying the step-up's passkey path on real devices, which is tested at the route through Better Auth's real handler.
 
 ## Context and problem
 

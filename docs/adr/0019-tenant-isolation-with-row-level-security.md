@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15)
+Accepted (2026-11-15). Amended for Phase 5 (2026-11-25): three new tenant tables, each append-only for the app, and a hash chain on `audit_log` built by a trigger. See "Amendment: Phase 5" below.
 
 ## Context and problem
 
@@ -115,6 +115,22 @@ Revisit at about 10 million rows or a few GB, or when retention needs to drop wh
 - HNSW indexes span all workspaces. A vector search ranks every workspace's rows and RLS filters afterwards, so a small workspace can get fewer than k results. Phase 4 should enable pgvector's iterative index scans (`hnsw.iterative_scan`) if recall suffers.
 - On a sequential scan, the policies' `current_setting()` calls run once per row. Indexes that lead with `workspace_id` avoid most of that. Wrapping the expression in a scalar subquery is an option if profiling shows a cost.
 - The app role can't read `user`, so showing names next to tenant data needs a separate read as the owner, or column grants later.
+
+## Amendment: Phase 5 (2026-11-25)
+
+Phase 5 adds three tenant tables, all append-only for the app, and changes how `audit_log` is written. There are now 16 tenant tables.
+
+| Table | Migration | What it holds | For the app |
+|---|---|---|---|
+| `audit_checkpoints` | 0013 (ADR-0033) | One Ed25519 signature over the workspace's chain head per review request, flush with reviews, policy change, and export | `SELECT` and `INSERT`; `(workspace_id, chain_seq)` references the chain row it signs, so even the owner can't delete a signed row without deleting its checkpoint first |
+| `approval_policies` | 0016 (ADR-0034) | One row per version of a workspace's approval policy | `SELECT` and `INSERT`; a RESTRICTIVE `actor_insert` binds `created_by` to `app.user_id`, and a composite key to `workspace_members` with `ON DELETE SET NULL (created_by)`, as `audit_log`'s actor has |
+| `crm_entity_changes` | 0017 (ADR-0008) | One row per change to a field of a mirror record | `SELECT` and `INSERT`; `(workspace_id, entity_id)` references `crm_entities`, so a change can't name another workspace's record, and cascades with it |
+
+- **The same policy.** Each has `tenant_isolation` on `workspace_id`, and fails closed the same way. `approval_policies` is the third table to bind a user column to `app.user_id`, after `sessions` and `audit_log`.
+- **The audit chain** (migration 0013). `audit_log` gains `chain_seq`, `prev_hash`, and `entry_hash`, filled by a `BEFORE INSERT` trigger that runs as the table's owner (`SECURITY DEFINER`, `search_path` pinned) and overwrites whatever the app sends, so the app still can only read and append, and can't choose a seq, a hash, or a time. `audit_chain_verify` runs as the invoker, so for the app RLS confines it to its own workspace. `PUBLIC` can run none of the chain's functions; the app may run `audit_entry_canonical` and `audit_chain_verify`.
+- **New columns on existing tables** keep their table's policy: `sessions.sealed_at`, `focus_entity_id` (a composite key to the workspace's `crm_entities` that clears when the record goes), and `recap`; the review columns on `proposals` with `supersedes`, `superseded_by`, and `followups`; and `utterances.input`. Better Auth's `session` table gains `sign_in_method`, still closed to the app.
+- **The proof.** pgTAP grows from nine files to 13, and from 290 assertions to 411: `90_audit_chain.sql` (50: the trigger overwrites the chain columns, updates, deletes, and `TRUNCATE` still fail, seqs run per workspace, an owner's edit, deletion, or reordering fails the check at that seq, and checkpoints are append-only and isolated), `95_seal_and_reviews.sql` (9: the focus account stays in its workspace, and the statuses and review modes are checked), `96_approval_policies.sql` (17), and `97_crm_entity_changes.sql` (14). The structure file's catalog checks cover all 16 tables' RLS, policies, and grants.
+- **Within a workspace,** the trust model is unchanged: one member per workspace in Phase 5. Two things wait for team workspaces: any member could change the workspace's policy after the step-up (ADR-0034), and clearing a departed member's actor on `audit_log` would change their rows' canonical text, a false alarm in the chain's check (ADR-0033's must-fix).
 
 ## More information
 

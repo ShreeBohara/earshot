@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-11-15). Amended for Phase 4 (2026-11-20): the mirror's phonetic keys are filled, and the embedding stays empty. See "Amendment: Phase 4" below. Amended for Phase 5 (2026-11-25): the mirror keeps its history, written by the demo CRM's controls now and by Phase 6's sync later. See "Amendment: Phase 5" below.
+Accepted (2026-11-15). Amended for Phase 4 (2026-11-20): the mirror's phonetic keys are filled, and the embedding stays empty. See "Amendment: Phase 4" below. Amended for Phase 5 (2026-11-25): the mirror keeps its history, written by the demo CRM's controls now and by Phase 6's sync later, and the linker reads the mirror in the web Worker at review time, for re-links and corrections. See "Amendment: Phase 5" below.
 
 ## Context and problem
 
@@ -51,6 +51,7 @@ A review card has to tell the CRM's value when the rep spoke from its value now,
 - **Who writes it now:** the demo CRM's controls only. "Simulate a CRM change" (`moveDemoField`) moves one field of one of the workspace's demo records and records the change in the same transaction, and "Add a matching record" (`addDemoRecord`) records the new record's arrival in the same transaction as the record. Both act only on demo rows (no connection, the `demo:` prefix), and only on the transaction's workspace.
 - **Who reads it:** the inbox's loader, for each update's `base` (`valueAt` at the proposal's time) beside the record's value now, and for the arrivals the re-link offer checks.
 - **Phase 6's sync must write it:** every change it mirrors, in the same transaction as the change to `crm_entities`, with `source: "sync"` and the CRM's own change time where the CRM gives one; a new record's arrival as its name's change from null. A value changed in the mirror without a history row shows no 3-way card, and a record that arrives without an arrival row is never offered at review time.
+- **The linker also runs in the web Worker, over the mirror** (WP12, WP13). Phase 4 ran it only in `SessionDO`, on `start`'s records. Two review-time paths now read the mirror instead, in the viewer's tenant transaction, and build a link index in memory: the inbox's re-link offer for new records still open (ADR-0035), and corrections to a sealed session through `POST /api/sessions/:id/corrections` (ADR-0038). Both read the 250 most recent records of each kind with `loadCrmEntities`, the reads `POST /api/sessions` makes (corrections also read the session's focus account with its contacts and deals), so a record past that waits for Phase 6's search. Neither calls a model or writes to the mirror. The web Worker's bundle grew by 59.89 KiB gzipped for the linker and 61.73 KiB more for the normalizers that corrections bring.
 - **What it is, and isn't:** the mirror's account of the CRM, as trustworthy as the mirror itself, which the app can also write. It decides what a review card shows, never what's written: every CRM write still needs an approval (ADR-0007), and Phase 6's sync re-reads the CRM's live value before writing and stops on a conflict. The audit trail stays `audit_log` (ADR-0033).
 
 ## More information
