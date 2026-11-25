@@ -40,6 +40,7 @@ export {
   type ReviewRefusal,
   type ReviewRuleContext,
   type ReviewsCheck,
+  seenLoudAtReview,
   type TierOf,
 } from "./review-rules";
 export {

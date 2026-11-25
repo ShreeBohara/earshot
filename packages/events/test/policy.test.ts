@@ -296,4 +296,22 @@ describe("the evaluation table, with tierOf (spec §4.6)", () => {
       reason: "supersedes",
     });
   });
+
+  // Phase 5 WP12: a 3-way card and a re-link offer are made at review time, in the inbox; a policy
+  // runs once, as SessionDO creates the proposal, from `start` alone, and never again.
+  it("never approves what a re-link offer or a 3-way card is made on", () => {
+    // A re-link offer is made only on a new record, which a policy never takes, unmarked or not.
+    const fresh = note(
+      {},
+      { decision: "new", entityId: null, basis: null, p: 0.8, candidates: [] },
+    );
+    expect(policyRuleFor(only(fresh), NOTES, real)).toEqual({ ok: false, reason: "not_linked" });
+    expect(policyRuleFor(only(fresh), NOTES, ctx)).toEqual({ ok: false, reason: "not_linked" });
+    // A deal update a policy may take is approved as it's created: then the CRM's value is the one
+    // the rep spoke over, so no card can show it three ways. A card still open in the inbox is one
+    // no policy took, and nothing evaluates a policy there; `checkReview` refuses a policy review
+    // that saw a CRM change or a re-link offer all the same (review-rules.test.ts).
+    const update = only(deal({ closeDate: "2027-03-31" }));
+    expect(policyRuleFor(update, DEALS, real)).toMatchObject({ ok: true });
+  });
 });
