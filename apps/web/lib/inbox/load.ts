@@ -4,6 +4,12 @@
 // their quotes come from, the records they name with each one's account and current values, and
 // whether it's sealed. The page and `GET /api/inbox` both call it, after the repair path
 // (lib/reviews/repair.ts) has sealed what it can.
+//
+// Phase 5 WP12 adds what the CRM's mirror says at review time (`InboxProposal.crm`, ./crm.ts): from
+// the mirror's history, each update's fields whose CRM value moved since the proposal (`base`, the
+// value then, by `valueAt`'s rule), and for new records still open, a record the linker links their
+// words to now that reached the CRM after the rep spoke (./relink.ts). Also which records are demo
+// records, and whether the workspace's mirror is the demo CRM, for the demo controls.
 import type {
   FieldValue,
   ProposalFieldV2,
@@ -12,39 +18,36 @@ import type {
   TargetV2,
   WitnessConflict,
 } from "@earshot/core";
-import { DEMO_CRM_EXTERNAL_ID_PREFIX, schema } from "@earshot/db";
+import {
+  DEMO_CRM_EXTERNAL_ID_PREFIX,
+  type FieldRef,
+  fieldKey,
+  isDemoCrmWorkspace,
+  readFieldHistory,
+  schema,
+  valueFromHistory,
+} from "@earshot/db";
 import type { ProposalStatus, ReviewView, SessionRecap } from "@earshot/events";
-import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import type { TenantTx } from "../auth/viewer";
 import { recapUtteranceIds } from "../recap/view";
-import type { InboxData, InboxEntity, InboxProposal, InboxReview, InboxSession } from "./types";
+import { loadCrmEntities } from "../voice/crm-rows";
+import { UPDATE_FIELDS } from "./crm";
+import { olderCursor, parseOlderCursor } from "./pages";
+import { canRelink, earlierLinks, mirrorIndex, relinkTarget } from "./relink";
+import type {
+  InboxCrm,
+  InboxData,
+  InboxEntity,
+  InboxProposal,
+  InboxReview,
+  InboxSession,
+} from "./types";
 
 /** How many debriefs one load reads (target); "Load older" reads as many again. */
 export const INBOX_PAGE_SIZE = 20;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-
-/** "Load older"'s cursor: the last debrief shown, by start time and id. */
-export function olderCursor(session: Pick<InboxSession, "startedAt" | "sessionId">): string {
-  return `${session.startedAt}_${session.sessionId}`;
-}
-
-/** A cursor back as its parts, or null for anything else. */
-export function parseOlderCursor(
-  cursor: string | null | undefined,
-): { startedAt: Date; sessionId: string } | null {
-  if (typeof cursor !== "string" || cursor.length > 80) return null;
-  const separator = cursor.indexOf("_");
-  if (separator < 0) return null;
-  const startedAt = cursor.slice(0, separator);
-  const sessionId = cursor.slice(separator + 1);
-  if (!ISO.test(startedAt) || !UUID.test(sessionId)) return null;
-  const date = new Date(startedAt);
-  return Number.isNaN(date.getTime())
-    ? null
-    : { startedAt: date, sessionId: sessionId.toLowerCase() };
-}
 
 /** The values an update's fields read as "before", by record kind. */
 const VALUE_KEYS: Readonly<Record<string, readonly string[]>> = {
@@ -254,9 +257,117 @@ async function loadEntities(
         values[key] = value;
       }
     }
-    entities[row.id] = { id: row.id, kind: row.kind, name: row.name, accountId, values };
+    const demo =
+      row.connectionId === null && row.externalId.startsWith(DEMO_CRM_EXTERNAL_ID_PREFIX);
+    entities[row.id] = { id: row.id, kind: row.kind, name: row.name, accountId, values, demo };
   }
   return entities;
+}
+
+/**
+ * The re-link offers (spec WP12 step 5), by proposal id: for each new-record proposal still open,
+ * the record the linker links its words to now, over the mirror, with its session's focus account
+ * and earlier links, when that record's arrival is in the mirror's history after the proposal was
+ * made (its name was null then). The mirror is read and indexed once per load, and only when some
+ * record arrived after the oldest such proposal, which is rare: most loads add one small query.
+ */
+async function relinkOffers(
+  tx: TenantTx,
+  workspaceId: string,
+  sessions: readonly InboxSession[],
+): Promise<Map<string, string>> {
+  const offers = new Map<string, string>();
+  const candidates = sessions.flatMap((session) =>
+    session.proposals.filter(canRelink).map((proposal) => ({ session, proposal })),
+  );
+  if (candidates.length === 0) return offers;
+  const since = new Date(Math.min(...candidates.map(({ proposal }) => Date.parse(proposal.ts))));
+  const { crmEntityChanges } = schema;
+  // A record's arrival is its name's change from null (docs/adr/0008).
+  const [arrival] = await tx
+    .select({ id: crmEntityChanges.id })
+    .from(crmEntityChanges)
+    .where(
+      and(
+        eq(crmEntityChanges.workspaceId, workspaceId),
+        eq(crmEntityChanges.field, "name"),
+        isNull(crmEntityChanges.old),
+        gt(crmEntityChanges.changedAt, since),
+      ),
+    )
+    .limit(1);
+  if (!arrival) return offers;
+
+  const rows = await loadCrmEntities(tx, workspaceId, null);
+  const nameOf = new Map(rows.map((row) => [row.id, row.name]));
+  const index = mirrorIndex(rows);
+  const linked = candidates.flatMap(({ session, proposal }) => {
+    const entityId = relinkTarget(proposal, {
+      index,
+      focusEntityId: session.focusEntityId,
+      recent: earlierLinks(proposal, session.proposals),
+    });
+    return entityId === null ? [] : [{ proposal, entityId }];
+  });
+  if (linked.length === 0) return offers;
+  const names = await readFieldHistory(
+    tx,
+    [...new Set(linked.map(({ entityId }) => entityId))].map(
+      (entityId): FieldRef => ({ entityId, field: "name" }),
+    ),
+  );
+  for (const { proposal, entityId } of linked) {
+    const history = names.get(fieldKey({ entityId, field: "name" }));
+    const name = nameOf.get(entityId);
+    if (!history || name === undefined) continue;
+    // Offered only if it wasn't in the CRM when the rep spoke: "added to your CRM after you spoke".
+    if (valueFromHistory(history, new Date(proposal.ts), name) === null) {
+      offers.set(proposal.proposalId, entityId);
+    }
+  }
+  return offers;
+}
+
+/**
+ * Each update's fields whose CRM value moved since the proposal was made (spec WP12 step 2), by
+ * proposal id: a deal's stage, amount, and close date, a linked contact's title, email, and phone.
+ * The value then is `valueAt`'s rule over the mirror's history at the proposal's time; the value
+ * now is the record's. One history query for every field of every debrief loaded.
+ */
+async function movedFields(
+  tx: TenantTx,
+  sessions: readonly InboxSession[],
+  entities: Readonly<Record<string, InboxEntity>>,
+): Promise<Map<string, InboxCrm["moved"]>> {
+  const updates: { proposal: InboxProposal; entityId: string; fields: string[] }[] = [];
+  for (const session of sessions) {
+    for (const proposal of session.proposals) {
+      const { target } = proposal;
+      if (proposal.status === "superseded" || target.decision !== "linked") continue;
+      if (target.entityId === null || !entities[target.entityId]) continue;
+      const fields = (UPDATE_FIELDS[proposal.type] ?? []).filter((f) => f in proposal.fields);
+      if (fields.length > 0) updates.push({ proposal, entityId: target.entityId, fields });
+    }
+  }
+  const moved = new Map<string, InboxCrm["moved"]>();
+  if (updates.length === 0) return moved;
+  const history = await readFieldHistory(
+    tx,
+    updates.flatMap(({ entityId, fields }) => fields.map((field) => ({ entityId, field }))),
+  );
+  for (const { proposal, entityId, fields } of updates) {
+    const changed: Record<string, { base: FieldValue; changedAt: string }> = {};
+    for (const field of fields) {
+      const changes = history.get(fieldKey({ entityId, field }));
+      const last = changes?.at(-1);
+      if (!changes || !last) continue;
+      const current = entities[entityId]?.values[field] ?? null;
+      const base = valueFromHistory(changes, new Date(proposal.ts), current);
+      if (base !== current) changed[field] = { base, changedAt: last.changedAt.toISOString() };
+    }
+    if (Object.keys(changed).length > 0) moved.set(proposal.proposalId, changed);
+  }
+  return moved;
 }
 
 /**
@@ -339,12 +450,30 @@ export async function loadInbox(
   const quotes: Record<string, string> = {};
   for (const row of quoteRows) quotes[row.id] = row.text;
 
+  // What the CRM's mirror says now (WP12): the records offered on new-record cards are named on
+  // their cards too, so they're read with the rest.
+  const relinks = await relinkOffers(tx, viewer.workspaceId, loaded);
+  for (const entityId of relinks.values()) wanted.entities.add(entityId);
+  const entities = await loadEntities(tx, viewer.workspaceId, wanted.entities);
+  const moved = await movedFields(tx, loaded, entities);
+  const withCrm: InboxSession[] = loaded.map((session) => ({
+    ...session,
+    proposals: session.proposals.map((proposal) => {
+      const changed = moved.get(proposal.proposalId);
+      const relink = relinks.get(proposal.proposalId) ?? null;
+      return changed || relink !== null
+        ? { ...proposal, crm: { moved: changed ?? {}, relink } }
+        : proposal;
+    }),
+  }));
+
   const last = loaded.at(-1);
   return {
-    sessions: loaded,
-    entities: await loadEntities(tx, viewer.workspaceId, wanted.entities),
+    sessions: withCrm,
+    entities,
     quotes,
     older: rows.length > limit && last ? olderCursor(last) : null,
     loadedAt: options.now.toISOString(),
+    demoCrm: await isDemoCrmWorkspace(tx),
   };
 }

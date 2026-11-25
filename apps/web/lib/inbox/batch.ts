@@ -6,8 +6,11 @@
 // - **What it takes:** the debrief's open cards (proposed, not snoozed) with nothing of the page's
 //   still on its way, that `tierOf` leaves unmarked (`none`), and that can be accepted as they
 //   stand: with a record to add them to. A card with no record can't be approved at all
-//   (`checkReview`'s `no_target`), and a question is always loud. Everything else stays for review,
-//   each with why: loud, a quiet note, a name note, no record, or still being saved.
+//   (`checkReview`'s `no_target`), and a question is always loud. A card loud at review time
+//   though no flag says so (WP12: a field whose CRM value moved since the proposal, or a record
+//   offered on a new record) stays too, as the writers' rule says (`seenLoudAtReview`). Everything
+//   else stays for review, each with why: loud, a quiet note, a name note, no record, or still
+//   being saved.
 // - **What it writes:** one `proposal.reviewed` v2 per card, approved as proposed, in `batch` mode
 //   with one `batchId` (a UUIDv7). Every item carries the batch's own time, from opening the
 //   checkpoint to confirming it (§4.8), and the analysis counts each `batchId` once. The input is
@@ -23,6 +26,7 @@ import {
   uuidv7,
 } from "@earshot/core";
 import { tierOf } from "@earshot/understanding/tiers";
+import { reviewTimeMark } from "./crm";
 import type { SessionItem } from "./groups";
 import { seenOf } from "./review";
 import type { InboxEntity, InboxProposal } from "./types";
@@ -55,11 +59,16 @@ export interface BatchPlan {
 /**
  * Why a card can't join a batch, from its marks and its record alone, or null when it can. The
  * marks come first, since they're what the card shows; a card that only waits on the page's own
- * request is `saving`.
+ * request is `saving`. A 3-way card or a re-link offer (WP12) is loud at review time.
  */
-export function stayReason(proposal: InboxProposal, pending: boolean): StayReason | null {
+export function stayReason(
+  proposal: InboxProposal,
+  pending: boolean,
+  entities: Entities = {},
+): StayReason | null {
   const tier = tierOf(proposal);
   if (tier.tier === "loud" || proposal.target.decision === "ask") return "loud";
+  if (reviewTimeMark(proposal, entities)) return "loud";
   if (proposal.target.decision === "none") return "no_record";
   if (tier.tier === "quiet") {
     return tier.reasons.some((reason) => reason.tier === "quiet") ? "quiet" : "name_note";
@@ -70,17 +79,19 @@ export function stayReason(proposal: InboxProposal, pending: boolean): StayReaso
 /**
  * "Accept all" for one debrief: of its open cards (`open`, as its group shows them), the ones a
  * batch takes, and the rest with why they stay. `pending` says whether the page still has a change
- * to a card on its way.
+ * to a card on its way; `entities` are the records the page loaded, whose values now tell a 3-way
+ * card.
  */
 export function batchPlan(
   sessionId: string,
   open: readonly InboxProposal[],
   pending: (proposalId: string) => boolean = () => false,
+  entities: Entities = {},
 ): BatchPlan {
   const accept: InboxProposal[] = [];
   const stay: BatchStay[] = [];
   for (const proposal of open) {
-    const reason = stayReason(proposal, pending(proposal.proposalId));
+    const reason = stayReason(proposal, pending(proposal.proposalId), entities);
     if (reason === null) accept.push(proposal);
     else stay.push({ proposal, reason });
   }

@@ -33,6 +33,7 @@ import {
   noRecordHint,
   shownValue,
 } from "@/lib/inbox/copy";
+import { canAddMatching, simulatedField } from "@/lib/inbox/demo";
 import { editDiff } from "@/lib/inbox/edit";
 import { adjacentCard, focusAfterBatch, focusAfterRemoval } from "@/lib/inbox/focus";
 import {
@@ -59,7 +60,7 @@ import {
 } from "@/lib/inbox/sinks";
 import { type SnoozeOption, snoozeUntil, whenWords } from "@/lib/inbox/time";
 import type { InboxEntity, InboxProposal, InboxSession } from "@/lib/inbox/types";
-import type { CardActions } from "./proposal-card";
+import type { CardActions, CardDemo } from "./proposal-card";
 import { useInboxKeys } from "./use-inbox-keys";
 import { BATCH_CLOCK_KEY, useReviewClock } from "./use-review-clock";
 import { type RovingFocus, useRovingFocus } from "./use-roving-focus";
@@ -104,6 +105,21 @@ export interface CardBinding {
   readonly actions: CardActions;
   readonly menuFinalFocus: () => boolean;
   readonly cardRef: Ref<HTMLElement>;
+  /** The card's demo controls in More (WP12), or absent where it gets none. */
+  readonly demo?: CardDemo;
+}
+
+/**
+ * The inbox's demo controls (Phase 5 WP12): which the page offers, and what each does. The card
+ * gets one only where its record is a demo record (`simulatedField`, `canAddMatching`).
+ */
+export interface DemoControls {
+  /** Whether the workspace's mirror is the demo CRM: then a new-record card can add its record. */
+  readonly demoCrm: boolean;
+  /** "Simulate a CRM change" on a card: moves one field of its record in the demo CRM. */
+  readonly simulate: (sessionId: string, proposalId: string) => void;
+  /** "Add a matching record" on a new-record card: adds the record it heard to the demo CRM. */
+  readonly addMatching: (sessionId: string, proposalId: string) => void;
 }
 
 /** "Accept all from this call": its plans, its open checkpoint, and what it does. */
@@ -135,6 +151,8 @@ export interface ReviewListOptions {
   readonly reviewable?: (session: InboxSession) => boolean;
   /** The server's clock when the data was read: the first render's, so it matches the server's. */
   readonly loadedAt: string;
+  /** The inbox's demo controls (WP12); the tray and the pilot pass none. */
+  readonly demo?: DemoControls;
 }
 
 export interface ReviewList {
@@ -165,6 +183,10 @@ export interface ReviewList {
   readonly batch: BatchControls;
   readonly helpOpen: boolean;
   readonly setHelpOpen: (open: boolean) => void;
+  /** Says something politely, replacing the last message: one per action (the demo controls). */
+  readonly say: (text: string) => void;
+  /** Says something urgently: a failure. */
+  readonly warn: (text: string) => void;
 }
 
 /**
@@ -228,10 +250,10 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     const map = new Map<string, CardModel>();
     for (const id of order.flat()) {
       const entry = found.get(id);
-      if (entry) map.set(id, cardModel(entry.proposal, entities, quotes));
+      if (entry) map.set(id, cardModel(entry.proposal, entities, quotes, now));
     }
     return map;
-  }, [order, found, entities, quotes]);
+  }, [order, found, entities, quotes, now]);
   // Recomputed as changes leave and land: a card with a change on its way waits out of a batch.
   const plans = useMemo(() => {
     const map = new Map<string, BatchPlan>();
@@ -239,11 +261,11 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
       const open = group.accounts.flatMap((account) => account.proposals);
       map.set(
         group.sessionId,
-        batchPlan(group.sessionId, open, (id) => pendingIds.has(id)),
+        batchPlan(group.sessionId, open, (id) => pendingIds.has(id), entities),
       );
     }
     return map;
-  }, [sections.review, pendingIds]);
+  }, [sections.review, pendingIds, entities]);
   const nameOf = nameFinder(entities);
 
   const roving = useRovingFocus(order);
@@ -523,6 +545,32 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
       {
         decision: "approved",
         message: { kind: "accepted", what: cardWords(entry.proposal, nameOf) },
+      },
+      event,
+    );
+  }
+
+  /**
+   * "Keep the CRM's" on a 3-way card (WP12): an edit setting each field the CRM moved to its value
+   * there now. When every such value is the one proposed, keeping the CRM's is keeping the rep's,
+   * and the card is accepted.
+   */
+  function keepCrm(proposalId: string, event: InputEventLike) {
+    const model = models.get(proposalId);
+    const entry = found.get(proposalId);
+    if (!model?.keepCrm || !entry) return;
+    clock.decide(proposalId);
+    const what = cardWords(entry.proposal, nameOf);
+    if (Object.keys(model.keepCrm.editDiff).length === 0) {
+      decide(proposalId, { decision: "approved", message: { kind: "accepted", what } }, event);
+      return;
+    }
+    decide(
+      proposalId,
+      {
+        decision: "edited",
+        editDiff: { ...model.keepCrm.editDiff },
+        message: { kind: "kept_crm", what, fields: model.keepCrm.words },
       },
       event,
     );
@@ -892,6 +940,13 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
         // The correction panel's records while it's open; otherwise the card's own choices. A
         // linked card has none, so a stray digit never changes its record.
         const options = correcting === cardId ? model.correction : (model.chooser?.options ?? []);
+        // A 3-way card with no choices of its own (WP12): 1 keeps the rep's value, 2 the CRM's.
+        if (options.length === 0 && correcting !== cardId && model.keepCrm) {
+          if (action.index === 0) accept(cardId, event);
+          else if (action.index === 1) keepCrm(cardId, event);
+          else return false;
+          return true;
+        }
         if (action.index >= options.length) return false;
         clock.decide(cardId);
         choose(cardId, options, action.index, event);
@@ -904,6 +959,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
 
   const actions: CardActions = {
     accept,
+    keepCrm,
     reject,
     edit,
     snooze,
@@ -923,10 +979,25 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
 
   const menuFinalFocus = () => !focusMoved.current;
 
+  /** The card's demo controls (WP12): only where its record is a demo record. */
+  function demoOf(proposal: InboxProposal, sessionId: string): CardDemo | undefined {
+    const { demo } = options;
+    if (!demo) return undefined;
+    const { proposalId } = proposal;
+    const simulate = simulatedField(proposal, entities) !== null;
+    const addMatching = canAddMatching(proposal, demo.demoCrm);
+    if (!simulate && !addMatching) return undefined;
+    return {
+      ...(simulate ? { simulate: () => demo.simulate(sessionId, proposalId) } : {}),
+      ...(addMatching ? { addMatching: () => demo.addMatching(sessionId, proposalId) } : {}),
+    };
+  }
+
   function card(proposalId: string): CardBinding | null {
     const entry = found.get(proposalId);
     const model = models.get(proposalId);
     if (!entry || !model) return null;
+    const demo = demoOf(entry.proposal, entry.sessionId);
     return {
       proposal: entry.proposal,
       model,
@@ -941,6 +1012,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
       actions,
       menuFinalFocus,
       cardRef: cardRef(proposalId),
+      ...(demo ? { demo } : {}),
     };
   }
 
@@ -969,5 +1041,7 @@ export function useReviewList(options: ReviewListOptions): ReviewList {
     },
     helpOpen,
     setHelpOpen,
+    say: (text) => announce(text),
+    warn,
   };
 }

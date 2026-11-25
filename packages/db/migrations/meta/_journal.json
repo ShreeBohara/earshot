@@ -120,6 +120,13 @@
       "when": 1795594858361,
       "tag": "0016_approval_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795599944210,
+      "tag": "0017_crm_entity_changes",
+      "breakpoints": true
     }
   ]
 }

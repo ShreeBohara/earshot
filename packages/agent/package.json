@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./link-context": "./src/link-context.ts",
     "./recap": "./src/recap/index.ts",
     "./recap/lenses": "./src/recap/lenses.ts",
     "./testing": "./src/testing/index.ts",

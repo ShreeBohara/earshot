@@ -84,11 +84,15 @@ function refuse(reason: ReviewRefusal, detail: string): ReviewCheck {
  * 3. The proposal: it exists and nothing has superseded it.
  * 4. The decision: approving, editing, and rejecting need `proposed`. Approving and editing need
  *    a record unless the target is `none`: for an ask, one of the candidates; otherwise the
- *    proposal's own record or a candidate, if the review names one; a record offered at review
- *    time (`seen.relinked`) counts as offered. A reopen names the latest review, a decision,
- *    and a system reopen (decision 15) only an approval or an edit.
+ *    proposal's own record or a candidate, if the review names one; for a new record, the record
+ *    offered at review time (`seen.relinked`, Phase 5 WP12) counts as offered too, and only for a
+ *    new record, the only kind a re-link offer is made on. A reopen names the latest review, a
+ *    decision, and a system reopen (decision 15) only an approval or an edit.
  * 5. The mode: a batch approves only unmarked proposals (`tierOf` is `none`), and a policy only an
- *    unmarked, linked proposal that doesn't supersede another.
+ *    unmarked, linked proposal that doesn't supersede another. Neither approves what the reviewer
+ *    saw loud at review time though no flag says so (WP12): a field whose value in the CRM moved
+ *    since the proposal (`seen.fields[].current`, the 3-way card) or a record offered at review
+ *    time (`seen.relinked`).
  */
 export function checkReview(
   proposals: readonly ProposalView[],
@@ -146,12 +150,29 @@ export function checkReview(
     if (!target.ok) return target;
   }
 
-  if (review.mode === "batch" && ctx.tierOf(proposal).tier !== "none") {
-    return refuse("marked", `"accept all" can't take proposal ${proposal.proposalId}: it's marked`);
+  if (review.mode === "batch") {
+    if (ctx.tierOf(proposal).tier !== "none") {
+      return refuse(
+        "marked",
+        `"accept all" can't take proposal ${proposal.proposalId}: it's marked`,
+      );
+    }
+    if (seenLoudAtReview(review)) {
+      return refuse(
+        "marked",
+        `"accept all" can't take proposal ${proposal.proposalId}: the CRM changed since, or a record was offered`,
+      );
+    }
   }
   if (review.mode === "policy") {
     if (ctx.tierOf(proposal).tier !== "none") {
       return refuse("policy_excluded", `proposal ${proposal.proposalId} is marked`);
+    }
+    if (seenLoudAtReview(review)) {
+      return refuse(
+        "policy_excluded",
+        `proposal ${proposal.proposalId} has a CRM change or a record offered at review time`,
+      );
     }
     if (proposal.target.decision !== "linked") {
       return refuse("policy_excluded", `proposal ${proposal.proposalId}'s record isn't linked`);
@@ -299,9 +320,24 @@ function checkTarget(proposal: ProposalView, review: ProposalReviewedV2): Review
   }
   const offered = new Set<string | null>(target.candidates.map((candidate) => candidate.entityId));
   if (target.decision !== "ask") offered.add(target.entityId);
-  if (review.seen?.relinked) offered.add(review.seen.relinked);
+  // A re-link offer is made only on a new-record proposal (WP12), so only there does it widen what
+  // the proposal offered: elsewhere a claimed `relinked` can't reach a record nothing offered.
+  if (target.decision === "new" && review.seen?.relinked) offered.add(review.seen.relinked);
   if (!offered.has(chosen.entityId)) {
     return refuse("target_not_offered", `proposal ${proposal.proposalId} didn't offer that record`);
   }
   return ok;
+}
+
+/**
+ * Whether the reviewer saw the card loud at review time though no flag says so (Phase 5 WP12): a
+ * field whose value in the CRM moved since the proposal was made (`current` is set only when it
+ * differed from `base`, so the card showed three values), or a record offered at review time.
+ * Neither a batch nor a policy approves such a card; a person decides it on its own.
+ */
+export function seenLoudAtReview(review: Pick<ProposalReviewedV2, "seen">): boolean {
+  const { seen } = review;
+  if (seen === null) return false;
+  if (seen.relinked !== null) return true;
+  return Object.values(seen.fields).some((field) => field.current !== undefined);
 }

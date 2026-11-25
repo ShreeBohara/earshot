@@ -30,7 +30,8 @@ import type { MagicLinkMessage } from "@/lib/auth/email";
 import type { Auth } from "@/lib/auth/server";
 import { loadViewer, type Viewer } from "@/lib/auth/viewer-core";
 import { cardOrder, inboxSections } from "@/lib/inbox/groups";
-import { INBOX_PAGE_SIZE, loadInbox, parseOlderCursor } from "@/lib/inbox/load";
+import { INBOX_PAGE_SIZE, loadInbox } from "@/lib/inbox/load";
+import { parseOlderCursor } from "@/lib/inbox/pages";
 import type { InboxData } from "@/lib/inbox/types";
 import type { SealRepairDeps, SealSessions } from "@/lib/reviews/repair";
 import {

@@ -50,7 +50,7 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
 | Asset | Where it lives |
 |---|---|
 | User identities and sign-in sessions | Better Auth tables (`user`, `session`, `account`, `passkey`, `verification`) |
-| Tenant data: sessions, session events, utterances, proposals, CRM mirror, audit log | The 13 tenant tables, under row-level security |
+| Tenant data: sessions, session events, utterances, proposals, CRM mirror, audit log | The tenant tables, under row-level security: 13 at v1.2, and Phase 5 adds `audit_checkpoints`, `approval_policies`, and `crm_entity_changes` |
 | AI provider keys, on the device | IndexedDB, encrypted with a non-extractable WebCrypto key |
 | AI provider keys, in the vault | `credentials`, envelope-encrypted: AES-256-GCM per secret, with its data key wrapped by the master key |
 | The vault master key (`EARSHOT_VAULT_MASTER_KEY`) | A Worker secret only |
@@ -68,6 +68,7 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
 | The second witness's transcripts (new in v1.2) | `utterance.final` events marked unbiased, in the session log, the Queue, and Postgres, like every other transcript |
 | What the linker read for each turn (new in v1.2) | `SessionDO`'s SQLite (`turns`): the records and context a turn's targets were linked against, so a late witness is compared the same way. Deleted with the session's storage |
 | Approval policies (Phase 5 WP11, for v1.3) | `approval_policies`, a tenant table under row-level security, append-only for the app: one row per version of a workspace's policy, each change also an audit entry and a checkpoint. Each session's snapshot of the policy rides in its `start` message, signed for that session with `EARSHOT_SESSION_TICKET_SECRET`, and `SessionDO` keeps it, without the signature, in its SQLite until the session's storage is deleted (ADR-0034) |
+| The mirror's history (Phase 5 WP12, for v1.3) | `crm_entity_changes`, a tenant table under row-level security, append-only for the app: one row per change to a mirror record's field, its value before and after, when, and whether the demo CRM's controls or a sync made it. A record's history goes with it and with its workspace; it's exported with the account (ADR-0008) |
 | `EVAL_SMOKE_ANTHROPIC_KEY`, and the optional `EVAL_SMOKE_GROQ_KEY` (new in v1.2) | The `eval-smoke` GitHub environment only; a key from a separate workspace with its own monthly spend limit |
 | The Cloudflare token, the Neon credentials, and other CI secrets | GitHub environment secrets |
 | The integrity of the repository and its release artifacts | GitHub |
@@ -216,6 +217,19 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
 | A policy stopping every session | The socket refuses a `start` holding anything shaped like a key, so the writer refuses a key-shaped rule id, and a signature that happens to look like a key (about one session in 100,000) leaves that session without a policy rather than unable to start. |
 | A policy's contents reaching logs | `SessionDO`, the routes, and the writer log counts and codes only: a version number, how many rules, how many proposals were approved and why the rest weren't. |
 
+### The mirror's history, diff cards, and the demo controls (Phase 5 WP12, for v1.3)
+
+| Threat | Mitigation |
+|---|---|
+| A workspace reading or writing another's history | `crm_entity_changes` is a tenant table under row-level security, and each change names its record through a composite key, `(workspace_id, entity_id)` to `crm_entities`, so it can't point at another workspace's record even by id. pgTAP covers the reads, the fail-closed case, writing into another workspace, and a change of one's own aimed at another workspace's record. Every data-layer function checks it runs inside `withTenant`. |
+| The history rewritten to change what a card shows | Append-only for the app: `SELECT` and `INSERT` only, so no update, delete, or truncate, its own rows included (pgTAP). The app can still insert a change with any time, and it can write the mirror itself: the history is the mirror's account of the CRM, as trustworthy as the mirror. It decides what a card shows (two values or three, an offer or none), never what's written: every CRM write needs an approval (ADR-0007), and Phase 6's sync re-reads the CRM's live value before writing and stops on a conflict. |
+| A demo control acting on a real CRM record, or on another workspace's | The server actions take only a card's ids, and do nothing unless the debrief is the viewer's own. "Simulate a CRM change" moves a field only of a demo record (no CRM connection, the `demo:` prefix) in the transaction's workspace, locked first, and only one of six fields; "Add a matching record" adds only in a workspace whose mirror is the demo CRM (demo records, and no CRM connected), and only demo records, which removing the demo CRM removes. Tests try a connection's record, another workspace's, another user's card, malformed ids, and a card that isn't an update. Next.js checks a server action's `Origin`. |
+| Something injected through a field's value or a record's name | Values reach SQL only as parameters: the moved value is a JSON parameter to `jsonb_set`, and the field comes from a fixed list. The history's `field` is held to a field name and its `source` to `demo` or `sync` by check constraints. An added record's name is the rep's quoted words, whitespace collapsed, at most 200 characters, never shaped like a key (a session's `start` would refuse it). The inbox renders every value and name as text. |
+| An approval policy, or "accept all", taking a 3-way card or a re-link offer | A policy runs once, as `SessionDO` creates the proposal, before anything could have moved, and never on a new record, the only kind a re-link offer is made on. "Accept all" leaves both out, since each is loud at review time, and `checkReview` refuses a batch or policy approval whose `seen` records a CRM change or a re-link offer. Tests cover the page's set, the writers' rule, and the policy table. |
+| A page choosing a record nothing offered, through a claimed re-link | `seen.relinked` counts as offered only on a new-record proposal, and the review route refuses one that isn't a record the workspace's mirror holds, of a kind the proposal's type can target. Tests send a record that isn't there and one of the wrong kind. |
+| The linker at review time | It runs in the web Worker, in memory, over the workspace's own mirror read under row-level security: no model call, no key, and nothing written. |
+| A field's value or a record's name reaching logs or the audit trail | The actions log the field's name or the record's kind only, and their audit entries (`demo_crm.changed`, `demo_crm.record_added`) carry ids and the field or kind, never values. |
+
 ## Known gaps
 
 - **Row-level security isn't a sandbox.** It catches app bugs, but code holding the connection, such as a successful SQL injection, could `RESET ROLE` or change `app.workspace_id`. The mitigation is that every query goes through Drizzle with parameters.
@@ -231,6 +245,7 @@ Phase 6 adds CRM adapters. Each phase updates this document. Phase 10 replaces i
   - **Sign-out elsewhere:** a session that expires, or is signed out from another device, leaves its clips encrypted in the browser until Earshot next opens there. Then they're deleted, whoever opens it, if the store isn't theirs, and otherwise they expire within 24 hours.
 - **The Groq key is long-lived and used from the page** (new in v1.2). Groq offers no short-lived credential, so the second witness sends the rep's own key from the browser on every turn, unlike speech-to-text, whose credentials live seconds. ADR-0029 records the exception. A Groq key used only for Earshot keeps a leak contained.
 - **Approval policies in team workspaces** (Phase 5 WP11, for v1.3). Any member could change the workspace's policy, after the step-up, and the policy then covers everyone's debriefs. Phase 5 has one member per workspace; roles come with team workspaces. A live debrief also keeps the policy it started with until it ends, even one just turned off, which Undo and Phase 6's sync rule cover.
+- **The mirror's history is only as complete as its writers** (Phase 5 WP12, for v1.3). Only the demo CRM's controls write it until Phase 6's sync does. A value that moves in the mirror without a history row shows no 3-way card (the card shows the value now as it always did), and a record that arrives without an arrival row is never offered at review time. Phase 6's sync must record every change, arrivals included, in the same transaction as the change.
 - **Rate limits key on IP**, so users behind one shared IP share a budget.
 - **Nothing has run on real Neon or Cloudflare yet.** Unverified so far:
   - the role grant;

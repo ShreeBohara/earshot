@@ -14,22 +14,20 @@
 // - Every answer is `cache-control: no-store` and quotes nothing from the request.
 import {
   containsKeyShape,
-  type EntityKind,
-  MAX_SESSION_ENTITIES,
   type PolicySnapshot,
   type PolicyVersion,
   type ProviderModel,
   type SessionProviders,
   signPolicySnapshot,
 } from "@earshot/core";
-import { DEMO_CRM_EXTERNAL_ID_PREFIX, readApprovalPolicy, schema } from "@earshot/db";
+import { readApprovalPolicy, schema } from "@earshot/db";
 import {
   type FetchLike,
   PROVIDER_ID_HEADER,
   PROVIDER_KEY_HEADER,
   type ValidationFailure,
 } from "@earshot/keys/server";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Mode } from "../auth/config";
 import { consumeRateLimit, type RateLimitRule } from "../auth/throttle";
 import type { TenantTx, withViewerTenant } from "../auth/viewer";
@@ -42,9 +40,10 @@ import {
   SessionConfigError,
   type SessionEnv,
 } from "./config";
+import { loadCrmEntities } from "./crm-rows";
 import { sessionEntities, startEntityBudget } from "./entities";
 import { clientIp, noStoreJson, readJsonBody, refusal, refuseCrossSite, serverError } from "./http";
-import { accountFamilyCount, type CrmEntity, rankEntities, sessionKeyterms } from "./keyterms";
+import { accountFamilyCount, rankEntities, sessionKeyterms } from "./keyterms";
 import { isMintProvider, mintCredential } from "./mint";
 import { issueTicket, sessionSocketUrl } from "./tickets";
 import type {
@@ -110,12 +109,6 @@ const MODEL_NAME = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$/;
  */
 const LONG_RUN = /[A-Za-z0-9]{24,}/g;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** The CRM rows read per kind: as many as `start` can carry in all. */
-const CRM_ROWS_PER_KIND = MAX_SESSION_ENTITIES;
-/** The selected account's contacts and deals read, at most. */
-const ACCOUNT_ROWS = 2 * MAX_SESSION_ENTITIES;
-const ENTITY_KINDS: readonly EntityKind[] = ["company", "contact", "deal"];
 
 /**
  * `POST /api/sessions`: starts a debrief. In order: same-site only (403), the session
@@ -534,95 +527,6 @@ async function signedPolicy(
     return null;
   }
   return snapshot;
-}
-
-/**
- * The workspace's CRM rows a session can draw on: the most recently updated 250 of each kind,
- * plus the selected account and up to 500 of its contacts and deals, whatever their age. Only
- * the columns ranking needs: never the embedding, and of the properties only `companyId`.
- */
-async function loadCrmEntities(
-  tx: TenantTx,
-  workspaceId: string,
-  selectedAccountId: string | undefined,
-): Promise<CrmEntity[]> {
-  const { crmEntities } = schema;
-  const companyId = sql<string | null>`${crmEntities.properties} ->> 'companyId'`;
-  const columns = {
-    id: crmEntities.id,
-    kind: crmEntities.kind,
-    name: crmEntities.name,
-    aliases: crmEntities.aliases,
-    connectionId: crmEntities.connectionId,
-    externalId: crmEntities.externalId,
-    companyId,
-    updatedAt: crmEntities.updatedAt,
-  };
-  // Row-level security already confines the reads to the workspace; the filter keeps them explicit.
-  const inWorkspace = eq(crmEntities.workspaceId, workspaceId);
-  const byRecency = [desc(crmEntities.updatedAt), asc(crmEntities.id)] as const;
-
-  const rows: CrmEntityRow[] = [];
-  for (const kind of ENTITY_KINDS) {
-    rows.push(
-      ...(await tx
-        .select(columns)
-        .from(crmEntities)
-        .where(and(inWorkspace, eq(crmEntities.kind, kind)))
-        .orderBy(...byRecency)
-        .limit(CRM_ROWS_PER_KIND)),
-    );
-  }
-  if (selectedAccountId) {
-    const [account] = await tx
-      .select(columns)
-      .from(crmEntities)
-      .where(
-        and(inWorkspace, eq(crmEntities.id, selectedAccountId), eq(crmEntities.kind, "company")),
-      )
-      .limit(1);
-    if (account) {
-      rows.push(account);
-      rows.push(
-        ...(await tx
-          .select(columns)
-          .from(crmEntities)
-          .where(
-            and(
-              inWorkspace,
-              inArray(crmEntities.kind, ["contact", "deal"]),
-              account.connectionId === null
-                ? isNull(crmEntities.connectionId)
-                : eq(crmEntities.connectionId, account.connectionId),
-              sql`${companyId} = ${sourceIdOf(account)}`,
-            ),
-          )
-          .orderBy(...byRecency)
-          .limit(ACCOUNT_ROWS)),
-      );
-    }
-  }
-  return rows.flatMap(({ kind, externalId, ...row }): CrmEntity[] =>
-    isEntityKind(kind)
-      ? [{ ...row, kind, sourceId: sourceIdOf({ connectionId: row.connectionId, externalId }) }]
-      : [],
-  );
-}
-
-type CrmEntityRow = Omit<CrmEntity, "kind" | "sourceId"> & { kind: string; externalId: string };
-
-/**
- * A row's id in its source CRM, which its contacts and deals name as `companyId`. The demo CRM's
- * rows carry their dataset ids behind a `demo:` prefix (packages/db/src/demo-crm.ts).
- */
-function sourceIdOf(row: { connectionId: string | null; externalId: string }): string {
-  return row.connectionId === null && row.externalId.startsWith(DEMO_CRM_EXTERNAL_ID_PREFIX)
-    ? row.externalId.slice(DEMO_CRM_EXTERNAL_ID_PREFIX.length)
-    : row.externalId;
-}
-
-function isEntityKind(kind: string): kind is EntityKind {
-  return (ENTITY_KINDS as readonly string[]).includes(kind);
 }
 
 type LimitBucket = { scope: "user" | "ip"; key: string; rule: RateLimitRule };

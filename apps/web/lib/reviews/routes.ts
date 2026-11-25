@@ -17,9 +17,14 @@
 //   Resends are idempotent by `reviewId` and `snoozeId`. `writeSessionReviews` in `@earshot/db`
 //   does the rest.
 // - Each review records the viewer's sign-in: the method, and when the sign-in session began.
+// - A record a review says was offered at review time (`seen.relinked`, Phase 5 WP12) must be a
+//   record the workspace's mirror holds, of a kind the proposal's type can target (400
+//   otherwise); `checkReview` lets it count as offered only on a new-record proposal.
 // - Every answer is `cache-control: no-store` and quotes nothing from the request.
+import { TARGET_KINDS } from "@earshot/agent/link-context";
 import {
   MAX_REVIEW_REQUEST_BYTES,
+  type ProposalTypeV2,
   type Reviewer,
   type ReviewRouteError,
   type ReviewRouteErrorBody,
@@ -38,7 +43,7 @@ import {
 import type { ReviewRefusal } from "@earshot/events";
 import type { AuditSigner } from "@earshot/keys/server";
 import { tierOf } from "@earshot/understanding/tiers";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { type AuditEnv, readAuditKeys } from "../audit/keys";
 import type { Mode } from "../auth/config";
 import type { withViewerTenant } from "../auth/viewer";
@@ -167,6 +172,17 @@ export async function sessionReviewsRoute(
         .limit(1);
       // Another member's session is as missing as another workspace's.
       if (!row || row.userId !== viewer.user.id) return { ok: false, reason: "not_found" };
+      const unknown = await unknownRelinks(tx, viewer.workspaceId, id, reviews);
+      if (unknown !== null) {
+        return {
+          ok: false,
+          reason: "refused",
+          kind: "review",
+          index: unknown,
+          refusal: "target_not_offered",
+          detail: "the record offered at review time isn't in the workspace's CRM",
+        };
+      }
       return writeSessionReviews(
         tx,
         id,
@@ -227,4 +243,57 @@ export async function sessionReviewsRoute(
     log.error("reviews failed", { error });
     return refusal(500, "server_error", "Something went wrong on our side. Try again later.");
   }
+}
+
+/**
+ * The index of the first review whose record offered at review time (`seen.relinked`, WP12) isn't
+ * a record in the workspace's mirror of a kind its proposal's type can target (a contact
+ * proposal's, a contact), or null when every one is (or none names one). One read of the records
+ * and one of the proposals, under row-level security.
+ */
+async function unknownRelinks(
+  tx: Parameters<Parameters<ReviewRouteDeps["withViewerTenant"]>[0]>[0],
+  workspaceId: string,
+  sessionId: string,
+  reviews: readonly ReviewPayload[],
+): Promise<number | null> {
+  const named = reviews.flatMap((review, index) => {
+    const entityId = review.seen?.relinked;
+    return entityId
+      ? [{ index, entityId: entityId.toLowerCase(), proposalId: review.proposalId }]
+      : [];
+  });
+  if (named.length === 0) return null;
+  const ids = [...new Set(named.map(({ entityId }) => entityId))].filter((id) => UUID.test(id));
+  if (ids.length === 0) return named[0]?.index ?? null;
+  const { crmEntities, proposals } = schema;
+  const records = await tx
+    .select({ id: crmEntities.id, kind: crmEntities.kind })
+    .from(crmEntities)
+    .where(and(eq(crmEntities.workspaceId, workspaceId), inArray(crmEntities.id, ids)));
+  const types = await tx
+    .select({ id: proposals.id, type: proposals.type })
+    .from(proposals)
+    .where(
+      and(
+        eq(proposals.workspaceId, workspaceId),
+        eq(proposals.sessionId, sessionId),
+        inArray(
+          proposals.id,
+          named.map(({ proposalId }) => proposalId),
+        ),
+      ),
+    );
+  const kindOf = new Map(records.map((row) => [row.id, row.kind]));
+  const typeOf = new Map(types.map((row) => [row.id, row.type as ProposalTypeV2]));
+  const first = named.find(({ entityId, proposalId }) => {
+    const kind = kindOf.get(entityId);
+    const type = typeOf.get(proposalId);
+    return (
+      kind === undefined ||
+      type === undefined ||
+      !(TARGET_KINDS[type] as readonly string[] | undefined)?.includes(kind)
+    );
+  });
+  return first ? first.index : null;
 }

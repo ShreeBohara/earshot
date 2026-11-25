@@ -1,7 +1,8 @@
 // The inbox's single-key shortcuts (Phase 5 spec decision 7, WP5 step 6; WCAG 2.2 SC 2.1.4).
 //
 // - j and k move; a accepts; e edits; r rejects; s snoozes until tomorrow at 9:00; c opens the
-//   correction panel; u undoes; 1 to 4 choose and accept; ? lists the keys.
+//   correction panel; u undoes; 1 to 4 choose and accept (on a 3-way card with no choices of its
+//   own, Phase 5 WP12, 1 keeps the rep's value and 2 the CRM's); ? lists the keys.
 // - They act only while focus is in the inbox's list, and never from a text field. The page wires
 //   that scope (use-inbox-keys.ts); this module only reads a key.
 // - Settings → Review turns them off, per device (`earshot.inbox.shortcuts`, in localStorage, like
@@ -123,7 +124,11 @@ export const INBOX_SHORTCUTS: readonly {
   { keys: ["R"], action: "Reject" },
   { keys: ["S"], action: "Snooze until tomorrow at 9:00 am" },
   { keys: ["C"], action: "Correct: choose another record" },
-  { keys: ["1", "2", "3"], action: "Choose that option and accept" },
+  {
+    keys: ["1", "2", "3"],
+    action:
+      "Choose that option and accept. Where the CRM changed since you spoke, 1 keeps yours and 2 the CRM's",
+  },
   { keys: ["U"], action: "Undo your last review" },
   { keys: ["?"], action: "Show these shortcuts" },
 ];

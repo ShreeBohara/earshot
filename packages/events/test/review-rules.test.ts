@@ -124,6 +124,22 @@ const systemReopen = (n: number, undoes: string, extra: Record<string, unknown> 
   reopen(n, undoes, { mode: "system", reason: "flagged", ...unattended, ...extra });
 const batch = { mode: "batch", batchId: uuid(0xba7c) };
 
+/** What a reviewer saw, with `extra` over an unmarked card's. */
+const seenWith = (extra: Record<string, unknown>) => ({
+  tier: "none",
+  fields: {},
+  target: null,
+  relinked: null,
+  clip: "none",
+  ...extra,
+});
+/** A deal's stage that moved in the CRM after the rep spoke: the 3-way card (Phase 5 WP12). */
+const threeWay = {
+  stage: { proposed: "negotiation", base: "appointmentscheduled", current: "contractsent" },
+};
+/** A field the CRM holds and that didn't move: two values, before and after. */
+const twoWay = { stage: { proposed: "negotiation", base: "appointmentscheduled" } };
+
 describe("checkReview accepts", () => {
   it.each<[string, EventBody, ReviewRuleContext]>([
     ["an approval of a linked record, as proposed", reviewV2(1), client],
@@ -133,17 +149,43 @@ describe("checkReview accepts", () => {
       client,
     ],
     [
-      "an approval choosing the record offered at review time",
-      reviewV2(1, "approved", {
+      "a new record approved with the record offered at review time",
+      reviewV2(10, "approved", {
         target: { entityId: uuid(6009) },
-        seen: {
-          tier: "loud",
-          fields: {},
-          target: { entityId: uuid(6001), offered: [] },
+        seen: seenWith({
           relinked: uuid(6009),
-          clip: "none",
-        },
+          target: { entityId: null, offered: [uuid(6009), null] },
+        }),
       }),
+      client,
+    ],
+    [
+      "a new record kept new, though a record was offered at review time",
+      reviewV2(10, "approved", {
+        target: { entityId: null },
+        seen: seenWith({
+          relinked: uuid(6009),
+          target: { entityId: null, offered: [uuid(6009), null] },
+        }),
+      }),
+      client,
+    ],
+    [
+      "a 3-way card kept as the rep said it (Keep mine), on its own",
+      reviewV2(1, "approved", { seen: seenWith({ fields: threeWay }) }),
+      client,
+    ],
+    [
+      "a 3-way card edited to the CRM's value (Keep the CRM's), on its own",
+      reviewV2(1, "edited", {
+        editDiff: { stage: { before: "negotiation", after: "contractsent" } },
+        seen: seenWith({ fields: threeWay }),
+      }),
+      client,
+    ],
+    [
+      "a batch's undo of a card whose CRM value moved after the batch",
+      reopen(5, uuid(7005), { ...batch, seen: seenWith({ fields: threeWay }) }),
       client,
     ],
     ["an edit", reviewV2(1, "edited"), client],
@@ -167,6 +209,11 @@ describe("checkReview accepts", () => {
     ["an undo of the latest review", reopen(5, uuid(7005)), client],
     ["a decision after a reopen", reviewV2(8, "approved", { reviewId: uuid(7208) }), client],
     ["a batch approval of an unmarked proposal", reviewV2(1, "approved", batch), client],
+    [
+      "a batch approval of an unmarked update whose CRM value didn't move",
+      reviewV2(1, "approved", { ...batch, seen: seenWith({ fields: twoWay }) }),
+      client,
+    ],
     ["a batch undo", reopen(5, uuid(7005), batch), client],
     ["a policy's approval, from SessionDO", policyApproval(1), session],
     ["a reopen for a later flag, from SessionDO", systemReopen(5, uuid(7005)), session],
@@ -210,6 +257,60 @@ describe("checkReview refuses", () => {
     ["an approval of an approved proposal", reviewV2(5), client, "not_proposed"],
     ["a rejection of a rejected proposal", reviewV2(9, "rejected"), client, "not_proposed"],
     ["a batch item with a marker", reviewV2(3, "approved", batch), client, "marked"],
+    [
+      "a batch item whose CRM value moved since the proposal (a 3-way card)",
+      reviewV2(1, "approved", { ...batch, seen: seenWith({ fields: threeWay }) }),
+      client,
+      "marked",
+    ],
+    [
+      "a batch item a record was offered on at review time",
+      reviewV2(10, "approved", {
+        ...batch,
+        seen: seenWith({ relinked: uuid(6009), target: { entityId: null, offered: [] } }),
+      }),
+      client,
+      "marked",
+    ],
+    [
+      "a record claimed as offered at review time on a proposal that isn't new",
+      reviewV2(1, "approved", {
+        target: { entityId: uuid(6009) },
+        seen: seenWith({ relinked: uuid(6009) }),
+      }),
+      client,
+      "target_not_offered",
+    ],
+    [
+      "an ask settled with a record claimed as offered at review time",
+      reviewV2(2, "approved", {
+        target: { entityId: uuid(6009) },
+        seen: seenWith({ relinked: uuid(6009) }),
+      }),
+      client,
+      "target_not_offered",
+    ],
+    [
+      "a new record linked to a record other than the one offered at review time",
+      reviewV2(10, "approved", {
+        target: { entityId: uuid(6008) },
+        seen: seenWith({ relinked: uuid(6009) }),
+      }),
+      client,
+      "target_not_offered",
+    ],
+    [
+      "a policy's approval of a card whose CRM value moved (it never sees one)",
+      policyApproval(1, { seen: seenWith({ fields: threeWay }) }),
+      session,
+      "policy_excluded",
+    ],
+    [
+      "a policy's approval of a record offered at review time (it never sees one)",
+      policyApproval(1, { seen: seenWith({ relinked: uuid(6009) }) }),
+      session,
+      "policy_excluded",
+    ],
     ["a policy review from a client", policyApproval(1), client, "machine_only"],
     ["a system review from a client", systemReopen(5, uuid(7005)), client, "machine_only"],
     ["a policy's approval of a marked proposal", policyApproval(3), session, "policy_excluded"],

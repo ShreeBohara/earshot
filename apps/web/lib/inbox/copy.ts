@@ -111,6 +111,8 @@ export function leftWords(left: number): string {
 export type ActionMessage =
   | { readonly kind: "accepted"; readonly what: string }
   | { readonly kind: "edited"; readonly what: string }
+  /** "Keep the CRM's" on a 3-way card (WP12): the fields kept as the CRM has them now. */
+  | { readonly kind: "kept_crm"; readonly what: string; readonly fields: string }
   | { readonly kind: "chose"; readonly what: string; readonly choice: string }
   | { readonly kind: "rejected"; readonly what: string }
   | { readonly kind: "snoozed"; readonly what: string; readonly until: string }
@@ -128,6 +130,8 @@ export function actionMessage(message: ActionMessage, left: number, shortcuts: b
       return `Accepted: ${message.what}. ${tail}`;
     case "edited":
       return `Edited and accepted: ${message.what}. ${tail}`;
+    case "kept_crm":
+      return `Kept the CRM's ${message.fields}: ${message.what}. ${tail}`;
     case "chose":
       return `Chose ${message.choice} and accepted: ${message.what}. ${tail}`;
     case "rejected":

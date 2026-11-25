@@ -30,11 +30,32 @@ export {
 } from "./audit-chain";
 export { createHttpDb, createPoolDb, type HttpDb, type PoolDb } from "./client";
 export {
+  asFieldValue,
+  type CrmChangeInput,
+  type FieldChange,
+  type FieldRef,
+  fieldKey,
+  readFieldHistory,
+  recordCrmChanges,
+  valueAt,
+  valueFromHistory,
+} from "./crm-history";
+export {
+  addDemoRecord,
+  DEMO_CRM_ADDED_PREFIX,
   DEMO_CRM_EXTERNAL_ID_PREFIX,
+  DEMO_MOVE_FIELDS,
   type DemoCrmLoadResult,
   type DemoCrmStatus,
+  type DemoFieldMove,
+  type DemoMoveField,
+  type DemoRecordAdded,
   demoCrmStatus,
+  demoMove,
+  isDemoCrmWorkspace,
+  isDemoMoveField,
   loadDemoCrm,
+  moveDemoField,
   removeDemoCrm,
 } from "./demo-crm";
 export {

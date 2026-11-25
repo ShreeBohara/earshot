@@ -3,9 +3,11 @@
 import { UNDO_WINDOW_MS } from "@earshot/core";
 import { Button } from "@earshot/ui/components/button";
 import { KeyboardIcon } from "lucide-react";
-import { Fragment, useEffect, useId, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
+import type { InboxDemoInput, InboxDemoResult } from "@/app/actions/inbox-demo";
 import { CAUGHT_UP_COPY, SECTION_TITLES } from "@/lib/inbox/copy";
 import { publishInboxCount } from "@/lib/inbox/count-store";
+import { readPageOf, withFirstPage, withOlderPage } from "@/lib/inbox/pages";
 import { type ReviewSink, routeSink } from "@/lib/inbox/sinks";
 import type { InboxData } from "@/lib/inbox/types";
 import { wordsFrom } from "@/lib/recap/view";
@@ -21,7 +23,7 @@ import {
   When,
 } from "./inbox-sections";
 import { InboxShortcutsDialog } from "./shortcuts-dialog";
-import { useReviewList } from "./use-review-list";
+import { type DemoControls, useReviewList } from "./use-review-list";
 
 /** How often a finishing debrief is checked again (target). */
 export const FINISHING_POLL_MS = 10_000;
@@ -40,21 +42,13 @@ export async function fetchInbox(before?: string): Promise<InboxData | null> {
   }
 }
 
-/** The first page read again, with any older pages this view loaded kept after it. */
-function merged(current: InboxData, fresh: InboxData): InboxData {
-  const ids = new Set(fresh.sessions.map((session) => session.sessionId));
-  const older = current.sessions.filter(
-    (session) =>
-      !ids.has(session.sessionId) &&
-      fresh.sessions.every((first) => first.startedAt >= session.startedAt),
-  );
-  return {
-    sessions: [...fresh.sessions, ...older],
-    entities: { ...current.entities, ...fresh.entities },
-    quotes: { ...current.quotes, ...fresh.quotes },
-    older: older.length > 0 ? current.older : fresh.older,
-    loadedAt: fresh.loadedAt,
-  };
+/**
+ * The demo controls' actions (WP12): the server actions, which the page passes in (so this module
+ * never imports server code), or a story's.
+ */
+export interface DemoActions {
+  readonly simulate: (input: InboxDemoInput) => Promise<InboxDemoResult>;
+  readonly addMatching: (input: InboxDemoInput) => Promise<InboxDemoResult>;
 }
 
 export interface InboxViewProps {
@@ -63,6 +57,8 @@ export interface InboxViewProps {
   readonly sink?: ReviewSink;
   /** Reads the inbox again: `GET /api/inbox`, unless a story passes another. */
   readonly reload?: (before?: string) => Promise<InboxData | null>;
+  /** The demo controls' actions (WP12); without them, no card offers a demo control. */
+  readonly demoActions?: DemoActions;
 }
 
 /**
@@ -73,11 +69,19 @@ export interface InboxViewProps {
  * and Reviewed, Snoozed, and Finishing beside the cards. The review engine is `useReviewList`,
  * which the capture screen's tray shares.
  */
-export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps) {
+export function InboxView({ initial, sink, reload = fetchInbox, demoActions }: InboxViewProps) {
   const [data, setData] = useState(initial);
   const [routed] = useState(() => sink ?? routeSink());
   const [loadingOlder, setLoadingOlder] = useState(false);
   const headingId = useId();
+  // The demo controls (WP12) act on the server, then the page reads the inbox again, so a card
+  // shows its three values or its offer. Read from a ref, so the list's options stay one object.
+  const runDemo = useRef<(action: keyof DemoActions, input: InboxDemoInput) => void>(() => {});
+  const [demo] = useState<Omit<DemoControls, "demoCrm">>(() => ({
+    simulate: (sessionId, proposalId) => runDemo.current("simulate", { sessionId, proposalId }),
+    addMatching: (sessionId, proposalId) =>
+      runDemo.current("addMatching", { sessionId, proposalId }),
+  }));
   const list = useReviewList({
     sessions: data.sessions,
     entities: data.entities,
@@ -85,8 +89,28 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
     sink: routed,
     surface: "inbox",
     loadedAt: initial.loadedAt,
+    ...(demoActions ? { demo: { ...demo, demoCrm: data.demoCrm === true } } : {}),
   });
   const { sections, store, refreshNow, batch, shortcuts } = list;
+
+  useEffect(() => {
+    runDemo.current = async (action, input) => {
+      if (!demoActions) return;
+      const result = await demoActions[action](input);
+      if (result.status === "error") {
+        list.warn(result.message);
+        return;
+      }
+      list.say(result.message);
+      if (result.status !== "done") return;
+      // The page holding the card's debrief, which "Load older" may have brought in.
+      const read = await readPageOf(data, input.sessionId, reload);
+      if (!read) return;
+      setData(read.apply);
+      store.reconcile(read.fresh.sessions.flatMap((session) => session.proposals));
+      refreshNow();
+    };
+  });
 
   // A finishing debrief: read the inbox again every 10 s while the page is visible, until it's
   // sealed and its cards arrive. Each read runs the repair path on the server.
@@ -97,7 +121,7 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
       if (document.visibilityState !== "visible") return;
       const fresh = await reload();
       if (!fresh) return;
-      setData((current) => merged(current, fresh));
+      setData((current) => withFirstPage(current, fresh));
       store.reconcile(fresh.sessions.flatMap((session) => session.proposals));
       refreshNow();
     }, FINISHING_POLL_MS);
@@ -117,16 +141,7 @@ export function InboxView({ initial, sink, reload = fetchInbox }: InboxViewProps
     const page = await reload(data.older);
     setLoadingOlder(false);
     if (!page) return;
-    setData((current) => {
-      const ids = new Set(current.sessions.map((session) => session.sessionId));
-      return {
-        sessions: [...current.sessions, ...page.sessions.filter((s) => !ids.has(s.sessionId))],
-        entities: { ...current.entities, ...page.entities },
-        quotes: { ...current.quotes, ...page.quotes },
-        older: page.older,
-        loadedAt: current.loadedAt,
-      };
-    });
+    setData((current) => withOlderPage(current, page));
   }
 
   // Each debrief as its cards' clips need it: recorded on some device, maybe this one.

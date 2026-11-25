@@ -5,9 +5,9 @@
 --   A's rows are a0000000-0000-4000-8000-0000000000NN and B's are b0000000-…NN, where NN is
 --   01 credentials, 02 crm_connections, 03 crm_entities, 04 sessions, 05 session_events,
 --   06 utterances, 07 proposals, 08 sync_jobs, 09 commitments, 10 facts, 11 audit_log,
---   12 audit_checkpoints, 13 approval_policies (the policy's id, at version 1). The audit log's
---   trigger (migration 0013) gives each entry chain_seq 1; each checkpoint names it, with a
---   placeholder signature (nothing here verifies it).
+--   12 audit_checkpoints, 13 approval_policies (the policy's id, at version 1), 14
+--   crm_entity_changes. The audit log's trigger (migration 0013) gives each entry chain_seq 1;
+--   each checkpoint names it, with a placeholder signature (nothing here verifies it).
 
 insert into "user" (id, name, email) values
   ('user-a', 'Ada Archer', 'ada@a.test'),
@@ -121,3 +121,13 @@ insert into approval_policies (workspace_id, id, version, rules, rules_sha256, c
   ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b0000000-0000-4000-8000-000000000013', 1,
    '{"v": 1, "autoApprove": [{"id": "deal-updates", "type": "deal_update", "alwaysReview": ["amount", "stage"]}]}',
    '29691d66e9547d778f4961ea341e651ba49adf772c057ad20ee6b2942ee9f60e', 'user-b');
+
+-- One change in each workspace's mirror history (migration 0017): A's Acme renamed, B's Atlas
+-- given a city.
+insert into crm_entity_changes (id, workspace_id, entity_id, field, old, new, changed_at, source) values
+  ('a0000000-0000-4000-8000-000000000014', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+   'a0000000-0000-4000-8000-000000000003', 'name', '"Acme Corp"', '"Acme"',
+   '2026-11-14T09:00:00Z', 'sync'),
+  ('b0000000-0000-4000-8000-000000000014', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+   'b0000000-0000-4000-8000-000000000003', 'city', null, '"Lisbon"',
+   '2026-11-14T10:00:00Z', 'sync');
