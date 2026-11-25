@@ -108,7 +108,7 @@ No new code: the flush consumer's `recordReviewAudit` gives each auto-approval a
 - Nothing a card would mark is auto-approved: one tier function decides for the cards, "accept all", and policies.
 - No new secret, dependency, or database read on the turn path; the object still decides from `start` alone.
 - Every change is a version, an audit entry with the rules' hash and how its author signed in, and a checkpoint.
-- **Bundle:** the edge Worker's dry-run bundle grows from 2,837.86 KiB to 2,848.91 KiB, gzip 543.14 to 545.81 KiB: +11.05 KiB, +2.67 KiB gzipped.
+- **Bundle:** the edge Worker's dry-run bundle grows from 2,837.86 KiB to 2,850.13 KiB, gzip 543.14 to 546.10 KiB: +12.27 KiB, +2.96 KiB gzipped.
 
 **Bad**
 
