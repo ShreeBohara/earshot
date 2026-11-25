@@ -63,6 +63,11 @@ export function ApprovalPolicySettings({
 }) {
   const router = useRouter();
   const [choices, setChoices] = useState<PolicyChoices>(() => choicesFrom(policy?.rules ?? null));
+  // The version the switches were last saved as, here or on the server: what a save changes from.
+  const [saved, setSaved] = useState(() => ({
+    rules: policy?.rules ?? null,
+    version: policy?.version ?? 0,
+  }));
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [needsStepUp, setNeedsStepUp] = useState(false);
@@ -78,9 +83,8 @@ export function ApprovalPolicySettings({
     if (stepUp.endsAt) setNeedsStepUp(false);
   }, [stepUp.endsAt]);
 
-  const saved = JSON.stringify(rulesFrom(choicesFrom(policy?.rules ?? null)));
   const draft = rulesFrom(choices);
-  const dirty = JSON.stringify(draft) !== saved;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(rulesFrom(choicesFrom(saved.rules)));
 
   const setType = (type: (typeof POLICY_TYPES)[number], on: boolean) =>
     setChoices((current) => ({ ...current, [type]: { ...current[type], on } }));
@@ -102,7 +106,7 @@ export function ApprovalPolicySettings({
       response = await fetch("/api/policies", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rules: draft, baseVersion: policy?.version ?? 0 }),
+        body: JSON.stringify({ rules: draft, baseVersion: saved.version }),
         credentials: "same-origin",
         cache: "no-store",
       });
@@ -114,6 +118,7 @@ export function ApprovalPolicySettings({
     setPending(null);
     if (response.ok) {
       const body = (await response.json()) as PolicyRouteResponse;
+      setSaved({ rules: body.policy.rules, version: body.policy.version });
       setChoices(choicesFrom(body.policy.rules));
       setMessage(
         body.changed
