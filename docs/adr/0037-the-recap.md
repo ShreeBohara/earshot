@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-11-20). Phase 5 WP10 built it (below): `recap.created` v1 and `end.recap`, `@earshot/agent/recap` (the forced `submit_recap` call, the checks in code, and the three lens files), `SessionDO` writing the recap between `session.ended` and the seal, migration 0015's `sessions.recap`, the recap in the inbox and on the capture screen, `eval:recap --check` in `checks` on cassettes for all 200 debriefs, and the recap in the live smoke eval. The live check (one recap on each provider, under $0.01) is built as `recap:live` and waits for the user's approval; it answers Appendix B's question 7. ADR-0025 is amended for the recap's call.
+Accepted (2026-11-25; proposed 2026-11-20). Phase 5 WP10 built it (below): `recap.created` v1 and `end.recap`, `@earshot/agent/recap` (the forced `submit_recap` call, the checks in code, and the three lens files), `SessionDO` writing the recap between `session.ended` and the seal, migration 0015's `sessions.recap`, the recap in the inbox and on the capture screen, `eval:recap --check` in `checks` on cassettes for all 200 debriefs, and the recap in the live smoke eval. The live check (one recap on each provider, under $0.01) is built as `recap:live` and still waits for the user's approval; it answers Appendix B's question 7. Until it runs, the recap's live latency, cost, and drop rate are unmeasured. The live smoke eval with recaps (Phase 4's WP11b) is optional and off until the user sets it up. ADR-0025 is amended for the recap's call, and ADR-0031 for `eval:recap` and the smoke eval's recap (WP14).
 
 ## Context and problem
 
