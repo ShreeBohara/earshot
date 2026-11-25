@@ -26,8 +26,34 @@ export type InboxReview = Pick<
   readonly seq?: number;
 };
 
+/**
+ * What the CRM's mirror says about a proposal at review time (Phase 5 spec decision 10, WP12),
+ * from the mirror's history (`crm_entity_changes`, docs/adr/0008): the inbox's loader sets it, and
+ * the tray and the pilot never do.
+ */
+export interface InboxCrm {
+  /**
+   * An update's fields whose value in the CRM moved since the proposal was made: the value then
+   * (`base`, `valueAt` at the proposal's time) and when it last changed. The value now is the
+   * record's (`InboxEntity.values`). A field absent here held the same value then as now.
+   */
+  readonly moved: Readonly<
+    Record<string, { readonly base: FieldValue; readonly changedAt: string }>
+  >;
+  /**
+   * For a new-record proposal still open: a record the linker links its words to now, over the
+   * mirror, which reached the CRM after the proposal (its arrival is in the history). Null when
+   * there's none.
+   */
+  readonly relink: string | null;
+}
+
 /** A proposal as the inbox holds it: the projection's view, with a trimmed latest review. */
-export type InboxProposal = Omit<ProposalView, "review"> & { review: InboxReview | null };
+export type InboxProposal = Omit<ProposalView, "review"> & {
+  review: InboxReview | null;
+  /** What the CRM's mirror says about it now; absent when nothing moved and nothing re-links. */
+  crm?: InboxCrm;
+};
 
 /** A CRM record a card names: a target, a candidate, a company said with a target, a focus account. */
 export interface InboxEntity {
@@ -44,6 +70,11 @@ export interface InboxEntity {
    * close date; a contact's title, email, and phone. Only the ones the mirror holds.
    */
   readonly values: Readonly<Record<string, FieldValue>>;
+  /**
+   * Whether it's one of the demo CRM's records (no CRM connection, the `demo:` prefix), which the
+   * inbox's demo controls may change (Phase 5 WP12). Absent outside the inbox.
+   */
+  readonly demo?: boolean;
 }
 
 /** One of the viewer's debriefs, with every proposal it made, in the order it made them. */
@@ -75,4 +106,9 @@ export interface InboxData {
   readonly older: string | null;
   /** The server's clock when it read this. */
   readonly loadedAt: string;
+  /**
+   * Whether the workspace's mirror is the demo CRM (demo records, and no CRM connected), where a
+   * new-record card offers "Add a matching record" (Phase 5 WP12). Absent outside the inbox.
+   */
+  readonly demoCrm?: boolean;
 }

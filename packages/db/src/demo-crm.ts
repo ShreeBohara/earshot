@@ -329,6 +329,19 @@ export interface DemoRecordAdded {
   readonly added: boolean;
 }
 
+/**
+ * Whether the transaction's workspace's mirror is the demo CRM: demo rows, and no CRM connected.
+ * The inbox offers "Add a matching record" only then (Phase 5 WP12).
+ */
+export async function isDemoCrmWorkspace<
+  TQueryResult extends PgQueryResultHKT,
+  TFullSchema extends Record<string, unknown>,
+  TSchema extends TablesRelationalConfig,
+>(tx: PgTransaction<TQueryResult, TFullSchema, TSchema>): Promise<boolean> {
+  const tenant = await currentTenant(tx, "isDemoCrmWorkspace");
+  return isDemoWorkspace(tx, tenant.workspaceId);
+}
+
 /** Whether the workspace's mirror is the demo CRM: demo rows, and no CRM connected. */
 async function isDemoWorkspace<
   TQueryResult extends PgQueryResultHKT,

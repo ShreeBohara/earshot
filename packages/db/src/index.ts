@@ -52,6 +52,7 @@ export {
   type DemoRecordAdded,
   demoCrmStatus,
   demoMove,
+  isDemoCrmWorkspace,
   isDemoMoveField,
   loadDemoCrm,
   moveDemoField,
