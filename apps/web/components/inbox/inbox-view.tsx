@@ -7,6 +7,7 @@ import { Fragment, useEffect, useId, useRef, useState } from "react";
 import type { InboxDemoInput, InboxDemoResult } from "@/app/actions/inbox-demo";
 import { CAUGHT_UP_COPY, SECTION_TITLES } from "@/lib/inbox/copy";
 import { publishInboxCount } from "@/lib/inbox/count-store";
+import { readPageOf, withFirstPage, withOlderPage } from "@/lib/inbox/pages";
 import { type ReviewSink, routeSink } from "@/lib/inbox/sinks";
 import type { InboxData } from "@/lib/inbox/types";
 import { wordsFrom } from "@/lib/recap/view";
@@ -39,24 +40,6 @@ export async function fetchInbox(before?: string): Promise<InboxData | null> {
   } catch {
     return null;
   }
-}
-
-/** The first page read again, with any older pages this view loaded kept after it. */
-function merged(current: InboxData, fresh: InboxData): InboxData {
-  const ids = new Set(fresh.sessions.map((session) => session.sessionId));
-  const older = current.sessions.filter(
-    (session) =>
-      !ids.has(session.sessionId) &&
-      fresh.sessions.every((first) => first.startedAt >= session.startedAt),
-  );
-  return {
-    sessions: [...fresh.sessions, ...older],
-    entities: { ...current.entities, ...fresh.entities },
-    quotes: { ...current.quotes, ...fresh.quotes },
-    older: older.length > 0 ? current.older : fresh.older,
-    loadedAt: fresh.loadedAt,
-    ...(fresh.demoCrm === undefined ? {} : { demoCrm: fresh.demoCrm }),
-  };
 }
 
 /**
@@ -120,10 +103,11 @@ export function InboxView({ initial, sink, reload = fetchInbox, demoActions }: I
       }
       list.say(result.message);
       if (result.status !== "done") return;
-      const fresh = await reload();
-      if (!fresh) return;
-      setData((current) => merged(current, fresh));
-      store.reconcile(fresh.sessions.flatMap((session) => session.proposals));
+      // The page holding the card's debrief, which "Load older" may have brought in.
+      const read = await readPageOf(data, input.sessionId, reload);
+      if (!read) return;
+      setData(read.apply);
+      store.reconcile(read.fresh.sessions.flatMap((session) => session.proposals));
       refreshNow();
     };
   });
@@ -137,7 +121,7 @@ export function InboxView({ initial, sink, reload = fetchInbox, demoActions }: I
       if (document.visibilityState !== "visible") return;
       const fresh = await reload();
       if (!fresh) return;
-      setData((current) => merged(current, fresh));
+      setData((current) => withFirstPage(current, fresh));
       store.reconcile(fresh.sessions.flatMap((session) => session.proposals));
       refreshNow();
     }, FINISHING_POLL_MS);
@@ -157,16 +141,7 @@ export function InboxView({ initial, sink, reload = fetchInbox, demoActions }: I
     const page = await reload(data.older);
     setLoadingOlder(false);
     if (!page) return;
-    setData((current) => {
-      const ids = new Set(current.sessions.map((session) => session.sessionId));
-      return {
-        sessions: [...current.sessions, ...page.sessions.filter((s) => !ids.has(s.sessionId))],
-        entities: { ...current.entities, ...page.entities },
-        quotes: { ...current.quotes, ...page.quotes },
-        older: page.older,
-        loadedAt: current.loadedAt,
-      };
-    });
+    setData((current) => withOlderPage(current, page));
   }
 
   // Each debrief as its cards' clips need it: recorded on some device, maybe this one.

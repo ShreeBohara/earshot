@@ -33,6 +33,7 @@ import type { TenantTx } from "../auth/viewer";
 import { recapUtteranceIds } from "../recap/view";
 import { loadCrmEntities } from "../voice/crm-rows";
 import { UPDATE_FIELDS } from "./crm";
+import { olderCursor, parseOlderCursor } from "./pages";
 import { canRelink, earlierLinks, mirrorIndex, relinkTarget } from "./relink";
 import type {
   InboxCrm,
@@ -47,28 +48,6 @@ import type {
 export const INBOX_PAGE_SIZE = 20;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-
-/** "Load older"'s cursor: the last debrief shown, by start time and id. */
-export function olderCursor(session: Pick<InboxSession, "startedAt" | "sessionId">): string {
-  return `${session.startedAt}_${session.sessionId}`;
-}
-
-/** A cursor back as its parts, or null for anything else. */
-export function parseOlderCursor(
-  cursor: string | null | undefined,
-): { startedAt: Date; sessionId: string } | null {
-  if (typeof cursor !== "string" || cursor.length > 80) return null;
-  const separator = cursor.indexOf("_");
-  if (separator < 0) return null;
-  const startedAt = cursor.slice(0, separator);
-  const sessionId = cursor.slice(separator + 1);
-  if (!ISO.test(startedAt) || !UUID.test(sessionId)) return null;
-  const date = new Date(startedAt);
-  return Number.isNaN(date.getTime())
-    ? null
-    : { startedAt: date, sessionId: sessionId.toLowerCase() };
-}
 
 /** The values an update's fields read as "before", by record kind. */
 const VALUE_KEYS: Readonly<Record<string, readonly string[]>> = {
