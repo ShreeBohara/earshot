@@ -193,7 +193,7 @@ Both are server actions that take only the card's ids, find the debrief the view
 
 **The keys.** The help dialog's digits say what 1 and 2 do on a 3-way card.
 
-**The web Worker's bundle** (`build:worker`, then `wrangler deploy --dry-run`): 23,471.37 KiB, gzip 5,066.71 KiB, before; 23,707.00 KiB, gzip 5,129.61 KiB, after: +235.63 KiB, +62.90 KiB gzipped, for the linker and the name toolkit (`@earshot/understanding/link`), the linker's context (`@earshot/agent/link-context`), and WP12's own code. That's under the 250 KiB gzipped the brief allowed, and the Worker stays under 10 MiB gzipped, so re-links run in the web Worker, not through the edge Worker by RPC (spec §8).
+**The web Worker's bundle** (`build:worker`, then `wrangler deploy --dry-run`): 23,471.37 KiB, gzip 5,066.71 KiB, before WP12 (f8241a6); 23,693.87 KiB, gzip 5,126.60 KiB, after (8c2b9cb): +222.50 KiB, +59.89 KiB gzipped, for the linker and the name toolkit (`@earshot/understanding/link`), the linker's context (`@earshot/agent/link-context`), and WP12's own code. That's under the 250 KiB gzipped the brief allowed, and the Worker stays under 10 MiB gzipped, so re-links run in the web Worker, not through the edge Worker by RPC (spec §8). Builds vary by some kilobytes: one midway (8e59df8, with a little less code) measured 23,707.00 KiB, gzip 5,129.61 KiB. The edge Worker's dry-run bundle is 2,852.32 KiB, gzip 546.72 KiB, +2.19 KiB and +0.62 KiB gzipped over ADR-0034's, for the review rules.
 
 ### Where WP12 departs from the spec
 
@@ -241,7 +241,7 @@ Both are server actions that take only the card's ids, find the debrief the view
 - Base UI 1.9 announces an urgent toast through its own visually hidden `role="alert"` copy and hides the visible toast with `aria-hidden` until focus enters the region, though it stays focusable; axe flags that (`aria-hidden-focus`). No state the gate lists shows a failure, and the one story that does turns that rule off, with the reason. Upstream, or a toast that leaves the tab order while hidden, would fix it.
 - `seen.fields[].base` reads the mirror's history (WP12), which only the demo CRM's controls write until Phase 6's sync does: on a real CRM before then, a value that moved without a history row shows no 3-way card, and its `base` is its value now.
 - A 3-way card or a re-link offer costs a review that "accept all" would have taken: by design, since each is a decision about the CRM, not a mark the evals count.
-- Re-links read the mirror and build a link index in the web Worker on any load where a record arrived since the oldest open new-record proposal (+62.90 KiB gzipped to its bundle), and only over the 250 most recent records of each kind.
+- Re-links read the mirror and build a link index in the web Worker on any load where a record arrived since the oldest open new-record proposal (+59.89 KiB gzipped to its bundle), and only over the 250 most recent records of each kind.
 - The re-link offer depends on arrivals being recorded: a record that reached the mirror without one (the demo CRM's dataset, or a sync that skips it) is never offered.
 - An undo or a reopen records zero timing.
 - Optimism means a review can be lost if the tab closes in the instant it's sent; the page asks first while anything is on its way.
