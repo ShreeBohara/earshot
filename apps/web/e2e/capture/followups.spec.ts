@@ -64,8 +64,12 @@ test("c answers a follow-up question over the socket, and the corrected card tak
   await page.keyboard.press("c");
   const answer = question.getByLabel("Your answer");
   await expect(answer).toBeFocused();
-  await settled(page);
-  expect(await seriousViolations(page), "answering").toEqual([]);
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    await settled(page);
+    expect(await seriousViolations(page), `answering (${colorScheme})`).toEqual([]);
+  }
+  await page.emulateMedia({ colorScheme: "light" });
 
   // Esc closes the box without ending the session; c opens it again.
   await page.keyboard.press("Escape");

@@ -34,9 +34,14 @@ async function openInboxWithPilotSamples(page: Page): Promise<void> {
   await hydrated(page);
 }
 
+/** axe in both themes (gate G3a), leaving the page in the light one. */
 async function expectNoViolations(page: Page, state: string): Promise<void> {
-  await settled(page);
-  expect(await seriousViolations(page), state).toEqual([]);
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    await settled(page);
+    expect(await seriousViolations(page), `${state} (${colorScheme})`).toEqual([]);
+  }
+  await page.emulateMedia({ colorScheme: "light" });
 }
 
 test("fixes a silent wrong account with c, then 2", async ({ page }) => {
