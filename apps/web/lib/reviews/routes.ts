@@ -63,12 +63,17 @@ export type ReviewRouteDeps = {
   mode: Mode;
 };
 
-/** Refusals that mean the card is out of date, not that the request is wrong. */
+/**
+ * Refusals that mean the card is out of date, not that the request is wrong: decided, reopened, or
+ * replaced since it loaded, or (Phase 6) claimed by the sync or synced since.
+ */
 const STALE: ReadonlySet<ReviewRefusal> = new Set([
   "not_proposed",
   "superseded",
   "not_latest",
   "nothing_to_reopen",
+  "syncing",
+  "synced",
 ]);
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -74,6 +74,12 @@ export {
   prepareAppend,
 } from "./store";
 export {
+  checkSyncEvent,
+  type SyncCheck,
+  type SyncEventInput,
+  type SyncRefusal,
+} from "./sync-rules";
+export {
   type FollowupAskedEvent,
   type FollowupClosedEvent,
   latestVersions,

@@ -43,6 +43,10 @@ export type CorrectionRefusal =
   | "unknown_proposal"
   /** A correction replaced the proposal already; correct its replacement instead. */
   | "superseded"
+  /** The proposal is syncing to the CRM (Phase 6): nothing changes it now. */
+  | "syncing"
+  /** The proposal synced to the CRM (Phase 6): fix it there, since Earshot can't take it back. */
+  | "synced"
   /** Only a proposal still waiting for a decision can be corrected. */
   | "not_proposed"
   /** The proposal has no question with that id (or the session has none, for a skip). */
@@ -89,7 +93,8 @@ function refuse(reason: CorrectionRefusal, detail: string) {
  * Checks a correction against the session's proposals, as the projection folded them before it:
  *
  * 1. The proposal exists, nothing has replaced it, and it still waits for a decision: a correction
- *    replaces a proposal under review, never a decision (undo it first).
+ *    replaces a proposal under review, never a decision (undo it first), and never one syncing to
+ *    the CRM or synced there (Phase 6: `syncing`, `synced`).
  * 2. The field is `target` or one the proposal's type has (`PROPOSAL_TYPE_FIELDS`).
  * 3. A named question is on the proposal (asked about it, or moved to it from one it replaced),
  *    still open, and asks for the field corrected.
@@ -110,6 +115,13 @@ export function checkCorrection(
       "superseded",
       `proposal ${proposal.proposalId} was superseded by ${proposal.supersededBy}`,
     );
+  }
+  const sync = proposal.sync ?? null;
+  if (sync?.state === "syncing") {
+    return refuse("syncing", `proposal ${proposal.proposalId} is syncing to the CRM`);
+  }
+  if (sync?.state === "synced") {
+    return refuse("synced", `proposal ${proposal.proposalId} synced to the CRM already`);
   }
   if (proposal.status !== "proposed") {
     return refuse(

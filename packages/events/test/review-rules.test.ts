@@ -17,9 +17,15 @@ import {
   REVIEWER,
   reopen,
   reviewV2,
+  sealed,
   sessionLog,
   snoozed,
   started,
+  syncConflicted,
+  synced,
+  syncFailed,
+  syncReopen,
+  syncStarted,
   utterance,
   uuid,
 } from "./helpers";
@@ -395,6 +401,144 @@ describe("checkReview's shape rules, which the schema can't express", () => {
       ok: false,
       reason: "malformed",
     });
+  });
+});
+
+describe("checkReview and the sync (Phase 6 WP1)", () => {
+  /**
+   * A sealed session's approved proposals, each at a point of its sync (job `uuid(0xa000 + n)`
+   * syncs review `uuid(7000 + n)`):
+   * 1. never synced;
+   * 2. syncing;
+   * 3. synced;
+   * 4. failed, retryable;
+   * 5. conflicted, and not reopened yet (the sync's reopen is checked against this state);
+   * 6. conflicted, and the sync reopened it (review uuid(7306), the latest).
+   */
+  const synced6 = replay(
+    sessionLog([
+      started(),
+      utterance(1),
+      ...[1, 2, 3, 4, 5, 6].flatMap((n) => [proposalV2(n, {}, unflagged), reviewV2(n)]),
+      sealed(),
+      syncStarted(2),
+      syncStarted(3),
+      synced(3),
+      syncStarted(4),
+      syncFailed(4),
+      syncStarted(5),
+      syncConflicted(5),
+      syncStarted(6),
+      syncConflicted(6),
+      syncReopen(6, uuid(7006)),
+    ]),
+    { proposals: proposalsProjection },
+  ).proposals;
+  const sync: ReviewRuleContext = { tierOf: anyFlagTier, from: "sync" };
+  const undo = (n: number) => reopen(n, uuid(7000 + n));
+  const flagReopen = (n: number) => systemReopen(n, uuid(7000 + n));
+
+  it.each<[string, EventBody, ReviewRuleContext]>([
+    ["the sync's reopen after a conflict for the latest review", syncReopen(5, uuid(7005)), sync],
+    ["an undo of an approval whose sync failed", undo(4), client],
+    ["an undo of an approval never synced", undo(1), client],
+    [
+      "a decision on a proposal a conflict reopened",
+      reviewV2(6, "approved", { reviewId: uuid(7406) }),
+      client,
+    ],
+    [
+      "a rejection of a proposal a conflict reopened",
+      reviewV2(6, "rejected", { reviewId: uuid(7406) }),
+      client,
+    ],
+  ])("accepts %s", (_, body, ctx) => {
+    expect(checkReview(synced6, payload(body), ctx)).toEqual({ ok: true });
+  });
+
+  it.each<[string, EventBody, ReviewRuleContext, ReviewRefusal]>([
+    ["an undo while the proposal is syncing", undo(2), client, "syncing"],
+    ["a reopen for a flag while it's syncing", flagReopen(2), session, "syncing"],
+    ["an undo after it synced", undo(3), client, "synced"],
+    ["the sync's reopen after it synced", syncReopen(3, uuid(7003)), sync, "synced"],
+    [
+      "the sync's reopen with no conflict before it",
+      syncReopen(1, uuid(7001)),
+      sync,
+      "no_conflict",
+    ],
+    [
+      "the sync's reopen after a failure, not a conflict",
+      syncReopen(4, uuid(7004)),
+      sync,
+      "no_conflict",
+    ],
+    [
+      "the sync's second reopen of one conflict",
+      syncReopen(6, uuid(7306)),
+      sync,
+      "nothing_to_reopen",
+    ],
+    [
+      "the sync's reopen naming a review no longer the latest",
+      syncReopen(6, uuid(7006)),
+      sync,
+      "not_latest",
+    ],
+    [
+      "an approval from the sync",
+      reviewV2(1, "approved", { reviewId: uuid(7401) }),
+      sync,
+      "malformed",
+    ],
+    ["a reopen for a flag from the sync", flagReopen(5), sync, "malformed"],
+    ["a person's undo sent as the sync", undo(5), sync, "malformed"],
+    ["the sync's reopen sent by a client", syncReopen(5, uuid(7005)), client, "machine_only"],
+    ["the sync's reopen written by SessionDO", syncReopen(5, uuid(7005)), session, "malformed"],
+    [
+      "an approval of a proposal whose sync failed",
+      reviewV2(4, "approved", { reviewId: uuid(7404) }),
+      client,
+      "not_proposed",
+    ],
+    [
+      "an edit of a synced proposal",
+      reviewV2(3, "edited", { reviewId: uuid(7403) }),
+      client,
+      "not_proposed",
+    ],
+    [
+      "a rejection of a syncing proposal",
+      reviewV2(2, "rejected", { reviewId: uuid(7402) }),
+      client,
+      "not_proposed",
+    ],
+  ])("refuses %s", (_, body, ctx, reason) => {
+    expect(checkReview(synced6, payload(body), ctx)).toMatchObject({ ok: false, reason });
+  });
+
+  it("checks the sync's reopen against the state after its conflict, in the same append", () => {
+    // Before the conflict is folded in, the reopen has no conflict to follow; after, it does.
+    const syncing = replay(
+      sessionLog([started(), proposalV2(1, {}, unflagged), reviewV2(1), sealed(), syncStarted(1)]),
+      { proposals: proposalsProjection },
+    ).proposals;
+    expect(checkReview(syncing, payload(syncReopen(1, uuid(7001))), sync)).toMatchObject({
+      ok: false,
+      reason: "syncing",
+    });
+    const conflicted = replay(
+      sessionLog([
+        started(),
+        proposalV2(1, {}, unflagged),
+        reviewV2(1),
+        sealed(),
+        syncStarted(1),
+        syncConflicted(1),
+      ]),
+      { proposals: proposalsProjection },
+    ).proposals;
+    expect(checkReview(conflicted, payload(syncReopen(1, uuid(7001))), sync)).toEqual({ ok: true });
   });
 });
 

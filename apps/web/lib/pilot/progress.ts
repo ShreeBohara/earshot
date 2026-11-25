@@ -123,6 +123,8 @@ function refusal(reason: ReviewRefusal): SinkRefusal {
     case "not_latest":
     case "nothing_to_reopen":
     case "superseded":
+    case "syncing":
+    case "synced":
       return "stale";
     case "unknown_proposal":
       return "gone";
