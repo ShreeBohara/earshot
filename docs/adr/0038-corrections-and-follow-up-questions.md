@@ -24,7 +24,7 @@ What corrections have to work within:
 - **The new proposal's id:** **derived from the correction's id, a v8 UUID from SHA-256 over the session and the correction (chosen)**, so a resend to either writer finds the first one's answer; random (a resend after a lost ack would make a second proposal).
 - **Typed words:** **`utterance.final` v3 with `input: "typed"`, confidence 1, no word timings, at the session's last audio time (chosen)**; a separate event type (two evidence shapes for the cards and the checks to know).
 - **Typed words on the socket:** **carried on `correct` itself, written only in the correction's own transaction (chosen, after the security review)**; `utterance` messages sent before the `correct`, as the first build did (typed words could then exist with no correction, past speech's limits).
-- **Sealed sessions:** **the web Worker's route, in one `withTenant` transaction under the advisory lock (chosen)**, since the bundle grew 61.21 KiB gzipped, under the 250 KiB line; the edge Worker by RPC (another hop, and the edge Worker reads no database).
+- **Sealed sessions:** **the web Worker's route, in one `withTenant` transaction under the advisory lock (chosen)**, since the bundle grew 61.73 KiB gzipped, under the 250 KiB line; the edge Worker by RPC (another hop, and the edge Worker reads no database).
 - **Follow-up questions:** **rules: the spec's three, at most two a turn, none on a loud card (chosen)**; a model's questions (a key, a cost, and a question about something the rep didn't say).
 - **Where questions live:** **on their proposal's view (`ProposalView.followups`), moving to the proposal that supersedes it (chosen)**; a projection of their own (a card would have to join two folds).
 - **Voice in the inbox:** **cut at the UI (chosen, §7 cut line 3)**; built (a one-shot speech token, a dictation screen, and its clip on the device, an afternoon more).
@@ -109,7 +109,7 @@ On the socket a limit is refused `turn_limit` (or `duration_limit`), with a fixe
 
 ### The bundle
 
-`build:worker`'s dry-run upload, measured before the first change and at the end: 23,693.92 KiB raw and 5,126.53 KiB gzipped before; 23,959.17 KiB and 5,187.74 KiB after. Corrections add 265.25 KiB raw and 61.21 KiB gzipped, under the 250 KiB line, so they run in the web Worker. The route imports subpaths only: `@earshot/understanding/correct` (which brings the normalizers' chrono-node), `@earshot/agent/link-context`, `@earshot/events`, and `@earshot/db`. The page gains none of the reading code: the inbox's failure line names a field's kind from a small map rather than importing `@earshot/understanding/faithfulness`, so chrono-node stays out of the browser.
+`build:worker`'s dry-run upload, measured before the first change and at the end: 23,693.92 KiB raw and 5,126.53 KiB gzipped before; 23,960.90 KiB and 5,188.26 KiB after. Corrections add 266.98 KiB raw and 61.73 KiB gzipped, under the 250 KiB line, so they run in the web Worker. The route imports subpaths only: `@earshot/understanding/correct` (which brings the normalizers' chrono-node), `@earshot/agent/link-context`, `@earshot/events`, and `@earshot/db`. The page gains none of the reading code: the inbox's failure line names a field's kind from a small map rather than importing `@earshot/understanding/faithfulness`, so chrono-node stays out of the browser.
 
 ### Calls made where the spec was silent
 
@@ -138,7 +138,7 @@ On the socket a limit is refused `turn_limit` (or `duration_limit`), with a fixe
 - The inbox has no microphone. A rep who wants to speak a correction does it on the capture screen while the session is live.
 - A dictation's words are the client's claim. Nothing proves they came from a speech-to-text provider; they're the rep's own words about their own debrief, under the typed words' budget.
 - A corrected card loses its place in the tray's arrival order: it takes the original's spot, not the end.
-- The web Worker grows by 61.21 KiB gzipped.
+- The web Worker grows by 61.73 KiB gzipped.
 
 ## More information
 
