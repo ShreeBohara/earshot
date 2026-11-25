@@ -61,6 +61,16 @@ catalog:
   yaml: ^2.9.1
   zod: ^4.6.0
 
+# Dependabot's three alerts (2026-11-25), each in a build-time tool that never reaches a Worker:
+# esbuild's development server (GHSA-67mh-4wv8-2f99), through drizzle-kit's @esbuild-kit loader,
+# which still pins esbuild 0.18; glob's AbortSignal bypass (GHSA-3g3m-2fjr-6pw4), through OpenNext
+# and Storybook's docgen plugin; and minimatch's globparts amplification (GHSA-g3hv-75wg-m249),
+# through glob and ts-morph. Drop each once its parent depends on a fixed version.
+overrides:
+  "@esbuild-kit/core-utils>esbuild": ^0.25.0
+  "glob@>=9.0.0 <14.0.2": ^14.0.2
+  "minimatch@>=7.0.0 <11.0.1": ^11.0.1
+
 # Supply chain: wait 3 days before installing any newly published version.
 minimumReleaseAge: 4320
 # Refuse a version that was published with weaker trust evidence than earlier versions.
