@@ -5,6 +5,7 @@
 import {
   type EventEnvelope,
   PROPOSAL_TYPE_FIELDS,
+  type ProposalFlaggedV1,
   type ProposalTypeV2,
   TARGET_FIELD,
 } from "@earshot/core";
@@ -220,4 +221,73 @@ export function linkerOf(log: readonly EventEnvelope[], proposalId: string): str
     return (defaultRegistry.toLatest(event) as ProposalCreatedEvent).payload.linker;
   }
   return null;
+}
+
+/**
+ * A late witness's flag, carried onto the card that replaced the flagged one (Codex on #67). A
+ * correction made before its turn's second witness answered keeps the original's evidence for every
+ * field it didn't change, so what the witness found about those words holds for the replacement
+ * too: its flags, a downgrade of its target to a question, and the conflict. Follows `supersededBy`
+ * to the card that stands, and keeps each part only while no correction on the way changed what it's
+ * about. A flag with no field is the proposal's own, which a correction keeps, as `correctProposal`
+ * does. Null when the flagged proposal stands, or nothing carries.
+ *
+ * `proposals` is the session's state before the flag: once folded, the original's target is the
+ * downgraded one, which would read as a change.
+ */
+export function carriedFlag(
+  proposals: readonly ProposalView[],
+  flagged: ProposalFlaggedV1,
+): ProposalFlaggedV1 | null {
+  const byId = new Map(proposals.map((proposal) => [proposal.proposalId, proposal]));
+  let at = byId.get(flagged.proposalId);
+  if (!at || at.supersededBy === null) return null;
+  const changed = new Set<string>();
+  // The chain is at most `maxDepth` long; the bound keeps a malformed one from looping.
+  for (let steps = 0; at.supersededBy !== null; steps += 1) {
+    const later = byId.get(at.supersededBy);
+    if (!later || steps >= CORRECTION_LIMITS.maxDepth) return null;
+    for (const field of changedBetween(at, later)) changed.add(field);
+    at = later;
+  }
+  const flags = flagged.flags.filter(
+    (flag) => flag.field === undefined || !changed.has(flag.field),
+  );
+  if (flags.length === 0) return null;
+  return {
+    ...flagged,
+    proposalId: at.proposalId,
+    flags,
+    target: changed.has(TARGET_FIELD) ? null : flagged.target,
+    conflict:
+      flagged.conflict !== null && !changed.has(flagged.conflict.field) ? flagged.conflict : null,
+  };
+}
+
+/** What a correction changed between a proposal and the one that replaced it: fields, and `target`. */
+function changedBetween(earlier: ProposalView, later: ProposalView): string[] {
+  const names = new Set([...Object.keys(earlier.fields), ...Object.keys(later.fields)]);
+  const changed = [...names].filter((name) => !sameJson(earlier.fields[name], later.fields[name]));
+  if (!sameJson(earlier.target, later.target)) changed.push(TARGET_FIELD);
+  return changed;
+}
+
+/** Whether two JSON values are the same, whatever the order of their keys. */
+function sameJson(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) {
+    return false;
+  }
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => sameJson(item, right[index]))
+    );
+  }
+  const a = Object.entries(left).filter(([, value]) => value !== undefined);
+  const b = Object.entries(right).filter(([, value]) => value !== undefined);
+  const others = new Map(b);
+  return a.length === b.length && a.every(([key, value]) => sameJson(value, others.get(key)));
 }

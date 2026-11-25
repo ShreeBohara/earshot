@@ -1,11 +1,14 @@
 // The writers' rules for corrections and follow-up skips (Phase 5 WP13; ADR-0038): which proposals
 // take a correction, on which fields, and which questions a correction answers or a skip closes.
+
+import type { ProposalFlaggedV1 } from "@earshot/core";
 import { correctProposal } from "@earshot/understanding/correct";
 import { buildLinkIndex } from "@earshot/understanding/link";
 import { tierOf } from "@earshot/understanding/tiers";
 import { describe, expect, it } from "vitest";
 import {
   CORRECTION_LIMITS,
+  carriedFlag,
   checkCorrection,
   checkFollowupSkip,
   checkReview,
@@ -20,6 +23,7 @@ import {
 import {
   followupAsked,
   followupClosed,
+  proposalFlagged,
   proposalV2,
   REVIEWER,
   reviewV2,
@@ -309,5 +313,114 @@ describe("the correction limits (a security review's)", () => {
         6,
       ),
     ).toBeNull();
+  });
+});
+
+describe("carriedFlag: a late witness's flag on a corrected card (Codex on #67)", () => {
+  const original = proposalV2(1);
+  const { title } = (original.payload as { fields: Record<string, unknown> }).fields;
+  const dueDate = {
+    value: "2026-12-04",
+    evidence: { utteranceId: uuid(2002), span: [8, 18], audioMs: [2000, 2000], confidence: 1 },
+  };
+  /** A correction that adds a due date: the record and the title stay as they were. */
+  const dated = (n: number, of: number) =>
+    proposalV2(n, {}, { supersedes: uuid(3000 + of), fields: { title, dueDate } });
+  const downgrade = {
+    decision: "ask",
+    candidates: [
+      { entityId: uuid(6001), p: 0.6 },
+      { entityId: uuid(6002), p: 0.3 },
+    ],
+  };
+  const flag = (extra: Record<string, unknown> = {}) =>
+    proposalFlagged(1, { target: downgrade, ...extra }).payload as unknown as ProposalFlaggedV1;
+
+  it("carries the flag, its downgrade, and its conflict to the card that kept the record", () => {
+    const proposals = proposalsOf([
+      ...base,
+      utteranceV3(2, "make it the 4th", "typed"),
+      dated(2, 1),
+    ]);
+    const late = flag({
+      flags: [
+        { kind: "witness_conflict", field: "target" },
+        { kind: "low_confidence", field: "dueDate" },
+        { kind: "low_confidence" },
+      ],
+    });
+    const carried = carriedFlag(proposals, late);
+    // Not the due date's flag: the correction changed it. The proposal's own flag stays.
+    expect(carried).toEqual({
+      ...late,
+      proposalId: uuid(3002),
+      flags: [{ kind: "witness_conflict", field: "target" }, { kind: "low_confidence" }],
+    });
+    // Folded, the replacement asks about its record, and shows the conflict.
+    const after = replay(
+      sessionLog([
+        ...base,
+        utteranceV3(2, "make it the 4th", "typed"),
+        dated(2, 1),
+        { type: "proposal.flagged", schemaVersion: 1, payload: late },
+        { type: "proposal.flagged", schemaVersion: 1, payload: carried ?? late },
+      ]),
+      { proposals: proposalsProjection },
+    ).proposals;
+    expect(after.find((p) => p.proposalId === uuid(3002))).toMatchObject({
+      status: "proposed",
+      target: { decision: "ask" },
+      conflicts: [late.conflict],
+    });
+  });
+
+  it("follows a chain to the card that stands, and leaves a card that stands to its own flag", () => {
+    const chain = [
+      ...base,
+      utteranceV3(2, "make it the 4th", "typed"),
+      dated(2, 1),
+      utteranceV3(3, "send the pricing", "typed"),
+      proposalV2(
+        3,
+        {},
+        {
+          supersedes: uuid(3002),
+          fields: {
+            title: {
+              value: "send the pricing",
+              evidence: { ...dueDate.evidence, utteranceId: uuid(2003) },
+            },
+            dueDate,
+          },
+        },
+      ),
+    ];
+    const carried = carriedFlag(proposalsOf(chain), flag());
+    expect(carried).toMatchObject({ proposalId: uuid(3003), target: downgrade });
+    expect(carriedFlag(proposalsOf(base), flag())).toBeNull();
+  });
+
+  it("carries nothing when the correction changed what the flag is about: the record", () => {
+    const relinked = proposalV2(
+      2,
+      { entityId: uuid(6002), basis: "exact", p: 0.97 },
+      { supersedes: uuid(3001) },
+    );
+    const proposals = proposalsOf([...base, utteranceV3(2, "Acme Labs", "typed"), relinked]);
+    expect(carriedFlag(proposals, flag())).toBeNull();
+    // A flag with a part that still holds carries that part alone.
+    const mixed = flag({
+      flags: [
+        { kind: "witness_conflict", field: "target" },
+        { kind: "low_confidence", field: "title" },
+      ],
+    });
+    expect(carriedFlag(proposals, mixed)).toEqual({
+      ...mixed,
+      proposalId: uuid(3002),
+      flags: [{ kind: "low_confidence", field: "title" }],
+      target: null,
+      conflict: null,
+    });
   });
 });

@@ -108,6 +108,7 @@ import {
 } from "@earshot/core";
 import {
   CORRECTION_LIMITS,
+  carriedFlag,
   checkCorrection,
   checkFollowupSkip,
   checkReview,
@@ -1291,7 +1292,14 @@ export class SessionRuntime extends DurableObject<Env> {
       }
       const sessionId = store.get("sid") ?? "";
       let proposals = flagged.length > 0 ? this.#proposals() : [];
-      for (const raw of flagged) {
+      // A proposal corrected before this witness answered stands replaced: each flag also goes to
+      // the replacement, for the words it kept (Codex on #67). Read before any flag is folded in.
+      const before = proposals;
+      const writes = flagged.flatMap((raw) => {
+        const carried = carriedFlag(before, raw);
+        return carried ? [raw, carried] : [raw];
+      });
+      for (const raw of writes) {
         const payload = toStorable(raw) as ProposalFlaggedV1;
         events.push({
           type: "proposal.flagged",

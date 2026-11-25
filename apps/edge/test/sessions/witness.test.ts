@@ -20,6 +20,8 @@ import {
   dumpStorage,
   meta,
   open,
+  reviewInput,
+  reviewMessage,
   sleep,
   startMessage,
   type TestSocket,
@@ -204,6 +206,88 @@ describe("a witness after extraction", () => {
       latencyMs: 10_400,
       reason: "rate_limited",
     });
+    socket.close();
+  });
+});
+
+describe("a witness after a correction (Codex on #67)", () => {
+  /** A typed correction of the turn's note, before the witness answers. */
+  function correctionOf(
+    proposalId: string,
+    field: string,
+    text: string,
+  ): ClientMessageOf<"correct"> {
+    return {
+      t: "correct",
+      msgId: uuidv7(),
+      turnId: uuidv7(),
+      correctionId: uuidv7(),
+      proposalId,
+      field,
+      typed: { utteranceId: uuidv7(), text },
+    };
+  }
+
+  it("flags the replacement too, for the record it kept, and reopens its approval", async () => {
+    const { socket, stub } = await open();
+    const { turnId, turnEnd } = await d003Turn(socket, stub);
+    await socket.request(turnEnd, 15_000);
+    const original = socket.eventsOf("proposal.created")[0]?.payload.proposalId as string;
+    await socket.request(
+      correctionOf(original, "body", "It should say the pilot starts in March."),
+    );
+    const replacement = socket.eventsOf("proposal.created").at(-1)?.payload.proposalId as string;
+    expect(replacement).not.toBe(original);
+    await socket.request(reviewMessage(reviewInput(replacement)));
+
+    await socket.request(witnessOf(turnId));
+    expect(
+      socket
+        .events()
+        .slice(-5)
+        .map((event) => event.type),
+    ).toEqual([
+      "utterance.final",
+      "proposal.flagged",
+      "proposal.flagged",
+      "proposal.reviewed",
+      "turn.witnessed",
+    ]);
+    const [first, second] = socket
+      .eventsOf("proposal.flagged")
+      .map((event) => ProposalFlaggedV1.parse(event.payload));
+    expect(first?.proposalId).toBe(original);
+    expect(second).toEqual({ ...first, proposalId: replacement });
+    expect(socket.eventsOf("proposal.reviewed").at(-1)?.payload).toMatchObject({
+      proposalId: replacement,
+      decision: "reopened",
+      reason: "flagged",
+    });
+    // One conflict found, on the words both cards quote.
+    expect(socket.eventsOf("turn.witnessed")[0]?.payload).toMatchObject({ conflicts: 1 });
+    const proposals = replay(socket.events(), defaultProjections).proposals;
+    expect(proposals.find((p) => p.proposalId === replacement)).toMatchObject({
+      status: "proposed",
+      target: { decision: "ask", entityId: null },
+      conflicts: [expect.objectContaining({ field: "target" })],
+    });
+    socket.close();
+  });
+
+  it("leaves the flag on the original when the correction named the record itself", async () => {
+    const { socket, stub } = await open();
+    const { turnId, turnEnd } = await d003Turn(socket, stub);
+    await socket.request(turnEnd, 15_000);
+    const original = socket.eventsOf("proposal.created")[0]?.payload.proposalId as string;
+    await socket.request(correctionOf(original, "target", "Atmos Industrial"));
+    const replacement = socket.eventsOf("proposal.created").at(-1)?.payload.proposalId as string;
+
+    await socket.request(witnessOf(turnId));
+    expect(socket.eventsOf("proposal.flagged").map((event) => event.payload.proposalId)).toEqual([
+      original,
+    ]);
+    const proposals = replay(socket.events(), defaultProjections).proposals;
+    expect(proposals.find((p) => p.proposalId === replacement)?.conflicts).toEqual([]);
     socket.close();
   });
 });

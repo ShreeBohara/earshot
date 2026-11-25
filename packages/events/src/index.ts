@@ -5,6 +5,7 @@ export {
   type CorrectionCheck,
   type CorrectionRefusal,
   type CorrectionTarget,
+  carriedFlag,
   checkCorrection,
   checkFollowupSkip,
   correctableFields,
