@@ -41,11 +41,20 @@ export {
   valueFromHistory,
 } from "./crm-history";
 export {
+  addDemoRecord,
+  DEMO_CRM_ADDED_PREFIX,
   DEMO_CRM_EXTERNAL_ID_PREFIX,
+  DEMO_MOVE_FIELDS,
   type DemoCrmLoadResult,
   type DemoCrmStatus,
+  type DemoFieldMove,
+  type DemoMoveField,
+  type DemoRecordAdded,
   demoCrmStatus,
+  demoMove,
+  isDemoMoveField,
   loadDemoCrm,
+  moveDemoField,
   removeDemoCrm,
 } from "./demo-crm";
 export {

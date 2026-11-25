@@ -3,13 +3,25 @@ import { phoneticKeys } from "@earshot/understanding/names";
 import type { PGlite } from "@electric-sql/pglite";
 import { and, eq, like } from "drizzle-orm";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { readFieldHistory, valueAt } from "../src/crm-history";
 import {
+  addDemoRecord,
+  DEMO_CRM_ADDED_PREFIX,
   DEMO_CRM_EXTERNAL_ID_PREFIX,
   demoCrmStatus,
+  demoMove,
   loadDemoCrm,
+  moveDemoField,
   removeDemoCrm,
 } from "../src/demo-crm";
-import { auditLog, crmEntities, facts, proposals } from "../src/schema";
+import {
+  auditLog,
+  crmConnections,
+  crmEntities,
+  crmEntityChanges,
+  facts,
+  proposals,
+} from "../src/schema";
 import { type TenantContext, withTenant } from "../src/tenant";
 import { A, B, cloneDb, rowId, seededDb } from "./db";
 
@@ -289,5 +301,232 @@ describe("removeDemoCrm", () => {
       .from(proposals)
       .where(eq(proposals.id, rowId("a", 7)));
     expect(proposal).toEqual({ targetEntityId: null });
+  });
+});
+
+// ─── The inbox's demo controls (Phase 5 WP12) ─────────────────────────────────────────────────────
+
+/** A demo record of A's, by its dataset id, with its id and properties as the owner sees them. */
+async function demoRecord(sourceId: string) {
+  const [row] = await db
+    .select({ id: crmEntities.id, properties: crmEntities.properties, name: crmEntities.name })
+    .from(crmEntities)
+    .where(
+      and(
+        eq(crmEntities.workspaceId, A.workspaceId),
+        eq(crmEntities.externalId, `${DEMO_CRM_EXTERNAL_ID_PREFIX}${sourceId}`),
+      ),
+    );
+  if (!row) throw new Error(`no demo record ${sourceId}`);
+  return row;
+}
+
+const NOW = new Date("2026-11-25T09:00:00.000Z");
+
+describe("demoMove", () => {
+  it.each([
+    ["stage", "appointmentscheduled", "qualifiedtobuy"],
+    ["stage", "contractsent", "closedwon"],
+    ["stage", "closedwon", "contractsent"],
+    ["stage", "closedlost", "contractsent"],
+    ["stage", "discovery", "qualifiedtobuy"],
+    ["amount", 112_000, 123_200],
+    ["amount", 8_005, 8_806],
+    ["closeDate", "2027-03-22", "2027-03-29"],
+    ["closeDate", "2026-12-28", "2027-01-04"],
+    ["title", "General Manager", "VP of Sales"],
+    ["title", "VP of Sales", "Director of Operations"],
+    ["email", "dana.lee@acme-dynamics.example", "dana.lee2@acme-dynamics.example"],
+    ["phone", "555-0145", "555-0146"],
+    ["phone", "555-0199", "555-0100"],
+  ] as const)("moves %s from %j to %j", (field, from, to) => {
+    expect(demoMove(field, from)).toEqual(to);
+  });
+
+  it.each([
+    ["stage", null],
+    ["amount", "lots"],
+    ["closeDate", "next week"],
+    ["email", "nobody"],
+    ["phone", "+1 415 555 0100"],
+    ["title", null],
+  ] as const)("can't move %s from %j", (field, from) => {
+    expect(demoMove(field, from)).toBeUndefined();
+  });
+});
+
+describe("moveDemoField", () => {
+  it("moves the field and records its history in one transaction, with an audit entry", async () => {
+    await load(A);
+    const deal = await demoRecord("deal_028");
+    const before = deal.properties.stage;
+
+    const moved = await withTenant(db, A, (tx) =>
+      moveDemoField(tx, { entityId: deal.id, field: "stage", now: NOW }),
+    );
+    expect(moved).toMatchObject({ entityId: deal.id, field: "stage", old: before });
+    expect(moved?.new).toBe(demoMove("stage", before as string));
+    expect((await demoRecord("deal_028")).properties).toMatchObject({ stage: moved?.new });
+    const history = await withTenant(db, A, (tx) =>
+      readFieldHistory(tx, [{ entityId: deal.id, field: "stage" }]),
+    );
+    expect([...history.values()].flat()).toEqual([
+      { id: moved?.changeId, old: before, new: moved?.new, changedAt: NOW },
+    ]);
+    // The CRM's value when the rep spoke, before the move, and now.
+    expect(
+      await withTenant(db, A, (tx) =>
+        valueAt(tx, deal.id, "stage", new Date("2026-11-20T00:00:00Z")),
+      ),
+    ).toBe(before);
+    expect(await withTenant(db, A, (tx) => valueAt(tx, deal.id, "stage", NOW))).toBe(moved?.new);
+    expect((await demoAudit(A.workspaceId)).map((entry) => entry.action)).toEqual([
+      "demo_crm.changed",
+      "demo_crm.loaded",
+    ]);
+    const [entry] = (await demoAudit(A.workspaceId)).filter((e) => e.action === "demo_crm.changed");
+    expect(entry?.detail).toEqual({ entityId: deal.id, field: "stage" });
+  });
+
+  it("leaves neither the move nor its history when the transaction fails", async () => {
+    await load(A);
+    const deal = await demoRecord("deal_028");
+    await expect(
+      withTenant(db, A, async (tx) => {
+        await moveDemoField(tx, { entityId: deal.id, field: "amount", now: NOW });
+        throw new Error("the request failed after the move");
+      }),
+    ).rejects.toThrow(/after the move/);
+    expect((await demoRecord("deal_028")).properties.amount).toBe(deal.properties.amount);
+    expect(
+      await db.select().from(crmEntityChanges).where(eq(crmEntityChanges.entityId, deal.id)),
+    ).toEqual([]);
+  });
+
+  it("moves only the workspace's own demo records, and only fields it knows", async () => {
+    await load(A);
+    await load(B);
+    const deal = await demoRecord("deal_028");
+    const move = (tenant: TenantContext, entityId: string, field: string) =>
+      withTenant(db, tenant, (tx) => moveDemoField(tx, { entityId, field, now: NOW }));
+    // A record from a CRM connection isn't a demo record.
+    expect(await move(A, rowId("a", 3), "stage")).toBeNull();
+    // Another workspace can't move A's record, even by its id.
+    expect(await move(B, deal.id, "stage")).toBeNull();
+    // Only the fields a review card compares, and never the name or a made-up field.
+    expect(await move(A, deal.id, "name")).toBeNull();
+    expect(await move(A, deal.id, "properties")).toBeNull();
+    expect(await move(A, deal.id, "title")).toBeNull();
+    expect(await move(A, "not-a-uuid", "stage")).toBeNull();
+    expect((await demoRecord("deal_028")).properties).toEqual(deal.properties);
+    expect(
+      await db.select().from(crmEntityChanges).where(eq(crmEntityChanges.entityId, deal.id)),
+    ).toEqual([]);
+  });
+});
+
+describe("addDemoRecord", () => {
+  /** A's mirror as the demo CRM: the dataset loaded, and the seed's CRM connection gone. */
+  async function demoWorkspace() {
+    await db.delete(crmConnections).where(eq(crmConnections.workspaceId, A.workspaceId));
+    await load(A);
+  }
+  const add = (
+    tenant: TenantContext,
+    record: { kind: "company" | "contact"; name: string; companyEntityId?: string | null },
+  ) =>
+    withTenant(db, tenant, (tx) =>
+      addDemoRecord(tx, { ...record, newId: () => crypto.randomUUID(), now: NOW }),
+    );
+
+  it("adds a demo record, its arrival in the history, and an audit entry", async () => {
+    await demoWorkspace();
+    const acme = await demoRecord("co_001");
+    const added = await add(A, {
+      kind: "contact",
+      name: "  Dana   Leigh ",
+      companyEntityId: acme.id,
+    });
+    expect(added).toMatchObject({ kind: "contact", name: "Dana Leigh", added: true });
+    const [row] = await db
+      .select()
+      .from(crmEntities)
+      .where(eq(crmEntities.id, added?.entityId ?? ""));
+    expect(row).toMatchObject({
+      workspaceId: A.workspaceId,
+      connectionId: null,
+      kind: "contact",
+      name: "Dana Leigh",
+      properties: { companyId: "co_001", firstName: "Dana", lastName: "Leigh" },
+    });
+    expect(row?.externalId.startsWith(DEMO_CRM_ADDED_PREFIX)).toBe(true);
+    expect(row?.phoneticKeys).toEqual(phoneticKeys(["Dana Leigh"]));
+    // It had no name before it arrived.
+    const nameAt = (iso: string) =>
+      withTenant(db, A, (tx) => valueAt(tx, added?.entityId ?? "", "name", new Date(iso)));
+    expect(await nameAt("2026-11-24T00:00:00Z")).toBeNull();
+    expect(await nameAt("2026-11-26T00:00:00Z")).toBe("Dana Leigh");
+    expect((await demoAudit(A.workspaceId)).map((entry) => entry.action)).toContain(
+      "demo_crm.record_added",
+    );
+    // It isn't the dataset's, so the dataset still counts as loaded, exactly.
+    expect(await status(A)).toEqual({ loaded: TOTAL, total: TOTAL, counts: COUNTS });
+  });
+
+  it("is idempotent by kind and name, and leaves off a company that isn't a demo company", async () => {
+    await demoWorkspace();
+    const first = await add(A, { kind: "company", name: "Atmo Systems" });
+    const again = await add(A, { kind: "company", name: "atmo systems" });
+    expect(again).toEqual({ ...first, name: "atmo systems", added: false });
+    const contact = await add(A, {
+      kind: "contact",
+      name: "Pat Moss",
+      companyEntityId: "a0000000-0000-4000-8000-0000000000ff",
+    });
+    const [row] = await db
+      .select({ properties: crmEntities.properties })
+      .from(crmEntities)
+      .where(eq(crmEntities.id, contact?.entityId ?? ""));
+    expect(row?.properties).toEqual({ firstName: "Pat", lastName: "Moss" });
+  });
+
+  it("adds nothing outside a demo workspace, or for a name it can't keep", async () => {
+    // The seed's CRM connection is still there: A's mirror isn't the demo CRM's alone.
+    await load(A);
+    expect(await add(A, { kind: "company", name: "Atmo Systems" })).toBeNull();
+    // B has no demo CRM at all.
+    expect(await add(B, { kind: "company", name: "Atmo Systems" })).toBeNull();
+    await db.delete(crmConnections).where(eq(crmConnections.workspaceId, A.workspaceId));
+    expect(await add(A, { kind: "company", name: "   " })).toBeNull();
+    expect(await add(A, { kind: "company", name: "x".repeat(201) })).toBeNull();
+    expect(
+      await add(A, { kind: "company", name: "sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789" }),
+    ).toBeNull();
+    expect(
+      await add(A, { kind: "deal" as "company", name: "Atmo Systems - Expansion" }),
+    ).toBeNull();
+    const added = await db
+      .select()
+      .from(crmEntities)
+      .where(like(crmEntities.externalId, `${DEMO_CRM_ADDED_PREFIX}%`));
+    expect(added).toEqual([]);
+  });
+
+  it("goes with the demo CRM, history and all", async () => {
+    await demoWorkspace();
+    const added = await add(A, { kind: "company", name: "Atmo Systems" });
+    await remove(A);
+    expect(
+      await db
+        .select()
+        .from(crmEntities)
+        .where(eq(crmEntities.id, added?.entityId ?? "")),
+    ).toEqual([]);
+    expect(
+      await db
+        .select()
+        .from(crmEntityChanges)
+        .where(eq(crmEntityChanges.workspaceId, A.workspaceId)),
+    ).toEqual([]);
   });
 });
