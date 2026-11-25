@@ -1,4 +1,4 @@
-import { ProposalReviewedV2, ProposalSnoozedV1 } from "@earshot/core";
+import { ProposalReviewedV3, ProposalSnoozedV1 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
 import {
   checkReview,
@@ -104,8 +104,11 @@ const proposals: readonly ProposalView[] = replay(
 const client: ReviewRuleContext = { tierOf: anyFlagTier, from: "client" };
 const session: ReviewRuleContext = { tierOf: anyFlagTier, from: "session" };
 
-/** The payload of a builder's review, checked against the schema: the rules start past it. */
-const payload = (body: EventBody) => ProposalReviewedV2.parse(body.payload);
+/**
+ * The payload of a builder's review, checked against the latest schema (v3, which every writer
+ * writes): the rules start past it.
+ */
+const payload = (body: EventBody) => ProposalReviewedV3.parse(body.payload);
 
 const unattended = {
   input: "none",
@@ -363,6 +366,12 @@ describe("checkReview's shape rules, which the schema can't express", () => {
     ["a review from no surface", reviewV2(1, "approved", { surface: null })],
     ["a review by nobody", reviewV2(1, "approved", { by: null })],
     ["a reopen for a flag in a person's review", reopen(5, uuid(7005), { reason: "flagged" })],
+    ["a reopen for a conflict in a person's review", reopen(5, uuid(7005), { reason: "conflict" })],
+    [
+      "a system reopen for a conflict, from SessionDO (only the sync writes one)",
+      systemReopen(5, uuid(7005), { reason: "conflict" }),
+      session,
+    ],
     ["a batch edit", reviewV2(1, "edited", batch)],
     ["a person's review with no input", reviewV2(1, "approved", { input: "none" })],
     ["a person's review on SessionDO's surface", reviewV2(1, "approved", { surface: "session" })],

@@ -10,6 +10,7 @@ import {
   ProposalFlaggedV1,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
   RecapCreatedV1,
   SessionEndedV1,
@@ -60,11 +61,12 @@ export const contracts = {
   UtteranceFinalV3,
   FollowupAskedV1,
   FollowupClosedV1,
-  // Phase 6 WP1: a CRM connection's mapping, the sync retry route's request, and the rep's time
-  // zone in `session.started`.
+  // Phase 6 WP1: a CRM connection's mapping, the sync retry route's request, the rep's time zone
+  // in `session.started`, and a review's reopen for a sync's conflict.
   CrmMapping,
   SyncRouteRequest,
   SessionStartedV2,
+  ProposalReviewedV3,
 } as const;
 
 export type ContractName = keyof typeof contracts;
@@ -126,6 +128,7 @@ export {
   ProposalFlaggedV1,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
   ProposalType,
   ProposalTypeV2,
@@ -140,6 +143,7 @@ export {
   RecapSentence,
   RecapSentenceKind,
   ReopenReason,
+  ReopenReasonV3,
   ReviewDecision,
   ReviewDecisionV2,
   Reviewer,

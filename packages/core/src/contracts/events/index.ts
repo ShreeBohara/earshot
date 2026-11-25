@@ -31,7 +31,9 @@ import {
   LikelyEditTier,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ReopenReason,
+  ReopenReasonV3,
   ReviewDecision,
   ReviewDecisionV2,
   Reviewer,
@@ -136,6 +138,8 @@ export const eventPayloadContracts = [
   // Phase 6 WP1: the rep's time zone, which `start` carried and the log didn't keep (v1 upcasts
   // with null). `sessionProjection` keeps it as the session's `timeZone`.
   { type: "session.started", schemaVersion: 2, schema: SessionStartedV2 },
+  // Phase 6 WP1: a reopen for a sync's conflict (v2 upcasts unchanged).
+  { type: "proposal.reviewed", schemaVersion: 3, schema: ProposalReviewedV3 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
@@ -168,6 +172,7 @@ export {
   ProposalFlaggedV1,
   ProposalReviewedV1,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
   ProposalType,
   ProposalTypeV2,
@@ -182,6 +187,7 @@ export {
   RecapSentence,
   RecapSentenceKind,
   ReopenReason,
+  ReopenReasonV3,
   ReviewDecision,
   ReviewDecisionV2,
   Reviewer,

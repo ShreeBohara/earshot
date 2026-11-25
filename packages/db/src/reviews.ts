@@ -70,7 +70,7 @@ type Tx<
   TSchema extends TablesRelationalConfig,
 > = PgTransaction<TQueryResult, TFullSchema, TSchema>;
 
-/** `proposal.reviewed` v2's payload. */
+/** `proposal.reviewed` v3's payload. */
 export type ReviewPayload = ProposalReviewedEvent["payload"];
 /** `proposal.snoozed` v1's payload. */
 export type SnoozePayload = ProposalSnoozedEvent["payload"];
@@ -353,7 +353,7 @@ export async function writeSessionReviews<
       id: options.newId(),
       ts,
       type: "proposal.reviewed",
-      schemaVersion: 2,
+      schemaVersion: 3,
       payload: { ...item.payload } as Record<string, unknown>,
     })),
     ...newSnoozes.map((item) => ({

@@ -30,7 +30,7 @@ import {
   HEARTBEAT_PONG,
   type ProposalCreatedV2,
   type ProposalFlaggedV1,
-  type ProposalReviewedV2,
+  type ProposalReviewedV3,
   parseClientMessage,
   type Reviewer,
   SESSION_CLOSE_CODES,
@@ -770,7 +770,7 @@ export class FakeSessionServer {
       this.#refuse(message.msgId, "not_started", true);
       return;
     }
-    const fresh: ProposalReviewedV2[] = [];
+    const fresh: ProposalReviewedV3[] = [];
     let resentSeq = -1;
     for (const input of message.reviews) {
       const prior = this.#writes.get(input.reviewId);

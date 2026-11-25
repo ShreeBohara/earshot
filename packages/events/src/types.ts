@@ -4,7 +4,7 @@ import type {
   FollowupClosedV1,
   ProposalCreatedV2,
   ProposalFlaggedV1,
-  ProposalReviewedV2,
+  ProposalReviewedV3,
   ProposalSnoozedV1,
   RecapCreatedV1,
   SessionEndedV1,
@@ -31,7 +31,7 @@ export type TypedEvent<T extends string, V extends number, P> = Omit<
 export type SessionStartedEvent = TypedEvent<"session.started", 2, SessionStartedV2>;
 export type UtteranceFinalEvent = TypedEvent<"utterance.final", 3, UtteranceFinalV3>;
 export type ProposalCreatedEvent = TypedEvent<"proposal.created", 2, ProposalCreatedV2>;
-export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 2, ProposalReviewedV2>;
+export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 3, ProposalReviewedV3>;
 export type SessionEndedEvent = TypedEvent<"session.ended", 1, SessionEndedV1>;
 export type UsageRecordedEvent = TypedEvent<"usage.recorded", 1, UsageRecordedV1>;
 export type TurnCompletedEvent = TypedEvent<"turn.completed", 1, TurnCompletedV1>;
@@ -70,7 +70,7 @@ export const latestVersions = {
   "session.started": 2,
   "utterance.final": 3,
   "proposal.created": 2,
-  "proposal.reviewed": 2,
+  "proposal.reviewed": 3,
   "session.ended": 1,
   "usage.recorded": 1,
   "turn.completed": 1,

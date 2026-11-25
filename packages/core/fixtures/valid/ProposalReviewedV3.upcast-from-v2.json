@@ -1,0 +1,40 @@
+{
+  "reviewId": "01a1c6e4-0a10-7b2c-8d3e-4f5a6b7c8d06",
+  "proposalId": "01a1c6e3-1674-7aa3-b29d-03636b6dc056",
+  "decision": "approved",
+  "target": null,
+  "mode": "policy",
+  "batchId": null,
+  "policy": {
+    "id": "01a0f900-0000-7000-8000-00000000a001",
+    "version": 3,
+    "rule": "notes"
+  },
+  "undoes": null,
+  "reason": null,
+  "seen": {
+    "tier": "none",
+    "fields": {
+      "body": {
+        "proposed": "Pilot is going well. Main concern: how long SSO setup takes."
+      }
+    },
+    "target": {
+      "entityId": "01a0f831-ac00-75a0-a2b2-cb79eb1835bf",
+      "offered": []
+    },
+    "relinked": null,
+    "clip": "none"
+  },
+  "timing": {
+    "decisionMs": 0,
+    "handlingMs": 0
+  },
+  "input": "none",
+  "surface": "session",
+  "syncEligibleAt": "2026-11-20T19:16:03.620Z",
+  "by": {
+    "userId": "u_9fK2mQx7Lr",
+    "auth": null
+  }
+}

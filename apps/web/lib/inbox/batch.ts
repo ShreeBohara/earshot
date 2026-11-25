@@ -11,7 +11,7 @@
 //   offered on a new record) stays too, as the writers' rule says (`seenLoudAtReview`). Everything
 //   else stays for review, each with why: loud, a quiet note, a name note, no record, or still
 //   being saved.
-// - **What it writes:** one `proposal.reviewed` v2 per card, approved as proposed, in `batch` mode
+// - **What it writes:** one `proposal.reviewed` v3 per card, approved as proposed, in `batch` mode
 //   with one `batchId` (a UUIDv7). Every item carries the batch's own time, from opening the
 //   checkpoint to confirming it (§4.8), and the analysis counts each `batchId` once. The input is
 //   the confirming event's; the surface is where it happened.

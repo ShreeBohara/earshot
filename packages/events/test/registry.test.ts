@@ -2,6 +2,7 @@ import {
   eventPayloadContracts,
   ProposalCreatedV2,
   ProposalReviewedV2,
+  ProposalReviewedV3,
   SessionStartedV2,
   UtteranceFinalV2,
 } from "@earshot/core";
@@ -14,6 +15,7 @@ import {
   latestVersions,
   proposalCreatedV1ToV2,
   proposalReviewedV1ToV2,
+  proposalReviewedV2ToV3,
   sessionStartedV1ToV2,
   UnknownEventError,
   UpcastError,
@@ -207,6 +209,39 @@ describe("proposalReviewedV1ToV2", () => {
   });
 });
 
+describe("proposalReviewedV2ToV3", () => {
+  const bodies = [
+    reviewV2(1),
+    reviewV2(2, "edited"),
+    reviewV2(3, "rejected"),
+    reopen(4, uuid(7004)),
+    reopen(5, uuid(7005), {
+      mode: "system",
+      reason: "flagged",
+      input: "none",
+      surface: "session",
+      timing: { decisionMs: 0, handlingMs: 0 },
+      by: { userId: "u_9fK2mQx7Lr", auth: null },
+    }),
+  ];
+
+  it.each(bodies)("moves a v2 $payload.decision review to v3 and changes nothing else", (body) => {
+    const v2 = envelope(body);
+    const v3 = proposalReviewedV2ToV3.up(v2);
+    expect(v3).toEqual({ ...v2, schemaVersion: 3 });
+    const result = ProposalReviewedV3.safeParse(v3.payload);
+    expect(result.error?.issues ?? []).toEqual([]);
+  });
+
+  it("is deterministic and doesn't mutate the event it upcasts", () => {
+    const event = envelope(reviewV2(1, "edited"));
+    const frozen = deepFreeze(structuredClone(event));
+    expect(proposalReviewedV2ToV3.up(frozen)).toEqual(proposalReviewedV2ToV3.up(event));
+    expect(frozen).toEqual(event);
+    expect(proposalReviewedV2ToV3.up(event).payload).not.toBe(event.payload);
+  });
+});
+
 describe("sessionStartedV1ToV2", () => {
   const v1 = envelope(started());
 
@@ -342,14 +377,35 @@ describe("defaultRegistry", () => {
     ).toThrow(/proposal.reviewed v1 has no upcaster to v2/);
   });
 
-  it("upcasts a stored v1 review to v2, and leaves a v2 review as it is", () => {
+  it("upcasts a stored v1 review to v3, through v2", () => {
     const stored = envelope(review(1, "approved"));
     expect(defaultRegistry.toLatest(stored)).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       payload: { reviewId: stored.id, mode: "single", syncEligibleAt: null },
     });
-    const v2 = envelope(reviewV2(1));
-    expect(defaultRegistry.toLatest(v2)).toBe(v2);
+  });
+
+  it("loads a stored v2 review as v3 with nothing else changed, and leaves a v3 one as it is", () => {
+    for (const body of [reviewV2(1), reopen(1, uuid(7001)), reviewV2(2, "edited")]) {
+      const v2 = envelope(body);
+      expect(defaultRegistry.toLatest(v2)).toEqual({ ...v2, schemaVersion: 3 });
+    }
+    const v3 = envelope({ ...reopen(1, uuid(7001), { reason: "conflict" }), schemaVersion: 3 });
+    expect(defaultRegistry.toLatest(v3)).toBe(v3);
+  });
+
+  it("refuses a conflict at v2: the reason is v3's", () => {
+    const conflictAtV2 = envelope(reopen(1, uuid(7001), { reason: "conflict" }));
+    expect(() => defaultRegistry.toLatest(conflictAtV2)).toThrow(EventValidationError);
+  });
+
+  it("fails when it loads, not on replay, if proposal.reviewed v2 loses its upcaster", () => {
+    expect(() =>
+      createEventRegistry({
+        payloads: eventPayloadContracts,
+        upcasters: upcastersBut(proposalReviewedV2ToV3),
+      }),
+    ).toThrow(/proposal.reviewed v2 has no upcaster to v3/);
   });
 
   it("validates a v2 review against v2, and refuses v1's shape at v2", () => {

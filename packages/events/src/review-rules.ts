@@ -3,7 +3,7 @@
 // express them, so they live here, pure, and each writer checks against the session's folded
 // proposals before it appends. `proposalsProjection` refuses the worst of them again, so a writer
 // that skipped this check still can't commit a log that won't replay.
-import type { LikelyEditTier, ProposalReviewedV2, ProposalSnoozedV1 } from "@earshot/core";
+import type { LikelyEditTier, ProposalReviewedV3, ProposalSnoozedV1 } from "@earshot/core";
 import type { ProposalView } from "./projections";
 
 /** Why a review or a snooze was refused. */
@@ -75,7 +75,7 @@ function refuse(reason: ReviewRefusal, detail: string): ReviewCheck {
  * `review` is the payload the writer is about to append, with `by` and `syncEligibleAt` filled.
  * The rules, in the order they're checked:
  *
- * 1. Its shape: the cross-field rules `ProposalReviewedV2` documents, and that a Phase 5 writer
+ * 1. Its shape: the cross-field rules `ProposalReviewedV3` documents, and that a Phase 5 writer
  *    sets `seen`, `input`, `surface`, and `by`. A person reviews in `single` or `batch` mode, on a
  *    surface of their own, with an input; SessionDO's `policy` approvals and `system` reopens (for
  *    a later flag) have no sign-in, no input, the `session` surface, and zero timings. A batch
@@ -96,7 +96,7 @@ function refuse(reason: ReviewRefusal, detail: string): ReviewCheck {
  */
 export function checkReview(
   proposals: readonly ProposalView[],
-  review: ProposalReviewedV2,
+  review: ProposalReviewedV3,
   ctx: ReviewRuleContext,
 ): ReviewCheck {
   const shape = checkShape(review);
@@ -192,7 +192,7 @@ export function checkReview(
  */
 export function checkReviews(
   proposals: readonly ProposalView[],
-  reviews: readonly ProposalReviewedV2[],
+  reviews: readonly ProposalReviewedV3[],
   ctx: ReviewRuleContext,
 ): ReviewsCheck {
   const reviewIds = new Set<string>();
@@ -247,7 +247,7 @@ export function checkSnooze(
 }
 
 /** The rules a review's own fields must keep (step 1 of `checkReview`). */
-function checkShape(review: ProposalReviewedV2): ReviewCheck {
+function checkShape(review: ProposalReviewedV3): ReviewCheck {
   const { decision, mode } = review;
   const decides = decision === "approved" || decision === "edited";
   const reopens = decision === "reopened";
@@ -295,6 +295,8 @@ function checkShape(review: ProposalReviewedV2): ReviewCheck {
     return ok;
   }
   if (review.reason === "flagged") return refuse("malformed", "a reopen for a flag is SessionDO's");
+  if (review.reason === "conflict")
+    return refuse("malformed", "a reopen for a conflict is the sync's");
   if (mode === "batch" && !(decision === "approved" || reopens)) {
     return refuse("malformed", `a batch approves or undoes, so it can't be ${decision}`);
   }
@@ -305,7 +307,7 @@ function checkShape(review: ProposalReviewedV2): ReviewCheck {
 }
 
 /** The record an approval or an edit takes (step 4 of `checkReview`). */
-function checkTarget(proposal: ProposalView, review: ProposalReviewedV2): ReviewCheck {
+function checkTarget(proposal: ProposalView, review: ProposalReviewedV3): ReviewCheck {
   const { target } = proposal;
   if (target.decision === "none") {
     return refuse(
@@ -335,7 +337,7 @@ function checkTarget(proposal: ProposalView, review: ProposalReviewedV2): Review
  * differed from `base`, so the card showed three values), or a record offered at review time.
  * Neither a batch nor a policy approves such a card; a person decides it on its own.
  */
-export function seenLoudAtReview(review: Pick<ProposalReviewedV2, "seen">): boolean {
+export function seenLoudAtReview(review: Pick<ProposalReviewedV3, "seen">): boolean {
   const { seen } = review;
   if (seen === null) return false;
   if (seen.relinked !== null) return true;

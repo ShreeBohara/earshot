@@ -203,3 +203,33 @@ export const ProposalReviewedV2 = z
     ),
   );
 export type ProposalReviewedV2 = z.infer<typeof ProposalReviewedV2>;
+
+// ─── Version 3 (Phase 6 spec §4.1, decision 6) ─────────────────────────────────────────────────
+// When the sync finds the CRM's value moved, the record deleted, or the person already there, it
+// appends `proposal.sync_conflicted` and, in the same transaction, a system reopen for that reason,
+// as a later flag reopens an approval (Phase 5 decision 15): the proposal's status stays "the
+// latest decision". Version 3 is v2 with that one more reason. v2's exports above stay frozen:
+// stored v2 reviews upcast to v3 unchanged (`@earshot/events`).
+
+/** v2's reasons, plus `conflict`: the sync found the CRM had changed under an approval. */
+export const ReopenReasonV3 = z.enum(["undo", "flagged", "conflict"]);
+export type ReopenReasonV3 = z.infer<typeof ReopenReasonV3>;
+
+/**
+ * `proposal.reviewed` v2 with one more reopen reason. The rules the writers keep, which the schema
+ * can't express in JSON Schema and therefore doesn't check, are v2's (see `ProposalReviewedV2`),
+ * and `checkReview` in `@earshot/events` adds one: a `conflict` reopen is a system reopen the sync
+ * writes, right after the `proposal.sync_conflicted` for the proposal's latest review.
+ */
+export const ProposalReviewedV3 = ProposalReviewedV2.extend({
+  /** Why a reopen happened: an undo, a later flag, or a sync's conflict. Set exactly then. */
+  reason: ReopenReasonV3.nullable(),
+}).meta(
+  payloadMeta(
+    "proposal.reviewed",
+    3,
+    "ProposalReviewedV3",
+    "Payload of `proposal.reviewed`, schema version 3: version 2, and a reopen may be for a sync's conflict, when the CRM changed under an approval.",
+  ),
+);
+export type ProposalReviewedV3 = z.infer<typeof ProposalReviewedV3>;

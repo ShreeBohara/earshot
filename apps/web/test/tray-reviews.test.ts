@@ -172,7 +172,7 @@ describe("the tray's reviews over the session socket", () => {
     await settle(400);
     await expect(landed).resolves.toEqual({ ok: true });
     const event = t.server.log.at(-1);
-    expect(event).toMatchObject({ type: "proposal.reviewed", schemaVersion: 2 });
+    expect(event).toMatchObject({ type: "proposal.reviewed", schemaVersion: 3 });
     expect(event?.payload).toMatchObject({
       reviewId: review.reviewId,
       surface: "tray",

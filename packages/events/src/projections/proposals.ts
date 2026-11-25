@@ -3,7 +3,7 @@ import type {
   FollowupRule,
   ProposalFieldV2,
   ProposalTypeV2,
-  ReopenReason,
+  ReopenReasonV3,
   ReviewDecisionV2,
   Reviewer,
   ReviewInputKind,
@@ -35,7 +35,7 @@ import type { Projection } from "./projection";
 export type ProposalStatus = "proposed" | "approved" | "edited" | "rejected" | "superseded";
 
 /**
- * The latest review of a proposal, a reopen included: every field of `proposal.reviewed` v2, and
+ * The latest review of a proposal, a reopen included: every field of `proposal.reviewed` v3, and
  * where the event is in the log. A review upcast from v1 has null wherever v1 recorded nothing.
  */
 export interface ReviewView {
@@ -49,7 +49,7 @@ export interface ReviewView {
   policy: ReviewPolicy | null;
   /** The review a reopen reversed. */
   undoes: string | null;
-  reason: ReopenReason | null;
+  reason: ReopenReasonV3 | null;
   seen: ReviewSeen | null;
   timing: ReviewTiming;
   input: ReviewInputKind | null;

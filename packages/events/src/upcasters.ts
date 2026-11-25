@@ -131,6 +131,16 @@ export const proposalReviewedV1ToV2: Upcaster = {
   },
 };
 
+/**
+ * `proposal.reviewed` v2 → v3 (Phase 6 spec §4.1). Version 3 only adds a reopen reason, `conflict`,
+ * which no v2 review carries, so a v2 review moves to v3 with nothing else changed.
+ */
+export const proposalReviewedV2ToV3: Upcaster = {
+  type: "proposal.reviewed",
+  fromVersion: 2,
+  up: (event) => ({ ...event, schemaVersion: 3, payload: { ...event.payload } }),
+};
+
 /** Every upcaster Earshot ships, in no particular order: the registry chains them by version. */
 export const upcasters: readonly Upcaster[] = [
   sessionStartedV1ToV2,
@@ -138,4 +148,5 @@ export const upcasters: readonly Upcaster[] = [
   utteranceFinalV2ToV3,
   proposalCreatedV1ToV2,
   proposalReviewedV1ToV2,
+  proposalReviewedV2ToV3,
 ];
