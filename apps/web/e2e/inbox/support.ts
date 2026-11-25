@@ -48,22 +48,7 @@ export async function expectFocusOffBody(page: Page): Promise<void> {
   expect(await focused(page)).not.toBe("<body>");
 }
 
-/**
- * Waits until no finite animation or transition is running, before axe reads the page. A dialog
- * or toast caught mid-fade has text at partial opacity, which axe reads as low contrast; endless
- * animations (a spinner) don't count.
- */
-export async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() =>
-    document
-      .getAnimations()
-      .every(
-        (animation) =>
-          animation.playState !== "running" ||
-          animation.effect?.getTiming().iterations === Number.POSITIVE_INFINITY,
-      ),
-  );
-}
+export { settled } from "../support/axe";
 
 /** Signs up a new user with an empty workspace and opens the inbox. */
 export async function openEmptyInbox(page: Page): Promise<void> {
