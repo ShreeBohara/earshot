@@ -94,6 +94,7 @@ export {
 export {
   proposalCreatedV1ToV2,
   proposalReviewedV1ToV2,
+  sessionStartedV1ToV2,
   upcasters,
   utteranceFinalV1ToV2,
   utteranceFinalV2ToV3,

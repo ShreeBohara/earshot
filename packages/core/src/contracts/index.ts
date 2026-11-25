@@ -15,6 +15,7 @@ import {
   SessionEndedV1,
   SessionSealedV1,
   SessionStartedV1,
+  SessionStartedV2,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnWitnessedV1,
@@ -59,9 +60,11 @@ export const contracts = {
   UtteranceFinalV3,
   FollowupAskedV1,
   FollowupClosedV1,
-  // Phase 6 WP1: a CRM connection's mapping, and the sync retry route's request.
+  // Phase 6 WP1: a CRM connection's mapping, the sync retry route's request, and the rep's time
+  // zone in `session.started`.
   CrmMapping,
   SyncRouteRequest,
+  SessionStartedV2,
 } as const;
 
 export type ContractName = keyof typeof contracts;
@@ -159,6 +162,7 @@ export {
   SessionProviders,
   SessionSealedV1,
   SessionStartedV1,
+  SessionStartedV2,
   Sha256Hex,
   SignInMethod,
   TARGET_FIELD,
@@ -167,6 +171,8 @@ export {
   TargetDecision,
   TargetDowngrade,
   TargetV2,
+  TIME_ZONE_SHAPE,
+  TimeZoneName,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnOutcome,

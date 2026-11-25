@@ -16,6 +16,11 @@ export interface SessionView {
   engine: VoiceEngine;
   providers: SessionProviders;
   startedAt: string;
+  /**
+   * The rep's IANA time zone, from `session.started` v2 (Phase 6 WP1), or null: `start` carried
+   * none, or the session is from before v2. Readers take null as UTC.
+   */
+  timeZone: string | null;
   endedAt: string | null;
   /**
    * When `session.sealed` says the session was sealed: its live writer is done, and the web
@@ -76,7 +81,8 @@ export function recapProblem(recap: RecapCreatedV1): string | null {
 
 /**
  * Folds `session.started`, `session.ended`, `session.sealed`, and `recap.created` into a
- * `SessionView`; `null` until the session starts. A session log must open with `session.started`.
+ * `SessionView`; `null` until the session starts. The session keeps the rep's time zone from
+ * `session.started` (v2, Phase 6 WP1; null from v1). A session log must open with `session.started`.
  * Events may follow `session.ended`, because reviews and late transcripts often land after capture
  * stops; `usage.recorded` after the end adds to the session's cost. A session is sealed once,
  * after it ends, and events may follow the seal too: the web Worker's reviews. Its recap comes
@@ -95,6 +101,7 @@ export const sessionProjection: Projection<SessionView | null> = {
         engine: event.payload.engine,
         providers: event.payload.providers,
         startedAt: event.payload.startedAt,
+        timeZone: event.payload.timeZone,
         endedAt: null,
         sealedAt: null,
         durationMs: null,

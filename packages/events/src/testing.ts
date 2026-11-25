@@ -48,6 +48,21 @@ export function started(payload: Record<string, unknown> = {}): EventBody {
   };
 }
 
+/**
+ * A `session.started` v2 (Phase 6 WP1): `started()`'s session, with the rep's time zone (null when
+ * `start` carried none).
+ */
+export function startedV2(
+  timeZone: string | null = "America/Chicago",
+  payload: Record<string, unknown> = {},
+): EventBody {
+  return {
+    ...started(),
+    schemaVersion: 2,
+    payload: { ...started().payload, timeZone, ...payload },
+  };
+}
+
 export function utterance(n: number, text = `Utterance ${n}.`, witness = "biased"): EventBody {
   return {
     type: "utterance.final",

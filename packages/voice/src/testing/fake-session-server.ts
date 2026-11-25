@@ -504,6 +504,7 @@ export class FakeSessionServer {
           engine: message.engine,
           providers: message.providers,
           startedAt: message.startedAt,
+          timeZone: message.timeZone ?? null,
         },
       },
     ]);

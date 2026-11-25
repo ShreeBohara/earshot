@@ -26,6 +26,7 @@ import {
   sessionLog,
   snoozed,
   started,
+  startedV2,
   tsFor,
   turnCompleted,
   turnMeasured,
@@ -50,6 +51,8 @@ describe("sessionProjection", () => {
       engine: "cascaded",
       providers: { speechToText: { provider: "deepgram", model: "nova-3" } },
       startedAt: "2026-11-10T19:15:00.000Z",
+      // A v1 start upcasts with no time zone.
+      timeZone: null,
       endedAt: null,
       sealedAt: null,
       durationMs: null,
@@ -125,6 +128,20 @@ describe("sessionProjection", () => {
         session: sessionProjection,
       }),
     ).toThrow(/already been sealed/);
+  });
+});
+
+describe("sessionProjection: the rep's time zone (Phase 6 WP1)", () => {
+  const session = (body: ReturnType<typeof started>) =>
+    replay(sessionLog([body, utterance(1)]), { session: sessionProjection }).session;
+
+  it("keeps the zone a v2 start recorded, and null when it recorded none", () => {
+    expect(session(startedV2("America/Chicago"))?.timeZone).toBe("America/Chicago");
+    expect(session(startedV2(null))?.timeZone).toBeNull();
+  });
+
+  it("reads a v1 start, from before the zone was recorded, as no zone", () => {
+    expect(session(started())?.timeZone).toBeNull();
   });
 });
 

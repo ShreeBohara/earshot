@@ -651,12 +651,13 @@ export class SessionRuntime extends DurableObject<Env> {
   }
 
   /**
-   * `session.started`, once. A second `start` under a new msgId gets the first one's seq. The
-   * approval policy it may carry (Phase 5 WP11) must verify against this session's id: a forged
-   * snapshot, or one signed for another session, refuses the `start` with `bad_message`, and one
-   * that verifies is kept in `meta` for the session's turns. The policy a session started with is
-   * the one it keeps: a later `start`'s snapshot changes nothing, and a change to the workspace's
-   * policy applies from the next session.
+   * `session.started`, once, at v2 (Phase 6 WP1): with the rep's time zone as `start` sent it (the
+   * protocol has checked it against `Intl`), or null when it sent none. A second `start` under a
+   * new msgId gets the first one's seq. The approval policy it may carry (Phase 5 WP11) must
+   * verify against this session's id: a forged snapshot, or one signed for another session,
+   * refuses the `start` with `bad_message`, and one that verifies is kept in `meta` for the
+   * session's turns. The policy a session started with is the one it keeps: a later `start`'s
+   * snapshot changes nothing, and a change to the workspace's policy applies from the next session.
    */
   async #start(message: ClientMessageOf<"start">): Promise<void> {
     // Before any check: verifying the snapshot yields, and everything after it runs in one go.
@@ -689,12 +690,13 @@ export class SessionRuntime extends DurableObject<Env> {
       [
         {
           type: "session.started",
-          schemaVersion: 1,
+          schemaVersion: 2,
           payload: {
             mode: message.mode,
             engine: message.engine,
             providers: message.providers,
             startedAt: message.startedAt,
+            timeZone: message.timeZone ?? null,
           },
         },
       ],

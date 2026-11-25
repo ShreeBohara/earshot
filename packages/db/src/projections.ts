@@ -60,6 +60,7 @@ export type SessionProjections = ProjectionStates<typeof defaultProjections>;
  * correction replaces the proposal. The session's row gets `sealed_at` from `session.sealed`,
  * and `recap` from `recap.created` (migration 0015, Phase 5 WP10).
  * Phase 5 WP13 (migration 0018): each utterance's `input`, and each proposal's `followups`.
+ * Phase 6 WP1 (migration 0019): the session's `time_zone`, from `session.started` v2.
  * The rest of the session's row (its user, metrics, and focus account) isn't the log's to say.
  */
 export async function rebuildProjections<
@@ -251,6 +252,7 @@ async function writeSessionSummary(
       engine: view.engine,
       providers: view.providers,
       startedAt: timestamptz(view.startedAt),
+      timeZone: view.timeZone,
       endedAt: view.endedAt === null ? null : timestamptz(view.endedAt),
       sealedAt: view.sealedAt === null ? null : timestamptz(view.sealedAt),
       recap: view.recap as Record<string, unknown> | null,

@@ -2,6 +2,7 @@ import {
   eventPayloadContracts,
   ProposalCreatedV2,
   ProposalReviewedV2,
+  SessionStartedV2,
   UtteranceFinalV2,
 } from "@earshot/core";
 import { describe, expect, it } from "vitest";
@@ -13,9 +14,11 @@ import {
   latestVersions,
   proposalCreatedV1ToV2,
   proposalReviewedV1ToV2,
+  sessionStartedV1ToV2,
   UnknownEventError,
   UpcastError,
   type Upcaster,
+  upcasters,
   utteranceFinalV1ToV2,
   utteranceFinalV2ToV3,
 } from "../src";
@@ -30,6 +33,8 @@ import {
   reviewV2,
   sealed,
   snoozed,
+  started,
+  startedV2,
   turnCompleted,
   turnMeasured,
   turnWitnessed,
@@ -39,6 +44,11 @@ import {
   utteranceV3,
   uuid,
 } from "./helpers";
+
+/** Every upcaster Earshot ships, but `left`: a registry built from them is missing one link. */
+function upcastersBut(left: Upcaster): Upcaster[] {
+  return upcasters.filter((upcaster) => upcaster !== left);
+}
 
 describe("utteranceFinalV1ToV2", () => {
   const v1 = envelope(utteranceV1(1, "Met Dana Lee at Acme."));
@@ -197,7 +207,71 @@ describe("proposalReviewedV1ToV2", () => {
   });
 });
 
+describe("sessionStartedV1ToV2", () => {
+  const v1 = envelope(started());
+
+  it("records no time zone and moves the event to v2, keeping everything else", () => {
+    expect(sessionStartedV1ToV2.up(v1)).toEqual({
+      ...v1,
+      schemaVersion: 2,
+      payload: { ...v1.payload, timeZone: null },
+    });
+  });
+
+  it("produces a payload the v2 schema accepts", () => {
+    const result = SessionStartedV2.safeParse(sessionStartedV1ToV2.up(v1).payload);
+    expect(result.error?.issues ?? []).toEqual([]);
+  });
+
+  it("is deterministic and doesn't mutate the event it upcasts", () => {
+    const frozen = deepFreeze(structuredClone(v1));
+    expect(sessionStartedV1ToV2.up(frozen)).toEqual(sessionStartedV1ToV2.up(v1));
+    expect(frozen).toEqual(v1);
+  });
+});
+
 describe("defaultRegistry", () => {
+  it("loads a stored v1 session start as v2, with a null time zone", () => {
+    const v1 = envelope(started());
+    expect(defaultRegistry.toLatest(v1)).toEqual({
+      ...v1,
+      schemaVersion: 2,
+      payload: { ...v1.payload, timeZone: null },
+    });
+  });
+
+  it("leaves a v2 session start as it is, and checks its time zone's shape", () => {
+    const v2 = envelope(startedV2("Europe/Lisbon"));
+    expect(defaultRegistry.toLatest(v2)).toBe(v2);
+    const none = envelope(startedV2(null));
+    expect(defaultRegistry.toLatest(none)).toBe(none);
+    for (const timeZone of ["", "+05:30", "America/New York", `Etc/${"Z".repeat(61)}`]) {
+      expect(() => defaultRegistry.toLatest(envelope(startedV2(timeZone)))).toThrow(
+        EventValidationError,
+      );
+    }
+    // A v1 start can't carry a zone, and a v2 start must say it has none.
+    const v1WithZone = envelope({ ...startedV2("UTC"), schemaVersion: 1 });
+    expect(() => defaultRegistry.toLatest(v1WithZone)).toThrow(EventValidationError);
+    const v2WithoutZone = envelope({ ...started(), schemaVersion: 2 });
+    expect(() => defaultRegistry.toLatest(v2WithoutZone)).toThrow(EventValidationError);
+  });
+
+  it("loads a time zone this runtime's Intl doesn't know, if it has a zone's shape", () => {
+    // The event's contract is structural, so a log written where a newer zone exists still loads.
+    const unknown = envelope(startedV2("Mars/Olympus_Mons"));
+    expect(defaultRegistry.toLatest(unknown)).toBe(unknown);
+  });
+
+  it("fails when it loads, not on replay, if session.started v1 loses its upcaster", () => {
+    expect(() =>
+      createEventRegistry({
+        payloads: eventPayloadContracts,
+        upcasters: upcastersBut(sessionStartedV1ToV2),
+      }),
+    ).toThrow(/session.started v1 has no upcaster to v2/);
+  });
+
   it("upcasts a stored v1 utterance to the latest version", () => {
     const v1 = envelope(utteranceV1(1));
     const latest = defaultRegistry.toLatest(v1);
@@ -219,7 +293,10 @@ describe("defaultRegistry", () => {
 
   it("fails when it loads, not on replay, if utterance.final v2 loses its upcaster", () => {
     expect(() =>
-      createEventRegistry({ payloads: eventPayloadContracts, upcasters: [utteranceFinalV1ToV2] }),
+      createEventRegistry({
+        payloads: eventPayloadContracts,
+        upcasters: [sessionStartedV1ToV2, utteranceFinalV1ToV2],
+      }),
     ).toThrow(/utterance.final v2 has no upcaster to v3/);
   });
 
@@ -243,7 +320,7 @@ describe("defaultRegistry", () => {
     expect(() =>
       createEventRegistry({
         payloads: eventPayloadContracts,
-        upcasters: [utteranceFinalV1ToV2, utteranceFinalV2ToV3],
+        upcasters: [sessionStartedV1ToV2, utteranceFinalV1ToV2, utteranceFinalV2ToV3],
       }),
     ).toThrow(/proposal.created v1 has no upcaster to v2/);
     expect(() =>
@@ -255,7 +332,12 @@ describe("defaultRegistry", () => {
     expect(() =>
       createEventRegistry({
         payloads: eventPayloadContracts,
-        upcasters: [utteranceFinalV1ToV2, utteranceFinalV2ToV3, proposalCreatedV1ToV2],
+        upcasters: [
+          sessionStartedV1ToV2,
+          utteranceFinalV1ToV2,
+          utteranceFinalV2ToV3,
+          proposalCreatedV1ToV2,
+        ],
       }),
     ).toThrow(/proposal.reviewed v1 has no upcaster to v2/);
   });

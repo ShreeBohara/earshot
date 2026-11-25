@@ -71,9 +71,17 @@ import {
   SessionMode,
   SessionProviders,
   SessionStartedV1,
+  SessionStartedV2,
   VoiceEngine,
 } from "./session-started";
-import { FieldName, FieldValue, MAX_SYNC_ATTEMPTS, Sha256Hex } from "./shared";
+import {
+  FieldName,
+  FieldValue,
+  MAX_SYNC_ATTEMPTS,
+  Sha256Hex,
+  TIME_ZONE_SHAPE,
+  TimeZoneName,
+} from "./shared";
 import { TurnCompletedV1, TurnOutcome } from "./turn-completed";
 import { CaptureMode, TurnMeasuredV1 } from "./turn-measured";
 import { TurnWitnessedV1, WitnessOutcome, WitnessReason } from "./turn-witnessed";
@@ -125,6 +133,9 @@ export const eventPayloadContracts = [
   { type: "utterance.final", schemaVersion: 3, schema: UtteranceFinalV3 },
   { type: "followup.asked", schemaVersion: 1, schema: FollowupAskedV1 },
   { type: "followup.closed", schemaVersion: 1, schema: FollowupClosedV1 },
+  // Phase 6 WP1: the rep's time zone, which `start` carried and the log didn't keep (v1 upcasts
+  // with null). `sessionProjection` keeps it as the session's `timeZone`.
+  { type: "session.started", schemaVersion: 2, schema: SessionStartedV2 },
 ] as const;
 
 export type EventPayloadContract = (typeof eventPayloadContracts)[number];
@@ -193,6 +204,7 @@ export {
   SessionProviders,
   SessionSealedV1,
   SessionStartedV1,
+  SessionStartedV2,
   Sha256Hex,
   SignInMethod,
   TARGET_FIELD,
@@ -201,6 +213,8 @@ export {
   TargetDecision,
   TargetDowngrade,
   TargetV2,
+  TIME_ZONE_SHAPE,
+  TimeZoneName,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnOutcome,

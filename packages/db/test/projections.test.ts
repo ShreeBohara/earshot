@@ -16,6 +16,7 @@ import {
   sealed,
   snoozed,
   started,
+  startedV2,
   tsFor,
   turnWitnessed,
   utterance,
@@ -140,6 +141,8 @@ function readProjections(db: Db, sessionId: string) {
               engine: session.engine,
               providers: session.providers,
               startedAt: session.startedAt.toISOString(),
+              // Migration 0019 (Phase 6 WP1): the rep's time zone, from session.started v2.
+              timeZone: session.timeZone,
               endedAt: session.endedAt?.toISOString() ?? null,
               sealedAt: session.sealedAt?.toISOString() ?? null,
               durationMs: session.endedAt
@@ -287,6 +290,17 @@ describe("rebuildProjections", () => {
     expect(session).toMatchObject([
       { endedAt: new Date("2026-11-10T19:15:40.000Z"), costUsd: "0.0040" },
     ]);
+  });
+
+  it("writes the rep's time zone from session.started v2, and none from v1 (Phase 6 WP1)", async () => {
+    const db = await fresh();
+    const store = new PgEventStore(db, A);
+    await store.append(SESSION_ID, NO_EVENTS, [draft(1, startedV2("America/Chicago"))]);
+    await rebuild(db, SESSION_ID);
+    expect((await rowsOf(db, SESSION_ID)).session).toMatchObject([{ timeZone: "America/Chicago" }]);
+    // The demo session's start is v1: no zone.
+    await rebuild(db, demoSessionId);
+    expect((await rowsOf(db, demoSessionId)).session).toMatchObject([{ timeZone: null }]);
   });
 
   it("holds every offset and reviewer time the contracts accept, up to the largest safe integer", async () => {

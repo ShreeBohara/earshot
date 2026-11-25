@@ -1,0 +1,16 @@
+{
+  "mode": "debrief",
+  "engine": "cascaded",
+  "providers": {
+    "speechToText": {
+      "provider": "deepgram",
+      "model": "nova-3"
+    },
+    "llm": {
+      "provider": "groq",
+      "model": "gpt-oss-20b"
+    }
+  },
+  "startedAt": "2026-11-10T19:15:00.000Z",
+  "timeZone": null
+}

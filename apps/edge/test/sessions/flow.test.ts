@@ -65,11 +65,14 @@ describe("a session from start to end", () => {
       );
       expect(Math.abs(Date.parse(event.ts) - Date.now())).toBeLessThan(60_000);
     }
+    // Written as `session.started` v2 (Phase 6 WP1): the rep's time zone, as `start` sent it.
+    expect(events[0]).toMatchObject({ type: "session.started", schemaVersion: 2 });
     expect(events[0]?.payload).toEqual({
       mode: "debrief",
       engine: "cascaded",
       providers: start.providers,
       startedAt: start.startedAt,
+      timeZone: start.timeZone,
     });
     // Written as `utterance.final` v3 (Phase 5 WP13): the client's words, said into the microphone.
     expect(events[1]).toMatchObject({ type: "utterance.final", schemaVersion: 3 });
@@ -111,6 +114,23 @@ describe("a session from start to end", () => {
     }
     expect(socket.events()).toHaveLength(eventsBefore);
     socket.close();
+  });
+
+  it("records the time zone start sent in session.started v2, and null when it sent none", async () => {
+    const sent = await open();
+    await sent.socket.request(startMessage({ timeZone: "Asia/Kolkata" }));
+    const [withZone] = sent.socket.eventsOf("session.started");
+    expect(withZone).toMatchObject({ schemaVersion: 2, payload: { timeZone: "Asia/Kolkata" } });
+    expect(replay(sent.socket.events(), defaultProjections).session?.timeZone).toBe("Asia/Kolkata");
+    sent.socket.close();
+
+    const { timeZone: _, ...withoutZone } = startMessage();
+    const none = await open();
+    await none.socket.request(withoutZone);
+    const [noZone] = none.socket.eventsOf("session.started");
+    expect(noZone).toMatchObject({ schemaVersion: 2, payload: { timeZone: null } });
+    expect(replay(none.socket.events(), defaultProjections).session?.timeZone).toBeNull();
+    none.socket.close();
   });
 
   it("gives a second start, or the same utterance under a new msgId, the first one's seq", async () => {

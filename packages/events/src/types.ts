@@ -9,7 +9,7 @@ import type {
   RecapCreatedV1,
   SessionEndedV1,
   SessionSealedV1,
-  SessionStartedV1,
+  SessionStartedV2,
   TurnCompletedV1,
   TurnMeasuredV1,
   TurnWitnessedV1,
@@ -28,7 +28,7 @@ export type TypedEvent<T extends string, V extends number, P> = Omit<
   payload: P;
 };
 
-export type SessionStartedEvent = TypedEvent<"session.started", 1, SessionStartedV1>;
+export type SessionStartedEvent = TypedEvent<"session.started", 2, SessionStartedV2>;
 export type UtteranceFinalEvent = TypedEvent<"utterance.final", 3, UtteranceFinalV3>;
 export type ProposalCreatedEvent = TypedEvent<"proposal.created", 2, ProposalCreatedV2>;
 export type ProposalReviewedEvent = TypedEvent<"proposal.reviewed", 2, ProposalReviewedV2>;
@@ -67,7 +67,7 @@ export type SessionEvent =
 
 /** The latest schema version of each event type. A test checks it against the default registry. */
 export const latestVersions = {
-  "session.started": 1,
+  "session.started": 2,
   "utterance.final": 3,
   "proposal.created": 2,
   "proposal.reviewed": 2,
