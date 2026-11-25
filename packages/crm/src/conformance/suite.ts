@@ -427,6 +427,12 @@ export function conformanceSuite(
     return result.plan;
   }
 
+  /** A case's name, saying how it lands where the CRM can't hold it as such: a meeting as a note. */
+  const named = (caseItem: Case): string =>
+    caseItem.type === "meeting" && !capabilities.objects.meeting
+      ? `${caseItem.id} (as a note: the CRM has no meetings)`
+      : caseItem.id;
+
   /** The skip reason for a case the CRM can't hold: its deals, for a deal update or a new deal. */
   const cantHold = (caseItem: Case): string | null =>
     needsDeals(caseItem) && !capabilities.objects.deal
@@ -537,7 +543,7 @@ export function conformanceSuite(
     checks: [
       ...CASES.map((caseItem) =>
         check(
-          `${caseItem.id}: the plan and its requests match the golden file`,
+          `${named(caseItem)}: the plan and its requests match the golden file`,
           goldenSkip,
           async () => {
             if (!golden) return;
@@ -586,7 +592,7 @@ export function conformanceSuite(
     title: "writes",
     checks: CASES.map((caseItem) =>
       check(
-        `${caseItem.id}: lands exactly its records and associations, as sent, and sends what requests() previews`,
+        `${named(caseItem)}: lands exactly its records and associations, as sent, and sends what requests() previews`,
         cantHold(caseItem),
         async () => {
           const world = await liveWorld();
@@ -665,7 +671,7 @@ export function conformanceSuite(
     title: "twice",
     checks: CASES.map((caseItem) =>
       check(
-        `${caseItem.id}: each write executed twice leaves one record`,
+        `${named(caseItem)}: each write executed twice leaves one record`,
         cantHold(caseItem),
         async () => {
           const world = await liveWorld();
@@ -701,7 +707,7 @@ export function conformanceSuite(
     title: "lost responses",
     checks: CASES.map((caseItem) =>
       check(
-        `${caseItem.id}: a write whose answer is lost is found by reconcile, and the retry leaves one`,
+        `${named(caseItem)}: a write whose answer is lost is found by reconcile, and the retry leaves one`,
         cantHold(caseItem),
         async () => {
           const world = await liveWorld();
