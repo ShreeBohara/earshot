@@ -8,5 +8,8 @@
     "lib": ["ES2023", "WebWorker"],
     "types": []
   },
-  "include": ["src"]
+  "include": ["src"],
+  // The conformance suite runs in Node under Vitest, which no Worker imports: tsconfig.node.json
+  // checks it with Node's types.
+  "exclude": ["src/conformance"]
 }
