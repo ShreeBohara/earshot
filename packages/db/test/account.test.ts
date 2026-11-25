@@ -173,7 +173,7 @@ describe("buildAccountExport", () => {
       "Atlas",
       "Sam Ortiz",
       "Called Sam",
-      ...Array.from({ length: 14 }, (_, i) => rowId("b", i + 1)),
+      ...Array.from({ length: 15 }, (_, i) => rowId("b", i + 1)),
     ]) {
       expect(json, `B's ${value} leaked`).not.toContain(value);
     }
